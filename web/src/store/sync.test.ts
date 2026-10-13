@@ -3,10 +3,16 @@ import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { openDb } from "../../../server/db.ts";
 import { createStore, type Store } from "../../../server/store.ts";
 import { createSyncHandler } from "../../../server/sync.ts";
-import type { SyncRequest, SyncResponse } from "../../../shared/types.ts";
+import type { SyncRequest } from "../../../shared/types.ts";
 import { openLocalDb } from "./db.ts";
 import { LocalStore } from "./local-store.ts";
-import { PUSH_BATCH_SIZE, syncOnce, type Transport } from "./sync.ts";
+import {
+  ClockAheadError,
+  PUSH_BATCH_SIZE,
+  readSyncResponse,
+  syncOnce,
+  type Transport,
+} from "./sync.ts";
 
 const REAL_NOW = 1_760_000_000_000;
 const TEN_MIN = 10 * 60_000;
@@ -32,8 +38,7 @@ function makeTransport(beforeSend?: () => Promise<void>): Transport {
     const res = await handle(
       new Request("http://cave.test/api/sync", { method: "POST", body: JSON.stringify(req) }),
     );
-    if (!res.ok) throw new Error(`sync failed: ${res.status}`);
-    return (await res.json()) as SyncResponse;
+    return readSyncResponse(res, Date.now());
   };
 }
 
@@ -155,5 +160,27 @@ describe("syncOnce", () => {
     const second = await LocalStore.open({ db, deviceId: "phone", now: () => REAL_NOW - TEN_MIN });
     const b = await second.write({ id: "t1", ...task }, { status: "done" });
     expect((b.stamps.status as string) > (a.stamps.status as string)).toBe(true);
+  });
+
+  test("a device an hour ahead is refused, recovers its clock and then syncs", async () => {
+    const HOUR = 60 * 60_000;
+    const phone = await device("phone", () => REAL_NOW + HOUR);
+    await phone.write({ id: "t1", ...task }, { _title: "From the future" });
+    await phone.write({ id: "t2", ...task }, { _title: "Also ahead" });
+
+    const refused = await syncOnce(phone, makeTransport()).catch((e: unknown) => e);
+    expect(refused).toBeInstanceOf(ClockAheadError);
+    expect((refused as ClockAheadError).serverTime).toBe(REAL_NOW);
+    expect(server.get("t1")).toBeUndefined();
+
+    expect(await phone.recoverClock((refused as ClockAheadError).serverTime)).toBe(2);
+    await syncOnce(phone, makeTransport());
+    expect(server.get("t1")?.data._title).toBe("From the future");
+    expect(await phone.db.outbox.count()).toBe(0);
+
+    // The device clock is still an hour fast; new writes follow server time.
+    await phone.write({ id: "t3", ...task }, { _title: "After recovery" });
+    await syncOnce(phone, makeTransport());
+    expect(server.get("t3")?.data._created).toBe(new Date(REAL_NOW).toISOString());
   });
 });

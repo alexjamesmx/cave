@@ -63,6 +63,12 @@ export class Hlc {
     }
   }
 
+  /** Sets the clock even if that moves it back: loading the shared clock, or clock recovery. */
+  reset(state: ClockState): void {
+    this.#ms = state.ms;
+    this.#counter = state.counter;
+  }
+
   // The stamp format has four counter digits; carrying into ms keeps string order intact.
   #set(ms: number, counter: number): void {
     if (counter > MAX_COUNTER) {

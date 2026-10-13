@@ -1,5 +1,5 @@
 import { FieldValueError, fieldsOf, validateFields } from "../../../shared/fields.ts";
-import { Hlc } from "../../../shared/hlc.ts";
+import { Hlc, parseStamp } from "../../../shared/hlc.ts";
 import { mergeDoc } from "../../../shared/merge.ts";
 import type { Doc, Kind } from "../../../shared/types.ts";
 import type { LocalDb, OutboxRow } from "./db.ts";
@@ -25,18 +25,27 @@ interface OpenOptions {
 
 /** The device's full local copy: stamped writes, the outbox, and applying pulled docs. */
 export class LocalStore {
+  private readonly clock: Hlc;
+  private offset = 0;
+
   private constructor(
     readonly db: LocalDb,
     readonly deviceId: string,
-    private readonly clock: Hlc,
-    private readonly now: () => number,
+    private readonly deviceNow: () => number,
     private readonly onWrite: (() => void) | undefined,
-  ) {}
+  ) {
+    this.clock = new Hlc(deviceId, () => this.now());
+  }
 
   static async open({ db, deviceId, now = Date.now, onWrite }: OpenOptions): Promise<LocalStore> {
-    const saved = await db.meta.get("clock");
-    const clock = new Hlc(deviceId, now, saved?.key === "clock" ? saved.value : undefined);
-    return new LocalStore(db, deviceId, clock, now, onWrite);
+    const store = new LocalStore(db, deviceId, now, onWrite);
+    await db.transaction("r", db.meta, () => store.loadSharedClock());
+    return store;
+  }
+
+  /** Device time corrected by clock recovery, if the owner ran it. */
+  now(): number {
+    return this.deviceNow() + this.offset;
   }
 
   get(id: string): Promise<Doc | undefined> {
@@ -51,7 +60,7 @@ export class LocalStore {
   async write(target: WriteTarget, patch: Record<string, unknown>): Promise<Doc> {
     const { db } = this;
     const doc = await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
-      await this.catchUpWithOtherTabs();
+      await this.loadSharedClock();
       if (target.kind === "item" && target.collection) {
         const errors = validateFields(fieldsOf(await db.docs.get(target.collection)), patch);
         if (errors.length > 0) throw new FieldValueError(errors);
@@ -72,13 +81,48 @@ export class LocalStore {
   }
 
   /**
-   * Every tab of this device holds its own clock. Adopting the saved one inside the
-   * same rw transaction that saves it back means IndexedDB serialises the tabs, so two
-   * tabs never issue the same stamp or overwrite a later clock with an earlier one.
+   * Every tab of this device holds its own copy of the clock, and every change to it is
+   * saved in the rw transaction that made it, so the saved clock is always the newest.
+   * Loading it at the start of each transaction lets IndexedDB serialise the tabs: no two
+   * issue the same stamp, and a clock recovery in one tab reaches the others.
    */
-  private async catchUpWithOtherTabs(): Promise<void> {
-    const saved = await this.db.meta.get("clock");
-    if (saved?.key === "clock") this.clock.adopt(saved.value);
+  private async loadSharedClock(): Promise<void> {
+    const [clock, offset] = await this.db.meta.bulkGet(["clock", "clockOffset"]);
+    if (clock?.key === "clock") this.clock.reset(clock.value);
+    this.offset = offset?.key === "clockOffset" ? offset.value : 0;
+  }
+
+  /**
+   * After the server refused a stamp as too far ahead: from now on local time follows the
+   * server's, and every key stamped later than `serverTime` is stamped again so it can sync.
+   * Returns how many docs were re-stamped.
+   */
+  async recoverClock(serverTime: number): Promise<number> {
+    const { db } = this;
+    return db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
+      this.offset = serverTime - this.deviceNow();
+      this.clock.reset({ ms: serverTime, counter: 0 });
+      const restamped: Doc[] = [];
+      await db.docs.each((doc) => {
+        const ahead = Object.keys(doc.stamps).filter(
+          (key) => parseStamp(doc.stamps[key] as string).ms > serverTime,
+        );
+        if (ahead.length === 0) return;
+        const stamps = { ...doc.stamps };
+        for (const key of ahead) stamps[key] = this.clock.next();
+        restamped.push({ ...doc, stamps });
+      });
+      const pending = await db.outbox.bulkGet(restamped.map((d) => d.id));
+      await db.docs.bulkPut(restamped);
+      await db.outbox.bulkPut(
+        restamped.map((d, i) => ({ id: d.id, rev: (pending[i]?.rev ?? 0) + 1 })),
+      );
+      await db.meta.bulkPut([
+        { key: "clock", value: this.clock.state },
+        { key: "clockOffset", value: this.offset },
+      ]);
+      return restamped.length;
+    });
   }
 
   /** Snapshot of the outbox with the docs to send, read in one transaction. */
@@ -101,7 +145,7 @@ export class LocalStore {
   async applyPulled(pulled: Doc[], cursor: number, acknowledged: OutboxRow[]): Promise<void> {
     const { db } = this;
     await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
-      await this.catchUpWithOtherTabs();
+      await this.loadSharedClock();
       const locals = await db.docs.bulkGet(pulled.map((d) => d.id));
       const updates: Doc[] = [];
       let newest = "";
