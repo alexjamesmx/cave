@@ -23,10 +23,19 @@ export default defineConfig({
     channel: process.env.CAVE_E2E_CHANNEL ?? "msedge",
   },
   webServer: {
-    // No .env: the owner's VAULT_PATH or BACKUP_DIR must never reach the throwaway database.
+    // The owner's settings must never reach the throwaway database, whether they come from
+    // .env (--no-env-file) or from the environment (blanked here; empty means the default).
     command: "bun --no-env-file run server/main.ts",
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
-    env: { PORT: String(PORT), CAVE_DB_PATH: dbPath },
+    env: {
+      PORT: String(PORT),
+      CAVE_DB_PATH: dbPath,
+      VAULT_PATH: "",
+      BACKUP_DIR: "",
+      CAVE_TOKEN: "",
+      CAVE_HOST: "",
+      CAVE_ALLOWED_HOSTS: "",
+    },
   },
 });
