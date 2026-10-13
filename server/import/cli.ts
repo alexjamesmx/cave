@@ -1,6 +1,7 @@
 import { seedDocs } from "../../shared/seed.ts";
 import { resolveConfig } from "../config.ts";
 import { openDb } from "../db.ts";
+import { migrateSeed } from "../seed-migrations.ts";
 import { createStore } from "../store.ts";
 import { formatReport, importVault } from "./importer.ts";
 
@@ -17,6 +18,7 @@ if (!vaultPath) {
 
 const store = createStore(openDb(dbPath));
 store.seedIfEmpty(seedDocs(), Date.now());
+migrateSeed(store, Date.now());
 const report = await importVault({ root: vaultPath, store, now: Date.now() });
 console.log(`Imported ${vaultPath} into ${dbPath}\n${formatReport(report)}`);
 if (report.ledgerDocs !== report.ledgerFiles) process.exit(1);
