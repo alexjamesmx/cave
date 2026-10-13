@@ -168,10 +168,13 @@ function Options({
   return (
     <div style={{ display: "grid", gap: 6, paddingLeft: 8 }}>
       {options.map((o, i) => (
-        <div key={o.value} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div
+          key={o.value}
+          style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}
+        >
           <span
             className="chip"
-            style={{ background: `${o.color}1f`, color: o.color, minWidth: 110 }}
+            style={{ background: `${o.color}1f`, color: o.color, minWidth: 96 }}
           >
             <Icon name={o.icon} size={13} />
             {o.value}
@@ -181,7 +184,7 @@ function Options({
             className="input"
             aria-label={`Icon for ${o.value}`}
             defaultValue={o.icon}
-            style={{ width: 150 }}
+            style={{ flex: "1 1 90px", minWidth: 0 }}
             onBlur={(e) => {
               const icon = e.target.value.trim();
               if (icon !== o.icon && hasIcon(icon)) set(i, { icon });
