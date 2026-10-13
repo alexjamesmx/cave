@@ -2,9 +2,9 @@
 
 Open-source, local-first, multi-agent personal brain. One place for money, tasks, habits, diary, ideas, learning and notes, built so any agent (Claude, Codex, OpenCode, OpenClaw or a local model) can read it and act on it through one API.
 
-Status: pre-v0.1. M1 (core and sync) is merged to `main`. M2 (import and views) is in progress on `m2-import`. Update this file in the same change as anything it describes.
+Status: pre-v0.1. M1 (core and sync) is merged to `main`. M2 (import and views) is built on `m2-import` and waiting for review (`docs/log/m2.md`). Update this file in the same change as anything it describes.
 
-Commands: `bun install`, `bun run dev`, `bun run check` (tsc + Biome), `bun test`, `bun run import` (add-only import from `VAULT_PATH`). Server environment: `CAVE_HOST` (default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN`), `PORT` (default 3000), `CAVE_DB_PATH` (default `data/cave.db`), `CAVE_TOKEN` (bearer token for `/api` and `/mcp`), `VAULT_PATH` (Obsidian vault, read-only; imported on first start when the database has no items).
+Commands: `bun install`, `bun run dev`, `bun run check` (tsc + Biome), `bun test`, `bun run import` (add-only import from `VAULT_PATH`), `bun run e2e` (Playwright browser checks in `e2e/`, run against installed Edge; `CAVE_E2E_CHANNEL` overrides). Server environment: `CAVE_HOST` (default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN`), `PORT` (default 3000), `CAVE_DB_PATH` (default `data/cave.db`), `CAVE_TOKEN` (bearer token for `/api` and `/mcp`), `VAULT_PATH` (Obsidian vault, read-only; imported on first start when the database has no items).
 
 - Build plan, data model, sync protocol and milestones: `docs/plan-v0.1.md`.
 - Approved design: `docs/design/*.html` (static mockups; open in a browser).
