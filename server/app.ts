@@ -1,4 +1,5 @@
 import type { HTMLBundle } from "bun";
+import { createHistoryHandler } from "./history.ts";
 import type { Store } from "./store.ts";
 import { createSyncHandler, MAX_BODY_BYTES } from "./sync.ts";
 
@@ -21,6 +22,7 @@ export function serveCave({ hostname, port, store, token, now, web }: AppOptions
     maxRequestBodySize: MAX_BODY_BYTES,
     routes: {
       "/api/sync": { POST: createSyncHandler({ store, token, now }) },
+      "/api/history/:id": { GET: createHistoryHandler({ store, token }) },
       "/api/*": notFound,
       "/*": web ?? notFound,
     },

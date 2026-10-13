@@ -27,6 +27,8 @@ const MIGRATIONS = [
    );`,
   // Previous value and stamp per changed key, for undo. Older rows get JSON null: not recorded.
   `ALTER TABLE changes ADD COLUMN before TEXT NOT NULL DEFAULT 'null';`,
+  // The item drawer reads one doc's history.
+  `CREATE INDEX IF NOT EXISTS changes_id ON changes (id, seq);`,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
