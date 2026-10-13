@@ -4,6 +4,7 @@ import { App } from "./App.tsx";
 import { boot } from "./app/boot.ts";
 import { CaveContext } from "./app/context.ts";
 import { interceptLinks } from "./app/router.ts";
+import { warmShellCache } from "./app/shell-cache.ts";
 // Fonts ship with the app (SIL OFL), so the shell works offline and no request leaves the origin.
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/jetbrains-mono";
@@ -28,7 +29,11 @@ createRoot(container).render(
 
 // After the first render, so registering never delays the app opening.
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
-    console.warn("Service worker not registered; the app needs the network to open", error);
-  });
+  navigator.serviceWorker
+    .register("/sw.js")
+    .then(() => navigator.serviceWorker.ready)
+    .then(warmShellCache)
+    .catch((error: unknown) => {
+      console.warn("Offline shell not set up; the app needs the network to open", error);
+    });
 }

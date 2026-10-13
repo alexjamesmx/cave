@@ -19,6 +19,7 @@ interface ServiceWorkerScope {
 }
 
 const sw = self as unknown as ServiceWorkerScope;
+// Same name as SHELL_CACHE in web/src/app/shell-cache.ts, which warms it on the first visit.
 const CACHE = "cave-shell";
 
 // No precache list: Bun's asset names differ between dev and production builds, so the

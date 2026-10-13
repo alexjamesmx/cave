@@ -10,7 +10,9 @@ const dbPath = join(tmpdir(), `cave-e2e-${Date.now()}.db`);
 export default defineConfig({
   testDir: "e2e",
   testMatch: "*.e2e.ts",
+  // The specs share one server and database, so they run one at a time.
   fullyParallel: false,
+  workers: 1,
   reporter: "list",
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
