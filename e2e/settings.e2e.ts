@@ -1,0 +1,38 @@
+import { expect, test } from "@playwright/test";
+import { offOriginRequests } from "./helpers.ts";
+
+test("the owner's name reaches the greeting; Settings shows the server and downloads an export", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext();
+  const foreign = offOriginRequests(context, baseURL as string);
+  const page = await context.newPage();
+  await page.goto("/settings");
+
+  // The server backs up at start, so a fresh database already has one.
+  await expect(page.getByText("Last backup")).toBeVisible();
+  await expect(page.getByText("None yet")).toHaveCount(0);
+  await expect(page.getByText("No vault set")).toBeVisible();
+
+  const pushed = page.waitForResponse(
+    (r) => r.url().endsWith("/api/sync") && (r.request().postData() ?? "").includes("ownerName"),
+  );
+  await page.getByLabel("Your name").fill("Alex");
+  await page.getByLabel("Your name").blur();
+  expect((await pushed).ok()).toBe(true);
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download export" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^cave-\d{4}-\d{2}-\d{2}T\d{6}\.json$/);
+  const exported = JSON.parse(await (await file.createReadStream()).toArray().then(String));
+  expect(exported.format).toBe(1);
+
+  // A second device gets the name through sync.
+  const phone = await (await browser.newContext()).newPage();
+  await phone.goto("/");
+  await expect(phone.getByText(/^Good (morning|afternoon|evening), Alex · /)).toBeVisible();
+
+  expect(foreign).toEqual([]);
+});

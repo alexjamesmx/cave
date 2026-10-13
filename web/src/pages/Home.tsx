@@ -10,10 +10,11 @@ import { collectionPath, navigate } from "../app/router.ts";
 import { type CommandContext, parseCommand } from "../logic/command.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
+import { greeting } from "../logic/greeting.ts";
 import { entriesByDay, habitsDone } from "../logic/habits.ts";
 import { wealthSummary } from "../logic/wealth.ts";
 import { useLive } from "../store/live.ts";
-import { type CollectionDoc, useCollections } from "../store/queries.ts";
+import { type CollectionDoc, useCollections, useDoc } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
 
 const EXAMPLES = ["205 tacos #food", "+15040 paycheck", "todo call the bank", "gym", "> money"];
@@ -25,6 +26,7 @@ export function Home() {
   const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
   const today = useToday();
   const timeZone = useTimeZone();
+  const settings = useDoc(local.db, "settings");
   const items = useLive(
     async () =>
       (await local.db.docs.where("kind").equals("item").toArray()).filter(
@@ -71,7 +73,9 @@ export function Home() {
   return (
     <>
       <section className="hero">
-        <span className="k">{date}</span>
+        <span className="k">
+          {greeting(new Date(), timeZone, settings?.data.ownerName)} · {date}
+        </span>
         <h1>What's the move?</h1>
         {collections && <CommandBar collections={collections} />}
       </section>
