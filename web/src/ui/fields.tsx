@@ -1,6 +1,6 @@
+import { shortDay } from "../../../shared/dates.ts";
 import { isSafeUrl } from "../../../shared/fields.ts";
 import type { Field } from "../../../shared/schema.ts";
-import { shortDay } from "../logic/dates.ts";
 import { formatMoney } from "../logic/format.ts";
 import { Icon } from "./icon.tsx";
 

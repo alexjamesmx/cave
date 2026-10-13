@@ -1,5 +1,5 @@
-import type { Doc } from "../../../shared/types.ts";
 import { dayOf, daysInMonth, monthOf } from "./dates.ts";
+import type { Doc } from "./types.ts";
 
 export interface MoneyEntry {
   doc: Doc;

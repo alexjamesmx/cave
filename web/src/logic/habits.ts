@@ -1,5 +1,5 @@
+import { dayOf } from "../../../shared/dates.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { dayOf } from "./dates.ts";
 
 /** Journal entries by their `date` day; with two entries for one day, the first one counts. */
 export function entriesByDay(journal: Doc[]): Map<string, Doc> {
