@@ -1,11 +1,14 @@
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
 
 const PORT = 3210;
 
-// A fresh database per run, outside the repo, so the check never touches real data.
-const dbPath = join(tmpdir(), `cave-e2e-${Date.now()}.db`);
+// A fresh folder per run, outside the repo, for the database, its lock and its backups.
+// Workers load this file again; the variable makes them reuse the runner's folder.
+process.env.CAVE_E2E_DIR ??= mkdtempSync(join(tmpdir(), "cave-e2e-"));
+const dbPath = join(process.env.CAVE_E2E_DIR, "cave.db");
 
 export default defineConfig({
   testDir: "e2e",
@@ -20,9 +23,19 @@ export default defineConfig({
     channel: process.env.CAVE_E2E_CHANNEL ?? "msedge",
   },
   webServer: {
-    command: "bun run server/main.ts",
+    // The owner's settings must never reach the throwaway database, whether they come from
+    // .env (--no-env-file) or from the environment (blanked here; empty means the default).
+    command: "bun --no-env-file run server/main.ts",
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
-    env: { PORT: String(PORT), CAVE_DB_PATH: dbPath },
+    env: {
+      PORT: String(PORT),
+      CAVE_DB_PATH: dbPath,
+      VAULT_PATH: "",
+      BACKUP_DIR: "",
+      CAVE_TOKEN: "",
+      CAVE_HOST: "",
+      CAVE_ALLOWED_HOSTS: "",
+    },
   },
 });

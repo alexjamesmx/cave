@@ -1,0 +1,14 @@
+#!/bin/sh
+# Commit messages are one line with no attribution; see "Git" in AGENTS.md.
+msg=$(grep -v '^#' "$1" | sed '/^[[:space:]]*$/d')
+lines=$(printf '%s\n' "$msg" | grep -c .)
+if [ "$lines" -ne 1 ]; then
+  echo "commit-msg: the message must be exactly one line (got $lines)" >&2
+  exit 1
+fi
+case $(printf '%s' "$msg" | tr '[:upper:]' '[:lower:]') in
+  *co-authored-by* | *"generated with"*)
+    echo "commit-msg: no Co-Authored-By or \"Generated with\" text" >&2
+    exit 1
+    ;;
+esac

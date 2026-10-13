@@ -12,7 +12,8 @@ export function offOriginRequests(context: BrowserContext, baseURL: string): str
   const seen: string[] = [];
   context.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.protocol === "data:" || url.protocol === "blob:") return;
+    // Only network requests count; data:, blob: and the browser's own pages (edge://) don't.
+    if (!/^(https?|wss?):$/.test(url.protocol)) return;
     if (url.origin !== origin) seen.push(request.url());
   });
   return seen;

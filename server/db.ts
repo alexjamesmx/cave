@@ -5,7 +5,7 @@ import { dirname } from "node:path";
 /**
  * Applied in order; `PRAGMA user_version` records how many have run. Append only:
  * never edit a migration that has shipped. Migration 1 uses IF NOT EXISTS because
- * databases created by the first M1 build already have its tables at user_version 0.
+ * databases created before migrations were tracked have its tables at user_version 0.
  */
 const MIGRATIONS = [
   `CREATE TABLE IF NOT EXISTS docs (
@@ -52,6 +52,10 @@ const MIGRATIONS = [
    CREATE INDEX agent_calls_agent ON agent_calls (agent, seq);`,
   // The stamp each changed key got, so undo can tell whether a key changed since.
   `ALTER TABLE changes ADD COLUMN after TEXT;`,
+  // Server-only settings. A restore gives the database a new `db_id`, which tells devices
+  // their cursor and copy may be ahead of it.
+  `CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+   INSERT INTO meta (key, value) VALUES ('db_id', lower(hex(randomblob(16))));`,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

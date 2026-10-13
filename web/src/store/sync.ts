@@ -56,7 +56,7 @@ export function httpTransport(url: string, clock: DeviceClock, token?: string): 
  * Each round is applied before the next request, so a failure loses no progress.
  */
 export async function syncOnce(local: LocalStore, transport: Transport) {
-  const pending = await local.pending();
+  let pending = await local.pending();
   let cursor = await local.cursor();
   let pushed = 0;
   let pulled = 0;
@@ -70,6 +70,13 @@ export async function syncOnce(local: LocalStore, transport: Transport) {
       changes: batch.map((p) => p.doc),
     });
     const rawDeviceTime = local.rawNow();
+    if (await local.adoptServer(res.dbId)) {
+      // A restored server: this page was read with a cursor from the old log, so start over.
+      pending = await local.pending();
+      cursor = 0;
+      pushed = pulled = rejected = 0;
+      continue;
+    }
     await local.applyPulled(
       res.changes,
       res.cursor,

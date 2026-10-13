@@ -1,6 +1,7 @@
 import type { Change } from "../shared/types.ts";
 import type { AgentCall, CallLog } from "./agent-calls.ts";
 import type { AgentRegistry } from "./agents.ts";
+import { newestBackupAt } from "./backup.ts";
 import type { Store } from "./store.ts";
 
 export const ACTIVITY_LIMIT = 50;
@@ -38,5 +39,35 @@ export function activityHandler(store: Store, calls: CallLog) {
     }));
     const next = page.length === limit ? (page.at(-1)?.seq ?? null) : null;
     return Response.json({ entries, next });
+  };
+}
+
+export interface StatusOptions {
+  version: string;
+  backupDir: string;
+  /** Vault notes not imported yet, from the start-up dry run; `null` without a vault. */
+  newVaultNotes: () => number | null;
+}
+
+export interface Status {
+  version: string;
+  docs: number;
+  dbId: string;
+  lastBackupAt: string | null;
+  newVaultNotes: number | null;
+}
+
+/** `GET /api/status`: what Settings shows about the server. */
+export function statusHandler(store: Store, options: StatusOptions) {
+  return (): Response => {
+    const last = newestBackupAt(options.backupDir);
+    const status: Status = {
+      version: options.version,
+      docs: store.docCount(),
+      dbId: store.dbId(),
+      lastBackupAt: last === undefined ? null : new Date(last).toISOString(),
+      newVaultNotes: options.newVaultNotes(),
+    };
+    return Response.json(status);
   };
 }

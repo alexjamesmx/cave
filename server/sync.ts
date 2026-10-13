@@ -47,6 +47,7 @@ export function createSyncHandler({ store, token, now }: SyncHandlerOptions) {
       changes: page.map((row) => row.doc),
       rejected,
       serverTime,
+      dbId: store.dbId(),
     };
     return Response.json(response);
   };

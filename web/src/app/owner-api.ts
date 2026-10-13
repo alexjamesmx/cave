@@ -12,3 +12,22 @@ export async function ownerGet<T>(path: string): Promise<T | undefined> {
     return undefined;
   }
 }
+
+/** Saves a file the owner API serves as an attachment; `false` when the server refused it. */
+export async function ownerDownload(path: string): Promise<boolean> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  try {
+    const res = await fetch(path, {
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) return false;
+    const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1];
+    const url = URL.createObjectURL(await res.blob());
+    const link = Object.assign(document.createElement("a"), { href: url, download: name ?? "" });
+    link.click();
+    URL.revokeObjectURL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}

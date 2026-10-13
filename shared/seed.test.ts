@@ -54,7 +54,7 @@ test("dates that carry a time are flagged withTime", () => {
   expect(fieldOf("tasks", "due")?.config).toBeUndefined();
 });
 
-test("select options answered in the M1 review", () => {
+test("seeded select options and colours", () => {
   const values = (c: string, f: string) => fieldOf(c, f)?.options?.map((o) => o.value);
   expect(values("projects", "status")).toEqual(["active", "paused", "done", "dropped"]);
   expect(fieldOf("projects", "status")?.options?.map((o) => o.color)).toEqual([

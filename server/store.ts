@@ -45,6 +45,11 @@ export interface Store {
   itemsOf(collection: string): Doc[];
   /** Every collection doc, deleted ones included. */
   collections(): Doc[];
+  /** Every doc in seq order, deleted ones included. */
+  allDocs(): Doc[];
+  docCount(): number;
+  /** Changes when the database is restored from a backup. */
+  dbId(): string;
 }
 
 const toDoc = (row: DocRow): Doc => ({
@@ -74,6 +79,8 @@ export function createStore(db: Database): Store {
   const selectItems = db.query<DocRow, [string]>(
     "SELECT * FROM docs WHERE kind = 'item' AND collection = ?",
   );
+  const selectAll = db.query<DocRow, []>("SELECT * FROM docs ORDER BY seq");
+  const selectDbId = db.query<{ value: string }, []>("SELECT value FROM meta WHERE key = 'db_id'");
   const selectChanges = db.query<ChangeRow, []>("SELECT * FROM changes ORDER BY seq");
   const selectChangesFor = db.query<ChangeRow, [string, number]>(
     "SELECT * FROM changes WHERE id = ? ORDER BY seq DESC LIMIT ?",
@@ -152,6 +159,13 @@ export function createStore(db: Database): Store {
         .map(toDoc)
         .filter((doc) => doc.data._deleted !== true),
     collections: () => selectCollections.all().map(toDoc),
+    allDocs: () => selectAll.all().map(toDoc),
+    docCount: () => countDocs.get()?.n ?? 0,
+    dbId: () => {
+      const row = selectDbId.get();
+      if (!row) throw new Error("database has no db_id");
+      return row.value;
+    },
   };
 }
 

@@ -31,6 +31,8 @@ export interface SyncResponse {
   rejected: Rejection[];
   /** Lets the client spot a wrong device clock and measure the offset at this moment. */
   serverTime: number;
+  /** Changes when the server's database is restored from a backup. */
+  dbId: string;
 }
 
 /** A key's value and stamp before a change; `null` when the key did not exist yet. */

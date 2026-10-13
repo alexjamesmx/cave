@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 import { resolveConfig } from "./config.ts";
 
 describe("resolveConfig", () => {
@@ -11,6 +12,7 @@ describe("resolveConfig", () => {
         token: undefined,
         dbPath: "data/cave.db",
         vaultPath: undefined,
+        backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
       },
     });
@@ -45,6 +47,7 @@ describe("resolveConfig", () => {
         token: "t",
         dbPath: "data/cave.db",
         vaultPath: undefined,
+        backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
       },
     });
@@ -85,5 +88,14 @@ describe("resolveConfig", () => {
   test("reads the database path", () => {
     const result = resolveConfig({ CAVE_DB_PATH: "/srv/cave.db" });
     expect(result.ok && result.value.dbPath).toBe("/srv/cave.db");
+  });
+
+  test("backups go next to the database unless BACKUP_DIR is set", () => {
+    const at = (env: Record<string, string>) => {
+      const result = resolveConfig(env);
+      return result.ok ? result.value.backupDir : undefined;
+    };
+    expect(at({ CAVE_DB_PATH: "/srv/cave.db" })).toBe(join("/srv", "backups"));
+    expect(at({ BACKUP_DIR: "D:/OneDrive/cave" })).toBe("D:/OneDrive/cave");
   });
 });
