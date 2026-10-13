@@ -118,7 +118,13 @@ function ChangeRow({ change }: { change: Change }) {
   const plan = useMemo(() => undoPatch(change, doc), [change, doc]);
   const [busy, setBusy] = useState(false);
   const restorable = Object.keys(plan.patch);
-  const reason = plan.skipped.map((s) => `${s.key}: ${s.reason}`).join("; ");
+  // Keys that share a reason are listed together: "status, area: changed since".
+  const byReason = new Map<string, string[]>();
+  for (const { key, reason } of plan.skipped)
+    byReason.set(reason, [...(byReason.get(reason) ?? []), key]);
+  const reason = [...byReason]
+    .map(([why, keys]) => (keys.length === change.keys.length ? why : `${keys.join(", ")}: ${why}`))
+    .join("; ");
 
   const undo = async () => {
     if (!doc) return;
@@ -132,20 +138,22 @@ function ChangeRow({ change }: { change: Change }) {
 
   return (
     <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, paddingLeft: 12 }}>
-      <span style={{ flex: 1 }}>
+      <span style={{ flex: 1, minWidth: 0 }}>
         {doc ? titleOf(doc) : change.id} <span className="muted">· {change.keys.join(", ")}</span>
-        {reason && restorable.length > 0 && <span className="muted"> · kept {reason}</span>}
+        {reason && (
+          <span className="muted" style={{ display: "block" }}>
+            {restorable.length > 0 ? `Undo keeps ${reason}` : `Can't undo: ${reason}`}
+          </span>
+        )}
       </span>
       <button
         type="button"
         className="btn"
         disabled={busy || restorable.length === 0}
-        title={restorable.length === 0 ? reason : undefined}
         onClick={undo}
       >
         Undo
       </button>
-      {restorable.length === 0 && <span className="muted">{reason}</span>}
     </div>
   );
 }
