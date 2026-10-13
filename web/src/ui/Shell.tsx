@@ -28,6 +28,10 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             <Icon name="house" size={17} color="var(--lime)" />
             Cave
           </a>
+          <a href="/agents" className={on(route.name === "agents")}>
+            <Icon name="bot" size={17} />
+            Agents
+          </a>
           <a href="/settings" className={on(route.name === "settings")}>
             <Icon name="settings" size={17} />
             Settings
@@ -37,16 +41,18 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           <span className="k" style={{ padding: "0 10px 8px" }}>
             Collections
           </span>
-          {collections.map((c) => (
-            <a
-              key={c.id}
-              href={collectionPath(c.id)}
-              className={on(route.name === "collection" && route.collection === c.id)}
-            >
-              <Icon name={c.data.icon} size={17} color={c.data.color} />
-              {c.data.name}
-            </a>
-          ))}
+          {collections
+            .filter((c) => !c.data.hidden)
+            .map((c) => (
+              <a
+                key={c.id}
+                href={collectionPath(c.id)}
+                className={on(route.name === "collection" && route.collection === c.id)}
+              >
+                <Icon name={c.data.icon} size={17} color={c.data.color} />
+                {c.data.name}
+              </a>
+            ))}
         </div>
         <SyncBadge />
       </nav>

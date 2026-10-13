@@ -4,6 +4,7 @@ import { collectionPath, parseRoute } from "./router.ts";
 test("parses the app's routes", () => {
   expect(parseRoute("/")).toEqual({ name: "home" });
   expect(parseRoute("/settings")).toEqual({ name: "settings" });
+  expect(parseRoute("/agents")).toEqual({ name: "agents" });
   expect(parseRoute("/c/money")).toEqual({
     name: "collection",
     collection: "money",

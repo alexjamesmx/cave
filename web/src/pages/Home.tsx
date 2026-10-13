@@ -173,7 +173,10 @@ function CommandBar({ collections }: { collections: CollectionDoc[] }) {
         .filter((f) => f.type === "checkbox")
         .map(({ id, name }) => ({ id, name })),
       targets: [
-        ...collections.map((c) => ({ id: c.id, name: c.data.name, path: collectionPath(c.id) })),
+        ...collections
+          .filter((c) => !c.data.hidden)
+          .map((c) => ({ id: c.id, name: c.data.name, path: collectionPath(c.id) })),
+        { id: "agents", name: "Agents", path: "/agents" },
         { id: "settings", name: "Settings", path: "/settings" },
       ],
     };
