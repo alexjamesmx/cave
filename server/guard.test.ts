@@ -24,6 +24,7 @@ beforeAll(() => {
     token: undefined,
     now: Date.now,
     agents: { registry, calls: createCallLog(db), vaultPath: undefined },
+    status: { version: "test", backupDir: "missing-dir", newVaultNotes: () => null },
   });
 });
 
@@ -72,7 +73,13 @@ describe.each(["/api/sync", "/mcp"] as const)("%s", (path) => {
 });
 
 test("every /api route sits behind the guard", async () => {
-  for (const path of ["/api/agents", "/api/activity", "/api/history/money"]) {
+  for (const path of [
+    "/api/agents",
+    "/api/activity",
+    "/api/history/money",
+    "/api/status",
+    "/api/export",
+  ]) {
     const res = await fetch(new URL(path, server.url), { headers: { host: "evil.example" } });
     expect(res.status).toBe(403);
   }
