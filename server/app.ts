@@ -59,10 +59,14 @@ export function serveCave({
   // Handlers must build a new Response each time; a body can be read only once.
   const missing = () => Response.json({ error: "not found" }, { status: 404 });
   // Host, Origin and body type come first on every /api route and /mcp; see guardRequest.
+  // Nothing in between may cache an answer: `/api/export` alone holds the whole database.
   const guarded =
     (handler: Handler): Handler =>
-    (req) =>
-      guardRequest(req, allowedHosts) ?? handler(req);
+    async (req) => {
+      const res = guardRequest(req, allowedHosts) ?? (await handler(req));
+      res.headers.set("cache-control", "no-store");
+      return res;
+    };
   // The owner API: agent tokens are refused here even when no owner token is configured.
   const owner = (handler: Handler): Handler =>
     guarded((req) => {
@@ -78,10 +82,10 @@ export function serveCave({
           deps: { store, calls: agents.calls, vaultPath: agents.vaultPath, now, clocks },
         }),
       )
-    : missing;
-  const agentList = agents ? owner(agentsHandler(agents.registry, agents.calls)) : missing;
-  const activity = agents ? owner(activityHandler(store, agents.calls)) : missing;
-  const statusRoute = status ? owner(statusHandler(store, status)) : missing;
+    : guarded(missing);
+  const agentList = agents ? owner(agentsHandler(agents.registry, agents.calls)) : guarded(missing);
+  const activity = agents ? owner(activityHandler(store, agents.calls)) : guarded(missing);
+  const statusRoute = status ? owner(statusHandler(store, status)) : guarded(missing);
   return Bun.serve({
     hostname,
     port,
@@ -97,7 +101,7 @@ export function serveCave({
       "/api/activity": { GET: activity },
       "/api/status": { GET: statusRoute },
       "/api/export": { GET: owner(exportHandler(store, now)) },
-      "/api/*": notFound,
+      "/api/*": guarded(missing),
       ...staticRoutes,
       "/sw.js": serviceWorker ?? notFound,
       "/*": web ?? notFound,

@@ -84,3 +84,26 @@ test("every /api route sits behind the guard", async () => {
     expect(res.status).toBe(403);
   }
 });
+
+test("every /api and /mcp answer says no-store, refusals included", async () => {
+  const answers = [
+    await post("/api/sync"),
+    await post("/mcp"),
+    await post("/api/sync", { host: "evil.example" }),
+    await post("/mcp", { "content-type": "text/plain" }),
+    ...(await Promise.all(
+      [
+        "/api/status",
+        "/api/export",
+        "/api/agents",
+        "/api/activity",
+        "/api/history/money",
+        "/api/nope",
+      ].map((path) => fetch(new URL(path, server.url))),
+    )),
+  ];
+  expect(answers.map((res) => res.status)).toEqual([
+    200, 200, 403, 415, 200, 200, 200, 200, 200, 404,
+  ]);
+  for (const res of answers) expect(res.headers.get("cache-control")).toBe("no-store");
+});
