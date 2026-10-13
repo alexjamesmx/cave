@@ -41,6 +41,10 @@ export interface Store {
   changesBySeq(seqs: number[]): Change[];
   seedIfEmpty(docs: Doc[], at: number): boolean;
   hasItems(): boolean;
+  /** A collection's items that are not deleted. */
+  itemsOf(collection: string): Doc[];
+  /** Every collection doc, deleted ones included. */
+  collections(): Doc[];
 }
 
 const toDoc = (row: DocRow): Doc => ({
@@ -66,6 +70,10 @@ export function createStore(db: Database): Store {
   );
   const countDocs = db.query<{ n: number }, []>("SELECT count(*) AS n FROM docs");
   const anyItem = db.query<{ id: string }, []>("SELECT id FROM docs WHERE kind = 'item' LIMIT 1");
+  const selectCollections = db.query<DocRow, []>("SELECT * FROM docs WHERE kind = 'collection'");
+  const selectItems = db.query<DocRow, [string]>(
+    "SELECT * FROM docs WHERE kind = 'item' AND collection = ?",
+  );
   const selectChanges = db.query<ChangeRow, []>("SELECT * FROM changes ORDER BY seq");
   const selectChangesFor = db.query<ChangeRow, [string, number]>(
     "SELECT * FROM changes WHERE id = ? ORDER BY seq DESC LIMIT ?",
@@ -138,6 +146,12 @@ export function createStore(db: Database): Store {
         }),
     seedIfEmpty: (docs, at) => seed.immediate(docs, at),
     hasItems: () => anyItem.get() !== null,
+    itemsOf: (collection) =>
+      selectItems
+        .all(collection)
+        .map(toDoc)
+        .filter((doc) => doc.data._deleted !== true),
+    collections: () => selectCollections.all().map(toDoc),
   };
 }
 

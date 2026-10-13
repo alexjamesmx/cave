@@ -5,6 +5,22 @@ export interface ServerConfig {
   dbPath: string;
   /** Obsidian vault to import from, read-only; unset means no import. */
   vaultPath: string | undefined;
+  /**
+   * Host names `/mcp` answers to (DNS-rebinding protection): loopback, `CAVE_HOST` unless it
+   * is a wildcard, and the comma list in `CAVE_ALLOWED_HOSTS` (a LAN or Tailscale name).
+   */
+  allowedHosts: string[];
+}
+
+const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+const WILDCARDS = new Set(["0.0.0.0", "::", "[::]"]);
+
+function allowedHosts(hostname: string, extra: string | undefined): string[] {
+  const hosts = new Set(LOOPBACK_HOSTS);
+  if (!WILDCARDS.has(hostname)) hosts.add(hostname.includes(":") ? `[${hostname}]` : hostname);
+  for (const host of (extra ?? "").split(","))
+    if (host.trim()) hosts.add(host.trim().toLowerCase());
+  return [...hosts];
 }
 
 type Env = Record<string, string | undefined>;
@@ -40,6 +56,7 @@ export function resolveConfig(
       token,
       dbPath: env.CAVE_DB_PATH || "data/cave.db",
       vaultPath: env.VAULT_PATH || undefined,
+      allowedHosts: allowedHosts(hostname, env.CAVE_ALLOWED_HOSTS),
     },
   };
 }
