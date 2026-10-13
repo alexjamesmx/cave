@@ -79,3 +79,24 @@ describe("openDb", () => {
     }
   });
 });
+
+test("hasItems ignores seeded collections and settings", () => {
+  const store = createStore(openDb(":memory:"));
+  store.seedIfEmpty(seedDocs(), 1);
+  expect(store.hasItems()).toBe(false);
+  store.applyChanges(
+    [
+      {
+        id: "t1",
+        kind: "item",
+        collection: "tasks",
+        data: { _title: "x" },
+        stamps: { _title: formatStamp(2, 0, "dev-a") },
+        actor: "",
+      },
+    ],
+    "user:dev-a",
+    2,
+  );
+  expect(store.hasItems()).toBe(true);
+});

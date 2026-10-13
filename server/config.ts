@@ -3,6 +3,8 @@ export interface ServerConfig {
   port: number;
   token: string | undefined;
   dbPath: string;
+  /** Obsidian vault to import from, read-only; unset means no import. */
+  vaultPath: string | undefined;
 }
 
 type Env = Record<string, string | undefined>;
@@ -30,5 +32,14 @@ export function resolveConfig(
       error: `CAVE_HOST=${hostname} is reachable from other machines; set CAVE_TOKEN to start`,
     };
   }
-  return { ok: true, value: { hostname, port, token, dbPath: env.CAVE_DB_PATH || "data/cave.db" } };
+  return {
+    ok: true,
+    value: {
+      hostname,
+      port,
+      token,
+      dbPath: env.CAVE_DB_PATH || "data/cave.db",
+      vaultPath: env.VAULT_PATH || undefined,
+    },
+  };
 }

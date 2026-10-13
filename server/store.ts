@@ -42,6 +42,7 @@ export interface Store {
   seqOf(id: string): number | undefined;
   changeLog(): Change[];
   seedIfEmpty(docs: Doc[], at: number): boolean;
+  hasItems(): boolean;
 }
 
 const toDoc = (row: DocRow): Doc => ({
@@ -59,6 +60,7 @@ export function createStore(db: Database): Store {
     "SELECT * FROM docs WHERE seq > ? ORDER BY seq LIMIT ?",
   );
   const countDocs = db.query<{ n: number }, []>("SELECT count(*) AS n FROM docs");
+  const anyItem = db.query<{ id: string }, []>("SELECT id FROM docs WHERE kind = 'item' LIMIT 1");
   const selectChanges = db.query<ChangeRow, []>("SELECT * FROM changes ORDER BY seq");
   const insertChange = db.query<{ seq: number }, [string, string, number, string, string]>(
     "INSERT INTO changes (id, actor, at, keys, before) VALUES (?, ?, ?, ?, ?) RETURNING seq",
@@ -119,6 +121,7 @@ export function createStore(db: Database): Store {
         .all()
         .map((row) => ({ ...row, keys: JSON.parse(row.keys), before: JSON.parse(row.before) })),
     seedIfEmpty: (docs, at) => seed.immediate(docs, at),
+    hasItems: () => anyItem.get() !== null,
   };
 }
 

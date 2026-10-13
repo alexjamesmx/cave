@@ -5,7 +5,13 @@ describe("resolveConfig", () => {
   test("defaults to loopback, port 3000, no token", () => {
     expect(resolveConfig({})).toEqual({
       ok: true,
-      value: { hostname: "127.0.0.1", port: 3000, token: undefined, dbPath: "data/cave.db" },
+      value: {
+        hostname: "127.0.0.1",
+        port: 3000,
+        token: undefined,
+        dbPath: "data/cave.db",
+        vaultPath: undefined,
+      },
     });
   });
 
@@ -32,13 +38,24 @@ describe("resolveConfig", () => {
     const result = resolveConfig({ CAVE_HOST: "0.0.0.0", CAVE_TOKEN: "t", PORT: "8080" });
     expect(result).toEqual({
       ok: true,
-      value: { hostname: "0.0.0.0", port: 8080, token: "t", dbPath: "data/cave.db" },
+      value: {
+        hostname: "0.0.0.0",
+        port: 8080,
+        token: "t",
+        dbPath: "data/cave.db",
+        vaultPath: undefined,
+      },
     });
   });
 
   test("rejects a bad port", () => {
     for (const PORT of ["abc", "0", "70000", "80.5"])
       expect(resolveConfig({ PORT }).ok).toBe(false);
+  });
+
+  test("reads the vault path", () => {
+    const result = resolveConfig({ VAULT_PATH: "C:/vault" });
+    expect(result.ok && result.value.vaultPath).toBe("C:/vault");
   });
 
   test("reads the database path", () => {

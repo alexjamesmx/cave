@@ -16,6 +16,8 @@ const DATA_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
 
 type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
+export const isDataKey = (key: string) => DATA_KEY_RE.test(key) && key !== "__proto__";
+
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -52,7 +54,7 @@ function parseDoc(raw: unknown): Result<Doc> {
   const keys = Object.keys(data);
   if (keys.length !== Object.keys(stamps).length) return fail("data and stamps keys differ");
   for (const key of keys) {
-    if (!DATA_KEY_RE.test(key) || key === "__proto__") return fail(`bad key ${key}`);
+    if (!isDataKey(key)) return fail(`bad key ${key}`);
     if (!isStamp(stamps[key])) return fail(`bad stamp for ${key}`);
   }
   // Server sets `actor` from the authenticated caller; whatever the client sent is dropped.
