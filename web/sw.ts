@@ -1,4 +1,5 @@
 import { isShellRequest } from "./sw-policy.ts";
+import { networkWithin } from "./sw-race.ts";
 
 // The project compiles against the DOM library, which has no service-worker types, so the
 // few members used here are declared locally instead of pulling in the conflicting
@@ -30,23 +31,22 @@ sw.addEventListener("activate", (event) => event.waitUntil(sw.clients.claim()));
 sw.addEventListener("fetch", (event) => {
   const { request } = event;
   if (!isShellRequest(request.method, request.url, sw.location.origin)) return;
-  event.respondWith(networkFirst(request));
+  const network = fetchAndStore(request);
+  // Keep the worker alive until a late response has refreshed the cache.
+  event.waitUntil(network.catch(() => undefined));
+  event.respondWith(networkWithin(network, () => fromCache(request)));
 });
 
-async function networkFirst(request: Request): Promise<Response> {
+async function fetchAndStore(request: Request): Promise<Response> {
+  const response = await fetch(request);
+  if (response.ok) await (await caches.open(CACHE)).put(request, response.clone());
+  return response;
+}
+
+async function fromCache(request: Request): Promise<Response | undefined> {
   const cache = await caches.open(CACHE);
-  try {
-    const response = await fetch(request);
-    if (response.ok) await cache.put(request, response.clone());
-    return response;
-  } catch (error) {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    // Any app route renders from the same shell, so a page never visited online still opens.
-    if (request.mode === "navigate") {
-      const shell = await cache.match("/");
-      if (shell) return shell;
-    }
-    throw error;
-  }
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  // Any app route renders from the same shell, so a page never visited online still opens.
+  return request.mode === "navigate" ? cache.match("/") : undefined;
 }
