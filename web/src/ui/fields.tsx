@@ -1,3 +1,4 @@
+import { isSafeUrl } from "../../../shared/fields.ts";
 import type { Field } from "../../../shared/schema.ts";
 import { shortDay } from "../logic/dates.ts";
 import { formatMoney } from "../logic/format.ts";
@@ -35,10 +36,14 @@ export function FieldValue({ field, value }: { field: Field; value: unknown }) {
       return <span className="num">{`${shortDay(text)}${time}`}</span>;
     }
     case "url":
-      return (
-        <a href={String(value)} target="_blank" rel="noreferrer noopener">
-          {String(value)}
+      // Checked again here: a value written before validation, or by an older client, may
+      // carry another scheme and must never become a clickable link.
+      return isSafeUrl(value) ? (
+        <a href={value} target="_blank" rel="noreferrer noopener">
+          {value}
         </a>
+      ) : (
+        <span>{String(value)}</span>
       );
     default:
       return <span>{String(value)}</span>;

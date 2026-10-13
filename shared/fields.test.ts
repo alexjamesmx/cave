@@ -69,6 +69,22 @@ describe("validateFields", () => {
     expect(keysOf(journal, { gym: true })).toEqual([]);
   });
 
+  test("url fields accept only http, https and mailto links", () => {
+    const fields: Field[] = [{ id: "link", name: "Link", type: "url" }];
+    for (const ok of ["https://example.com/a?b=1", "http://localhost:3000", "mailto:a@b.c"]) {
+      expect(keysOf(fields, { link: ok })).toEqual([]);
+    }
+    for (const bad of [
+      "javascript:alert(1)",
+      "JAVASCRIPT:alert(1)",
+      "data:text/html,x",
+      "example.com",
+      5,
+    ]) {
+      expect(keysOf(fields, { link: bad })).toEqual(["link"]);
+    }
+  });
+
   test("null clears any field; keys that are not fields are not checked", () => {
     expect(validateFields(money, { category: null, amount: null, date: null })).toEqual([]);
     expect(validateFields(money, { _title: "x", bucket: 1, confidence: "5" })).toEqual([]);

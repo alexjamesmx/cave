@@ -23,11 +23,20 @@ export function isDateValue(value: unknown, withTime: boolean): boolean {
   return isCalendarDate(y as number, mo as number, d as number) && h < 24 && mi < 60 && s < 60;
 }
 
+// Values become link targets on every device, so script-running schemes are refused.
+const LINK_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
+
+export function isSafeUrl(value: unknown): value is string {
+  if (typeof value !== "string" || !URL.canParse(value)) return false;
+  return LINK_PROTOCOLS.has(new URL(value).protocol);
+}
+
 function check(field: Field, value: unknown): string | undefined {
   switch (field.type) {
     case "text":
-    case "url":
       return typeof value === "string" ? undefined : "must be a string";
+    case "url":
+      return isSafeUrl(value) ? undefined : "must be an http, https or mailto link";
     case "number":
     case "money":
       return typeof value === "number" && Number.isFinite(value)
