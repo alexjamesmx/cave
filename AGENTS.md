@@ -4,7 +4,7 @@ Open-source, local-first, multi-agent personal brain. One place for money, tasks
 
 Status: pre-v0.1. M1 (core and sync) is built on branch `m1-core`; no UI yet. Update this file in the same change as anything it describes.
 
-Commands: `bun install`, `bun run dev` (server on `PORT`, default 3000; database at `CAVE_DB_PATH`, default `data/cave.db`; optional `JARVIS_TOKEN`), `bun run check` (tsc + Biome), `bun test`.
+Commands: `bun install`, `bun run dev`, `bun run check` (tsc + Biome), `bun test`. Server environment: `CAVE_HOST` (default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN`), `PORT` (default 3000), `CAVE_DB_PATH` (default `data/cave.db`), `CAVE_TOKEN` (bearer token for `/api` and `/mcp`).
 
 - Build plan, data model, sync protocol and milestones: `docs/plan-v0.1.md`.
 - Approved design: `docs/design/*.html` (static mockups; open in a browser).

@@ -88,4 +88,14 @@ describe("Hlc", () => {
     const restarted = new Hlc("a", () => 100, clock.state);
     expect(restarted.next() > last).toBe(true);
   });
+
+  test("adopt() moves to a later saved state and ignores an earlier one", () => {
+    const clock = new Hlc("a", () => 100);
+    clock.adopt({ ms: 500, counter: 2 });
+    expect(clock.state).toEqual({ ms: 500, counter: 2 });
+    clock.adopt({ ms: 500, counter: 1 });
+    clock.adopt({ ms: 400, counter: 9 });
+    expect(clock.state).toEqual({ ms: 500, counter: 2 });
+    expect(clock.next()).toBe(formatStamp(500, 3, "a"));
+  });
 });

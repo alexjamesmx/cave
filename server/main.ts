@@ -1,19 +1,24 @@
 import { seedDocs } from "../shared/seed.ts";
+import { resolveConfig } from "./config.ts";
 import { openDb } from "./db.ts";
 import { createStore } from "./store.ts";
 import { createSyncHandler, MAX_BODY_BYTES } from "./sync.ts";
 
-const store = createStore(openDb(process.env.CAVE_DB_PATH || "data/cave.db"));
+const config = resolveConfig(process.env);
+if (!config.ok) {
+  console.error(`Cave server not started: ${config.error}`);
+  process.exit(1);
+}
+const { hostname, port, token, dbPath } = config.value;
+
+const store = createStore(openDb(dbPath));
 store.seedIfEmpty(seedDocs(), Date.now());
 
-const sync = createSyncHandler({
-  store,
-  token: process.env.JARVIS_TOKEN || undefined,
-  now: Date.now,
-});
+const sync = createSyncHandler({ store, token, now: Date.now });
 
 const server = Bun.serve({
-  port: Number(process.env.PORT || 3000),
+  hostname,
+  port,
   maxRequestBodySize: MAX_BODY_BYTES,
   routes: {
     "/api/sync": { POST: sync },

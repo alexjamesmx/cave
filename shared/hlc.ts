@@ -53,10 +53,14 @@ export class Hlc {
   }
 
   observe(stamp: Stamp): void {
-    const remote = parseStamp(stamp);
-    if (remote.ms > this.#ms) this.#set(remote.ms, remote.counter);
-    else if (remote.ms === this.#ms && remote.counter > this.#counter)
-      this.#counter = remote.counter;
+    this.adopt(parseStamp(stamp));
+  }
+
+  /** Moves to `state` if it is later, e.g. the clock another tab saved. */
+  adopt(state: ClockState): void {
+    if (state.ms > this.#ms || (state.ms === this.#ms && state.counter > this.#counter)) {
+      this.#set(state.ms, state.counter);
+    }
   }
 
   // The stamp format has four counter digits; carrying into ms keeps string order intact.

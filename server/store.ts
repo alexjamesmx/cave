@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { mergeDoc } from "../shared/merge.ts";
-import type { Doc, Kind } from "../shared/types.ts";
+import type { Doc, Kind, Stamp } from "../shared/types.ts";
 
 interface DocRow {
   id: string;
@@ -18,7 +18,11 @@ interface ChangeRow {
   actor: string;
   at: number;
   keys: string;
+  before: string;
 }
+
+/** A key's value and stamp before a change; `null` when the key did not exist yet. */
+export type Before = Record<string, { value: unknown; stamp: Stamp } | null>;
 
 export interface Change {
   seq: number;
@@ -26,6 +30,8 @@ export interface Change {
   actor: string;
   at: number;
   keys: string[];
+  /** `null` for rows written before previous values were recorded. */
+  before: Before | null;
 }
 
 export interface Store {
@@ -54,8 +60,8 @@ export function createStore(db: Database): Store {
   );
   const countDocs = db.query<{ n: number }, []>("SELECT count(*) AS n FROM docs");
   const selectChanges = db.query<ChangeRow, []>("SELECT * FROM changes ORDER BY seq");
-  const insertChange = db.query<{ seq: number }, [string, string, number, string]>(
-    "INSERT INTO changes (id, actor, at, keys) VALUES (?, ?, ?, ?) RETURNING seq",
+  const insertChange = db.query<{ seq: number }, [string, string, number, string, string]>(
+    "INSERT INTO changes (id, actor, at, keys, before) VALUES (?, ?, ?, ?, ?) RETURNING seq",
   );
   const upsertDoc = db.query<never, [string, Kind, string | null, string, string, number, string]>(
     `INSERT INTO docs (id, kind, collection, data, stamps, seq, actor) VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -68,9 +74,16 @@ export function createStore(db: Database): Store {
     const touched: string[] = [];
     for (const incoming of docs) {
       const row = selectDoc.get(incoming.id);
-      const { doc, changed } = mergeDoc(row ? toDoc(row) : undefined, { ...incoming, actor });
+      const local = row ? toDoc(row) : undefined;
+      const { doc, changed } = mergeDoc(local, { ...incoming, actor });
       if (changed.length === 0) continue;
-      const change = insertChange.get(doc.id, actor, at, JSON.stringify(changed));
+      const change = insertChange.get(
+        doc.id,
+        actor,
+        at,
+        JSON.stringify(changed),
+        JSON.stringify(previous(local, changed)),
+      );
       if (!change) throw new Error("changes insert returned no seq");
       upsertDoc.run(
         doc.id,
@@ -101,7 +114,19 @@ export function createStore(db: Database): Store {
       return row ? toDoc(row) : undefined;
     },
     seqOf: (id) => selectDoc.get(id)?.seq,
-    changeLog: () => selectChanges.all().map((row) => ({ ...row, keys: JSON.parse(row.keys) })),
+    changeLog: () =>
+      selectChanges
+        .all()
+        .map((row) => ({ ...row, keys: JSON.parse(row.keys), before: JSON.parse(row.before) })),
     seedIfEmpty: (docs, at) => seed.immediate(docs, at),
   };
+}
+
+function previous(local: Doc | undefined, keys: string[]): Before {
+  return Object.fromEntries(
+    keys.map((key) => {
+      const stamp = local?.stamps[key];
+      return [key, stamp === undefined ? null : { value: local?.data[key], stamp }];
+    }),
+  );
 }

@@ -5,24 +5,70 @@ import { seedDocs } from "./seed.ts";
 
 const docs = seedDocs();
 const byId = new Map(docs.map((d) => [d.id, d]));
+const collections = docs.filter((d) => d.kind === "collection");
 
-test("seeds the eight collections from the plan", () => {
-  expect([...byId.keys()].sort()).toEqual(
+type SeedField = {
+  id: string;
+  type: string;
+  config?: { withTime?: boolean };
+  options?: { value: string; icon: string; color: string }[];
+};
+const fieldOf = (collection: string, id: string) =>
+  ((byId.get(collection)?.data.fields ?? []) as SeedField[]).find((f) => f.id === id);
+
+test("seeds the eight collections from the plan and the settings doc", () => {
+  expect(collections.map((d) => d.id).sort()).toEqual(
     ["ideas", "journal", "leetcode", "money", "projects", "reminders", "tasks", "wealth"].sort(),
   );
+  expect(byId.get("settings")).toMatchObject({
+    kind: "setting",
+    collection: null,
+    data: { timezone: "America/Mexico_City" },
+  });
+  expect(docs).toHaveLength(9);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {
   for (const doc of docs) {
-    expect(doc.kind).toBe("collection");
     expect(doc.collection).toBeNull();
     expect(Object.keys(doc.stamps).sort()).toEqual(Object.keys(doc.data).sort());
     expect(Object.values(doc.stamps).every((s) => s === SEED_STAMP)).toBe(true);
   }
 });
 
+test("dates that carry a time are flagged withTime", () => {
+  expect(fieldOf("reminders", "due")).toMatchObject({ type: "date", config: { withTime: true } });
+  expect(fieldOf("money", "date")).toMatchObject({ type: "date", config: { withTime: true } });
+  expect(fieldOf("tasks", "due")?.config).toBeUndefined();
+});
+
+test("select options answered in the M1 review", () => {
+  const values = (c: string, f: string) => fieldOf(c, f)?.options?.map((o) => o.value);
+  expect(values("projects", "status")).toEqual(["active", "paused", "done", "dropped"]);
+  expect(fieldOf("projects", "status")?.options?.map((o) => o.color)).toEqual([
+    "#B6FF3B",
+    "#F5C451",
+    "#3DE0FF",
+    "#FF5C7A",
+  ]);
+  expect(values("reminders", "repeat")).toEqual(["none", "daily", "weekly", "monthly", "yearly"]);
+  expect(values("leetcode", "difficulty")).toEqual(["easy", "medium", "hard"]);
+  expect(fieldOf("projects", "review")?.type).toBe("date");
+});
+
+test("every select option has an icon and a token colour", () => {
+  for (const doc of collections) {
+    for (const field of doc.data.fields as SeedField[]) {
+      for (const o of field.options ?? []) {
+        expect(o.icon).toMatch(/^[a-z0-9-]+$/);
+        expect(o.color).toMatch(/^#[0-9A-F]{6}$/);
+      }
+    }
+  }
+});
+
 test("fields and views use known types with unique ids", () => {
-  for (const doc of docs) {
+  for (const doc of collections) {
     const fields = doc.data.fields as { id: string; type: string }[];
     const views = doc.data.views as { id: string; type: string }[];
     expect(fields.every((f) => (FIELD_TYPES as readonly string[]).includes(f.type))).toBe(true);

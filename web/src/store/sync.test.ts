@@ -91,10 +91,14 @@ describe("syncOnce", () => {
     await syncOnce(phone, transport);
     await syncOnce(laptop, transport);
 
-    const expected = { _title: "Call bank", status: "waiting" };
-    expect((await laptop.get("t1"))?.data).toEqual(expected);
-    expect((await phone.get("t1"))?.data).toEqual(expected);
-    expect(server.get("t1")?.data).toEqual(expected);
+    const onServer = server.get("t1");
+    expect(onServer?.data).toMatchObject({ _title: "Call bank", status: "waiting" });
+    expect(Object.keys(onServer?.data ?? {}).sort()).toEqual(["_created", "_title", "status"]);
+    expect(await laptop.get("t1")).toMatchObject({
+      data: onServer?.data,
+      stamps: onServer?.stamps,
+    });
+    expect(await phone.get("t1")).toMatchObject({ data: onServer?.data, stamps: onServer?.stamps });
   });
 
   test("a device with a clock 10 minutes behind wins with an edit made after it synced", async () => {

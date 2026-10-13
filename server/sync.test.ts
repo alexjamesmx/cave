@@ -176,6 +176,33 @@ describe("POST /api/sync validation", () => {
 
   test("one bad doc rejects the whole batch", () =>
     expect400({ deviceId: "d", cursor: 0, changes: [valid, { ...valid, id: "bad id" }] }));
+
+  test("an item needs a collection; collections and settings must not have one", async () => {
+    const cases = [
+      { ...valid, kind: "item", collection: null },
+      { ...valid, kind: "collection", collection: "tasks" },
+      { ...valid, kind: "setting", collection: "tasks" },
+    ];
+    for (const doc of cases) await expect400({ deviceId: "d", cursor: 0, changes: [doc] });
+  });
+});
+
+describe("clock skew", () => {
+  const MIN = 60_000;
+
+  test("rejects a stamp more than 10 minutes ahead and reports server time", async () => {
+    const ahead = item("t1", { _title: "from the future" }, NOW + 11 * MIN, "dev-a");
+    const res = await handle(request({ deviceId: "dev-a", cursor: 0, changes: [ahead] }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "clock ahead", serverTime: NOW });
+    expect(store.get("t1")).toBeUndefined();
+  });
+
+  test("accepts a stamp 9 minutes ahead", async () => {
+    const ahead = item("t1", { _title: "slightly fast" }, NOW + 9 * MIN, "dev-a");
+    await sync({ deviceId: "dev-a", cursor: 0, changes: [ahead] });
+    expect(store.get("t1")?.data._title).toBe("slightly fast");
+  });
 });
 
 describe("auth", () => {

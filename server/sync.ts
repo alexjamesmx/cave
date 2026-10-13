@@ -1,7 +1,7 @@
 import { SYNC_PAGE_SIZE, type SyncResponse } from "../shared/types.ts";
 import { isAuthorized } from "./auth.ts";
 import type { Store } from "./store.ts";
-import { parseSyncRequest } from "./validate.ts";
+import { isClockAhead, parseSyncRequest } from "./validate.ts";
 
 export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 
@@ -33,7 +33,12 @@ export function createSyncHandler({ store, token, now }: SyncHandlerOptions) {
     if (!parsed.ok) return error(400, parsed.error);
 
     const { deviceId, cursor, changes } = parsed.value;
-    store.applyChanges(changes, `user:${deviceId}`, now());
+    const serverTime = now();
+    // serverTime lets the client tell the owner their device clock is wrong.
+    if (isClockAhead(changes, serverTime)) {
+      return Response.json({ error: "clock ahead", serverTime }, { status: 400 });
+    }
+    store.applyChanges(changes, `user:${deviceId}`, serverTime);
     const page = store.changesSince(cursor, SYNC_PAGE_SIZE);
     const response: SyncResponse = {
       cursor: page.at(-1)?.seq ?? cursor,

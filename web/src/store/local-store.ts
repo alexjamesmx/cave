@@ -28,13 +28,14 @@ export class LocalStore {
     readonly db: LocalDb,
     readonly deviceId: string,
     private readonly clock: Hlc,
+    private readonly now: () => number,
     private readonly onWrite: (() => void) | undefined,
   ) {}
 
   static async open({ db, deviceId, now = Date.now, onWrite }: OpenOptions): Promise<LocalStore> {
     const saved = await db.meta.get("clock");
     const clock = new Hlc(deviceId, now, saved?.key === "clock" ? saved.value : undefined);
-    return new LocalStore(db, deviceId, clock, onWrite);
+    return new LocalStore(db, deviceId, clock, now, onWrite);
   }
 
   get(id: string): Promise<Doc | undefined> {
@@ -49,9 +50,12 @@ export class LocalStore {
   async write(target: WriteTarget, patch: Record<string, unknown>): Promise<Doc> {
     const { db } = this;
     const doc = await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
-      const stamps = Object.fromEntries(Object.keys(patch).map((key) => [key, this.clock.next()]));
-      const incoming: Doc = { ...target, data: patch, stamps, actor: `user:${this.deviceId}` };
-      const { doc } = mergeDoc(await db.docs.get(target.id), incoming);
+      await this.catchUpWithOtherTabs();
+      const local = await db.docs.get(target.id);
+      const data = local ? patch : { _created: new Date(this.now()).toISOString(), ...patch };
+      const stamps = Object.fromEntries(Object.keys(data).map((key) => [key, this.clock.next()]));
+      const incoming: Doc = { ...target, data, stamps, actor: `user:${this.deviceId}` };
+      const { doc } = mergeDoc(local, incoming);
       const pending = await db.outbox.get(target.id);
       await db.docs.put(doc);
       await db.outbox.put({ id: target.id, rev: (pending?.rev ?? 0) + 1 });
@@ -60,6 +64,16 @@ export class LocalStore {
     });
     this.onWrite?.();
     return doc;
+  }
+
+  /**
+   * Every tab of this device holds its own clock. Adopting the saved one inside the
+   * same rw transaction that saves it back means IndexedDB serialises the tabs, so two
+   * tabs never issue the same stamp or overwrite a later clock with an earlier one.
+   */
+  private async catchUpWithOtherTabs(): Promise<void> {
+    const saved = await this.db.meta.get("clock");
+    if (saved?.key === "clock") this.clock.adopt(saved.value);
   }
 
   /** Snapshot of the outbox with the docs to send, read in one transaction. */
@@ -82,6 +96,7 @@ export class LocalStore {
   async applyPulled(pulled: Doc[], cursor: number, acknowledged: OutboxRow[]): Promise<void> {
     const { db } = this;
     await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
+      await this.catchUpWithOtherTabs();
       const locals = await db.docs.bulkGet(pulled.map((d) => d.id));
       const updates: Doc[] = [];
       let newest = "";

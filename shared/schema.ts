@@ -34,6 +34,15 @@ export interface Field {
   name: string;
   type: FieldType;
   options?: SelectOption[];
+  config?: FieldConfig;
+}
+
+export interface FieldConfig {
+  /**
+   * Date values are ISO 8601 local time: `YYYY-MM-DD`, or `YYYY-MM-DDTHH:mm[:ss]` when
+   * this is set. The `settings` doc's `timezone` says which local time.
+   */
+  withTime?: boolean;
 }
 
 export interface View {

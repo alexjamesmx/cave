@@ -1,9 +1,12 @@
-import { isStamp } from "../shared/hlc.ts";
+import { isStamp, parseStamp } from "../shared/hlc.ts";
 import { isDeviceId, isDocId } from "../shared/ids.ts";
 import { type Doc, KINDS, type Kind, type SyncRequest } from "../shared/types.ts";
 
 /** Keeps one request under the body limit even after a long offline period; clients batch. */
 export const MAX_PUSH_DOCS = 1000;
+
+/** A stamp further ahead than this would outrank honest edits and drag every clock forward. */
+export const MAX_CLOCK_AHEAD_MS = 10 * 60_000;
 
 // Field ids and the reserved `_title`-style keys. `__proto__` would match, so it is refused
 // explicitly: merging it with plain assignment would replace the object's prototype.
@@ -39,6 +42,9 @@ function parseDoc(raw: unknown): Result<Doc> {
   if (!isDocId(id)) return fail("bad id");
   if (!KINDS.includes(kind as Kind)) return fail("unknown kind");
   if (collection !== null && !isDocId(collection)) return fail("bad collection");
+  if ((kind === "item") !== (collection !== null)) {
+    return fail("an item needs a collection; collections and settings must not have one");
+  }
   if (!isRecord(data) || !isRecord(stamps)) return fail("data and stamps must be objects");
 
   const keys = Object.keys(data);
@@ -52,4 +58,10 @@ function parseDoc(raw: unknown): Result<Doc> {
     ok: true,
     value: { id, kind: kind as Kind, collection, data, stamps: stamps as Doc["stamps"], actor: "" },
   };
+}
+
+export function isClockAhead(docs: Doc[], now: number): boolean {
+  return docs.some((doc) =>
+    Object.values(doc.stamps).some((stamp) => parseStamp(stamp).ms > now + MAX_CLOCK_AHEAD_MS),
+  );
 }

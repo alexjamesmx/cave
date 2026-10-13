@@ -1,6 +1,6 @@
 import { SEED_STAMP } from "./hlc.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
-import type { Doc } from "./types.ts";
+import type { Doc, Kind } from "./types.ts";
 
 const C = {
   lime: "#B6FF3B",
@@ -20,6 +20,13 @@ function field(id: string, name: string, type: FieldType, options?: SelectOption
   return options ? { id, name, type, options } : { id, name, type };
 }
 
+const dateTime = (id: string, name: string): Field => ({
+  id,
+  name,
+  type: "date",
+  config: { withTime: true },
+});
+
 const view = (
   id: string,
   name: string,
@@ -36,10 +43,10 @@ const HABITS: [string, string, string][] = [
   ["gym", "Gym", "dumbbell"],
   ["supplements", "Supplements", "pill"],
   ["reading", "Reading", "book"],
-  ["meditation", "Meditation", "lotus"],
+  ["meditation", "Meditation", "flower-2"],
   ["water_2l", "Water 2 L", "droplet"],
   ["protein", "Protein", "egg"],
-  ["creatine", "Creatine", "flask"],
+  ["creatine", "Creatine", "flask-conical"],
   ["learning", "Learning", "graduation-cap"],
 ];
 
@@ -50,7 +57,7 @@ const COLLECTIONS: Record<string, CollectionData> = {
     color: C.income,
     order: 0,
     fields: [
-      field("date", "Date", "date"),
+      dateTime("date", "Date"),
       field("amount", "Amount", "money"),
       field("direction", "Direction", "select", [
         opt("income", "arrow-down-left", C.income),
@@ -58,14 +65,14 @@ const COLLECTIONS: Record<string, CollectionData> = {
       ]),
       field("category", "Category", "select", [
         opt("food", "utensils", C.orange),
-        opt("home", "home", C.violet),
+        opt("home", "house", C.violet),
         opt("transport", "car", C.cyan),
         opt("health", "heart-pulse", C.expense),
         opt("fun", "sparkles", C.purple),
-        opt("other", "dots", C.grey),
+        opt("other", "ellipsis", C.grey),
         opt("investment", "trending-up", C.gold),
         opt("income", "coins", C.income),
-        opt("transfer", "arrows-left-right", C.lime),
+        opt("transfer", "arrow-left-right", C.lime),
       ]),
       field("detail", "Detail", "text"),
       field("account", "Account", "text"),
@@ -78,13 +85,13 @@ const COLLECTIONS: Record<string, CollectionData> = {
   },
   tasks: {
     name: "Tasks",
-    icon: "check-square",
+    icon: "square-check",
     color: C.lime,
     order: 1,
     fields: [
       field("status", "Status", "select", [
         opt("todo", "circle", C.grey),
-        opt("doing", "circle-half", C.cyan),
+        opt("doing", "circle-dot", C.cyan),
         opt("waiting", "hourglass", C.gold),
         opt("done", "circle-check", C.lime),
         opt("dropped", "circle-x", C.expense),
@@ -191,8 +198,12 @@ const COLLECTIONS: Record<string, CollectionData> = {
     color: C.purple,
     order: 6,
     fields: [
-      // Options are left for the owner or the importer to fill; the plan does not name them.
-      field("status", "Status", "select", []),
+      field("status", "Status", "select", [
+        opt("active", "play", C.lime),
+        opt("paused", "pause", C.gold),
+        opt("done", "circle-check", C.cyan),
+        opt("dropped", "circle-x", C.expense),
+      ]),
       field("area", "Area", "text"),
       field("review", "Review", "date"),
     ],
@@ -207,8 +218,14 @@ const COLLECTIONS: Record<string, CollectionData> = {
     color: C.expense,
     order: 7,
     fields: [
-      field("due", "Due", "date"),
-      field("repeat", "Repeat", "text"),
+      dateTime("due", "Due"),
+      field("repeat", "Repeat", "select", [
+        opt("none", "ban", C.grey),
+        opt("daily", "sun", C.cyan),
+        opt("weekly", "calendar-days", C.violet),
+        opt("monthly", "calendar", C.gold),
+        opt("yearly", "calendar-range", C.purple),
+      ]),
       field("done", "Done", "checkbox"),
     ],
     views: [
@@ -218,11 +235,22 @@ const COLLECTIONS: Record<string, CollectionData> = {
   },
 };
 
-/** Seed collections stamped at time 0, so any edit from a device wins. */
+// Reminders and the daily brief resolve local date-times through this timezone.
+const SETTINGS = { timezone: "America/Mexico_City" };
+
+const seeded = (id: string, kind: Kind, data: Record<string, unknown>): Doc => ({
+  id,
+  kind,
+  collection: null,
+  data: structuredClone(data),
+  stamps: Object.fromEntries(Object.keys(data).map((key) => [key, SEED_STAMP])),
+  actor: "seed",
+});
+
+/** Seed collections and settings stamped at time 0, so any edit from a device wins. */
 export function seedDocs(): Doc[] {
-  return Object.entries(COLLECTIONS).map(([id, collection]) => {
-    const data: Record<string, unknown> = structuredClone(collection);
-    const stamps = Object.fromEntries(Object.keys(data).map((key) => [key, SEED_STAMP]));
-    return { id, kind: "collection", collection: null, data, stamps, actor: "seed" };
-  });
+  return [
+    ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
+    seeded("settings", "setting", SETTINGS),
+  ];
 }

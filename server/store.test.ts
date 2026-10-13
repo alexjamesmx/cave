@@ -40,6 +40,28 @@ describe("seedIfEmpty", () => {
   });
 });
 
+describe("change log", () => {
+  test("records each changed key's previous value and stamp for undo", () => {
+    const store = createStore(openDb(":memory:"));
+    const edit = (status: string, ms: number) => ({
+      id: "t1",
+      kind: "item" as const,
+      collection: "tasks",
+      data: { status },
+      stamps: { status: formatStamp(ms, 0, "dev-a") },
+      actor: "",
+    });
+    store.applyChanges([edit("todo", 10)], "user:dev-a", 1);
+    store.applyChanges([edit("done", 20)], "user:dev-a", 2);
+
+    const [first, second] = store.changeLog();
+    expect(first?.before).toEqual({ status: null });
+    expect(second?.before).toEqual({
+      status: { value: "todo", stamp: formatStamp(10, 0, "dev-a") },
+    });
+  });
+});
+
 describe("openDb", () => {
   test("persists to a file and reopens", () => {
     const dir = mkdtempSync(join(tmpdir(), "cave-"));
