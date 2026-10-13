@@ -53,7 +53,6 @@ beforeAll(() => {
       registry,
       calls,
       vaultPath: vault,
-      allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
     },
   });
 });

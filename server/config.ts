@@ -12,7 +12,6 @@ export interface ServerConfig {
   allowedHosts: string[];
 }
 
-const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 const WILDCARDS = new Set(["0.0.0.0", "::", "[::]"]);
 
 function allowedHosts(hostname: string, extra: string | undefined): string[] {
@@ -22,6 +21,8 @@ function allowedHosts(hostname: string, extra: string | undefined): string[] {
     if (host.trim()) hosts.add(host.trim().toLowerCase());
   return [...hosts];
 }
+
+import { LOOPBACK_HOSTS } from "./request-guard.ts";
 
 type Env = Record<string, string | undefined>;
 

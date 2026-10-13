@@ -37,7 +37,7 @@ const server = serveCave({
     registry: createAgentRegistry(db),
     calls: createCallLog(db),
     vaultPath,
-    allowedHosts,
   },
+  allowedHosts,
 });
 console.log(`Cave server listening on ${server.url}`);
