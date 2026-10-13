@@ -1,4 +1,9 @@
-import { FieldValueError, fieldsOf, validateFields } from "../../../shared/fields.ts";
+import {
+  FieldValueError,
+  fieldsOf,
+  type ValidateOptions,
+  validateFields,
+} from "../../../shared/fields.ts";
 import { Hlc, parseStamp } from "../../../shared/hlc.ts";
 import { mergeDoc } from "../../../shared/merge.ts";
 import type { Doc, Kind, Rejection } from "../../../shared/types.ts";
@@ -67,12 +72,24 @@ export class LocalStore {
     return row?.key === "cursor" ? row.value : 0;
   }
 
-  async write(target: WriteTarget, patch: Record<string, unknown>): Promise<Doc> {
+  /**
+   * `options.selectMembership: false` is for undo only: it restores a value whose option the
+   * owner removed since, as sync already accepts such values. Type checks always apply.
+   */
+  async write(
+    target: WriteTarget,
+    patch: Record<string, unknown>,
+    options: ValidateOptions = {},
+  ): Promise<Doc> {
     const { db } = this;
     const doc = await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
       await this.loadSharedClock();
       if (target.kind === "item" && target.collection) {
-        const errors = validateFields(fieldsOf(await db.docs.get(target.collection)), patch);
+        const errors = validateFields(
+          fieldsOf(await db.docs.get(target.collection)),
+          patch,
+          options,
+        );
         if (errors.length > 0) throw new FieldValueError(errors);
       }
       const local = await db.docs.get(target.id);

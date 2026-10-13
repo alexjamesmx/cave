@@ -5,6 +5,7 @@ import { undoPatch } from "../../../shared/undo.ts";
 import { useCave } from "../app/context.ts";
 import { useTimeZone } from "../app/hooks.ts";
 import { ownerGet } from "../app/owner-api.ts";
+import { undoChange } from "../app/undo.ts";
 import { titleOf } from "../logic/views.ts";
 import { useDoc, useItems } from "../store/queries.ts";
 
@@ -113,10 +114,13 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
 
 /** One write by an agent, with Undo computed from this device's copy of the doc. */
 function ChangeRow({ change }: { change: Change }) {
-  const { local } = useCave();
+  const cave = useCave();
+  const { local } = cave;
   const doc = useDoc(local.db, change.id);
+  // A preview from this device's copy; the Undo button syncs and plans again before writing.
   const plan = useMemo(() => undoPatch(change, doc), [change, doc]);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
   const restorable = Object.keys(plan.patch);
   // Keys that share a reason are listed together: "status, area: changed since".
   const byReason = new Map<string, string[]>();
@@ -127,10 +131,10 @@ function ChangeRow({ change }: { change: Change }) {
     .join("; ");
 
   const undo = async () => {
-    if (!doc) return;
     setBusy(true);
     try {
-      await local.write({ id: doc.id, kind: doc.kind, collection: doc.collection }, plan.patch);
+      const result = await undoChange(change, local, cave.syncAndWait);
+      setError(result.ok ? undefined : result.error);
     } finally {
       setBusy(false);
     }
@@ -143,6 +147,11 @@ function ChangeRow({ change }: { change: Change }) {
         {reason && (
           <span className="muted" style={{ display: "block" }}>
             {restorable.length > 0 ? `Undo keeps ${reason}` : `Can't undo: ${reason}`}
+          </span>
+        )}
+        {error && (
+          <span role="alert" className="error" style={{ display: "block" }}>
+            {error}
           </span>
         )}
       </span>
