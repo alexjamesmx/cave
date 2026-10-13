@@ -38,6 +38,7 @@ Open http://127.0.0.1:3000 in Edge and install the app (the install icon in the 
   - **Backups hold everything, every amount and note, unencrypted. Keep them in a private place.**
 - **By hand.** `bun run backup` takes one now, even while the server runs.
 - **Restore.** Stop the server, then `bun run restore <backup file>`.
+  - Restore is for a lost or broken server. It does not roll data back: devices push everything newer than the backup straight back. To reverse a change, use Undo on the Agents page (agent writes) or set the value back from the item's history in its drawer.
   - The current database is renamed `cave.db.before-restore-<time>`, never deleted.
   - The restored database gets a new id. On their next sync, devices push back anything newer than the backup.
 - **Export.** `bun run export` writes every record as JSON to `data/exports/`. Settings → "Download export" does the same from any device.
