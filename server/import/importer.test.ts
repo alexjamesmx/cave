@@ -24,6 +24,8 @@ const VAULT: Record<string, string> = {
   "Money/Wealth/Archive/Old.md": "---\ntype: stocks\n---\n",
   "Tasks/Pay rent.md":
     "---\nstatus: todo\npriority: high\ndue:\ncreated: 2026-10-01T09:30\n---\n# Pay rent\n",
+  "Tasks/Find item.md":
+    "---\nstatus: done\ncompleted: 2026-10-09T14:45:12\ncancelled: 2026-10-10\n---\n# Find item\n",
   "Journal/2026/2026-01-17.md": "---\ndate: 2026-01-17\ngym: true\nstatus: montag\n---\nDiary",
   "Journal/Templates/Day.md": "---\ndate: 2026-01-01\n---\n",
   "Projects/LeetCode/0001 Two Sum.md":
@@ -71,7 +73,7 @@ test("imports each source into its collection and skips everything else", async 
   expect(report.added).toEqual({
     money: 3,
     wealth: 1,
-    tasks: 1,
+    tasks: 2,
     journal: 1,
     leetcode: 1,
     projects: 1,
@@ -132,7 +134,7 @@ test("add-only: a second run adds nothing and keeps owner edits", async () => {
 
   const again = await importVault({ root, store, now: NOW + 2 });
   expect(again.added).toEqual({});
-  expect(again.skipped).toBe(8);
+  expect(again.skipped).toBe(9);
   expect(store.get(id)?.data.status).toBe("done");
   expect(store.changeLog()).toHaveLength(logLength);
 });
@@ -147,4 +149,13 @@ test("importIfEmpty runs only with a vault path and an empty database", async ()
   expect(await importIfEmpty(store, undefined, NOW)).toBeUndefined();
   expect((await importIfEmpty(store, root, NOW))?.added.money).toBe(3);
   expect(await importIfEmpty(store, root, NOW)).toBeUndefined();
+});
+
+test("task completed and cancelled keep their time", async () => {
+  const report = await importVault({ root, store, now: NOW });
+  expect(report.problems.filter((p) => p.startsWith("Tasks/Find item.md"))).toEqual([]);
+  expect(store.get(importId("Tasks/Find item.md"))?.data).toMatchObject({
+    completed: "2026-10-09T14:45:12",
+    cancelled: "2026-10-10",
+  });
 });

@@ -103,8 +103,8 @@ const COLLECTIONS: Record<string, CollectionData> = {
       ]),
       field("due", "Due", "date"),
       field("area", "Area", "text"),
-      field("completed", "Completed", "date"),
-      field("cancelled", "Cancelled", "date"),
+      dateTime("completed", "Completed"),
+      dateTime("cancelled", "Cancelled"),
     ],
     views: [
       view("board", "Board", "board", { groupBy: "status" }),
