@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
+import { FieldValueError } from "../../../shared/fields.ts";
+import { seedDocs } from "../../../shared/seed.ts";
 import { openLocalDb } from "./db.ts";
 import { LocalStore } from "./local-store.ts";
 
@@ -42,4 +44,19 @@ test("the first write of a doc sets _created once, as a stamped UTC ISO string",
   const edited = await store.write({ id: "t1", ...task }, { _title: "Renamed" });
   expect(edited.data._created).toBe(created.data._created);
   expect(edited.stamps._created).toBe(created.stamps._created);
+});
+
+test("a write with an invalid field value is refused and leaves no trace", async () => {
+  const db = sharedDb();
+  await db.docs.bulkPut(seedDocs());
+  const store = await tab(db);
+
+  const write = store.write({ id: "t1", ...task }, { _title: "Pay", due: "12/10/2026" });
+  await expect(write).rejects.toThrow(FieldValueError);
+  await expect(write).rejects.toThrow("field due: must be YYYY-MM-DD");
+  expect(await store.get("t1")).toBeUndefined();
+  expect(await db.outbox.count()).toBe(0);
+
+  await store.write({ id: "t1", ...task }, { _title: "Pay", due: "2026-10-12" });
+  expect((await store.get("t1"))?.data.due).toBe("2026-10-12");
 });

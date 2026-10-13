@@ -1,3 +1,4 @@
+import { FieldValueError, fieldsOf, validateFields } from "../../../shared/fields.ts";
 import { Hlc } from "../../../shared/hlc.ts";
 import { mergeDoc } from "../../../shared/merge.ts";
 import type { Doc, Kind } from "../../../shared/types.ts";
@@ -51,6 +52,10 @@ export class LocalStore {
     const { db } = this;
     const doc = await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
       await this.catchUpWithOtherTabs();
+      if (target.kind === "item" && target.collection) {
+        const errors = validateFields(fieldsOf(await db.docs.get(target.collection)), patch);
+        if (errors.length > 0) throw new FieldValueError(errors);
+      }
       const local = await db.docs.get(target.id);
       const data = local ? patch : { _created: new Date(this.now()).toISOString(), ...patch };
       const stamps = Object.fromEntries(Object.keys(data).map((key) => [key, this.clock.next()]));

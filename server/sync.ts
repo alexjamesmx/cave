@@ -1,7 +1,7 @@
 import { SYNC_PAGE_SIZE, type SyncResponse } from "../shared/types.ts";
 import { isAuthorized } from "./auth.ts";
 import type { Store } from "./store.ts";
-import { isClockAhead, parseSyncRequest } from "./validate.ts";
+import { fieldValueError, isClockAhead, parseSyncRequest } from "./validate.ts";
 
 export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 
@@ -38,6 +38,9 @@ export function createSyncHandler({ store, token, now }: SyncHandlerOptions) {
     if (isClockAhead(changes, serverTime)) {
       return Response.json({ error: "clock ahead", serverTime }, { status: 400 });
     }
+    // No await between this check and the write, so the collection cannot change in between.
+    const invalid = fieldValueError(changes, store.get);
+    if (invalid) return error(400, invalid);
     store.applyChanges(changes, `user:${deviceId}`, serverTime);
     const page = store.changesSince(cursor, SYNC_PAGE_SIZE);
     const response: SyncResponse = {

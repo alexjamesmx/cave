@@ -1,5 +1,7 @@
+import { fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
 import { isStamp, parseStamp } from "../shared/hlc.ts";
 import { isDeviceId, isDocId } from "../shared/ids.ts";
+import { mergeDoc } from "../shared/merge.ts";
 import { type Doc, KINDS, type Kind, type SyncRequest } from "../shared/types.ts";
 
 /** Keeps one request under the body limit even after a long offline period; clients batch. */
@@ -64,4 +66,28 @@ export function isClockAhead(docs: Doc[], now: number): boolean {
   return docs.some((doc) =>
     Object.values(doc.stamps).some((stamp) => parseStamp(stamp).ms > now + MAX_CLOCK_AHEAD_MS),
   );
+}
+
+/**
+ * Checks item values against their collection's fields, using a collection doc from the
+ * same request merged over the stored one, so a new field and its first value can arrive
+ * together. Items of a collection the server has not seen yet are not checked: the
+ * client's outbox does not promise to push collections first.
+ */
+export function fieldValueError(
+  docs: Doc[],
+  lookup: (id: string) => Doc | undefined,
+): string | undefined {
+  const collections = new Map<string, Doc>();
+  for (const doc of docs) {
+    if (doc.kind === "collection") collections.set(doc.id, mergeDoc(lookup(doc.id), doc).doc);
+  }
+  for (const [i, doc] of docs.entries()) {
+    if (doc.kind !== "item" || doc.collection === null) continue;
+    const collection = collections.get(doc.collection) ?? lookup(doc.collection);
+    if (!collection) continue;
+    const errors = validateFields(fieldsOf(collection), doc.data);
+    if (errors.length > 0) return `changes[${i}]: ${formatFieldErrors(errors)}`;
+  }
+  return undefined;
 }

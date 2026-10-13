@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { formatStamp } from "../shared/hlc.ts";
+import type { Field } from "../shared/schema.ts";
+import { seedDocs } from "../shared/seed.ts";
 import type { Doc, SyncResponse } from "../shared/types.ts";
 import { openDb } from "./db.ts";
 import { createStore, type Store } from "./store.ts";
@@ -184,6 +186,49 @@ describe("POST /api/sync validation", () => {
       { ...valid, kind: "setting", collection: "tasks" },
     ];
     for (const doc of cases) await expect400({ deviceId: "d", cursor: 0, changes: [doc] });
+  });
+});
+
+describe("field values", () => {
+  beforeEach(() => {
+    store.seedIfEmpty(seedDocs(), NOW);
+  });
+  const push = (changes: Doc[]) => handle(request({ deviceId: "dev-a", cursor: 0, changes }));
+
+  test("rejects an item whose value does not fit its field, naming the field", async () => {
+    const res = await push([item("t1", { _title: "x", status: "someday" }, 1, "dev-a")]);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      "changes[0]: field status: must be one of: todo, doing, waiting, done, dropped",
+    );
+    expect(store.get("t1")).toBeUndefined();
+  });
+
+  test("accepts valid values, nulls and keys that are not fields", async () => {
+    const doc = item("t1", { status: "done", due: "2026-10-12", area: null, extra: 5 }, 1, "dev-a");
+    expect((await push([doc])).status).toBe(200);
+    expect(store.get("t1")?.data.status).toBe("done");
+  });
+
+  test("checks against a collection pushed in the same request", async () => {
+    const tasks = store.get("tasks") as Doc;
+    const fields = [
+      ...(tasks.data.fields as Field[]),
+      { id: "size", name: "Size", type: "number" },
+    ];
+    const edited: Doc = {
+      ...tasks,
+      data: { fields },
+      stamps: { fields: formatStamp(1, 0, "dev-a") },
+    };
+    const bad = await push([edited, item("t1", { size: "big" }, 1, "dev-a")]);
+    expect(bad.status).toBe(400);
+    expect((await push([edited, item("t1", { size: 3 }, 1, "dev-a")])).status).toBe(200);
+  });
+
+  test("items of a collection the server has not seen are not field-checked", async () => {
+    const doc = { ...item("n1", { anything: "goes" }, 1, "dev-a"), collection: "newcol" };
+    expect((await push([doc])).status).toBe(200);
   });
 });
 
