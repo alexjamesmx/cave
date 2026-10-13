@@ -27,11 +27,17 @@ bun run agent revoke codex
 
 ## 2. Configure the agent
 
-The examples use `http://127.0.0.1:3000/mcp`.
-- **From another machine** (LAN or Tailscale):
-  - start the server with `CAVE_HOST` and `CAVE_TOKEN` (see AGENTS.md);
-  - add the name agents use to reach it to `CAVE_ALLOWED_HOSTS`, for example `CAVE_ALLOWED_HOSTS=laptop.tail1234.ts.net`.
-- **Why the Host check:** `/mcp` refuses any `Host` it doesn't know, as protection against DNS rebinding.
+The examples use `http://127.0.0.1:3000/mcp`, an agent on the same machine as the server.
+
+### From another machine: Tailscale only
+
+The server speaks plain HTTP, so on an ordinary LAN the agent token, and everything the agent reads, crosses the network unencrypted. Anyone on that Wi-Fi could copy the token. Tailscale encrypts traffic between your devices, so use it for any agent not on the server's machine:
+
+1. Start the server on the Tailscale address with an owner token: `CAVE_HOST=<tailscale IP>` and `CAVE_TOKEN=<long random value>` (see AGENTS.md).
+2. Add the name agents use to reach it: `CAVE_ALLOWED_HOSTS=laptop.tail1234.ts.net`.
+3. Point the agent at `http://laptop.tail1234.ts.net:3000/mcp`.
+
+Don't expose the server on a plain LAN or to the internet. `/api` and `/mcp` refuse any `Host` they don't know (protection against DNS rebinding) and any foreign `Origin`.
 
 ### Claude Code
 
