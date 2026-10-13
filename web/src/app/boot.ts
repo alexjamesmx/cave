@@ -2,7 +2,7 @@ import { newId } from "../../../shared/ids.ts";
 import { openLocalDb } from "../store/db.ts";
 import { LocalStore } from "../store/local-store.ts";
 import { startSyncScheduler } from "../store/scheduler.ts";
-import { httpTransport, syncOnce } from "../store/sync.ts";
+import { type ClockAheadError, httpTransport, syncOnce } from "../store/sync.ts";
 import { createSignal, type Signal } from "./signal.ts";
 import { failedStatus, type SyncStatus } from "./sync-status.ts";
 
@@ -14,7 +14,7 @@ export interface Cave {
   status: Signal<SyncStatus>;
   syncNow(): void;
   /** Owner-confirmed clock recovery after a `clock ahead` refusal. */
-  recoverClock(serverTime: number): Promise<number>;
+  recoverClock(refusal: ClockAheadError): Promise<number>;
 }
 
 function deviceId(): string {
@@ -40,10 +40,7 @@ export async function boot(): Promise<Cave> {
     status.set({ phase: "syncing", lastSyncedAt });
     const token = localStorage.getItem(TOKEN_KEY) ?? undefined;
     try {
-      await syncOnce(
-        local,
-        httpTransport("/api/sync", () => local.now(), token),
-      );
+      await syncOnce(local, httpTransport("/api/sync", local, token));
       status.set({ phase: "idle", lastSyncedAt: Date.now() });
     } catch (error) {
       status.set(failedStatus(error, lastSyncedAt, navigator.onLine));
@@ -70,8 +67,8 @@ export async function boot(): Promise<Cave> {
     local,
     status,
     syncNow: scheduler.syncNow,
-    async recoverClock(serverTime) {
-      const restamped = await local.recoverClock(serverTime);
+    async recoverClock({ serverTime, rawDeviceTime }) {
+      const restamped = await local.recoverClock(serverTime, rawDeviceTime);
       scheduler.syncNow();
       return restamped;
     },

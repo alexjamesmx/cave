@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import type { Change } from "../../../server/store.ts";
+import type { Change } from "../../../shared/types.ts";
 import { TOKEN_KEY } from "../app/boot.ts";
 import { useCave } from "../app/context.ts";
 import { useSaver } from "../app/hooks.ts";
 import { titleOf } from "../logic/views.ts";
+import { useLive } from "../store/live.ts";
 import { type CollectionDoc, useDoc } from "../store/queries.ts";
 import { FieldInput } from "./fields.tsx";
 import { Icon } from "./icon.tsx";
@@ -16,7 +17,9 @@ interface Props {
 
 /** Title, fields and Markdown body of one item, each saved when it loses focus. */
 export function ItemDrawer({ collection, id, onClose }: Props) {
-  const doc = useDoc(useCave().local.db, id);
+  const { db } = useCave().local;
+  const doc = useDoc(db, id);
+  const refusal = useLive(() => db.rejected.get(id), [db, id]);
   const saver = useSaver(collection.id);
 
   useEffect(() => {
@@ -62,6 +65,11 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
       {saver.error && (
         <p role="alert" className="error">
           {saver.error}
+        </p>
+      )}
+      {refusal && (
+        <p role="alert" className="error">
+          Not synced: the server refused {refusal.error}. Fix the value to sync it.
         </p>
       )}
       <dl className="field-grid">

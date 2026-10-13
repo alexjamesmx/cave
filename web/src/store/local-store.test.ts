@@ -72,7 +72,7 @@ test("clock recovery re-stamps only keys ahead of server time and reaches other 
   const ahead = await fast.write({ id: "t1", ...task }, { _title: "ahead" });
   await db.outbox.clear();
 
-  expect(await fast.recoverClock(NOW)).toBe(1);
+  expect(await fast.recoverClock(NOW, NOW + HOUR)).toBe(1);
   expect((await fast.get("t0"))?.stamps).toEqual(old.stamps);
   const restamped = (await fast.get("t1"))?.stamps ?? {};
   for (const key of Object.keys(ahead.stamps)) {

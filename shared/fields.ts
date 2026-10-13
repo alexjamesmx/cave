@@ -56,24 +56,43 @@ function check(field: Field, value: unknown): string | undefined {
   }
 }
 
+export interface ValidateOptions {
+  /**
+   * Whether a select value must be one of the field's current options. Device writes and
+   * the importer check it; sync does not, so a value whose option was removed later still
+   * syncs (and shows greyed out) instead of blocking every later push of that item.
+   */
+  selectMembership?: boolean;
+}
+
 /**
- * Checks the values in `data` that belong to a field. `null` clears a field and is always
- * valid; keys that are not fields (`_title`, imported extras) are left to their owners.
+ * Checks the values in `data` that belong to an active field. `null` clears a field and is
+ * always valid; keys that are not fields (`_title`, imported extras) and values of archived
+ * fields are left alone.
  */
 export function validateFields(
   fields: readonly Field[],
   data: Record<string, unknown>,
+  { selectMembership = true }: ValidateOptions = {},
 ): FieldError[] {
   const errors: FieldError[] = [];
-  for (const field of fields) {
+  for (const field of activeFields(fields)) {
     if (!Object.hasOwn(data, field.id)) continue;
     const value = data[field.id];
     if (value === null) continue;
+    if (field.type === "select" && !selectMembership) {
+      if (typeof value !== "string") errors.push({ key: field.id, error: "must be a string" });
+      continue;
+    }
     const error = check(field, value);
     if (error) errors.push({ key: field.id, error });
   }
   return errors;
 }
+
+/** Fields the owner has not removed; views, the drawer and the command bar show only these. */
+export const activeFields = (fields: readonly Field[]): Field[] =>
+  fields.filter((f) => f.archived !== true);
 
 /** A collection doc's field list; collection docs are not shape-checked, so stay defensive. */
 export function fieldsOf(collection: Doc | undefined): Field[] {

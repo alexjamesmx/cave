@@ -35,6 +35,8 @@ export interface Field {
   type: FieldType;
   options?: SelectOption[];
   config?: FieldConfig;
+  /** Removed by the owner. Kept so its id is never reused and its values keep their meaning. */
+  archived?: boolean;
 }
 
 export interface FieldConfig {

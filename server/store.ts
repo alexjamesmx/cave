@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { mergeDoc } from "../shared/merge.ts";
-import type { Doc, Kind, Stamp } from "../shared/types.ts";
+import type { Before, Change, Doc, Kind } from "../shared/types.ts";
 
 interface DocRow {
   id: string;
@@ -19,19 +19,6 @@ interface ChangeRow {
   at: number;
   keys: string;
   before: string;
-}
-
-/** A key's value and stamp before a change; `null` when the key did not exist yet. */
-export type Before = Record<string, { value: unknown; stamp: Stamp } | null>;
-
-export interface Change {
-  seq: number;
-  id: string;
-  actor: string;
-  at: number;
-  keys: string[];
-  /** `null` for rows written before previous values were recorded. */
-  before: Before | null;
 }
 
 export interface Store {

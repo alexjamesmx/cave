@@ -1,7 +1,7 @@
 import { SYNC_PAGE_SIZE, type SyncResponse } from "../shared/types.ts";
 import { isAuthorized } from "./auth.ts";
 import type { Store } from "./store.ts";
-import { fieldValueError, isClockAhead, parseSyncRequest } from "./validate.ts";
+import { isClockAhead, parseSyncRequest, rejectInvalid } from "./validate.ts";
 
 export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 
@@ -38,14 +38,15 @@ export function createSyncHandler({ store, token, now }: SyncHandlerOptions) {
     if (isClockAhead(changes, serverTime)) {
       return Response.json({ error: "clock ahead", serverTime }, { status: 400 });
     }
-    // No await between this check and the write, so the collection cannot change in between.
-    const invalid = fieldValueError(changes, store.get);
-    if (invalid) return error(400, invalid);
-    store.applyChanges(changes, `user:${deviceId}`, serverTime);
+    // No await between this check and the write, so nothing can change in between.
+    const { accepted, rejected } = rejectInvalid(changes, store.get);
+    store.applyChanges(accepted, `user:${deviceId}`, serverTime);
     const page = store.changesSince(cursor, SYNC_PAGE_SIZE);
     const response: SyncResponse = {
       cursor: page.at(-1)?.seq ?? cursor,
       changes: page.map((row) => row.doc),
+      rejected,
+      serverTime,
     };
     return Response.json(response);
   };

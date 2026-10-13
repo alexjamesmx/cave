@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
 import { formatStamp } from "../shared/hlc.ts";
+import type { Change } from "../shared/types.ts";
 import { openDb } from "./db.ts";
 import { createHistoryHandler } from "./history.ts";
-import { type Change, createStore } from "./store.ts";
+import { createStore } from "./store.ts";
 
 const store = createStore(openDb(":memory:"));
 const edit = (status: string, ms: number) =>

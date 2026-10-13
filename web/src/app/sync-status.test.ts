@@ -3,7 +3,7 @@ import { ClockAheadError } from "../store/sync.ts";
 import { failedStatus } from "./sync-status.ts";
 
 test("classifies sync failures for the owner", () => {
-  const ahead = new ClockAheadError(1_000, 3_601_000);
+  const ahead = new ClockAheadError(1_000, 3_601_000, 3_601_000);
   expect(failedStatus(ahead, 5, true)).toEqual({
     phase: "clock-ahead",
     lastSyncedAt: 5,

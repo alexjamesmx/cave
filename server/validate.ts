@@ -2,7 +2,7 @@ import { fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts
 import { isStamp, parseStamp } from "../shared/hlc.ts";
 import { isDeviceId, isDocId } from "../shared/ids.ts";
 import { mergeDoc } from "../shared/merge.ts";
-import { type Doc, KINDS, type Kind, type SyncRequest } from "../shared/types.ts";
+import { type Doc, KINDS, type Kind, type Rejection, type SyncRequest } from "../shared/types.ts";
 
 /** Keeps one request under the body limit even after a long offline period; clients batch. */
 export const MAX_PUSH_DOCS = 1000;
@@ -71,25 +71,37 @@ export function isClockAhead(docs: Doc[], now: number): boolean {
 }
 
 /**
- * Checks item values against their collection's fields, using a collection doc from the
- * same request merged over the stored one, so a new field and its first value can arrive
- * together. Items of a collection the server has not seen yet are not checked: the
- * client's outbox does not promise to push collections first.
+ * Splits pushed docs into those to apply and those rejected for an invalid field value.
+ * Only the keys a doc would change are checked, so a value that was valid when written and
+ * is re-sent with its old stamp never blocks a later push. Select membership is left to
+ * device writes and the importer. A collection doc in the same request is merged over the
+ * stored one first, so a new field and its first value can arrive together; items of a
+ * collection the server has never seen are not checked.
  */
-export function fieldValueError(
+export function rejectInvalid(
   docs: Doc[],
   lookup: (id: string) => Doc | undefined,
-): string | undefined {
+): { accepted: Doc[]; rejected: Rejection[] } {
   const collections = new Map<string, Doc>();
   for (const doc of docs) {
     if (doc.kind === "collection") collections.set(doc.id, mergeDoc(lookup(doc.id), doc).doc);
   }
-  for (const [i, doc] of docs.entries()) {
-    if (doc.kind !== "item" || doc.collection === null) continue;
-    const collection = collections.get(doc.collection) ?? lookup(doc.collection);
-    if (!collection) continue;
-    const errors = validateFields(fieldsOf(collection), doc.data);
-    if (errors.length > 0) return `changes[${i}]: ${formatFieldErrors(errors)}`;
+  const accepted: Doc[] = [];
+  const rejected: Rejection[] = [];
+  for (const doc of docs) {
+    const collection =
+      doc.kind === "item" && doc.collection !== null
+        ? (collections.get(doc.collection) ?? lookup(doc.collection))
+        : undefined;
+    if (!collection) {
+      accepted.push(doc);
+      continue;
+    }
+    const { changed } = mergeDoc(lookup(doc.id), doc);
+    const values = Object.fromEntries(changed.map((key) => [key, doc.data[key]]));
+    const errors = validateFields(fieldsOf(collection), values, { selectMembership: false });
+    if (errors.length === 0) accepted.push(doc);
+    else rejected.push({ id: doc.id, error: formatFieldErrors(errors) });
   }
-  return undefined;
+  return { accepted, rejected };
 }

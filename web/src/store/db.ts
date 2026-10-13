@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 import type { ClockState } from "../../../shared/hlc.ts";
-import type { Doc } from "../../../shared/types.ts";
+import type { Doc, Rejection } from "../../../shared/types.ts";
 
 /** A pending local change; `rev` tells whether the doc was written again during a sync. */
 export interface OutboxRow {
@@ -18,6 +18,8 @@ export type LocalDb = Dexie & {
   docs: EntityTable<Doc, "id">;
   outbox: EntityTable<OutboxRow, "id">;
   meta: EntityTable<MetaRow, "key">;
+  /** Outbox docs the server refused, with its reason; cleared when a push is accepted. */
+  rejected: EntityTable<Rejection, "id">;
 };
 
 /** `deps` lets tests pass an IndexedDB implementation; browsers use the global one. */
@@ -31,5 +33,6 @@ export function openLocalDb(
     outbox: "id",
     meta: "key",
   });
+  db.version(2).stores({ rejected: "id" });
   return db;
 }

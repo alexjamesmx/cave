@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCave } from "../app/context.ts";
 import { useSignal } from "../app/signal.ts";
+import { useLive } from "../store/live.ts";
 
 const LABELS = {
   idle: ["SYNCED", "var(--income)"],
@@ -11,9 +12,21 @@ const LABELS = {
 } as const;
 
 export function SyncBadge() {
-  const status = useSignal(useCave().status);
-  const [label, color] = LABELS[status.phase];
-  const title = status.phase === "error" ? status.message : undefined;
+  const cave = useCave();
+  const status = useSignal(cave.status);
+  const { db } = cave.local;
+  const refused = useLive(() => db.rejected.count(), [db]) ?? 0;
+  // A clean sync with refused docs still leaves work for the owner, so it is not "SYNCED".
+  const [label, color] =
+    status.phase === "idle" && refused > 0
+      ? [`${refused} NOT SYNCED`, "var(--gold)"]
+      : LABELS[status.phase];
+  const title =
+    status.phase === "error"
+      ? status.message
+      : refused > 0
+        ? "Open the items marked “not synced” to fix their values"
+        : undefined;
   return (
     <div className="sync num" role="status" title={title}>
       <span className="dot" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
@@ -35,7 +48,7 @@ export function ClockAheadBanner() {
   const recover = async () => {
     setBusy(true);
     try {
-      await cave.recoverClock(serverTime);
+      await cave.recoverClock(status.error);
     } finally {
       setBusy(false);
     }
