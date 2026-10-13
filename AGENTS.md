@@ -4,9 +4,9 @@ Open-source, local-first, multi-agent personal brain. One place for money, tasks
 
 Repository: https://github.com/alexjamesmx/cave (private: the plan and design docs hold real financial numbers). CI (`.github/workflows/ci.yml`) runs `bun run check` and `bun test` on every push and pull request.
 
-Status: pre-v0.1. M1 (core and sync) is built on branch `m1-core`; no UI yet. Update this file in the same change as anything it describes.
+Status: pre-v0.1. M1 (core and sync) is merged to `main`. M2 (import and views) is in review round 2 on `m2-import` (`docs/log/m2.md`, pull request into `main`). Update this file in the same change as anything it describes.
 
-Commands: `bun install`, `bun run dev`, `bun run check` (tsc + Biome), `bun test`. Server environment: `CAVE_HOST` (default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN`), `PORT` (default 3000), `CAVE_DB_PATH` (default `data/cave.db`), `CAVE_TOKEN` (bearer token for `/api` and `/mcp`).
+Commands: `bun install`, `bun run dev`, `bun run check` (tsc + Biome), `bun test`, `bun run import` (add-only import from `VAULT_PATH`), `bun run e2e` (Playwright browser checks in `e2e/`, run against installed Edge; `CAVE_E2E_CHANNEL` overrides). Server environment: `CAVE_HOST` (default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN`), `PORT` (default 3000), `CAVE_DB_PATH` (default `data/cave.db`), `CAVE_TOKEN` (bearer token for `/api` and `/mcp`), `VAULT_PATH` (Obsidian vault, read-only; imported on first start when the database has no items).
 
 - Build plan, data model, sync protocol and milestones: `docs/plan-v0.1.md`.
 - Approved design: `docs/design/*.html` (static mockups; open in a browser).

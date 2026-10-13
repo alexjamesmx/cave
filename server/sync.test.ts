@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { formatStamp } from "../shared/hlc.ts";
+import type { Field } from "../shared/schema.ts";
+import { seedDocs } from "../shared/seed.ts";
 import type { Doc, SyncResponse } from "../shared/types.ts";
 import { openDb } from "./db.ts";
 import { createStore, type Store } from "./store.ts";
@@ -124,7 +126,7 @@ describe("POST /api/sync", () => {
     expect(new Set(pages.flatMap((p) => p.changes.map((d) => d.id))).size).toBe(2500);
 
     const caughtUp = await sync({ deviceId: "dev-b", cursor, changes: [] });
-    expect(caughtUp).toEqual({ cursor, changes: [] });
+    expect(caughtUp).toEqual({ cursor, changes: [], rejected: [], serverTime: NOW });
   });
 });
 
@@ -184,6 +186,127 @@ describe("POST /api/sync validation", () => {
       { ...valid, kind: "setting", collection: "tasks" },
     ];
     for (const doc of cases) await expect400({ deviceId: "d", cursor: 0, changes: [doc] });
+  });
+});
+
+describe("field values", () => {
+  beforeEach(() => {
+    store.seedIfEmpty(seedDocs(), NOW);
+  });
+  const push = async (changes: Doc[]) => {
+    const res = await handle(request({ deviceId: "dev-a", cursor: 0, changes }));
+    expect(res.status).toBe(200);
+    return (await res.json()) as SyncResponse;
+  };
+  const money = (id: string, data: Record<string, unknown>, ms: number): Doc => ({
+    ...item(id, data, ms, "dev-a"),
+    collection: "money",
+  });
+  function editFields(collection: string, change: (fields: Field[]) => Field[], ms: number) {
+    const doc = store.get(collection) as Doc;
+    const fields = change(doc.data.fields as Field[]);
+    const edit = { ...doc, data: { fields }, stamps: { fields: formatStamp(ms, 0, "dev-a") } };
+    store.applyChanges([edit], "user:dev-a", ms);
+    return edit;
+  }
+
+  test("a doc with an invalid value is rejected alone; the rest of the batch is applied", async () => {
+    const res = await push([
+      item("bad", { _title: "x", due: "tomorrow" }, 1, "dev-a"),
+      item("good", { _title: "y", due: "2026-10-12" }, 1, "dev-a"),
+    ]);
+    expect(res.rejected).toEqual([{ id: "bad", error: "field due: must be YYYY-MM-DD" }]);
+    expect(store.get("bad")).toBeUndefined();
+    expect(store.get("good")?.data.due).toBe("2026-10-12");
+    expect(res.serverTime).toBe(NOW);
+  });
+
+  test("after an option is removed, retitling an item that holds it still syncs", async () => {
+    editFields(
+      "money",
+      (fields) =>
+        fields.map((f) =>
+          f.id === "category"
+            ? {
+                ...f,
+                options: [...(f.options ?? []), { value: "gifts", icon: "tag", color: "#fff" }],
+              }
+            : f,
+        ),
+      1,
+    );
+    const tagged = money("m1", { _title: "Mug", category: "gifts" }, 2);
+    expect((await push([tagged])).rejected).toEqual([]);
+
+    editFields(
+      "money",
+      (fields) =>
+        fields.map((f) =>
+          f.id === "category"
+            ? { ...f, options: (f.options ?? []).filter((o) => o.value !== "gifts") }
+            : f,
+        ),
+      3,
+    );
+    const retitled = {
+      ...tagged,
+      data: { ...tagged.data, _title: "Mug for mum" },
+      stamps: { ...tagged.stamps, _title: formatStamp(4, 0, "dev-a") },
+    };
+    expect((await push([retitled])).rejected).toEqual([]);
+    expect(store.get("m1")?.data).toMatchObject({ _title: "Mug for mum", category: "gifts" });
+  });
+
+  test("an unchanged invalid key re-sent with its old stamp is not checked again", async () => {
+    const stale = money("m2", { amount: "lots" }, 1);
+    store.applyChanges([stale], "user:dev-a", 1);
+    const edited = {
+      ...stale,
+      data: { ...stale.data, detail: "fixed later" },
+      stamps: { ...stale.stamps, detail: formatStamp(2, 0, "dev-a") },
+    };
+    expect((await push([edited])).rejected).toEqual([]);
+    expect(store.get("m2")?.data.detail).toBe("fixed later");
+  });
+
+  test("select membership is not checked on sync, but the value type is", async () => {
+    const res = await push([
+      money("m3", { category: "not-an-option" }, 1),
+      money("m4", { category: 7 }, 1),
+    ]);
+    expect(res.rejected.map((r) => r.id)).toEqual(["m4"]);
+    expect(store.get("m3")?.data.category).toBe("not-an-option");
+  });
+
+  test("checks against a collection pushed in the same request", async () => {
+    const tasks = store.get("tasks") as Doc;
+    const fields = [
+      ...(tasks.data.fields as Field[]),
+      { id: "size", name: "Size", type: "number" },
+    ];
+    const edited: Doc = {
+      ...tasks,
+      data: { fields },
+      stamps: { fields: formatStamp(1, 0, "dev-a") },
+    };
+    expect((await push([edited, item("t1", { size: "big" }, 1, "dev-a")])).rejected).toHaveLength(
+      1,
+    );
+    expect((await push([edited, item("t1", { size: 3 }, 1, "dev-a")])).rejected).toEqual([]);
+  });
+
+  test("archived fields are not checked", async () => {
+    editFields(
+      "tasks",
+      (fields) => fields.map((f) => (f.id === "due" ? { ...f, archived: true } : f)),
+      1,
+    );
+    expect((await push([item("t2", { due: "whenever" }, 2, "dev-a")])).rejected).toEqual([]);
+  });
+
+  test("items of a collection the server has not seen are not field-checked", async () => {
+    const doc = { ...item("n1", { anything: "goes" }, 1, "dev-a"), collection: "newcol" };
+    expect((await push([doc])).rejected).toEqual([]);
   });
 });
 

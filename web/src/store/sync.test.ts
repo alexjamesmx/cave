@@ -3,10 +3,18 @@ import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { openDb } from "../../../server/db.ts";
 import { createStore, type Store } from "../../../server/store.ts";
 import { createSyncHandler } from "../../../server/sync.ts";
-import type { SyncRequest, SyncResponse } from "../../../shared/types.ts";
+import { seedDocs } from "../../../shared/seed.ts";
+import type { SyncRequest } from "../../../shared/types.ts";
 import { openLocalDb } from "./db.ts";
 import { LocalStore } from "./local-store.ts";
-import { PUSH_BATCH_SIZE, syncOnce, type Transport } from "./sync.ts";
+import {
+  ClockAheadError,
+  type DeviceClock,
+  PUSH_BATCH_SIZE,
+  readSyncResponse,
+  syncOnce,
+  type Transport,
+} from "./sync.ts";
 
 const REAL_NOW = 1_760_000_000_000;
 const TEN_MIN = 10 * 60_000;
@@ -23,7 +31,12 @@ beforeEach(() => {
 });
 
 /** Calls the real sync handler in-process; `online = false` behaves like a dropped network. */
-function makeTransport(beforeSend?: () => Promise<void>): Transport {
+const serverClock: DeviceClock = { rawNow: () => REAL_NOW, now: () => REAL_NOW };
+
+function makeTransport(
+  beforeSend?: () => Promise<void>,
+  clock: DeviceClock = serverClock,
+): Transport {
   const handle = createSyncHandler({ store: server, token: undefined, now: () => REAL_NOW });
   return async (req) => {
     if (!online) throw new TypeError("Failed to fetch");
@@ -32,8 +45,7 @@ function makeTransport(beforeSend?: () => Promise<void>): Transport {
     const res = await handle(
       new Request("http://cave.test/api/sync", { method: "POST", body: JSON.stringify(req) }),
     );
-    if (!res.ok) throw new Error(`sync failed: ${res.status}`);
-    return (await res.json()) as SyncResponse;
+    return readSyncResponse(res, clock);
   };
 }
 
@@ -155,5 +167,97 @@ describe("syncOnce", () => {
     const second = await LocalStore.open({ db, deviceId: "phone", now: () => REAL_NOW - TEN_MIN });
     const b = await second.write({ id: "t1", ...task }, { status: "done" });
     expect((b.stamps.status as string) > (a.stamps.status as string)).toBe(true);
+  });
+
+  test("a device an hour ahead is refused, recovers its clock and then syncs", async () => {
+    const HOUR = 60 * 60_000;
+    const phone = await device("phone", () => REAL_NOW + HOUR);
+    await phone.write({ id: "t1", ...task }, { _title: "From the future" });
+    await phone.write({ id: "t2", ...task }, { _title: "Also ahead" });
+
+    const refused = await syncOnce(phone, makeTransport(undefined, phone)).catch((e) => e);
+    expect(refused).toBeInstanceOf(ClockAheadError);
+    const { serverTime, rawDeviceTime } = refused as ClockAheadError;
+    expect(serverTime).toBe(REAL_NOW);
+    expect(server.get("t1")).toBeUndefined();
+
+    expect(await phone.recoverClock(serverTime, rawDeviceTime)).toBe(2);
+    await syncOnce(phone, makeTransport());
+    expect(server.get("t1")?.data._title).toBe("From the future");
+    expect(await phone.db.outbox.count()).toBe(0);
+
+    // The device clock is still an hour fast; new writes follow server time.
+    await phone.write({ id: "t3", ...task }, { _title: "After recovery" });
+    await syncOnce(phone, makeTransport());
+    expect(server.get("t3")?.data._created).toBe(new Date(REAL_NOW).toISOString());
+  });
+
+  test("recovery measures the offset when the refusal arrived, not when the owner confirms", async () => {
+    const HOUR = 60 * 60_000;
+    const FIVE_MIN = 5 * 60_000;
+    let deviceTime = REAL_NOW + HOUR;
+    const phone = await device("phone", () => deviceTime);
+    await phone.write({ id: "t1", ...task }, { _title: "ahead" });
+
+    const refused = (await syncOnce(phone, makeTransport(undefined, phone)).catch(
+      (e) => e,
+    )) as ClockAheadError;
+    deviceTime += FIVE_MIN;
+    await phone.recoverClock(refused.serverTime, refused.rawDeviceTime);
+
+    // Five real minutes have passed since the server said REAL_NOW.
+    expect(phone.now()).toBe(REAL_NOW + FIVE_MIN);
+  });
+
+  test("the offset is dropped once the device clock agrees with the server again", async () => {
+    const HOUR = 60 * 60_000;
+    let deviceTime = REAL_NOW + HOUR;
+    const phone = await device("phone", () => deviceTime);
+    await phone.recoverClock(REAL_NOW, deviceTime);
+
+    await syncOnce(phone, makeTransport(undefined, phone));
+    expect(phone.now()).toBe(REAL_NOW);
+    expect(await phone.db.meta.get("clockOffset")).toBeDefined();
+
+    deviceTime = REAL_NOW + 59_000;
+    await syncOnce(phone, makeTransport(undefined, phone));
+    expect(await phone.db.meta.get("clockOffset")).toBeUndefined();
+    expect(phone.now()).toBe(deviceTime);
+  });
+
+  test("a rejected doc keeps its outbox row and error; the rest of the batch syncs", async () => {
+    server.seedIfEmpty(seedDocs(), REAL_NOW);
+    const phone = await device("phone");
+    // This device has not pulled the tasks collection yet, so it cannot check `due` itself.
+    await phone.write({ id: "bad", ...task }, { _title: "x", due: "tomorrow" });
+    await phone.write({ id: "good", ...task }, { _title: "y", due: "2026-10-12" });
+
+    const result = await syncOnce(phone, makeTransport());
+    expect(result.rejected).toBe(1);
+    expect(server.get("good")?.data.due).toBe("2026-10-12");
+    expect(server.get("bad")).toBeUndefined();
+    expect((await phone.db.outbox.toArray()).map((r) => r.id)).toEqual(["bad"]);
+    expect(await phone.db.rejected.get("bad")).toEqual({
+      id: "bad",
+      error: "field due: must be YYYY-MM-DD",
+    });
+
+    await phone.write({ id: "bad", ...task }, { due: "2026-10-13" });
+    await syncOnce(phone, makeTransport());
+    expect(server.get("bad")?.data.due).toBe("2026-10-13");
+    expect(await phone.db.outbox.count()).toBe(0);
+    expect(await phone.db.rejected.count()).toBe(0);
+  });
+
+  test("the outbox pushes settings, then collections, then items", async () => {
+    const phone = await device("phone");
+    await phone.write({ id: "t1", ...task }, { _title: "item first" });
+    await phone.write({ id: "c1", kind: "collection", collection: null }, { name: "New" });
+    await phone.write({ id: "settings", kind: "setting", collection: null }, { timezone: "UTC" });
+    expect((await phone.pending()).map((p) => p.doc.kind)).toEqual([
+      "setting",
+      "collection",
+      "item",
+    ]);
   });
 });

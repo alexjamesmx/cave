@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { mergeDoc } from "../shared/merge.ts";
-import type { Doc, Kind, Stamp } from "../shared/types.ts";
+import type { Before, Change, Doc, Kind } from "../shared/types.ts";
 
 interface DocRow {
   id: string;
@@ -21,19 +21,6 @@ interface ChangeRow {
   before: string;
 }
 
-/** A key's value and stamp before a change; `null` when the key did not exist yet. */
-export type Before = Record<string, { value: unknown; stamp: Stamp } | null>;
-
-export interface Change {
-  seq: number;
-  id: string;
-  actor: string;
-  at: number;
-  keys: string[];
-  /** `null` for rows written before previous values were recorded. */
-  before: Before | null;
-}
-
 export interface Store {
   /** Merges docs in one IMMEDIATE transaction; returns the ids that changed. */
   applyChanges(docs: Doc[], actor: string, at: number): string[];
@@ -41,7 +28,10 @@ export interface Store {
   get(id: string): Doc | undefined;
   seqOf(id: string): number | undefined;
   changeLog(): Change[];
+  /** One doc's changes, newest first. */
+  changesFor(id: string, limit: number): Change[];
   seedIfEmpty(docs: Doc[], at: number): boolean;
+  hasItems(): boolean;
 }
 
 const toDoc = (row: DocRow): Doc => ({
@@ -53,13 +43,23 @@ const toDoc = (row: DocRow): Doc => ({
   actor: row.actor,
 });
 
+const toChange = (row: ChangeRow): Change => ({
+  ...row,
+  keys: JSON.parse(row.keys),
+  before: JSON.parse(row.before),
+});
+
 export function createStore(db: Database): Store {
   const selectDoc = db.query<DocRow, [string]>("SELECT * FROM docs WHERE id = ?");
   const selectSince = db.query<DocRow, [number, number]>(
     "SELECT * FROM docs WHERE seq > ? ORDER BY seq LIMIT ?",
   );
   const countDocs = db.query<{ n: number }, []>("SELECT count(*) AS n FROM docs");
+  const anyItem = db.query<{ id: string }, []>("SELECT id FROM docs WHERE kind = 'item' LIMIT 1");
   const selectChanges = db.query<ChangeRow, []>("SELECT * FROM changes ORDER BY seq");
+  const selectChangesFor = db.query<ChangeRow, [string, number]>(
+    "SELECT * FROM changes WHERE id = ? ORDER BY seq DESC LIMIT ?",
+  );
   const insertChange = db.query<{ seq: number }, [string, string, number, string, string]>(
     "INSERT INTO changes (id, actor, at, keys, before) VALUES (?, ?, ?, ?, ?) RETURNING seq",
   );
@@ -114,11 +114,10 @@ export function createStore(db: Database): Store {
       return row ? toDoc(row) : undefined;
     },
     seqOf: (id) => selectDoc.get(id)?.seq,
-    changeLog: () =>
-      selectChanges
-        .all()
-        .map((row) => ({ ...row, keys: JSON.parse(row.keys), before: JSON.parse(row.before) })),
+    changeLog: () => selectChanges.all().map(toChange),
+    changesFor: (id, limit) => selectChangesFor.all(id, limit).map(toChange),
     seedIfEmpty: (docs, at) => seed.immediate(docs, at),
+    hasItems: () => anyItem.get() !== null,
   };
 }
 

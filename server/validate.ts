@@ -1,6 +1,8 @@
+import { fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
 import { isStamp, parseStamp } from "../shared/hlc.ts";
 import { isDeviceId, isDocId } from "../shared/ids.ts";
-import { type Doc, KINDS, type Kind, type SyncRequest } from "../shared/types.ts";
+import { mergeDoc } from "../shared/merge.ts";
+import { type Doc, KINDS, type Kind, type Rejection, type SyncRequest } from "../shared/types.ts";
 
 /** Keeps one request under the body limit even after a long offline period; clients batch. */
 export const MAX_PUSH_DOCS = 1000;
@@ -13,6 +15,8 @@ export const MAX_CLOCK_AHEAD_MS = 10 * 60_000;
 const DATA_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
 
 type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+
+export const isDataKey = (key: string) => DATA_KEY_RE.test(key) && key !== "__proto__";
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -50,7 +54,7 @@ function parseDoc(raw: unknown): Result<Doc> {
   const keys = Object.keys(data);
   if (keys.length !== Object.keys(stamps).length) return fail("data and stamps keys differ");
   for (const key of keys) {
-    if (!DATA_KEY_RE.test(key) || key === "__proto__") return fail(`bad key ${key}`);
+    if (!isDataKey(key)) return fail(`bad key ${key}`);
     if (!isStamp(stamps[key])) return fail(`bad stamp for ${key}`);
   }
   // Server sets `actor` from the authenticated caller; whatever the client sent is dropped.
@@ -64,4 +68,40 @@ export function isClockAhead(docs: Doc[], now: number): boolean {
   return docs.some((doc) =>
     Object.values(doc.stamps).some((stamp) => parseStamp(stamp).ms > now + MAX_CLOCK_AHEAD_MS),
   );
+}
+
+/**
+ * Splits pushed docs into those to apply and those rejected for an invalid field value.
+ * Only the keys a doc would change are checked, so a value that was valid when written and
+ * is re-sent with its old stamp never blocks a later push. Select membership is left to
+ * device writes and the importer. A collection doc in the same request is merged over the
+ * stored one first, so a new field and its first value can arrive together; items of a
+ * collection the server has never seen are not checked.
+ */
+export function rejectInvalid(
+  docs: Doc[],
+  lookup: (id: string) => Doc | undefined,
+): { accepted: Doc[]; rejected: Rejection[] } {
+  const collections = new Map<string, Doc>();
+  for (const doc of docs) {
+    if (doc.kind === "collection") collections.set(doc.id, mergeDoc(lookup(doc.id), doc).doc);
+  }
+  const accepted: Doc[] = [];
+  const rejected: Rejection[] = [];
+  for (const doc of docs) {
+    const collection =
+      doc.kind === "item" && doc.collection !== null
+        ? (collections.get(doc.collection) ?? lookup(doc.collection))
+        : undefined;
+    if (!collection) {
+      accepted.push(doc);
+      continue;
+    }
+    const { changed } = mergeDoc(lookup(doc.id), doc);
+    const values = Object.fromEntries(changed.map((key) => [key, doc.data[key]]));
+    const errors = validateFields(fieldsOf(collection), values, { selectMembership: false });
+    if (errors.length === 0) accepted.push(doc);
+    else rejected.push({ id: doc.id, error: formatFieldErrors(errors) });
+  }
+  return { accepted, rejected };
 }
