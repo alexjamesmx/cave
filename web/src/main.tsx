@@ -4,6 +4,11 @@ import { App } from "./App.tsx";
 import { boot } from "./app/boot.ts";
 import { CaveContext } from "./app/context.ts";
 import { interceptLinks } from "./app/router.ts";
+// Fonts ship with the app (SIL OFL), so the shell works offline and no request leaves the origin.
+import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource-variable/newsreader";
+import "@fontsource-variable/newsreader/wght-italic.css";
 import "./styles.css";
 
 const container = document.getElementById("root");
