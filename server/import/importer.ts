@@ -31,10 +31,12 @@ interface Options {
   root: string;
   store: Store;
   now: number;
+  /** Report what an import would add without writing anything. */
+  dryRun?: boolean;
 }
 
 /** Add-only import from the vault into `store`. Reads the vault, never writes to it. */
-export async function importVault({ root, store, now }: Options): Promise<ImportReport> {
+export async function importVault({ root, store, now, dryRun }: Options): Promise<ImportReport> {
   const stamp = formatStamp(now, 0, IMPORT_ACTOR);
   const timeZone = store.get("settings")?.data.timezone;
   if (typeof timeZone !== "string") throw new Error("settings doc has no timezone; seed first");
@@ -95,7 +97,7 @@ export async function importVault({ root, store, now }: Options): Promise<Import
     report.added[collection] = (report.added[collection] ?? 0) + 1;
   }
 
-  store.applyChanges(docs, IMPORT_ACTOR, now);
+  if (!dryRun) store.applyChanges(docs, IMPORT_ACTOR, now);
   for (const [collection, keys] of extras) report.extraKeys[collection] = [...keys].sort();
   return report;
 }
@@ -123,6 +125,10 @@ function withCategories(
   const updated: Field[] = fields.map((f) => (f === category ? { ...f, options } : f));
   return { ...money, data: { ...money.data, fields: updated } };
 }
+
+/** Vault notes the database does not hold yet. */
+export const newNotes = (report: ImportReport) =>
+  Object.values(report.added).reduce((sum, n) => sum + n, 0);
 
 export function formatReport(report: ImportReport): string {
   const lines = Object.entries(report.added).map(([c, n]) => `  ${c.padEnd(10)} ${n}`);

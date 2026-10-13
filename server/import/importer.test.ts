@@ -6,7 +6,7 @@ import { fieldsOf } from "../../shared/fields.ts";
 import { seedDocs } from "../../shared/seed.ts";
 import { openDb } from "../db.ts";
 import { createStore, type Store } from "../store.ts";
-import { formatReport, importId, importIfEmpty, importVault } from "./importer.ts";
+import { formatReport, importId, importIfEmpty, importVault, newNotes } from "./importer.ts";
 
 const NOW = 1_791_800_000_000;
 let root: string;
@@ -158,4 +158,16 @@ test("task completed and cancelled keep their time", async () => {
     completed: "2026-10-09T14:45:12",
     cancelled: "2026-10-10",
   });
+});
+
+test("a dry run reports the new notes and writes nothing; the real import adds exactly those", async () => {
+  const before = store.changeLog().length;
+  const dry = await importVault({ root, store, now: NOW, dryRun: true });
+  expect(store.changeLog().length).toBe(before);
+  expect(store.hasItems()).toBe(false);
+  const real = await importVault({ root, store, now: NOW });
+  expect(newNotes(dry)).toBe(newNotes(real));
+  expect(newNotes(dry)).toBeGreaterThan(0);
+  const again = await importVault({ root, store, now: NOW + 1, dryRun: true });
+  expect(newNotes(again)).toBe(0);
 });

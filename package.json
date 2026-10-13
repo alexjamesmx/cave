@@ -1,14 +1,19 @@
 {
   "name": "cave",
+  "version": "0.1.0-dev",
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "bun run server/main.ts --production",
     "dev": "bun run server/main.ts",
     "import": "bun run server/import/cli.ts",
     "check": "tsc --noEmit && biome check .",
     "test": "bun test",
     "e2e": "playwright test",
-    "agent": "bun run server/agent-cli.ts"
+    "agent": "bun run server/agent-cli.ts",
+    "backup": "bun run server/backup-cli.ts",
+    "restore": "bun run server/restore-cli.ts",
+    "export": "bun run server/export-cli.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",
