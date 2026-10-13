@@ -9,7 +9,7 @@ export const FIELD_TYPES = [
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
-// `write` is the journal's diary editor; the plan lists it as a journal view but not as a type.
+// `write` is the journal's diary editor.
 export const VIEW_TYPES = [
   "table",
   "board",

@@ -48,7 +48,7 @@ function parseMoney(input: string, ctx: CommandContext): Command {
   return { kind: "money", amount, direction: m[1] ? "income" : "expense", category, title };
 }
 
-/** Command bar grammar, tried in the plan's order; anything else is rejected with a hint. */
+/** Command bar grammar, tried in order; anything else is rejected with a hint. */
 export function parseCommand(raw: string, ctx: CommandContext): Command {
   const input = raw.trim();
   if (!input) return { kind: "reject", hint: HINT };

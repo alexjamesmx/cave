@@ -91,7 +91,7 @@ test("a newer edit waiting on the server turns the key into 'changed since'", as
   await phone.local.write(task(id), { status: "doing" });
   await phone.sync();
 
-  // From the laptop's stale copy the old plan would restore `todo` over the phone's edit.
+  // Planned from the laptop's stale copy, undo would restore `todo` over the phone's edit.
   expect(undoPatch(change, await laptop.local.get(id)).patch).toEqual({ status: "todo" });
 
   const result = await undoChange(change, laptop.local, laptop.sync);

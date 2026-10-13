@@ -8,7 +8,7 @@ import { createStore } from "./store.ts";
 
 const NOW = 1_791_900_000_000;
 
-test("a database seeded by the M2 code gets the proposals collection once", () => {
+test("a database seeded before seed migrations gets the proposals collection once", () => {
   const store = createStore(openDb(":memory:"));
   store.seedIfEmpty(m2Seed as Doc[], 1);
   expect(store.get("proposals")).toBeUndefined();

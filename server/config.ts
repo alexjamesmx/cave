@@ -1,3 +1,5 @@
+import { LOOPBACK_HOSTS } from "./request-guard.ts";
+
 export interface ServerConfig {
   hostname: string;
   port: number;
@@ -6,8 +8,8 @@ export interface ServerConfig {
   /** Obsidian vault to import from, read-only; unset means no import. */
   vaultPath: string | undefined;
   /**
-   * Host names `/mcp` answers to (DNS-rebinding protection): loopback, `CAVE_HOST` unless it
-   * is a wildcard, and the comma list in `CAVE_ALLOWED_HOSTS` (a LAN or Tailscale name).
+   * Host names `/api` and `/mcp` answer to (DNS-rebinding protection): loopback, `CAVE_HOST`
+   * unless it is a wildcard, and the comma list in `CAVE_ALLOWED_HOSTS`.
    */
   allowedHosts: string[];
 }
@@ -21,8 +23,6 @@ function allowedHosts(hostname: string, extra: string | undefined): string[] {
     if (host.trim()) hosts.add(host.trim().toLowerCase());
   return [...hosts];
 }
-
-import { LOOPBACK_HOSTS } from "./request-guard.ts";
 
 type Env = Record<string, string | undefined>;
 

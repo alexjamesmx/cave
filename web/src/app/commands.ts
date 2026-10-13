@@ -52,7 +52,7 @@ export async function runCommand(
       return { ok: true, message: `${cmd.habit} ${done ? "done" : "undone"} for today` };
     }
     case "ask":
-      return { ok: false, message: "Asking arrives with the AI adapter in M4." };
+      return { ok: false, message: "Asking needs the AI adapter, which isn't built yet." };
     case "jump":
       return { ok: true, message: "", path: cmd.path };
     case "reject":

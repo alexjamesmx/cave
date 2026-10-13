@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { openDb, SCHEMA_VERSION } from "./db.ts";
 import { createStore } from "./store.ts";
 
-// The schema shipped in 6ec5478, before migrations existed (user_version 0).
+// The first schema, from before migrations were tracked (user_version 0).
 const M1_SCHEMA = `
 CREATE TABLE docs (id TEXT PRIMARY KEY, kind TEXT NOT NULL, collection TEXT, data TEXT NOT NULL,
   stamps TEXT NOT NULL, seq INTEGER NOT NULL, actor TEXT NOT NULL);
@@ -25,7 +25,7 @@ test("a fresh database is created at the current schema version", () => {
   expect(userVersion(openDb(":memory:"))).toBe(SCHEMA_VERSION);
 });
 
-test("an M1 database is migrated in place and keeps its data", () => {
+test("a database from before tracked migrations is migrated in place and keeps its data", () => {
   const dir = mkdtempSync(join(tmpdir(), "cave-"));
   try {
     const path = join(dir, "cave.db");
