@@ -7,6 +7,7 @@ import { useTimeZone, useToday } from "../app/hooks.ts";
 import { collectionPath, navigate } from "../app/router.ts";
 import { type CommandContext, parseCommand } from "../logic/command.ts";
 import { dayOf, monthName, monthOf } from "../logic/dates.ts";
+import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
 import { entriesByDay, habitsDone } from "../logic/habits.ts";
 import { monthSummary } from "../logic/money.ts";
@@ -20,7 +21,8 @@ const CLOSED = new Set(["done", "dropped"]);
 
 export function Home() {
   const { local } = useCave();
-  const collections = useCollections(local.db);
+  const stored = useCollections(local.db);
+  const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
   const today = useToday();
   const timeZone = useTimeZone();
   const items = useLive(
@@ -34,7 +36,9 @@ export function Home() {
     const map = new Map<string, Doc[]>();
     for (const doc of items ?? []) {
       const key = doc.collection as string;
-      map.set(key, [...(map.get(key) ?? []), doc]);
+      const list = map.get(key);
+      if (list) list.push(doc);
+      else map.set(key, [doc]);
     }
     return map;
   }, [items]);

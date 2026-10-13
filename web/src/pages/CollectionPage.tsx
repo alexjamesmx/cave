@@ -2,6 +2,7 @@ import { type ComponentType, useCallback, useState } from "react";
 import type { ViewType } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
 import { collectionPath } from "../app/router.ts";
+import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { FieldEditor } from "../ui/FieldEditor.tsx";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
@@ -40,8 +41,10 @@ export function CollectionPage({ id, viewId }: { id: string; viewId: string | un
   const close = useCallback(() => setPanel(undefined), []);
 
   if (!collections) return null;
-  const collection = collections.find((c) => c.id === id);
-  if (!collection) return <p className="muted">No collection called “{id}”.</p>;
+  const stored = collections.find((c) => c.id === id);
+  if (!stored) return <p className="muted">No collection called “{id}”.</p>;
+  // Views and the drawer see active fields only; the field editor needs archived ones too.
+  const collection = withActiveFields(stored);
   const { name, icon, color, views } = collection.data;
   const view = views.find((v) => v.id === viewId) ?? views[0];
   const View = view ? VIEWS[view.type] : undefined;
@@ -87,7 +90,7 @@ export function CollectionPage({ id, viewId }: { id: string; viewId: string | un
       {panel?.kind === "item" && (
         <ItemDrawer key={panel.id} collection={collection} id={panel.id} onClose={close} />
       )}
-      {panel?.kind === "fields" && <FieldEditor collection={collection} onClose={close} />}
+      {panel?.kind === "fields" && <FieldEditor collection={stored} onClose={close} />}
     </>
   );
 }

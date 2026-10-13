@@ -6,6 +6,7 @@ import {
   type SelectOption,
 } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
+import { addField, archiveField, restoreField } from "../logic/field-edits.ts";
 import type { CollectionDoc } from "../store/queries.ts";
 import { hasIcon, Icon } from "./icon.tsx";
 
@@ -21,19 +22,10 @@ const COLORS = [
   "#8C93A0",
 ];
 
-const slug = (name: string) =>
-  name
-    .trim()
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^\w]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .replace(/^(\d)/, "f_$1")
-    .slice(0, 48);
-
 /**
  * Edits a collection's fields. Field ids and option values are fixed once created: items
  * store them, so changing one would orphan existing data. Names, icons and colours change.
+ * Removing a field archives it, so its id is never reused.
  */
 export function FieldEditor({
   collection,
@@ -51,21 +43,17 @@ export function FieldEditor({
   const update = (id: string, change: (f: Field) => Field) =>
     saveFields(fields.map((f) => (f.id === id ? change(f) : f)));
 
-  const addField = (e: FormEvent<HTMLFormElement>) => {
+  const add = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const name = String(form.get("name") ?? "").trim();
-    const type = String(form.get("type")) as FieldType;
-    const id = slug(name);
-    if (!id) return setError("Give the field a name with letters or digits.");
-    if (fields.some((f) => f.id === id)) return setError(`A field “${id}” already exists.`);
+    const result = addField(fields, name, String(form.get("type")) as FieldType);
+    if ("error" in result) return setError(result.error);
     setError(undefined);
-    void saveFields([
-      ...fields,
-      type === "select" ? { id, name, type, options: [] } : { id, name, type },
-    ]);
+    void saveFields(result.fields);
     e.currentTarget.reset();
   };
+  const archived = fields.filter((f) => f.archived);
 
   return (
     <aside className="panel drawer" aria-label="Fields">
@@ -77,43 +65,68 @@ export function FieldEditor({
           <Icon name="x" size={15} />
         </button>
       </div>
-      {fields.map((field) => (
-        <section key={field.id} className="field-card">
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              key={field.name}
-              className="input"
-              aria-label={`Name of ${field.id}`}
-              defaultValue={field.name}
-              style={{ flex: 1 }}
-              onBlur={(e) => {
-                const name = e.target.value.trim();
-                if (name && name !== field.name) void update(field.id, (f) => ({ ...f, name }));
-              }}
-            />
-            <span className="k">{field.type}</span>
-            <button
-              type="button"
-              className="btn"
-              aria-label={`Remove field ${field.name}`}
-              onClick={() => {
-                if (confirm(`Remove “${field.name}”? Values stay on the items but stop showing.`)) {
-                  void saveFields(fields.filter((f) => f.id !== field.id));
-                }
-              }}
-            >
-              <Icon name="trash" size={14} />
-            </button>
-          </div>
-          {field.type === "select" && (
-            <Options
-              options={field.options ?? []}
-              onChange={(options) => update(field.id, (f) => ({ ...f, options }))}
-            />
-          )}
+      {fields
+        .filter((f) => !f.archived)
+        .map((field) => (
+          <section key={field.id} className="field-card">
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                key={field.name}
+                className="input"
+                aria-label={`Name of ${field.id}`}
+                defaultValue={field.name}
+                style={{ flex: 1 }}
+                onBlur={(e) => {
+                  const name = e.target.value.trim();
+                  if (name && name !== field.name) void update(field.id, (f) => ({ ...f, name }));
+                }}
+              />
+              <span className="k">{field.type}</span>
+              <button
+                type="button"
+                className="btn"
+                aria-label={`Remove field ${field.name}`}
+                onClick={() => {
+                  if (
+                    confirm(
+                      `Remove “${field.name}”? Values stay on the items and it can be restored.`,
+                    )
+                  ) {
+                    void saveFields(archiveField(fields, field.id));
+                  }
+                }}
+              >
+                <Icon name="trash" size={14} />
+              </button>
+            </div>
+            {field.type === "select" && (
+              <Options
+                options={field.options ?? []}
+                onChange={(options) => update(field.id, (f) => ({ ...f, options }))}
+              />
+            )}
+          </section>
+        ))}
+      {archived.length > 0 && (
+        <section className="field-card">
+          <span className="k">Removed</span>
+          {archived.map((field) => (
+            <div key={field.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ flex: 1 }} className="muted">
+                {field.name} <span className="k">{field.type}</span>
+              </span>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => void saveFields(restoreField(fields, field.id))}
+              >
+                Restore
+              </button>
+            </div>
+          ))}
         </section>
-      ))}
-      <form onSubmit={addField} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      )}
+      <form onSubmit={add} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
           name="name"
           className="input"
