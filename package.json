@@ -7,16 +7,23 @@
     "import": "bun run server/import/cli.ts",
     "check": "tsc --noEmit && biome check .",
     "test": "bun test",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "agent": "bun run server/agent-cli.ts"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@fontsource-variable/newsreader": "5.3.0",
+    "@fontsource-variable/space-grotesk": "5.3.0",
+    "@modelcontextprotocol/server": "2.2.0",
     "dexie": "4.4.6",
     "lucide-react": "1.48.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@modelcontextprotocol/client": "2.2.0",
     "@playwright/test": "1.63.0",
     "@types/bun": "1.4.3",
     "@types/react": "19.3.0",

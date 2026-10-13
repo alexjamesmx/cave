@@ -4,6 +4,7 @@ export type Route =
   | { name: "home" }
   | { name: "collection"; collection: string; view: string | undefined }
   | { name: "settings" }
+  | { name: "agents" }
   | { name: "not-found" };
 
 const COLLECTION_RE = /^\/c\/([^/]+)(?:\/([^/]+))?\/?$/;
@@ -11,6 +12,7 @@ const COLLECTION_RE = /^\/c\/([^/]+)(?:\/([^/]+))?\/?$/;
 export function parseRoute(pathname: string): Route {
   if (pathname === "/" || pathname === "") return { name: "home" };
   if (pathname === "/settings") return { name: "settings" };
+  if (pathname === "/agents") return { name: "agents" };
   const m = COLLECTION_RE.exec(pathname);
   if (m) {
     const view = m[2] === undefined ? undefined : decodeURIComponent(m[2]);

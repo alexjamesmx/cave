@@ -100,3 +100,26 @@ test("hasItems ignores seeded collections and settings", () => {
   );
   expect(store.hasItems()).toBe(true);
 });
+
+test("each change records the stamp its keys got and returns its seq", () => {
+  const store = createStore(openDb(":memory:"));
+  const stamp = formatStamp(5, 0, "dev-a");
+  const applied = store.applyChanges(
+    [
+      {
+        id: "t1",
+        kind: "item",
+        collection: "tasks",
+        data: { _title: "x", status: "todo" },
+        stamps: { _title: stamp, status: stamp },
+        actor: "",
+      },
+    ],
+    "user:dev-a",
+    5,
+  );
+  expect(applied).toEqual([{ id: "t1", seq: 1 }]);
+  const [change] = store.changesBySeq([1, 99]);
+  expect(change?.after).toEqual({ _title: stamp, status: stamp });
+  expect(change?.before).toEqual({ _title: null, status: null });
+});

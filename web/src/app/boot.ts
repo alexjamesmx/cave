@@ -13,6 +13,8 @@ export interface Cave {
   local: LocalStore;
   status: Signal<SyncStatus>;
   syncNow(): void;
+  /** Runs a sync and waits for it; `true` when it reached the server and finished. */
+  syncAndWait(): Promise<boolean>;
   /** Owner-confirmed clock recovery after a `clock ahead` refusal. */
   recoverClock(refusal: ClockAheadError): Promise<number>;
 }
@@ -67,6 +69,11 @@ export async function boot(): Promise<Cave> {
     local,
     status,
     syncNow: scheduler.syncNow,
+    async syncAndWait() {
+      scheduler.syncNow();
+      await scheduler.idle();
+      return status.get().phase === "idle";
+    },
     async recoverClock({ serverTime, rawDeviceTime }) {
       const restamped = await local.recoverClock(serverTime, rawDeviceTime);
       scheduler.syncNow();

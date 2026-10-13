@@ -1,0 +1,833 @@
+[
+  {
+    "id": "money",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "Money",
+      "icon": "wallet",
+      "color": "#2EE6A6",
+      "order": 0,
+      "fields": [
+        {
+          "id": "date",
+          "name": "Date",
+          "type": "date",
+          "config": {
+            "withTime": true
+          }
+        },
+        {
+          "id": "amount",
+          "name": "Amount",
+          "type": "money"
+        },
+        {
+          "id": "direction",
+          "name": "Direction",
+          "type": "select",
+          "options": [
+            {
+              "value": "income",
+              "icon": "arrow-down-left",
+              "color": "#2EE6A6"
+            },
+            {
+              "value": "expense",
+              "icon": "arrow-up-right",
+              "color": "#FF5C7A"
+            }
+          ]
+        },
+        {
+          "id": "category",
+          "name": "Category",
+          "type": "select",
+          "options": [
+            {
+              "value": "food",
+              "icon": "utensils",
+              "color": "#FF9F43"
+            },
+            {
+              "value": "home",
+              "icon": "house",
+              "color": "#8B7CFF"
+            },
+            {
+              "value": "transport",
+              "icon": "car",
+              "color": "#3DE0FF"
+            },
+            {
+              "value": "health",
+              "icon": "heart-pulse",
+              "color": "#FF5C7A"
+            },
+            {
+              "value": "fun",
+              "icon": "sparkles",
+              "color": "#C77DFF"
+            },
+            {
+              "value": "other",
+              "icon": "ellipsis",
+              "color": "#8C93A0"
+            },
+            {
+              "value": "investment",
+              "icon": "trending-up",
+              "color": "#F5C451"
+            },
+            {
+              "value": "income",
+              "icon": "coins",
+              "color": "#2EE6A6"
+            },
+            {
+              "value": "transfer",
+              "icon": "arrow-left-right",
+              "color": "#B6FF3B"
+            }
+          ]
+        },
+        {
+          "id": "detail",
+          "name": "Detail",
+          "type": "text"
+        },
+        {
+          "id": "account",
+          "name": "Account",
+          "type": "text"
+        }
+      ],
+      "views": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "type": "money",
+          "config": {}
+        },
+        {
+          "id": "table",
+          "name": "Table",
+          "type": "table",
+          "config": {}
+        },
+        {
+          "id": "untagged",
+          "name": "Untagged",
+          "type": "table",
+          "config": {
+            "filter": {
+              "field": "category",
+              "op": "empty"
+            }
+          }
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "tasks",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "Tasks",
+      "icon": "square-check",
+      "color": "#B6FF3B",
+      "order": 1,
+      "fields": [
+        {
+          "id": "status",
+          "name": "Status",
+          "type": "select",
+          "options": [
+            {
+              "value": "todo",
+              "icon": "circle",
+              "color": "#8C93A0"
+            },
+            {
+              "value": "doing",
+              "icon": "circle-dot",
+              "color": "#3DE0FF"
+            },
+            {
+              "value": "waiting",
+              "icon": "hourglass",
+              "color": "#F5C451"
+            },
+            {
+              "value": "done",
+              "icon": "circle-check",
+              "color": "#B6FF3B"
+            },
+            {
+              "value": "dropped",
+              "icon": "circle-x",
+              "color": "#FF5C7A"
+            }
+          ]
+        },
+        {
+          "id": "priority",
+          "name": "Priority",
+          "type": "select",
+          "options": [
+            {
+              "value": "high",
+              "icon": "chevrons-up",
+              "color": "#FF5C7A"
+            },
+            {
+              "value": "normal",
+              "icon": "minus",
+              "color": "#8C93A0"
+            },
+            {
+              "value": "low",
+              "icon": "chevrons-down",
+              "color": "#3DE0FF"
+            }
+          ]
+        },
+        {
+          "id": "due",
+          "name": "Due",
+          "type": "date"
+        },
+        {
+          "id": "area",
+          "name": "Area",
+          "type": "text"
+        },
+        {
+          "id": "completed",
+          "name": "Completed",
+          "type": "date",
+          "config": {
+            "withTime": true
+          }
+        },
+        {
+          "id": "cancelled",
+          "name": "Cancelled",
+          "type": "date",
+          "config": {
+            "withTime": true
+          }
+        }
+      ],
+      "views": [
+        {
+          "id": "board",
+          "name": "Board",
+          "type": "board",
+          "config": {
+            "groupBy": "status"
+          }
+        },
+        {
+          "id": "table",
+          "name": "Table",
+          "type": "table",
+          "config": {}
+        },
+        {
+          "id": "calendar",
+          "name": "Calendar",
+          "type": "calendar",
+          "config": {
+            "dateField": "due"
+          }
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "journal",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "Journal",
+      "icon": "notebook",
+      "color": "#8B7CFF",
+      "order": 2,
+      "fields": [
+        {
+          "id": "date",
+          "name": "Date",
+          "type": "date"
+        },
+        {
+          "id": "gym",
+          "name": "Gym",
+          "type": "checkbox"
+        },
+        {
+          "id": "supplements",
+          "name": "Supplements",
+          "type": "checkbox"
+        },
+        {
+          "id": "reading",
+          "name": "Reading",
+          "type": "checkbox"
+        },
+        {
+          "id": "meditation",
+          "name": "Meditation",
+          "type": "checkbox"
+        },
+        {
+          "id": "water_2l",
+          "name": "Water 2 L",
+          "type": "checkbox"
+        },
+        {
+          "id": "protein",
+          "name": "Protein",
+          "type": "checkbox"
+        },
+        {
+          "id": "creatine",
+          "name": "Creatine",
+          "type": "checkbox"
+        },
+        {
+          "id": "learning",
+          "name": "Learning",
+          "type": "checkbox"
+        }
+      ],
+      "views": [
+        {
+          "id": "write",
+          "name": "Write",
+          "type": "write",
+          "config": {}
+        },
+        {
+          "id": "gallery",
+          "name": "Gallery",
+          "type": "gallery",
+          "config": {}
+        },
+        {
+          "id": "habits",
+          "name": "Habits",
+          "type": "habits",
+          "config": {
+            "habits": [
+              {
+                "id": "gym",
+                "icon": "dumbbell"
+              },
+              {
+                "id": "supplements",
+                "icon": "pill"
+              },
+              {
+                "id": "reading",
+                "icon": "book"
+              },
+              {
+                "id": "meditation",
+                "icon": "flower-2"
+              },
+              {
+                "id": "water_2l",
+                "icon": "droplet"
+              },
+              {
+                "id": "protein",
+                "icon": "egg"
+              },
+              {
+                "id": "creatine",
+                "icon": "flask-conical"
+              },
+              {
+                "id": "learning",
+                "icon": "graduation-cap"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "ideas",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "Ideas",
+      "icon": "lightbulb",
+      "color": "#F5C451",
+      "order": 3,
+      "fields": [
+        {
+          "id": "stage",
+          "name": "Stage",
+          "type": "select",
+          "options": [
+            {
+              "value": "spark",
+              "icon": "sparkles",
+              "color": "#F5C451"
+            },
+            {
+              "value": "exploring",
+              "icon": "compass",
+              "color": "#3DE0FF"
+            },
+            {
+              "value": "building",
+              "icon": "hammer",
+              "color": "#B6FF3B"
+            },
+            {
+              "value": "parked",
+              "icon": "pause",
+              "color": "#8C93A0"
+            }
+          ]
+        },
+        {
+          "id": "area",
+          "name": "Area",
+          "type": "text"
+        },
+        {
+          "id": "next_step",
+          "name": "Next step",
+          "type": "text"
+        }
+      ],
+      "views": [
+        {
+          "id": "table",
+          "name": "Table",
+          "type": "table",
+          "config": {}
+        },
+        {
+          "id": "board",
+          "name": "Board",
+          "type": "board",
+          "config": {
+            "groupBy": "stage"
+          }
+        },
+        {
+          "id": "gallery",
+          "name": "Gallery",
+          "type": "gallery",
+          "config": {}
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "wealth",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "Wealth",
+      "icon": "landmark",
+      "color": "#3DE0FF",
+      "order": 4,
+      "fields": [
+        {
+          "id": "type",
+          "name": "Type",
+          "type": "select",
+          "options": [
+            {
+              "value": "liquid",
+              "icon": "banknote",
+              "color": "#2EE6A6"
+            },
+            {
+              "value": "investments",
+              "icon": "trending-up",
+              "color": "#F5C451"
+            },
+            {
+              "value": "stocks",
+              "icon": "chart-candlestick",
+              "color": "#8B7CFF"
+            },
+            {
+              "value": "house",
+              "icon": "house",
+              "color": "#3DE0FF"
+            },
+            {
+              "value": "assets",
+              "icon": "package",
+              "color": "#C77DFF"
+            },
+            {
+              "value": "debt",
+              "icon": "credit-card",
+              "color": "#FF5C7A"
+            }
+          ]
+        },
+        {
+          "id": "value",
+          "name": "Value",
+          "type": "money"
+        },
+        {
+          "id": "updated",
+          "name": "Updated",
+          "type": "date"
+        }
+      ],
+      "views": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "type": "wealth",
+          "config": {}
+        },
+        {
+          "id": "table",
+          "name": "Table",
+          "type": "table",
+          "config": {}
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "leetcode",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "LeetCode",
+      "icon": "code",
+      "color": "#FF9F43",
+      "order": 5,
+      "fields": [
+        {
+          "id": "number",
+          "name": "Number",
+          "type": "number"
+        },
+        {
+          "id": "difficulty",
+          "name": "Difficulty",
+          "type": "select",
+          "options": [
+            {
+              "value": "easy",
+              "icon": "signal-low",
+              "color": "#2EE6A6"
+            },
+            {
+              "value": "medium",
+              "icon": "signal-medium",
+              "color": "#F5C451"
+            },
+            {
+              "value": "hard",
+              "icon": "signal-high",
+              "color": "#FF5C7A"
+            }
+          ]
+        },
+        {
+          "id": "topic",
+          "name": "Topic",
+          "type": "text"
+        },
+        {
+          "id": "status",
+          "name": "Status",
+          "type": "select",
+          "options": [
+            {
+              "value": "queued",
+              "icon": "list",
+              "color": "#8C93A0"
+            },
+            {
+              "value": "practicing",
+              "icon": "repeat",
+              "color": "#3DE0FF"
+            },
+            {
+              "value": "review",
+              "icon": "eye",
+              "color": "#F5C451"
+            },
+            {
+              "value": "solved",
+              "icon": "circle-check",
+              "color": "#B6FF3B"
+            },
+            {
+              "value": "skipped",
+              "icon": "skip-forward",
+              "color": "#FF5C7A"
+            }
+          ]
+        },
+        {
+          "id": "solved_at",
+          "name": "Solved",
+          "type": "date"
+        },
+        {
+          "id": "notes",
+          "name": "Notes",
+          "type": "text"
+        }
+      ],
+      "views": [
+        {
+          "id": "progress",
+          "name": "Progress",
+          "type": "progress",
+          "config": {}
+        },
+        {
+          "id": "table",
+          "name": "Table",
+          "type": "table",
+          "config": {}
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "projects",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "Projects",
+      "icon": "folder-kanban",
+      "color": "#C77DFF",
+      "order": 6,
+      "fields": [
+        {
+          "id": "status",
+          "name": "Status",
+          "type": "select",
+          "options": [
+            {
+              "value": "active",
+              "icon": "play",
+              "color": "#B6FF3B"
+            },
+            {
+              "value": "paused",
+              "icon": "pause",
+              "color": "#F5C451"
+            },
+            {
+              "value": "done",
+              "icon": "circle-check",
+              "color": "#3DE0FF"
+            },
+            {
+              "value": "dropped",
+              "icon": "circle-x",
+              "color": "#FF5C7A"
+            }
+          ]
+        },
+        {
+          "id": "area",
+          "name": "Area",
+          "type": "text"
+        },
+        {
+          "id": "review",
+          "name": "Review",
+          "type": "date"
+        }
+      ],
+      "views": [
+        {
+          "id": "table",
+          "name": "Table",
+          "type": "table",
+          "config": {}
+        },
+        {
+          "id": "board",
+          "name": "Board",
+          "type": "board",
+          "config": {
+            "groupBy": "status"
+          }
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "reminders",
+    "kind": "collection",
+    "collection": null,
+    "data": {
+      "name": "Reminders",
+      "icon": "bell",
+      "color": "#FF5C7A",
+      "order": 7,
+      "fields": [
+        {
+          "id": "due",
+          "name": "Due",
+          "type": "date",
+          "config": {
+            "withTime": true
+          }
+        },
+        {
+          "id": "repeat",
+          "name": "Repeat",
+          "type": "select",
+          "options": [
+            {
+              "value": "none",
+              "icon": "ban",
+              "color": "#8C93A0"
+            },
+            {
+              "value": "daily",
+              "icon": "sun",
+              "color": "#3DE0FF"
+            },
+            {
+              "value": "weekly",
+              "icon": "calendar-days",
+              "color": "#8B7CFF"
+            },
+            {
+              "value": "monthly",
+              "icon": "calendar",
+              "color": "#F5C451"
+            },
+            {
+              "value": "yearly",
+              "icon": "calendar-range",
+              "color": "#C77DFF"
+            }
+          ]
+        },
+        {
+          "id": "done",
+          "name": "Done",
+          "type": "checkbox"
+        }
+      ],
+      "views": [
+        {
+          "id": "table",
+          "name": "Table",
+          "type": "table",
+          "config": {}
+        },
+        {
+          "id": "calendar",
+          "name": "Calendar",
+          "type": "calendar",
+          "config": {
+            "dateField": "due"
+          }
+        }
+      ]
+    },
+    "stamps": {
+      "name": "0000000000000:0000:seed",
+      "icon": "0000000000000:0000:seed",
+      "color": "0000000000000:0000:seed",
+      "order": "0000000000000:0000:seed",
+      "fields": "0000000000000:0000:seed",
+      "views": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  },
+  {
+    "id": "settings",
+    "kind": "setting",
+    "collection": null,
+    "data": {
+      "timezone": "America/Mexico_City"
+    },
+    "stamps": {
+      "timezone": "0000000000000:0000:seed"
+    },
+    "actor": "seed"
+  }
+]

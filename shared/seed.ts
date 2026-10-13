@@ -235,8 +235,47 @@ const COLLECTIONS: Record<string, CollectionData> = {
   },
 };
 
+/**
+ * Delete proposals from agents. The owner decides on them from the Agents page, so the
+ * collection stays out of navigation. Added after real databases may exist, so it also
+ * ships as seed migration 2.
+ */
+const PROPOSALS: CollectionData = {
+  name: "Proposals",
+  icon: "gavel",
+  color: C.gold,
+  order: 8,
+  hidden: true,
+  fields: [
+    field("target", "Target", "text"),
+    field("action", "Action", "select", [opt("delete", "trash", C.expense)]),
+    field("reason", "Reason", "text"),
+    field("agent", "Agent", "text"),
+    field("status", "Status", "select", [
+      opt("pending", "hourglass", C.gold),
+      opt("approved", "circle-check", C.lime),
+      opt("declined", "circle-x", C.grey),
+    ]),
+    dateTime("decided", "Decided"),
+  ],
+  views: [view("table", "Table", "table")],
+};
+
+/** A change to seeded docs after real databases exist; applied once, in version order. */
+export interface SeedMigration {
+  version: number;
+  docs: { id: string; kind: Kind; data: Record<string, unknown> }[];
+}
+
+export const SEED_MIGRATIONS: SeedMigration[] = [
+  { version: 2, docs: [{ id: "proposals", kind: "collection", data: PROPOSALS }] },
+];
+
+/** A fresh seed already holds every migration; databases seeded before migrations are 1. */
+export const SEED_VERSION = Math.max(1, ...SEED_MIGRATIONS.map((m) => m.version));
+
 // Reminders and the daily brief resolve local date-times through this timezone.
-const SETTINGS = { timezone: "America/Mexico_City" };
+const SETTINGS = { timezone: "America/Mexico_City", seedVersion: SEED_VERSION };
 
 const seeded = (id: string, kind: Kind, data: Record<string, unknown>): Doc => ({
   id,
@@ -251,6 +290,7 @@ const seeded = (id: string, kind: Kind, data: Record<string, unknown>): Doc => (
 export function seedDocs(): Doc[] {
   return [
     ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
+    seeded("proposals", "collection", PROPOSALS),
     seeded("settings", "setting", SETTINGS),
   ];
 }

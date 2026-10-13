@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Cave</title>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#B6FF3B" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#B6FF3B" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="#050607"/>
+  <circle cx="256" cy="256" r="190" fill="url(#glow)"/>
+  <!-- The sidebar's bolt, scaled to stay inside the 80% maskable safe zone. -->
+  <path transform="translate(118 112) scale(12)" d="M13 2 4 14h7l-1 8 9-12h-7z"
+        fill="#B6FF3B" stroke="#B6FF3B" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

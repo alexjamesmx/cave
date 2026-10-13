@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
+import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../../../shared/dates.ts";
 import { useToday } from "../app/hooks.ts";
-import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../logic/dates.ts";
 import { doneInLast, entriesByDay, habitsDone, streak } from "../logic/habits.ts";
 import { BarRow } from "../ui/charts.tsx";
 import { Icon } from "../ui/icon.tsx";

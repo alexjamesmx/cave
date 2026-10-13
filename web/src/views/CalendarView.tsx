@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
+import { dayOf, monthGrid, monthName, monthOf, shiftMonth } from "../../../shared/dates.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useToday } from "../app/hooks.ts";
-import { dayOf, monthGrid, monthName, monthOf, shiftMonth } from "../logic/dates.ts";
 import { titleOf } from "../logic/views.ts";
 import { Icon } from "../ui/icon.tsx";
 import type { ViewProps } from "./types.ts";

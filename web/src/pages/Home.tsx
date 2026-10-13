@@ -1,16 +1,16 @@
 import { type FormEvent, type ReactNode, useMemo, useState } from "react";
+import { dayOf, monthName, monthOf } from "../../../shared/dates.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
+import { monthSummary } from "../../../shared/money.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { runCommand } from "../app/commands.ts";
 import { useCave } from "../app/context.ts";
 import { useTimeZone, useToday } from "../app/hooks.ts";
 import { collectionPath, navigate } from "../app/router.ts";
 import { type CommandContext, parseCommand } from "../logic/command.ts";
-import { dayOf, monthName, monthOf } from "../logic/dates.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
 import { entriesByDay, habitsDone } from "../logic/habits.ts";
-import { monthSummary } from "../logic/money.ts";
 import { wealthSummary } from "../logic/wealth.ts";
 import { useLive } from "../store/live.ts";
 import { type CollectionDoc, useCollections } from "../store/queries.ts";
@@ -173,7 +173,10 @@ function CommandBar({ collections }: { collections: CollectionDoc[] }) {
         .filter((f) => f.type === "checkbox")
         .map(({ id, name }) => ({ id, name })),
       targets: [
-        ...collections.map((c) => ({ id: c.id, name: c.data.name, path: collectionPath(c.id) })),
+        ...collections
+          .filter((c) => !c.data.hidden)
+          .map((c) => ({ id: c.id, name: c.data.name, path: collectionPath(c.id) })),
+        { id: "agents", name: "Agents", path: "/agents" },
         { id: "settings", name: "Settings", path: "/settings" },
       ],
     };

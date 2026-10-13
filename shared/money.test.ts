@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import type { Doc } from "../../../shared/types.ts";
 import { monthSummary, undatedEntries } from "./money.ts";
+import type { Doc } from "./types.ts";
 
 let n = 0;
 const entry = (data: Record<string, unknown>): Doc => ({

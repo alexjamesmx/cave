@@ -62,4 +62,6 @@ export type CollectionData = {
   order: number;
   fields: Field[];
   views: View[];
+  /** Kept out of navigation and the command bar; the app reaches it elsewhere (proposals). */
+  hidden?: boolean;
 };

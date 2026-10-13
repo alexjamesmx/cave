@@ -29,6 +29,29 @@ const MIGRATIONS = [
   `ALTER TABLE changes ADD COLUMN before TEXT NOT NULL DEFAULT 'null';`,
   // The item drawer reads one doc's history.
   `CREATE INDEX IF NOT EXISTS changes_id ON changes (id, seq);`,
+  // Agent tokens: only the SHA-256 of a token is stored. `collections` NULL means all.
+  `CREATE TABLE agents (
+     name TEXT PRIMARY KEY,
+     token_hash TEXT NOT NULL UNIQUE,
+     scopes TEXT NOT NULL,
+     collections TEXT,
+     created INTEGER NOT NULL,
+     revoked INTEGER
+   );`,
+  // Every MCP tool call, reads included; `change_seqs` links a write to its change rows.
+  `CREATE TABLE agent_calls (
+     seq INTEGER PRIMARY KEY AUTOINCREMENT,
+     agent TEXT NOT NULL,
+     tool TEXT NOT NULL,
+     args TEXT NOT NULL,
+     at INTEGER NOT NULL,
+     ok INTEGER NOT NULL,
+     error TEXT,
+     change_seqs TEXT NOT NULL DEFAULT '[]'
+   );
+   CREATE INDEX agent_calls_agent ON agent_calls (agent, seq);`,
+  // The stamp each changed key got, so undo can tell whether a key changed since.
+  `ALTER TABLE changes ADD COLUMN after TEXT;`,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

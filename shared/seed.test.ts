@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { SEED_STAMP } from "./hlc.ts";
 import { FIELD_TYPES, VIEW_TYPES } from "./schema.ts";
-import { seedDocs } from "./seed.ts";
+import { SEED_VERSION, seedDocs } from "./seed.ts";
 
 const docs = seedDocs();
 const byId = new Map(docs.map((d) => [d.id, d]));
@@ -16,16 +16,28 @@ type SeedField = {
 const fieldOf = (collection: string, id: string) =>
   ((byId.get(collection)?.data.fields ?? []) as SeedField[]).find((f) => f.id === id);
 
-test("seeds the eight collections from the plan and the settings doc", () => {
+test("seeds the plan's eight collections, hidden proposals and the settings doc", () => {
   expect(collections.map((d) => d.id).sort()).toEqual(
-    ["ideas", "journal", "leetcode", "money", "projects", "reminders", "tasks", "wealth"].sort(),
+    [
+      "ideas",
+      "journal",
+      "leetcode",
+      "money",
+      "projects",
+      "proposals",
+      "reminders",
+      "tasks",
+      "wealth",
+    ].sort(),
   );
+  expect(byId.get("proposals")?.data.hidden).toBe(true);
+  expect(collections.filter((c) => c.data.hidden).map((c) => c.id)).toEqual(["proposals"]);
   expect(byId.get("settings")).toMatchObject({
     kind: "setting",
     collection: null,
-    data: { timezone: "America/Mexico_City" },
+    data: { timezone: "America/Mexico_City", seedVersion: SEED_VERSION },
   });
-  expect(docs).toHaveLength(9);
+  expect(docs).toHaveLength(10);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {

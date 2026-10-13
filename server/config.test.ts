@@ -11,6 +11,7 @@ describe("resolveConfig", () => {
         token: undefined,
         dbPath: "data/cave.db",
         vaultPath: undefined,
+        allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
       },
     });
   });
@@ -44,6 +45,7 @@ describe("resolveConfig", () => {
         token: "t",
         dbPath: "data/cave.db",
         vaultPath: undefined,
+        allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
       },
     });
   });
@@ -51,6 +53,28 @@ describe("resolveConfig", () => {
   test("rejects a bad port", () => {
     for (const PORT of ["abc", "0", "70000", "80.5"])
       expect(resolveConfig({ PORT }).ok).toBe(false);
+  });
+
+  test("/mcp answers to loopback, a named CAVE_HOST and CAVE_ALLOWED_HOSTS", () => {
+    const named = resolveConfig({ CAVE_HOST: "laptop.tail1234.ts.net", CAVE_TOKEN: "t" });
+    expect(named.ok && named.value.allowedHosts).toEqual([
+      "localhost",
+      "127.0.0.1",
+      "[::1]",
+      "laptop.tail1234.ts.net",
+    ]);
+    const wildcard = resolveConfig({
+      CAVE_HOST: "0.0.0.0",
+      CAVE_TOKEN: "t",
+      CAVE_ALLOWED_HOSTS: " 100.64.0.7, Laptop.local ,",
+    });
+    expect(wildcard.ok && wildcard.value.allowedHosts).toEqual([
+      "localhost",
+      "127.0.0.1",
+      "[::1]",
+      "100.64.0.7",
+      "laptop.local",
+    ]);
   });
 
   test("reads the vault path", () => {

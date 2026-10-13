@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
+import { shortDay } from "../../../shared/dates.ts";
 import { newId } from "../../../shared/ids.ts";
 import { useSaver, useToday } from "../app/hooks.ts";
-import { shortDay } from "../logic/dates.ts";
 import { entriesByDay, previousDay } from "../logic/habits.ts";
 import { Icon } from "../ui/icon.tsx";
 import type { ViewProps } from "./types.ts";
