@@ -79,3 +79,28 @@ test("a file that does not verify is never restored", () => {
   expect(result).toMatchObject({ ok: false });
   expect(readdirSync(dir).some((name) => name.includes("before-restore"))).toBe(false);
 });
+
+test("two restores in the same second both keep the file they replaced", () => {
+  const backup = takeBackup(db, join(dir, "backups"), NOW);
+  if (!backup.ok) throw new Error(backup.error);
+  db.close();
+  const first = restoreBackup(backup.file, dbPath, NOW);
+  const second = restoreBackup(backup.file, dbPath, NOW);
+  if (!first.ok || !second.ok) throw new Error("not restored");
+  expect(first.kept).toEqual([`${dbPath}.before-restore-2026-10-13T140500`]);
+  expect(second.kept).toEqual([`${dbPath}.before-restore-2026-10-13T140500-2`]);
+  for (const file of [...first.kept, ...second.kept]) expect(existsSync(file)).toBe(true);
+  db = openDb(dbPath);
+});
+
+test("a stale lock is reported and replaced", () => {
+  const backup = takeBackup(db, join(dir, "backups"), NOW);
+  if (!backup.ok) throw new Error(backup.error);
+  db.close();
+  // Far above any PID a test machine hands out.
+  writeFileSync(lockPathOf(dbPath), "4194303");
+  const result = restoreBackup(backup.file, dbPath, NOW);
+  expect(result).toMatchObject({ ok: true, staleLock: 4194303 });
+  expect(existsSync(lockPathOf(dbPath))).toBe(false);
+  db = openDb(dbPath);
+});

@@ -1,6 +1,6 @@
+import { Database } from "bun:sqlite";
 import { pruneBackups, takeBackup } from "./backup.ts";
 import { resolveConfig } from "./config.ts";
-import { openDb } from "./db.ts";
 
 const config = resolveConfig(process.env);
 if (!config.ok) {
@@ -10,7 +10,8 @@ if (!config.ok) {
 const { dbPath, backupDir } = config.value;
 
 const now = Date.now();
-const db = openDb(dbPath);
+// Read-only and without migrations: taking a backup never changes the database it copies.
+const db = new Database(dbPath, { readonly: true });
 const result = takeBackup(db, backupDir, now);
 db.close();
 if (!result.ok) {

@@ -5,7 +5,7 @@ import { openDb } from "./db.ts";
 import { acquireLock, lockPathOf, releaseLock } from "./lock.ts";
 
 export type Restored =
-  | { ok: true; docs: number; dbId: string; kept: string[] }
+  | { ok: true; docs: number; dbId: string; kept: string[]; staleLock?: number }
   | { ok: false; error: string };
 
 const stampOf = (now: number) => new Date(now).toISOString().slice(0, 19).replace(/:/g, "");
@@ -34,7 +34,10 @@ export function restoreBackup(file: string, dbPath: string, now: number): Restor
     try {
       const dbId = crypto.randomUUID().replaceAll("-", "");
       db.run("UPDATE meta SET value = ? WHERE key = 'db_id'", [dbId]);
-      return { ok: true, docs: verified.docs, dbId, kept };
+      const restored = { ok: true as const, docs: verified.docs, dbId, kept };
+      return acquired.replaced === undefined
+        ? restored
+        : { ...restored, staleLock: acquired.replaced };
     } finally {
       db.close();
     }
@@ -52,12 +55,23 @@ function setAside(dbPath: string, now: number): string[] {
   } finally {
     current.close();
   }
-  const target = `${dbPath}.before-restore-${stampOf(now)}`;
+  const target = freeName(`${dbPath}.before-restore-${stampOf(now)}`);
   const kept: string[] = [];
-  for (const suffix of ["", "-wal", "-shm"]) {
+  for (const suffix of SUFFIXES) {
     if (!existsSync(dbPath + suffix)) continue;
     renameSync(dbPath + suffix, target + suffix);
     kept.push(target + suffix);
   }
   return kept;
+}
+
+const SUFFIXES = ["", "-wal", "-shm"];
+
+// Renaming onto an existing name replaces it, so a second restore in the same second gets
+// `-2`, `-3`, … and every earlier copy survives.
+function freeName(base: string): string {
+  for (let n = 1; ; n++) {
+    const name = n === 1 ? base : `${base}-${n}`;
+    if (!SUFFIXES.some((suffix) => existsSync(name + suffix))) return name;
+  }
 }

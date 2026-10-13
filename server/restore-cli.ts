@@ -18,6 +18,9 @@ if (!result.ok) {
   console.error(`Not restored: ${result.error}`);
   process.exit(1);
 }
+if (result.staleLock !== undefined) {
+  console.log(`Replaced a stale lock left by pid ${result.staleLock}`);
+}
 console.log(`Restored ${file} into ${dbPath}: ${result.docs} docs, new database id ${result.dbId}`);
 for (const kept of result.kept) console.log(`Previous file kept as ${kept}`);
 console.log("Devices push back anything newer than the backup on their next sync.");
