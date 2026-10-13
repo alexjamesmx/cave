@@ -171,7 +171,8 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
           fields: z.record(z.string(), z.unknown()).optional(),
           body: z.string().optional(),
         }),
-        annotations: { ...WRITE, idempotentHint: true },
+        // It replaces existing values, so clients that ask before destructive tools ask here.
+        annotations: { ...WRITE, destructiveHint: true, idempotentHint: true },
       },
       (args) =>
         run("update", args, () =>

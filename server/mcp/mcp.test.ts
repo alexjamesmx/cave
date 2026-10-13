@@ -169,6 +169,16 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
   expect(await names("reader")).toEqual(["list_collections", "query", "get", "money_month"]);
   const tools = (await (await connect("reader")).listTools()).tools;
   expect(tools.every((t) => t.annotations?.readOnlyHint === true)).toBe(true);
+  // Only update changes existing values; the other write tools only add.
+  const writes = (await (await connect("claude")).listTools()).tools.filter(
+    (t) => t.annotations?.readOnlyHint === false,
+  );
+  expect(writes.map((t) => [t.name, t.annotations?.destructiveHint])).toEqual([
+    ["create", false],
+    ["update", true],
+    ["propose_delete", false],
+    ["add_note", false],
+  ]);
 });
 
 test("the allowlist hides collections everywhere", async () => {
