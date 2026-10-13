@@ -12,10 +12,12 @@ export interface AppOptions {
   now: () => number;
   /** The PWA; every non-API path serves it so client routes survive a reload. */
   web?: HTMLBundle;
+  /** The bundled service worker, from `buildServiceWorker()`. */
+  serviceWorker?: Response;
 }
 
 /** The HTTP server; `main.ts` and tests that need a real socket both start it from here. */
-export function serveCave({ hostname, port, store, token, now, web }: AppOptions) {
+export function serveCave({ hostname, port, store, token, now, web, serviceWorker }: AppOptions) {
   const notFound = Response.json({ error: "not found" }, { status: 404 });
   return Bun.serve({
     hostname,
@@ -26,6 +28,7 @@ export function serveCave({ hostname, port, store, token, now, web }: AppOptions
       "/api/history/:id": { GET: createHistoryHandler({ store, token }) },
       "/api/*": notFound,
       ...staticRoutes,
+      "/sw.js": serviceWorker ?? notFound,
       "/*": web ?? notFound,
     },
     fetch: () => Response.json({ error: "not found" }, { status: 404 }),

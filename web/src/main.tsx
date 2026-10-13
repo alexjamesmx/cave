@@ -25,3 +25,10 @@ createRoot(container).render(
     </CaveContext>
   </StrictMode>,
 );
+
+// After the first render, so registering never delays the app opening.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
+    console.warn("Service worker not registered; the app needs the network to open", error);
+  });
+}

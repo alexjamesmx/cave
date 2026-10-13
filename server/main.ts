@@ -5,6 +5,7 @@ import { resolveConfig } from "./config.ts";
 import { openDb } from "./db.ts";
 import { formatReport, importIfEmpty } from "./import/importer.ts";
 import { createStore } from "./store.ts";
+import { buildServiceWorker } from "./sw.ts";
 
 const config = resolveConfig(process.env);
 if (!config.ok) {
@@ -18,5 +19,6 @@ store.seedIfEmpty(seedDocs(), Date.now());
 const imported = await importIfEmpty(store, vaultPath, Date.now());
 if (imported) console.log(`Imported ${vaultPath}\n${formatReport(imported)}`);
 
-const server = serveCave({ hostname, port, store, token, now: Date.now, web });
+const serviceWorker = await buildServiceWorker();
+const server = serveCave({ hostname, port, store, token, now: Date.now, web, serviceWorker });
 console.log(`Cave server listening on ${server.url}`);
