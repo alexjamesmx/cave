@@ -1,0 +1,59 @@
+import { describe, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { formatStamp } from "../shared/hlc.ts";
+import { seedDocs } from "../shared/seed.ts";
+import { openDb } from "./db.ts";
+import { createStore } from "./store.ts";
+
+describe("seedIfEmpty", () => {
+  test("seeds the collections once, logged as the seed actor", () => {
+    const store = createStore(openDb(":memory:"));
+    expect(store.seedIfEmpty(seedDocs(), 1)).toBe(true);
+    const seeded = store.changesSince(0, 100).map((r) => r.doc.id);
+    expect(seeded.sort()).toEqual(
+      seedDocs()
+        .map((d) => d.id)
+        .sort(),
+    );
+    expect(store.changeLog().every((row) => row.actor === "seed")).toBe(true);
+
+    const log = store.changeLog().length;
+    expect(store.seedIfEmpty(seedDocs(), 2)).toBe(false);
+    expect(store.changeLog().length).toBe(log);
+  });
+
+  test("any user edit wins over a seeded value", () => {
+    const store = createStore(openDb(":memory:"));
+    store.seedIfEmpty(seedDocs(), 1);
+    const money = store.get("money");
+    if (!money) throw new Error("money not seeded");
+
+    store.applyChanges(
+      [{ ...money, data: { name: "Spending" }, stamps: { name: formatStamp(1, 0, "dev-a") } }],
+      "user:dev-a",
+      2,
+    );
+    expect(store.get("money")?.data.name).toBe("Spending");
+    expect(store.get("money")?.data.fields).toEqual(money.data.fields);
+  });
+});
+
+describe("openDb", () => {
+  test("persists to a file and reopens", () => {
+    const dir = mkdtempSync(join(tmpdir(), "cave-"));
+    try {
+      const path = join(dir, "nested", "cave.db");
+      const first = openDb(path);
+      createStore(first).seedIfEmpty(seedDocs(), 1);
+      first.close();
+
+      const second = openDb(path);
+      expect(createStore(second).get("tasks")?.kind).toBe("collection");
+      second.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
