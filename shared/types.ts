@@ -45,6 +45,8 @@ export interface Change {
   keys: string[];
   /** `null` for rows written before previous values were recorded. */
   before: Before | null;
+  /** The stamp each changed key got; `null` for rows written before it was recorded. */
+  after: Record<string, Stamp> | null;
 }
 
 /** Upper bound on docs per pull page; a shorter page means the client is caught up. */

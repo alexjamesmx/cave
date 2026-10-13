@@ -19,17 +19,26 @@ interface ChangeRow {
   at: number;
   keys: string;
   before: string;
+  after: string | null;
+}
+
+/** One stored change: the doc it touched and the log row (and `seq`) it got. */
+export interface Applied {
+  id: string;
+  seq: number;
 }
 
 export interface Store {
-  /** Merges docs in one IMMEDIATE transaction; returns the ids that changed. */
-  applyChanges(docs: Doc[], actor: string, at: number): string[];
+  /** Merges docs in one IMMEDIATE transaction; returns the docs that changed and their seq. */
+  applyChanges(docs: Doc[], actor: string, at: number): Applied[];
   changesSince(cursor: number, limit: number): { seq: number; doc: Doc }[];
   get(id: string): Doc | undefined;
   seqOf(id: string): number | undefined;
   changeLog(): Change[];
   /** One doc's changes, newest first. */
   changesFor(id: string, limit: number): Change[];
+  /** Change rows by seq, in seq order. */
+  changesBySeq(seqs: number[]): Change[];
   seedIfEmpty(docs: Doc[], at: number): boolean;
   hasItems(): boolean;
 }
@@ -47,6 +56,7 @@ const toChange = (row: ChangeRow): Change => ({
   ...row,
   keys: JSON.parse(row.keys),
   before: JSON.parse(row.before),
+  after: row.after === null ? null : JSON.parse(row.after),
 });
 
 export function createStore(db: Database): Store {
@@ -60,9 +70,11 @@ export function createStore(db: Database): Store {
   const selectChangesFor = db.query<ChangeRow, [string, number]>(
     "SELECT * FROM changes WHERE id = ? ORDER BY seq DESC LIMIT ?",
   );
-  const insertChange = db.query<{ seq: number }, [string, string, number, string, string]>(
-    "INSERT INTO changes (id, actor, at, keys, before) VALUES (?, ?, ?, ?, ?) RETURNING seq",
+  const insertChange = db.query<{ seq: number }, [string, string, number, string, string, string]>(
+    `INSERT INTO changes (id, actor, at, keys, before, after) VALUES (?, ?, ?, ?, ?, ?)
+     RETURNING seq`,
   );
+  const selectChangeBySeq = db.query<ChangeRow, [number]>("SELECT * FROM changes WHERE seq = ?");
   const upsertDoc = db.query<never, [string, Kind, string | null, string, string, number, string]>(
     `INSERT INTO docs (id, kind, collection, data, stamps, seq, actor) VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (id) DO UPDATE SET data = excluded.data, stamps = excluded.stamps,
@@ -70,8 +82,8 @@ export function createStore(db: Database): Store {
   );
 
   // seq comes from the changes log, so a doc's seq and its newest log row always match.
-  const merge = db.transaction((docs: Doc[], actor: string, at: number): string[] => {
-    const touched: string[] = [];
+  const merge = db.transaction((docs: Doc[], actor: string, at: number): Applied[] => {
+    const applied: Applied[] = [];
     for (const incoming of docs) {
       const row = selectDoc.get(incoming.id);
       const local = row ? toDoc(row) : undefined;
@@ -83,6 +95,7 @@ export function createStore(db: Database): Store {
         at,
         JSON.stringify(changed),
         JSON.stringify(previous(local, changed)),
+        JSON.stringify(Object.fromEntries(changed.map((key) => [key, doc.stamps[key]]))),
       );
       if (!change) throw new Error("changes insert returned no seq");
       upsertDoc.run(
@@ -94,9 +107,9 @@ export function createStore(db: Database): Store {
         change.seq,
         actor,
       );
-      touched.push(doc.id);
+      applied.push({ id: doc.id, seq: change.seq });
     }
-    return touched;
+    return applied;
   });
 
   const seed = db.transaction((docs: Doc[], at: number): boolean => {
@@ -116,6 +129,13 @@ export function createStore(db: Database): Store {
     seqOf: (id) => selectDoc.get(id)?.seq,
     changeLog: () => selectChanges.all().map(toChange),
     changesFor: (id, limit) => selectChangesFor.all(id, limit).map(toChange),
+    changesBySeq: (seqs) =>
+      [...seqs]
+        .sort((a, b) => a - b)
+        .flatMap((seq) => {
+          const row = selectChangeBySeq.get(seq);
+          return row ? [toChange(row)] : [];
+        }),
     seedIfEmpty: (docs, at) => seed.immediate(docs, at),
     hasItems: () => anyItem.get() !== null,
   };

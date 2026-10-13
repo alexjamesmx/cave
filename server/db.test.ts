@@ -38,7 +38,7 @@ test("an M1 database is migrated in place and keeps its data", () => {
     const store = createStore(db);
     expect(store.get("t1")?.data).toEqual({ status: "todo" });
     expect(store.changeLog()).toEqual([
-      { seq: 1, id: "t1", actor: "user:dev-a", at: 1, keys: ["status"], before: null },
+      { seq: 1, id: "t1", actor: "user:dev-a", at: 1, keys: ["status"], before: null, after: null },
     ]);
     db.close();
 
