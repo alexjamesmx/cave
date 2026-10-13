@@ -13,6 +13,6 @@ Double-click `setup/setup.cmd`. It:
 3. Installs global Claude rules to `~/.claude/CLAUDE.md` (keeps yours if it exists).
 4. Adds the Playwright MCP server and the Claude Code plugins.
 5. Writes `.mcp.json` and `.claude/settings.json` from the templates in `setup/` if they don't exist.
-6. Initialises the git repository.
+6. Initialises the git repository and turns on the commit-message hook (`git config core.hooksPath .githooks`; see "Git" in AGENTS.md).
 
 Then open a terminal here, run `claude`, approve the project MCP servers and check them with `/mcp`.

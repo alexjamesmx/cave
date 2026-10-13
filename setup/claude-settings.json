@@ -4,5 +4,9 @@
   "permissions": {
     "deny": ["Read(/.env)", "Read(/.env.*)", "Read(/data/**)", "Edit(/data/**)"],
     "ask": ["Bash(git push *)", "Bash(git reset --hard *)", "Bash(git rebase *)"]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }

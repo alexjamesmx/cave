@@ -60,6 +60,13 @@ Two agents share this repo: an architect (Claude in the desktop app: specs, desi
 - `docs/decisions.md`: append-only record of decisions. Read it before proposing an alternative to something already decided.
 - One branch per milestone (`m1-core`, `m2-import`, …), merged to `main` after the review is closed.
 
+## Git
+
+- Commit messages are exactly one line: no body, no trailers, no `Co-Authored-By`, no "Generated with". `.githooks/commit-msg` refuses anything else; `git config core.hooksPath .githooks` turns it on (`setup/setup.ps1` does it).
+- Pull request descriptions carry no attribution footer. `.claude/settings.json` sets `attribution` to empty strings for Claude Code.
+- Merge pull requests with `gh pr merge --merge --subject "<one line>" --body ""`.
+- Never rewrite pushed history.
+
 ## Security
 
 - Secrets live only in environment variables.

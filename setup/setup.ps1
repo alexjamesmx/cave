@@ -77,6 +77,7 @@ foreach ($source in $projectFiles.Keys) {
 
 Write-Host "`n== Repository" -ForegroundColor Cyan
 if (-not (Test-Path (Join-Path $root '.git'))) { git -C $root init -b main }
+git -C $root config core.hooksPath .githooks
 
 Write-Host "`nDone. Next:" -ForegroundColor Green
 Write-Host "  cd `"$root`""
