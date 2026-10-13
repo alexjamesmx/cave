@@ -2,6 +2,8 @@
 
 Open-source, local-first, multi-agent personal brain. One place for money, tasks, habits, diary, ideas, learning and notes, built so any agent (Claude, Codex, OpenCode, OpenClaw or a local model) can read it and act on it through one API.
 
+Repository: https://github.com/alexjamesmx/cave (private: the plan and design docs hold real financial numbers). CI (`.github/workflows/ci.yml`) runs `bun run check` and `bun test` on every push and pull request.
+
 Status: pre-v0.1. M1 (core and sync) is built on branch `m1-core`; no UI yet. Update this file in the same change as anything it describes.
 
 Commands: `bun install`, `bun run dev`, `bun run check` (tsc + Biome), `bun test`. Server environment: `CAVE_HOST` (default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN`), `PORT` (default 3000), `CAVE_DB_PATH` (default `data/cave.db`), `CAVE_TOKEN` (bearer token for `/api` and `/mcp`).
