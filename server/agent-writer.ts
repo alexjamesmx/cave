@@ -1,6 +1,7 @@
 import { activeFields, fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
 import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
+import type { CollectionData } from "../shared/schema.ts";
 import type { Doc } from "../shared/types.ts";
 import type { Agent } from "./agents.ts";
 import type { Store } from "./store.ts";
@@ -20,10 +21,18 @@ export type WriteResult = { ok: true; id: string; seqs: number[] } | { ok: false
 const fail = (error: string): { ok: false; error: string } => ({ ok: false, error });
 const live = (doc: Doc | undefined): doc is Doc => doc !== undefined && doc.data._deleted !== true;
 
-/** Whether an agent may see a collection: inside its allowlist and not the proposals queue. */
-export const canSee = (agent: Agent, collection: string) =>
-  collection !== PROPOSALS &&
-  (agent.collections === null || agent.collections.includes(collection));
+/**
+ * The one visibility rule for agents, on every read and write path: a live collection,
+ * inside the agent's allowlist, not hidden and not the proposals queue. Anything else is
+ * answered as "not found".
+ */
+export function visibleCollectionDoc(store: Store, agent: Agent, id: string): Doc | undefined {
+  const doc = store.get(id);
+  if (doc?.kind !== "collection" || doc.data._deleted === true) return undefined;
+  if (id === PROPOSALS || (doc.data as CollectionData).hidden === true) return undefined;
+  if (agent.collections !== null && !agent.collections.includes(id)) return undefined;
+  return doc;
+}
 
 /**
  * Turns an agent's patch into a stamped doc and stores it as `agent:<name>`. Devices get it
@@ -49,11 +58,8 @@ export class AgentWriter {
   }
 
   create(collection: string, patch: AgentPatch): WriteResult {
-    if (!canSee(this.agent, collection)) return fail(`collection ${collection} not found`);
-    const target = this.store.get(collection);
-    if (target?.kind !== "collection" || !live(target)) {
-      return fail(`collection ${collection} not found`);
-    }
+    const target = visibleCollectionDoc(this.store, this.agent, collection);
+    if (!target) return fail(`collection ${collection} not found`);
     if (!patch.title?.trim()) return fail("title is required");
     const data = this.toData(target, patch);
     if (!data.ok) return data;
@@ -114,7 +120,7 @@ export class AgentWriter {
       !live(doc) ||
       doc.kind !== "item" ||
       !doc.collection ||
-      !canSee(this.agent, doc.collection)
+      !visibleCollectionDoc(this.store, this.agent, doc.collection)
     ) {
       return fail(`item ${id} not found`);
     }

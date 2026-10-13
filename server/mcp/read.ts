@@ -3,7 +3,7 @@ import { activeFields, fieldsOf } from "../../shared/fields.ts";
 import { monthSummary, undatedEntries } from "../../shared/money.ts";
 import type { CollectionData, Field } from "../../shared/schema.ts";
 import type { Doc } from "../../shared/types.ts";
-import { canSee } from "../agent-writer.ts";
+import { visibleCollectionDoc } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
 import type { Store } from "../store.ts";
 
@@ -21,13 +21,9 @@ const text = (v: unknown) => (typeof v === "string" ? v : "");
 
 /** A collection the agent may see, with its active fields; anything else is "not found". */
 function visibleCollection(store: Store, agent: Agent, id: string) {
-  const doc = store.get(id);
-  if (doc?.kind !== "collection" || doc.data._deleted === true || !canSee(agent, id)) {
-    return undefined;
-  }
-  const data = doc.data as CollectionData;
-  if (data.hidden) return undefined;
-  return { doc, data, fields: activeFields(fieldsOf(doc)) };
+  const doc = visibleCollectionDoc(store, agent, id);
+  if (!doc) return undefined;
+  return { doc, data: doc.data as CollectionData, fields: activeFields(fieldsOf(doc)) };
 }
 
 const fieldValues = (doc: Doc, fields: Field[]) =>

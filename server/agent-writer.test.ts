@@ -145,3 +145,45 @@ test("propose_delete creates a pending proposal and leaves the target alone", ()
   expect(store.get(created.id)?.data._deleted).toBeUndefined();
   expect(writer().update(proposal.id, { title: "x" })).toMatchObject({ ok: false });
 });
+
+test("a hidden collection is invisible to writes, as it is to reads", () => {
+  const hidden = {
+    id: "private",
+    kind: "collection" as const,
+    collection: null,
+    data: {
+      name: "Private",
+      icon: "lock",
+      color: "#fff",
+      order: 9,
+      hidden: true,
+      fields: [],
+      views: [],
+    },
+    stamps: {} as Record<string, string>,
+    actor: "",
+  };
+  hidden.stamps = Object.fromEntries(
+    Object.keys(hidden.data).map((key) => [key, formatStamp(2, 0, "dev-a")]),
+  );
+  store.applyChanges([hidden], "user:dev-a", 2);
+  const item = {
+    id: "secret",
+    kind: "item" as const,
+    collection: "private",
+    data: { _title: "x" },
+    stamps: { _title: formatStamp(2, 0, "dev-a") },
+    actor: "",
+  };
+  store.applyChanges([item], "user:dev-a", 2);
+
+  expect(writer().create("private", { title: "x" })).toEqual({
+    ok: false,
+    error: "collection private not found",
+  });
+  expect(writer().update("secret", { title: "y" })).toEqual({
+    ok: false,
+    error: "item secret not found",
+  });
+  expect(writer().proposeDelete("secret", "why")).toMatchObject({ ok: false });
+});
