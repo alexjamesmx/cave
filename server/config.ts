@@ -1,3 +1,4 @@
+import { dirname, join } from "node:path";
 import { LOOPBACK_HOSTS } from "./request-guard.ts";
 
 export interface ServerConfig {
@@ -7,6 +8,8 @@ export interface ServerConfig {
   dbPath: string;
   /** Obsidian vault to import from, read-only; unset means no import. */
   vaultPath: string | undefined;
+  /** Where backups go; next to the database unless `BACKUP_DIR` says otherwise. */
+  backupDir: string;
   /**
    * Host names `/api` and `/mcp` answer to (DNS-rebinding protection): loopback, `CAVE_HOST`
    * unless it is a wildcard, and the comma list in `CAVE_ALLOWED_HOSTS`.
@@ -49,14 +52,16 @@ export function resolveConfig(
       error: `CAVE_HOST=${hostname} is reachable from other machines; set CAVE_TOKEN to start`,
     };
   }
+  const dbPath = env.CAVE_DB_PATH || "data/cave.db";
   return {
     ok: true,
     value: {
       hostname,
       port,
       token,
-      dbPath: env.CAVE_DB_PATH || "data/cave.db",
+      dbPath,
       vaultPath: env.VAULT_PATH || undefined,
+      backupDir: env.BACKUP_DIR || join(dirname(dbPath), "backups"),
       allowedHosts: allowedHosts(hostname, env.CAVE_ALLOWED_HOSTS),
     },
   };
