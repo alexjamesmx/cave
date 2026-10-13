@@ -15,5 +15,5 @@
     "jsx": "react-jsx",
     "skipLibCheck": true
   },
-  "include": ["shared", "server", "web"]
+  "include": ["shared", "server", "web", "e2e", "playwright.config.ts"]
 }
