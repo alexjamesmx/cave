@@ -64,6 +64,8 @@ export function startSyncScheduler({ sync, window, document, timers, onError }: 
         run();
       }, WRITE_DEBOUNCE_MS);
     },
+    /** Runs a sync now, or right after the one in flight; e.g. after clock recovery. */
+    syncNow: run,
     /** Resolves once no sync is running or queued. */
     async idle(): Promise<void> {
       while (running) await running;

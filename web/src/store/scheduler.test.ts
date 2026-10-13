@@ -110,6 +110,14 @@ describe("startSyncScheduler", () => {
     expect(s.calls()).toBe(3);
   });
 
+  test("syncNow runs a sync without waiting for a trigger", async () => {
+    const { scheduler, calls } = setup();
+    await scheduler.idle();
+    scheduler.syncNow();
+    await scheduler.idle();
+    expect(calls()).toBe(2);
+  });
+
   test("syncs every 60 s", async () => {
     const s = setup();
     await s.scheduler.idle();

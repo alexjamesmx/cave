@@ -158,7 +158,7 @@ const COLLECTIONS: Record<string, CollectionData> = {
         opt("liquid", "banknote", C.income),
         opt("investments", "trending-up", C.gold),
         opt("stocks", "chart-candlestick", C.violet),
-        opt("house", "home", C.cyan),
+        opt("house", "house", C.cyan),
         opt("assets", "package", C.purple),
         opt("debt", "credit-card", C.expense),
       ]),

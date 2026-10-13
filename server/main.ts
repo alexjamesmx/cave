@@ -1,4 +1,5 @@
 import { seedDocs } from "../shared/seed.ts";
+import web from "../web/index.html";
 import { serveCave } from "./app.ts";
 import { resolveConfig } from "./config.ts";
 import { openDb } from "./db.ts";
@@ -17,5 +18,5 @@ store.seedIfEmpty(seedDocs(), Date.now());
 const imported = await importIfEmpty(store, vaultPath, Date.now());
 if (imported) console.log(`Imported ${vaultPath}\n${formatReport(imported)}`);
 
-const server = serveCave({ hostname, port, store, token, now: Date.now });
+const server = serveCave({ hostname, port, store, token, now: Date.now, web });
 console.log(`Cave server listening on ${server.url}`);
