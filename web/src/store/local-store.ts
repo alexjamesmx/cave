@@ -188,6 +188,28 @@ export class LocalStore {
   }
 
   /**
+   * Records the server database this copy syncs with. When it changes (the server was
+   * restored from a backup), the cursor may point past the server's log and this copy may
+   * hold edits the backup lacks, so every doc goes back in the outbox and the cursor
+   * restarts at 0. Merge is idempotent, so pushing docs the server already has is harmless.
+   * Returns true when it rebased.
+   */
+  async adoptServer(dbId: string): Promise<boolean> {
+    const { db } = this;
+    return db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
+      const known = await db.meta.get("dbId");
+      if (known?.key === "dbId" && known.value === dbId) return false;
+      await db.meta.put({ key: "dbId", value: dbId });
+      if (known === undefined) return false;
+      const ids = (await db.docs.toCollection().primaryKeys()) as string[];
+      const pending = await db.outbox.bulkGet(ids);
+      await db.outbox.bulkPut(ids.map((id, i) => ({ id, rev: (pending[i]?.rev ?? 0) + 1 })));
+      await db.meta.put({ key: "cursor", value: 0 });
+      return true;
+    });
+  }
+
+  /**
    * Merges a pulled page, moves the clock past every stamp seen, stores the cursor and
    * drops outbox rows the server acknowledged, unless they were written again meanwhile.
    */

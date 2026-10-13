@@ -12,7 +12,9 @@ export type MetaRow =
   | { key: "cursor"; value: number }
   | { key: "clock"; value: ClockState }
   /** Server time minus device time, set by clock recovery; added to every local time. */
-  | { key: "clockOffset"; value: number };
+  | { key: "clockOffset"; value: number }
+  /** The server database this copy last synced with; see `LocalStore.adoptServer`. */
+  | { key: "dbId"; value: string };
 
 export type LocalDb = Dexie & {
   docs: EntityTable<Doc, "id">;

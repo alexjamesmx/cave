@@ -126,7 +126,13 @@ describe("POST /api/sync", () => {
     expect(new Set(pages.flatMap((p) => p.changes.map((d) => d.id))).size).toBe(2500);
 
     const caughtUp = await sync({ deviceId: "dev-b", cursor, changes: [] });
-    expect(caughtUp).toEqual({ cursor, changes: [], rejected: [], serverTime: NOW });
+    expect(caughtUp).toEqual({
+      cursor,
+      changes: [],
+      rejected: [],
+      serverTime: NOW,
+      dbId: store.dbId(),
+    });
   });
 });
 
