@@ -115,7 +115,7 @@ export function query(store: Store, agent: Agent, input: QueryInput): ToolOutcom
 export function getItem(store: Store, agent: Agent, id: string): ToolOutcome {
   const doc = store.get(id);
   const c = doc?.collection ? visibleCollection(store, agent, doc.collection) : undefined;
-  if (!doc || doc.kind !== "item" || doc.data._deleted === true || !c) {
+  if (doc?.kind !== "item" || doc.data._deleted === true || !c) {
     return fail(`item ${id} not found`);
   }
   const changes = store
