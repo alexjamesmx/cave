@@ -6,9 +6,34 @@ The one-time setup of the VPS, run step by step. Each step is shown to the owner
   - Hostinger KVM 2, Ubuntu 26.04 LTS;
   - reached as `ssh cave-vps` (root, key only) from the laptop;
   - served at `cave.alexjamesmx.dev`, whose A and AAAA records point at the VPS.
-- **Templates:** in `deploy/`. Steps that copy them read them from the clone in `/opt/cave`.
+- **Layout on the VPS:**
 
-**Secrets rule.** The server token is generated on the VPS. It is never printed into a shared terminal or a log, and never put on a command line, where any user could see it in `ps`. Commands that need the settings read `/etc/cave/cave.env` inside the shell. The owner reads the token once in hPanel's browser terminal and keeps it in a password manager.
+  | Path | What |
+  |---|---|
+  | `/opt/cave/repo.git` | bare clone, fetched with the deploy key |
+  | `/opt/cave/releases/<sha>` | one checkout per deployed commit (a git worktree), with its own `node_modules` |
+  | `/opt/cave/current` | symlink to the release the service runs; switched atomically, only after the release passed install, check and test |
+  | `/opt/cave/previous` | symlink to the release before it; target of `bun run deploy --rollback` |
+  | `/var/lib/cave` | data only: database, backups, lock. Home of `cave` |
+  | `/var/cache/cave-bun` | Bun's install cache |
+  | `/opt/bun` | Bun itself, root-owned |
+  | `/etc/cave/cave.env` | server settings and token |
+- **Templates:** in `deploy/`. Steps that copy them read them from `/opt/cave/current/deploy/`.
+
+**Rules:**
+- **Secrets.** Tokens are generated on the VPS and never printed into a shared terminal, Claude Code's session or a log. They never go on a command line either, where any user could see them in `ps`. Commands that need the settings read `/etc/cave/cave.env` inside the shell. The owner reads each token once in **hPanel's browser terminal** and keeps it in a password manager.
+- **Privileges.** `cave` has **no sudo rights**. It builds releases; the admin login (root, with a key) restarts the service.
+
+## 0. Prerequisites
+- **The M5 code is on `origin/main`.** `deploy/release.sh` builds only commits on `origin/main`, and the server needs `CAVE_PUBLIC_ORIGIN` support to run behind Caddy.
+- **The laptop key has a passphrase.** `~/.ssh/id_ed25519` opens root on the VPS. If it has none, add one and let the Windows `ssh-agent` hold it, so deploys don't prompt each time. In an admin PowerShell:
+
+  ```powershell
+  ssh-keygen -p -f $HOME\.ssh\id_ed25519
+  Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent
+  ssh-add $HOME\.ssh\id_ed25519
+  ```
+- **The root password was changed** (`passwd` in the browser terminal) after it appeared in a chat.
 
 ## 1. User and directories
 `cave` is a system user with no login shell. Its home is its data directory.
@@ -17,6 +42,7 @@ The one-time setup of the VPS, run step by step. Each step is shown to the owner
 useradd --system --home-dir /var/lib/cave --shell /usr/sbin/nologin cave
 install -d -o cave -g cave -m 700 /var/lib/cave
 install -d -o cave -g cave -m 755 /opt/cave
+install -d -o cave -g cave -m 700 /var/cache/cave-bun
 ```
 
 ## 2. Bun, pinned
@@ -29,16 +55,15 @@ BUN_INSTALL=/opt/bun bash /root/bun-install.sh bun-v1.4.3
 /opt/bun/bin/bun --version        # expect 1.4.3
 ```
 
-## 3. Deploy key and clone
+## 3. Deploy key, bare clone, first release
 The VPS reads the private repo with a **read-only** deploy key. The key is created on the VPS, and only its public half leaves it.
 
 ```bash
 install -d -o cave -g cave -m 700 /var/lib/cave/.ssh
 sudo -u cave ssh-keygen -t ed25519 -N "" -C "cave-vps-deploy" -f /var/lib/cave/.ssh/id_ed25519
-cat /var/lib/cave/.ssh/id_ed25519.pub
 ```
 
-On the laptop, add that public key to the repo as read-only (the default):
+On the laptop, add the public half to the repo as read-only (the default):
 
 ```bash
 ssh cave-vps cat /var/lib/cave/.ssh/id_ed25519.pub > cave-vps-deploy.pub
@@ -51,16 +76,15 @@ Pin GitHub's host key, checking it against GitHub's published fingerprint (`gh a
 ```bash
 ssh-keyscan -t ed25519 github.com | sudo -u cave tee /var/lib/cave/.ssh/known_hosts
 ssh-keygen -lf /var/lib/cave/.ssh/known_hosts
+sudo -u cave git clone --bare git@github.com:alexjamesmx/cave.git /opt/cave/repo.git
 ```
 
-Then clone, and run a first install and the checks:
+Build the first release from the laptop. It runs install, check and test in `/opt/cave/releases/<sha>` and then creates `current`:
 
 ```bash
-sudo -u cave git clone git@github.com:alexjamesmx/cave.git /opt/cave
-cd /opt/cave
-sudo -u cave env PATH=/opt/bun/bin:$PATH bun install --frozen-lockfile
-sudo -u cave env PATH=/opt/bun/bin:$PATH bun run check
-sudo -u cave env PATH=/opt/bun/bin:$PATH bun test
+git fetch origin
+ssh cave-vps sudo -u cave -H bash -s -- build "$(git rev-parse origin/main)" < deploy/release.sh
+ssh cave-vps readlink /opt/cave/current
 ```
 
 ## 4. Server settings and token
@@ -68,7 +92,7 @@ sudo -u cave env PATH=/opt/bun/bin:$PATH bun test
 
 ```bash
 install -d -o root -g cave -m 750 /etc/cave
-install -o root -g cave -m 640 /opt/cave/deploy/cave.env.example /etc/cave/cave.env
+install -o root -g cave -m 640 /opt/cave/current/deploy/cave.env.example /etc/cave/cave.env
 sed -i '/^CAVE_TOKEN=$/d' /etc/cave/cave.env
 # printf is a shell builtin, so the token never appears in any process's arguments.
 printf 'CAVE_TOKEN=%s\n' "$(openssl rand -base64 48)" >> /etc/cave/cave.env
@@ -86,7 +110,7 @@ curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmo
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
 apt-get update && apt-get install -y caddy
-install -m 644 /opt/cave/deploy/Caddyfile /etc/caddy/Caddyfile
+install -m 644 /opt/cave/current/deploy/Caddyfile /etc/caddy/Caddyfile
 caddy validate --config /etc/caddy/Caddyfile
 systemctl reload caddy
 ```
@@ -122,13 +146,12 @@ sshd -t && systemctl reload ssh
 sshd -T | grep -E '^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin) '
 ```
 
-Keep the first session open until a fresh `ssh cave-vps true` succeeds.
+Keep the first session open until a fresh `ssh cave-vps true` succeeds. The console still accepts the root password, which is why step 0 changes it.
 
 ## 8. Service and certificate
 
 ```bash
-install -m 644 /opt/cave/deploy/cave.service /etc/systemd/system/cave.service
-visudo -cf /opt/cave/deploy/sudoers-cave && install -m 440 /opt/cave/deploy/sudoers-cave /etc/sudoers.d/cave
+install -m 644 /opt/cave/current/deploy/cave.service /etc/systemd/system/cave.service
 systemd-analyze verify /etc/systemd/system/cave.service
 systemctl daemon-reload && systemctl enable --now cave
 systemctl status cave --no-pager
@@ -158,17 +181,31 @@ timeout 5 bash -c '</dev/tcp/203.0.113.10/3000' && echo OPEN || echo closed
    ```bash
    systemctl stop cave
    install -o cave -g cave -m 600 /root/<newest>.db /var/lib/cave/restore.db
-   sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave && /opt/bun/bin/bun run restore /var/lib/cave/restore.db'
+   sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run restore /var/lib/cave/restore.db'
    systemctl start cave
    ```
 5. Check `/api/status`: docs 694 or more. Also check October 2026 at 16,842 across 20 entries, via `money_month` over MCP or on the money dashboard.
+6. Once those checks pass, delete both temporary copies of the data, and note in the log that they were deleted:
+   ```bash
+   rm /root/<newest>.db /var/lib/cave/restore.db
+   ```
+   The restored database and the set-aside `cave.db.before-restore-*` (an empty server's) remain.
 
 ## 10. Clients
-- **Laptop:** open `https://cave.alexjamesmx.dev`, enter the token in Settings and install the app. Uninstall the old `127.0.0.1` app; its data is already in the restored database.
+- **Laptop:** open `https://cave.alexjamesmx.dev`, enter the server token in Settings and install the app. Uninstall the old `127.0.0.1` app; its data is already in the restored database.
 - **Phone:** the same, over cellular data.
-- **Claude Code:**
-  - mint an agent token on the VPS:
-    ```bash
-    sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave && /opt/bun/bin/bun run agent add claude-code --scopes read,write'
-    ```
-  - add the MCP entry from `docs/agents.md`.
+- **Claude Code:** the owner mints the agent token **in hPanel's browser terminal**, not over an SSH session, so it never enters Claude Code's own output:
+  ```bash
+  sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run agent add claude-code --scopes read,write'
+  ```
+  Then put it in `CAVE_AGENT_TOKEN` on the laptop and add the MCP entry from `docs/agents.md`.
+
+## Deploying and rolling back (after setup)
+- **`bun run deploy`**, from the laptop:
+  1. Checks for a clean tree whose commit is on `origin/main`.
+  2. Sends `deploy/release.sh` over SSH, run as `cave`. It builds and tests the commit in `releases/<sha>`, and only then switches `current` atomically, keeping the newest five releases (never `current` or `previous`).
+  3. Restarts `cave` as root.
+  4. Waits for `/api/status` to report the new commit.
+
+  If install, check or test fails, `current` and the running service are unchanged.
+- **`bun run deploy --rollback`:** points `current` at `previous`, restarts, and runs the health check.

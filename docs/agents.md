@@ -31,11 +31,10 @@ The examples use `http://127.0.0.1:3000/mcp`, an agent on the same machine as th
 
 ### The hosted server
 
-Once the Cave runs at `https://cave.alexjamesmx.dev` (see `docs/hosting.md`), agents anywhere reach it over HTTPS. Mint the token on the VPS:
+Once the Cave runs at `https://cave.alexjamesmx.dev` (see `docs/hosting.md`), agents anywhere reach it over HTTPS. Mint the token on the VPS **in hPanel's browser terminal**, not over an SSH session from an agent's machine: the token is printed once, and it must not end up in an agent's own output or context.
 
 ```bash
-ssh cave-vps
-sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave && /opt/bun/bin/bun run agent add claude-code --scopes read,write'
+sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run agent add claude-code --scopes read,write'
 ```
 
 Put the token in `CAVE_AGENT_TOKEN` on the agent's machine, then add this `.mcp.json` entry:

@@ -66,9 +66,11 @@ The Cave can run on a VPS as the server every device syncs with. Today that is a
   - Caddy, the firewall, key-only SSH and the systemd service.
 - **Deploying:** `bun run deploy` from the laptop.
   - It needs a clean tree whose commit is already on `origin/main`.
-  - On the VPS, as `cave`, it fetches and checks out that commit, then runs `bun install --frozen-lockfile`, `bun run check` and `bun test`.
-  - It then restarts the service and checks that `/api/status` reports the new commit.
-  - If a step fails, it stops and names the step.
+  - On the VPS, as `cave` (which has no sudo rights), it builds that commit in its own release directory and runs `bun install --frozen-lockfile`, `bun run check` and `bun test` there.
+  - Only if all three pass does it switch the `current` symlink atomically, keeping the newest five releases.
+  - It then restarts the service as root and checks that `/api/status` reports the new commit.
+  - If a step fails, it stops and names the step. The running release is untouched.
+  - `bun run deploy --rollback` returns to the previous release.
   - It needs `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN` and, optionally, `CAVE_SSH` (default `cave-vps`) in the laptop's `.env`.
 - **Backups:**
   - **On the VPS:** the server backs itself up to `/var/lib/cave/backups`, with the same verification and retention as on the laptop.
