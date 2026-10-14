@@ -53,6 +53,7 @@ test("the env template starts a public production server once a token is filled 
       .map((line) => line.split(/=(.*)/s).slice(0, 2) as [string, string]),
   );
   expect(env.VAULT_PATH).toBeUndefined();
+  expect(env.BUN_RUNTIME_TRANSPILER_CACHE_PATH).toBe("0");
   expect(env.CAVE_TOKEN).toBe("");
   expect(resolveConfig(env, { production: true }).ok).toBe(false);
   const filled = resolveConfig({ ...env, CAVE_TOKEN: "x".repeat(64) }, { production: true });
