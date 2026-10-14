@@ -41,3 +41,43 @@ test("a POST must be JSON; GET needs no body type", () => {
   });
   expect(status(get)).toBe(200);
 });
+
+test("behind a proxy the public https origin passes and its http twin does not", () => {
+  const PUBLIC = "https://cave.example.dev";
+  const hosts = [...LOOPBACK_HOSTS, "cave.example.dev"];
+  // What Caddy forwards: the original Host, while Bun builds req.url with http:.
+  const proxied = (origin?: string) =>
+    req(
+      { host: "cave.example.dev", ...(origin ? { origin } : {}) },
+      "POST",
+      "http://cave.example.dev/api/sync",
+    );
+  const check = (r: Request) => guardRequest(r, hosts, PUBLIC)?.status ?? 200;
+  expect(check(proxied(PUBLIC))).toBe(200);
+  expect(check(proxied())).toBe(200);
+  expect(check(proxied("http://cave.example.dev"))).toBe(403);
+  expect(check(proxied("https://evil.example"))).toBe(403);
+  expect(check(proxied("https://cave.example.dev:8443"))).toBe(403);
+  // Forwarded headers change nothing.
+  const forged = req(
+    {
+      host: "cave.example.dev",
+      origin: "https://evil.example",
+      "x-forwarded-host": "evil.example",
+    },
+    "POST",
+    "http://cave.example.dev/api/sync",
+  );
+  expect(check(forged)).toBe(403);
+});
+
+test("another host is refused even with the public origin", () => {
+  const hosts = [...LOOPBACK_HOSTS, "cave.example.dev"];
+  const other = req({ host: "evil.example", origin: "https://cave.example.dev" });
+  expect(guardRequest(other, hosts, "https://cave.example.dev")?.status).toBe(403);
+});
+
+test("a local request on the server itself still uses its own origin", () => {
+  const local = req({ host: "127.0.0.1:3000", origin: "http://127.0.0.1:3000" });
+  expect(guardRequest(local, LOOPBACK_HOSTS, "https://cave.example.dev")).toBeUndefined();
+});
