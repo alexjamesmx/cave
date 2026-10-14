@@ -1,3 +1,0 @@
-# /etc/sudoers.d/cave on the VPS (mode 440; check with visudo -cf before installing).
-# The deploy script runs as cave and may restart the service, nothing else.
-cave ALL=(root) NOPASSWD: /usr/bin/systemctl restart cave

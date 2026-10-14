@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { checkLocal, healthCheck, REMOTE_SCRIPT, type Run } from "./deploy.ts";
+import { checkLocal, healthCheck, type Run, remote, rolledBackTo } from "./deploy.ts";
 
 const SHA = "0123456789abcdef0123456789abcdef01234567";
 
@@ -39,13 +39,28 @@ test("a failed fetch stops the deploy", () => {
   expect(checkLocal(git({ ...clean, "git fetch": { ok: false } }))).toMatchObject({ ok: false });
 });
 
-test("the remote script runs the steps in order and stops at the first failure", () => {
-  expect(REMOTE_SCRIPT.startsWith("set -euo pipefail\n")).toBe(true);
-  const steps = [...REMOTE_SCRIPT.matchAll(/step=(\w+);/g)].map((m) => m[1]);
-  expect(steps).toEqual(["fetch", "verify", "checkout", "install", "check", "test", "restart"]);
-  expect(REMOTE_SCRIPT).toContain("bun install --frozen-lockfile");
-  expect(REMOTE_SCRIPT).toContain("sudo /usr/bin/systemctl restart cave");
-  expect(REMOTE_SCRIPT).toContain(`trap 'echo "deploy failed at: $step" >&2' ERR`);
+test("build and rollback run as cave, which has no sudo rights; the restart runs as the admin login", () => {
+  expect(remote.build("cave-vps", SHA)).toEqual([
+    "ssh",
+    "cave-vps",
+    "sudo",
+    "-u",
+    "cave",
+    "-H",
+    "bash",
+    "-s",
+    "--",
+    "build",
+    SHA,
+  ]);
+  expect(remote.rollback("cave-vps").slice(-2)).toEqual(["--", "rollback"]);
+  expect(remote.restart("cave-vps")).toEqual(["ssh", "cave-vps", "systemctl", "restart", "cave"]);
+});
+
+test("a rollback reports the commit it switched to", () => {
+  expect(rolledBackTo(`== rolled back to ${SHA}\n`)).toBe(SHA);
+  expect(rolledBackTo("no previous release to roll back to")).toBeUndefined();
+  expect(rolledBackTo("== rolled back to deadbeef")).toBeUndefined();
 });
 
 const answer = (status: number, body: unknown) =>
@@ -55,9 +70,7 @@ test("the health check passes once the server reports the deployed commit", asyn
   let calls = 0;
   const flaky = (async () => {
     calls++;
-    return calls < 3
-      ? Response.json({ commit: "old" }, { status: 200 })
-      : Response.json({ commit: SHA }, { status: 200 });
+    return Response.json({ commit: calls < 3 ? "old" : SHA }, { status: 200 });
   }) as unknown as typeof fetch;
   const result = await healthCheck({
     url: "https://cave.example.dev",

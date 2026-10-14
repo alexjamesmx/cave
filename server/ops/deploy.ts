@@ -22,25 +22,25 @@ export function checkLocal(run: Run): Checked {
   return { ok: true, sha };
 }
 
+/** The script that builds, switches and rolls back releases on the VPS (`deploy/release.sh`). */
+export const RELEASE_SCRIPT_PATH = new URL("../../deploy/release.sh", import.meta.url);
+
 /**
- * Runs on the VPS as user `cave` in `/opt/cave`, with the commit as `$1`. Each step names
- * itself, and the first failure stops the script and names the step. The restart is the one
- * command the sudoers rule in `deploy/sudoers-cave` allows.
+ * Commands run over SSH. The release script goes over stdin and runs as `cave`, which has no
+ * sudo rights; the restart runs as the admin login itself. Only a commit id appears on any
+ * command line.
  */
-export const REMOTE_SCRIPT = `set -euo pipefail
-export PATH="/opt/bun/bin:$PATH"
-step=""
-trap 'echo "deploy failed at: $step" >&2' ERR
-cd /opt/cave
-step=fetch;    echo "== $step";    git fetch --quiet origin
-step=verify;   echo "== $step";    git merge-base --is-ancestor "$1" origin/main
-step=checkout; echo "== $step";    git checkout --quiet --detach "$1"
-step=install;  echo "== $step";    bun install --frozen-lockfile
-step=check;    echo "== $step";    bun run check
-step=test;     echo "== $step";    bun test
-step=restart;  echo "== $step";    sudo /usr/bin/systemctl restart cave
-echo "== deployed $1"
-`;
+const AS_CAVE = ["sudo", "-u", "cave", "-H", "bash", "-s", "--"];
+
+export const remote = {
+  build: (ssh: string, sha: string) => ["ssh", ssh, ...AS_CAVE, "build", sha],
+  rollback: (ssh: string) => ["ssh", ssh, ...AS_CAVE, "rollback"],
+  restart: (ssh: string) => ["ssh", ssh, "systemctl", "restart", "cave"],
+};
+/** The commit a rollback switched to, from the script's `== rolled back to <sha>` line. */
+export function rolledBackTo(output: string): string | undefined {
+  return /^== rolled back to ([0-9a-f]{40})$/m.exec(output)?.[1];
+}
 
 export interface HealthOptions {
   url: string;
