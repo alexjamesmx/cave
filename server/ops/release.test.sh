@@ -24,6 +24,15 @@ esac
 exit 0
 FAKE
 chmod +x "$tmp/bin/bun"
+# A decoy first on PATH stands in for a real Bun installed on the machine (as on the VPS):
+# the script must use the bun CAVE_BUN_BIN names, never whichever comes first.
+mkdir -p "$tmp/decoy"
+cat > "$tmp/decoy/bun" <<'DECOY'
+#!/usr/bin/env bash
+echo "decoy bun ran" >&2
+exit 99
+DECOY
+chmod +x "$tmp/decoy/bun"
 
 # Origin with six commits, and the bare clone the VPS keeps in /opt/cave/repo.git.
 git init --quiet -b main "$tmp/origin"
@@ -37,7 +46,7 @@ root="$tmp/cave"
 mkdir -p "$root"
 git clone --quiet --bare "$tmp/origin" "$root/repo.git"
 
-run() { env PATH="$tmp/bin:$PATH" FAIL_AT="${FAIL_AT:-}" CAVE_ROOT="$root" BUN_INSTALL_CACHE_DIR="$tmp/cache" bash "$script" "$@"; }
+run() { env PATH="$tmp/decoy:$PATH" CAVE_BUN_BIN="$tmp/bin" FAIL_AT="${FAIL_AT:-}" CAVE_ROOT="$root" CAVE_CACHE_DIR="$tmp/cache" bash "$script" "$@"; }
 target() { if [ -L "$root/$1" ]; then basename "$(readlink "$root/$1")"; fi; }
 
 run build "$(sha 1)" >/dev/null

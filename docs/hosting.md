@@ -15,7 +15,7 @@ The one-time setup of the VPS, run step by step. Each step is shown to the owner
   | `/opt/cave/current` | symlink to the release the service runs; switched atomically, only after the release passed install, check and test |
   | `/opt/cave/previous` | symlink to the release before it; target of `bun run deploy --rollback` |
   | `/var/lib/cave` | data only: database, backups, lock. Home of `cave` |
-  | `/var/cache/cave-bun` | Bun's install cache |
+  | `/var/cache/cave-bun` | build caches: Bun's install and transpiler caches, Biome's cache (`XDG_CACHE_HOME`). The service itself writes no cache |
   | `/opt/bun` | Bun itself, root-owned |
   | `/etc/cave/cave.env` | server settings and token |
 - **Templates:** in `deploy/`. Steps that copy them read them from `/opt/cave/current/deploy/`.
