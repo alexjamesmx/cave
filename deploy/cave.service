@@ -1,0 +1,28 @@
+# /etc/systemd/system/cave.service on the VPS.
+[Unit]
+Description=Cave server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cave
+Group=cave
+WorkingDirectory=/opt/cave
+EnvironmentFile=/etc/cave/cave.env
+ExecStart=/opt/bun/bin/bun run server/main.ts --production
+Restart=on-failure
+RestartSec=5
+
+# The process can never gain privileges, sees the whole file system read-only except its
+# data directory, and gets its own /tmp. /home and /root are hidden; its home is /var/lib/cave.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/cave
+PrivateTmp=true
+ProtectHome=true
+PrivateDevices=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
