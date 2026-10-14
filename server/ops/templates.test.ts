@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveConfig } from "../config.ts";
 import { MAX_BODY_BYTES } from "../sync.ts";
-import { REMOTE_SCRIPT } from "./deploy.ts";
+import { RELEASE_SCRIPT_PATH } from "./deploy.ts";
 
 const template = (name: string) =>
   readFileSync(join(import.meta.dir, "../../deploy", name), "utf8");
@@ -31,7 +31,7 @@ test("the service runs production mode from /opt/cave with the hardening the spe
   const unit = template("cave.service");
   for (const line of [
     "User=cave",
-    "WorkingDirectory=/opt/cave",
+    "WorkingDirectory=/opt/cave/current",
     "EnvironmentFile=/etc/cave/cave.env",
     "ExecStart=/opt/bun/bin/bun run server/main.ts --production",
     "Restart=on-failure",
@@ -64,11 +64,13 @@ test("the env template starts a public production server once a token is filled 
   });
 });
 
-test("the sudoers rule allows exactly the restart the deploy script runs", () => {
-  const rule = template("sudoers-cave")
-    .split("\n")
-    .filter((line) => line && !line.startsWith("#"));
-  expect(rule).toEqual(["cave ALL=(root) NOPASSWD: /usr/bin/systemctl restart cave"]);
-  expect(REMOTE_SCRIPT).toContain("sudo /usr/bin/systemctl restart cave");
-  expect(REMOTE_SCRIPT).toContain('export PATH="/opt/bun/bin:$PATH"');
+test("cave has no sudo rights: no sudoers template, and the release script never calls sudo", () => {
+  expect(existsSync(join(import.meta.dir, "../../deploy/sudoers-cave"))).toBe(false);
+  const script = readFileSync(RELEASE_SCRIPT_PATH, "utf8");
+  expect(script).not.toMatch(/\bsudo\b/);
+  expect(script.startsWith("#!/usr/bin/env bash\n")).toBe(true);
+  expect(script).toContain("set -Eeuo pipefail");
+  expect(script).toContain('export PATH="/opt/bun/bin:$PATH"');
+  expect(script).toContain("/var/cache/cave-bun");
+  expect(script).toContain("bun install --frozen-lockfile");
 });

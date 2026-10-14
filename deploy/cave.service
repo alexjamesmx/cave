@@ -8,7 +8,8 @@ Wants=network-online.target
 Type=simple
 User=cave
 Group=cave
-WorkingDirectory=/opt/cave
+# A symlink to the newest release that passed install, check and test (deploy/release.sh).
+WorkingDirectory=/opt/cave/current
 EnvironmentFile=/etc/cave/cave.env
 ExecStart=/opt/bun/bin/bun run server/main.ts --production
 Restart=on-failure
