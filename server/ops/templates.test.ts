@@ -35,6 +35,7 @@ test("the service runs production mode from /opt/cave with the hardening the spe
     "EnvironmentFile=/etc/cave/cave.env",
     "ExecStart=/opt/bun/bin/bun run server/main.ts --production",
     "Restart=on-failure",
+    "Environment=BUN_RUNTIME_TRANSPILER_CACHE_PATH=0",
     "NoNewPrivileges=true",
     "ProtectSystem=strict",
     "ReadWritePaths=/var/lib/cave",
@@ -70,7 +71,16 @@ test("cave has no sudo rights: no sudoers template, and the release script never
   expect(script).not.toMatch(/\bsudo\b/);
   expect(script.startsWith("#!/usr/bin/env bash\n")).toBe(true);
   expect(script).toContain("set -Eeuo pipefail");
-  expect(script).toContain('export PATH="/opt/bun/bin:$PATH"');
-  expect(script).toContain("/var/cache/cave-bun");
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: shell syntax, not a JS template
+  expect(script).toContain('export PATH="${CAVE_BUN_BIN:-/opt/bun/bin}:$PATH"');
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: shell syntax, not a JS template
+  expect(script).toContain('cache="${CAVE_CACHE_DIR:-/var/cache/cave-bun}"');
+  for (const variable of [
+    'BUN_INSTALL_CACHE_DIR="$cache"',
+    'BUN_RUNTIME_TRANSPILER_CACHE_PATH="$cache/transpiler"',
+    'XDG_CACHE_HOME="$cache/xdg"',
+  ]) {
+    expect(script).toContain(`export ${variable}`);
+  }
   expect(script).toContain("bun install --frozen-lockfile");
 });

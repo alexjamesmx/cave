@@ -9,9 +9,14 @@ set -Eeuo pipefail
 
 root="${CAVE_ROOT:-/opt/cave}"
 keep="${CAVE_KEEP_RELEASES:-5}"
-export PATH="/opt/bun/bin:$PATH"
-# The cache stays out of the data directory, which holds only data.
-export BUN_INSTALL_CACHE_DIR="${BUN_INSTALL_CACHE_DIR:-/var/cache/cave-bun}"
+# CAVE_BUN_BIN lets the tests put a fake bun first; on the VPS it is the pinned Bun.
+export PATH="${CAVE_BUN_BIN:-/opt/bun/bin}:$PATH"
+# Every cache stays out of the data directory, which holds only data: Bun's install cache,
+# its runtime transpiler cache (default ~/.bun) and Biome's (default ~/.cache).
+cache="${CAVE_CACHE_DIR:-/var/cache/cave-bun}"
+export BUN_INSTALL_CACHE_DIR="$cache"
+export BUN_RUNTIME_TRANSPILER_CACHE_PATH="$cache/transpiler"
+export XDG_CACHE_HOME="$cache/xdg"
 
 step=""
 trap 'echo "deploy failed at: $step" >&2' ERR

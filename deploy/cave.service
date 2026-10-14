@@ -12,6 +12,8 @@ Group=cave
 WorkingDirectory=/opt/cave/current
 EnvironmentFile=/etc/cave/cave.env
 ExecStart=/opt/bun/bin/bun run server/main.ts --production
+# The service writes nothing but data; Bun's transpiler cache would land in its home.
+Environment=BUN_RUNTIME_TRANSPILER_CACHE_PATH=0
 Restart=on-failure
 RestartSec=5
 
