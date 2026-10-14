@@ -16,13 +16,14 @@ import { buildServiceWorker } from "./sw.ts";
 
 const BACKUP_CHECK_MS = 60 * 60 * 1000;
 
-const config = resolveConfig(process.env);
+const production = process.argv.includes("--production");
+const config = resolveConfig(process.env, { production });
 if (!config.ok) {
   console.error(`Cave server not started: ${config.error}`);
   process.exit(1);
 }
-const { hostname, port, token, dbPath, vaultPath, allowedHosts, backupDir } = config.value;
-const production = process.argv.includes("--production");
+const { hostname, port, token, dbPath, vaultPath, allowedHosts, publicOrigin, backupDir } =
+  config.value;
 
 if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
 const lock = lockPathOf(dbPath);
@@ -71,6 +72,9 @@ setInterval(backUp, BACKUP_CHECK_MS);
 const { version } = (await Bun.file(new URL("../package.json", import.meta.url)).json()) as {
   version: string;
 };
+// The deploy script checks out one commit; status reports it so a deploy can confirm it.
+const git = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: import.meta.dir });
+const commit = git.success ? git.stdout.toString().trim() : null;
 const serviceWorker = await buildServiceWorker();
 const server = serveCave({
   hostname,
@@ -86,7 +90,8 @@ const server = serveCave({
     vaultPath,
   },
   allowedHosts,
-  status: { version, backupDir, newVaultNotes: () => newVaultNotes },
+  ...(publicOrigin ? { publicOrigin } : {}),
+  status: { version, commit, backupDir, newVaultNotes: () => newVaultNotes },
   development: !production,
 });
 console.log(`Cave server listening on ${server.url}${production ? "" : " (development)"}`);

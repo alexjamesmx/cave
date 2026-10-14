@@ -120,6 +120,7 @@ function ServerStatus() {
           <dt className="muted">Version</dt>
           <dd className="num" style={{ margin: 0 }}>
             {status.version}
+            {status.commit ? ` · ${status.commit.slice(0, 7)}` : ""}
           </dd>
         </dl>
       )}
