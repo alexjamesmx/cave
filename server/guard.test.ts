@@ -24,7 +24,7 @@ beforeAll(() => {
     token: undefined,
     now: Date.now,
     agents: { registry, calls: createCallLog(db), vaultPath: undefined },
-    status: { version: "test", backupDir: "missing-dir", newVaultNotes: () => null },
+    status: { version: "test", commit: null, backupDir: "missing-dir", newVaultNotes: () => null },
   });
 });
 

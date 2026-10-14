@@ -53,6 +53,37 @@ It never imports on its own: a note renamed in Obsidian would come back as a dup
 
 Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each with its own token. See [docs/agents.md](docs/agents.md).
 
+## Hosting
+
+The Cave can run on a VPS as the server every device syncs with. Today that is a Hostinger KVM 2 on Ubuntu 26.04, at `https://cave.alexjamesmx.dev`, behind Caddy. The laptop and the phone become clients.
+
+- **DNS:** A and AAAA records for `cave` point at the VPS. The rest of the zone (the portfolio, mail) is untouched.
+- **First-time setup:** `docs/hosting.md`, a numbered runbook:
+  - a `cave` user;
+  - Bun 1.4.3 in `/opt/bun`;
+  - a read-only deploy key and the clone in `/opt/cave`;
+  - `/etc/cave/cave.env` with a generated token;
+  - Caddy, the firewall, key-only SSH and the systemd service.
+- **Deploying:** `bun run deploy` from the laptop.
+  - It needs a clean tree whose commit is already on `origin/main`.
+  - On the VPS, as `cave` (which has no sudo rights), it builds that commit in its own release directory and runs `bun install --frozen-lockfile`, `bun run check` and `bun test` there.
+  - Only if all three pass does it switch the `current` symlink atomically, keeping the newest five releases.
+  - It then restarts the service as root and checks that `/api/status` reports the new commit.
+  - If a step fails, it stops and names the step. The running release is untouched.
+  - `bun run deploy --rollback` returns to the previous release.
+  - It needs `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN` and, optionally, `CAVE_SSH` (default `cave-vps`) in the laptop's `.env`.
+- **Backups:**
+  - **On the VPS:** the server backs itself up to `/var/lib/cave/backups`, with the same verification and retention as on the laptop.
+  - **On the laptop:** `bun run pull-backups` copies new ones into `BACKUP_PULL_DIR` with `scp` and verifies each. It never deletes anything on the VPS. To run it daily, create a Windows Task Scheduler task that runs `bun run pull-backups` in this folder (optional).
+  - **Hostinger:** it also keeps weekly snapshots of the whole VPS (hPanel → VPS → Backups).
+- **Restoring on the VPS:**
+  1. `systemctl stop cave`;
+  2. run `bun run restore <file>` as `cave` (the command is in `docs/hosting.md`, step 9);
+  3. `systemctl start cave`.
+- **Devices and agents:**
+  - open `https://cave.alexjamesmx.dev`, enter the server token in Settings, and install the app;
+  - agents use `https://cave.alexjamesmx.dev/mcp` with their own token (`docs/agents.md`).
+
 ## Developing
 
 `bun run dev` runs the server in development mode. `bun run check` runs the type check and lint, `bun test` the tests, and `bun run e2e` the browser checks against the installed Edge. All commands: [AGENTS.md](AGENTS.md).

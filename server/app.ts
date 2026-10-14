@@ -32,6 +32,8 @@ export interface AppOptions {
   agents?: AgentOptions;
   /** Host names `/api` and `/mcp` answer to; see `ServerConfig.allowedHosts`. */
   allowedHosts?: string[];
+  /** See `ServerConfig.publicOrigin`. */
+  publicOrigin?: string;
   /** `/api/status`; absent means it is not served. */
   status?: StatusOptions;
   /** `false` serves minified, cached bundles; Bun's default follows `NODE_ENV`. */
@@ -51,6 +53,7 @@ export function serveCave({
   serviceWorker,
   agents,
   allowedHosts = LOOPBACK_HOSTS,
+  publicOrigin,
   status,
   development,
 }: AppOptions) {
@@ -63,7 +66,7 @@ export function serveCave({
   const guarded =
     (handler: Handler): Handler =>
     async (req) => {
-      const res = guardRequest(req, allowedHosts) ?? (await handler(req));
+      const res = guardRequest(req, allowedHosts, publicOrigin) ?? (await handler(req));
       res.headers.set("cache-control", "no-store");
       return res;
     };

@@ -1,0 +1,19 @@
+# /etc/caddy/Caddyfile on the VPS. Caddy obtains and renews the certificate itself.
+cave.alexjamesmx.dev {
+	encode zstd gzip
+
+	# Matches the server's 8 MiB body limit; anything larger gets 413 here.
+	request_body {
+		max_size 8MiB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+	}
+
+	# Keeps the original Host; the server checks Origin against CAVE_PUBLIC_ORIGIN.
+	reverse_proxy 127.0.0.1:3000
+}

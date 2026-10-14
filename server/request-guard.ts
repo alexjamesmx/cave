@@ -9,10 +9,17 @@ const refuse = (status: number, error: string) => Response.json({ error }, { sta
  *   its own name at this machine still sends its own name as `Host`.
  * - A present `Origin` must be this server's own origin exactly (scheme, host and port), so
  *   another site, or another app on another localhost port, cannot use the owner's data.
+ *   Behind a reverse proxy `req.url` says `http:` while browsers send the public `https:`
+ *   origin, so requests for the public host must match `publicOrigin` instead. Forwarded
+ *   headers are never read: anyone can send them.
  * - A `POST` must be JSON. Browsers send `text/plain` cross-site without a preflight; JSON
  *   needs one, which another origin cannot pass.
  */
-export function guardRequest(req: Request, allowedHosts: string[]): Response | undefined {
+export function guardRequest(
+  req: Request,
+  allowedHosts: string[],
+  publicOrigin?: string,
+): Response | undefined {
   const host = req.headers.get("host");
   let hostname: string;
   try {
@@ -23,7 +30,11 @@ export function guardRequest(req: Request, allowedHosts: string[]): Response | u
   if (!host || !allowedHosts.includes(hostname)) return refuse(403, "host not allowed");
 
   const origin = req.headers.get("origin");
-  if (origin !== null && origin !== new URL(req.url).origin) {
+  const expected =
+    publicOrigin !== undefined && hostname === new URL(publicOrigin).hostname
+      ? publicOrigin
+      : new URL(req.url).origin;
+  if (origin !== null && origin !== expected) {
     return refuse(403, "origin not allowed");
   }
 

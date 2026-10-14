@@ -12,6 +12,7 @@ describe("resolveConfig", () => {
         token: undefined,
         dbPath: "data/cave.db",
         vaultPath: undefined,
+        publicOrigin: undefined,
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
       },
@@ -47,6 +48,7 @@ describe("resolveConfig", () => {
         token: "t",
         dbPath: "data/cave.db",
         vaultPath: undefined,
+        publicOrigin: undefined,
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
       },
@@ -97,5 +99,45 @@ describe("resolveConfig", () => {
     };
     expect(at({ CAVE_DB_PATH: "/srv/cave.db" })).toBe(join("/srv", "backups"));
     expect(at({ BACKUP_DIR: "D:/OneDrive/cave" })).toBe("D:/OneDrive/cave");
+  });
+
+  describe("CAVE_PUBLIC_ORIGIN", () => {
+    const LONG = "x".repeat(32);
+    const ORIGIN = "https://cave.example.dev";
+
+    test("its host joins the allowed hosts", () => {
+      const result = resolveConfig({ CAVE_PUBLIC_ORIGIN: ORIGIN, CAVE_TOKEN: LONG });
+      expect(result.ok && result.value.publicOrigin).toBe(ORIGIN);
+      expect(result.ok && result.value.allowedHosts).toContain("cave.example.dev");
+    });
+
+    test("is refused without a token, since every request arrives from the proxy on loopback", () => {
+      const result = resolveConfig({ CAVE_PUBLIC_ORIGIN: ORIGIN });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toContain("CAVE_TOKEN");
+    });
+
+    test("must be a bare https origin", () => {
+      for (const value of [
+        "http://cave.example.dev",
+        "https://cave.example.dev/app",
+        "https://cave.example.dev?x=1",
+        "cave.example.dev",
+        "https://user@cave.example.dev",
+      ]) {
+        expect(resolveConfig({ CAVE_PUBLIC_ORIGIN: value, CAVE_TOKEN: LONG }).ok).toBe(false);
+      }
+      const trailing = resolveConfig({ CAVE_PUBLIC_ORIGIN: `${ORIGIN}/`, CAVE_TOKEN: LONG });
+      expect(trailing.ok && trailing.value.publicOrigin).toBe(ORIGIN);
+    });
+
+    test("in production a public server needs a token of at least 32 characters", () => {
+      const short = { CAVE_PUBLIC_ORIGIN: ORIGIN, CAVE_TOKEN: "x".repeat(31) };
+      expect(resolveConfig(short, { production: true }).ok).toBe(false);
+      expect(resolveConfig(short).ok).toBe(true);
+      expect(resolveConfig({ ...short, CAVE_TOKEN: LONG }, { production: true }).ok).toBe(true);
+      // A loopback server with no public origin keeps working without a token.
+      expect(resolveConfig({}, { production: true }).ok).toBe(true);
+    });
   });
 });

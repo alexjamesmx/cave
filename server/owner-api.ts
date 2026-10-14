@@ -44,6 +44,8 @@ export function activityHandler(store: Store, calls: CallLog) {
 
 export interface StatusOptions {
   version: string;
+  /** The deployed git commit; `null` when the server does not run from a git checkout. */
+  commit: string | null;
   backupDir: string;
   /** Vault notes not imported yet, from the start-up dry run; `null` without a vault. */
   newVaultNotes: () => number | null;
@@ -51,6 +53,7 @@ export interface StatusOptions {
 
 export interface Status {
   version: string;
+  commit: string | null;
   docs: number;
   dbId: string;
   lastBackupAt: string | null;
@@ -63,6 +66,7 @@ export function statusHandler(store: Store, options: StatusOptions) {
     const last = newestBackupAt(options.backupDir);
     const status: Status = {
       version: options.version,
+      commit: options.commit,
       docs: store.docCount(),
       dbId: store.dbId(),
       lastBackupAt: last === undefined ? null : new Date(last).toISOString(),
