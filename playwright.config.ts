@@ -36,6 +36,7 @@ export default defineConfig({
       CAVE_TOKEN: "",
       CAVE_HOST: "",
       CAVE_ALLOWED_HOSTS: "",
+      CAVE_PUBLIC_ORIGIN: "",
     },
   },
 });

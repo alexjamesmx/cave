@@ -29,7 +29,32 @@ bun run agent revoke codex
 
 The examples use `http://127.0.0.1:3000/mcp`, an agent on the same machine as the server.
 
-### From another machine: Tailscale only
+### The hosted server
+
+Once the Cave runs at `https://cave.alexjamesmx.dev` (see `docs/hosting.md`), agents anywhere reach it over HTTPS. Mint the token on the VPS:
+
+```bash
+ssh cave-vps
+sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave && /opt/bun/bin/bun run agent add claude-code --scopes read,write'
+```
+
+Put the token in `CAVE_AGENT_TOKEN` on the agent's machine, then add this `.mcp.json` entry:
+
+```json
+{
+  "mcpServers": {
+    "cave": {
+      "type": "http",
+      "url": "https://cave.alexjamesmx.dev/mcp",
+      "headers": { "Authorization": "Bearer ${CAVE_AGENT_TOKEN}" }
+    }
+  }
+}
+```
+
+Codex and OpenCode take the same URL in place of `http://127.0.0.1:3000/mcp` in the examples below.
+
+### From another machine without the hosted server: Tailscale only
 
 The server speaks plain HTTP, so on an ordinary LAN the agent token, and everything the agent reads, crosses the network unencrypted. Anyone on that Wi-Fi could copy the token. Tailscale encrypts traffic between your devices, so use it for any agent not on the server's machine:
 
