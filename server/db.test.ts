@@ -75,6 +75,7 @@ test("migration 8 adds the server-only notification and job tables to a v7 datab
       "notification_log",
       "channel_state",
       "job_runs",
+      "flow_runs",
     ])
       v7.run(`DROP TABLE ${table}`);
     v7.run("PRAGMA user_version = 7");
@@ -94,7 +95,28 @@ test("migration 8 adds the server-only notification and job tables to a v7 datab
         "job_runs",
       ]),
     );
-    expect(userVersion(db)).toBe(8);
+    expect(userVersion(db)).toBe(SCHEMA_VERSION);
+    db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("migration 9 adds flow_runs to a v8 database", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cave-db-v8-"));
+  try {
+    const path = join(dir, "cave.db");
+    openDb(path).close();
+    const v8 = new Database(path);
+    v8.run("DROP TABLE flow_runs");
+    v8.run("PRAGMA user_version = 8");
+    v8.close();
+
+    const db = openDb(path);
+    db.run(
+      "INSERT INTO flow_runs (key, flow_id, started_at, result, log) VALUES ('k', 'f', 1, 'ok', '[]')",
+    );
+    expect(userVersion(db)).toBe(SCHEMA_VERSION);
     db.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });

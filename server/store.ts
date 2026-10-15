@@ -28,7 +28,22 @@ export interface Applied {
   seq: number;
 }
 
+/** One stored change, as listeners see it after the write committed. */
+export interface AppliedChange {
+  doc: Doc;
+  seq: number;
+  actor: string;
+  keys: string[];
+  /** Each changed key's previous value; `null` when the key, or the doc, was new. */
+  before: Before;
+}
+
 export interface Store {
+  /**
+   * Called after every write commits, outside its transaction: flows evaluate item triggers
+   * here. A listener that throws never undoes or blocks the write.
+   */
+  onApplied(listener: (changes: AppliedChange[]) => void): () => void;
   /** Merges docs in one IMMEDIATE transaction; returns the docs that changed and their seq. */
   applyChanges(docs: Doc[], actor: string, at: number): Applied[];
   changesSince(cursor: number, limit: number): { seq: number; doc: Doc }[];
@@ -100,19 +115,20 @@ export function createStore(db: Database): Store {
   );
 
   // seq comes from the changes log, so a doc's seq and its newest log row always match.
-  const merge = db.transaction((docs: Doc[], actor: string, at: number): Applied[] => {
-    const applied: Applied[] = [];
+  const merge = db.transaction((docs: Doc[], actor: string, at: number): AppliedChange[] => {
+    const applied: AppliedChange[] = [];
     for (const incoming of docs) {
       const row = selectDoc.get(incoming.id);
       const local = row ? toDoc(row) : undefined;
       const { doc, changed } = mergeDoc(local, { ...incoming, actor });
       if (changed.length === 0) continue;
+      const before = previous(local, changed);
       const change = insertChange.get(
         doc.id,
         actor,
         at,
         JSON.stringify(changed),
-        JSON.stringify(previous(local, changed)),
+        JSON.stringify(before),
         JSON.stringify(Object.fromEntries(changed.map((key) => [key, doc.stamps[key]]))),
       );
       if (!change) throw new Error("changes insert returned no seq");
@@ -125,7 +141,7 @@ export function createStore(db: Database): Store {
         change.seq,
         actor,
       );
-      applied.push({ id: doc.id, seq: change.seq });
+      applied.push({ doc, seq: change.seq, actor, keys: changed, before });
     }
     return applied;
   });
@@ -136,8 +152,26 @@ export function createStore(db: Database): Store {
     return true;
   });
 
+  const listeners = new Set<(changes: AppliedChange[]) => void>();
+
   return {
-    applyChanges: (docs, actor, at) => merge.immediate(docs, actor, at),
+    onApplied(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    applyChanges: (docs, actor, at) => {
+      const applied = merge.immediate(docs, actor, at);
+      if (applied.length > 0) {
+        for (const listener of listeners) {
+          try {
+            listener(applied);
+          } catch (error) {
+            console.error(`A change listener failed: ${(error as Error).message}`);
+          }
+        }
+      }
+      return applied.map(({ doc, seq }) => ({ id: doc.id, seq }));
+    },
     changesSince: (cursor, limit) =>
       selectSince.all(cursor, limit).map((row) => ({ seq: row.seq, doc: toDoc(row) })),
     get: (id) => {
