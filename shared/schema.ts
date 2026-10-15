@@ -6,6 +6,8 @@ export const FIELD_TYPES = [
   "select",
   "checkbox",
   "url",
+  // A structured value checked by a named schema; it merges as one unit (M7 flows).
+  "json",
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
@@ -45,7 +47,12 @@ export interface FieldConfig {
    * this is set. The `settings` doc's `timezone` says which local time.
    */
   withTime?: boolean;
+  /** For `json` fields: the schema the value must pass. Only `flow` exists. */
+  schema?: "flow";
 }
+
+/** Field types the owner can add from the field editor; `json` only comes from the seed. */
+export const EDITABLE_FIELD_TYPES = FIELD_TYPES.filter((t) => t !== "json");
 
 export interface View {
   id: string;

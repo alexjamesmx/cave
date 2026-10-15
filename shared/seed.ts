@@ -1,3 +1,4 @@
+import { FLOWS, FLOWS_COLLECTION, SEEDED_FLOWS } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
@@ -266,8 +267,19 @@ const PROPOSALS: CollectionData = {
 /** A change to seeded docs after real databases exist; applied once, in version order. */
 export interface SeedMigration {
   version: number;
-  docs: { id: string; kind: Kind; data: Record<string, unknown> }[];
+  docs: { id: string; kind: Kind; collection?: string; data: Record<string, unknown> }[];
 }
+
+// Flows (M7 Part C): the collection and two drafts, as one migration so they arrive together.
+const FLOW_DOCS: SeedMigration["docs"] = [
+  { id: FLOWS, kind: "collection", data: FLOWS_COLLECTION },
+  ...SEEDED_FLOWS.map((f) => ({
+    id: f.id,
+    kind: "item" as const,
+    collection: FLOWS,
+    data: f.data,
+  })),
+];
 
 // A date-only reminder is due at this local time; the owner changes it in Settings.
 const REMINDER_DEFAULTS = { reminderTime: DEFAULT_REMINDER_TIME };
@@ -278,6 +290,7 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 2, docs: [{ id: "proposals", kind: "collection", data: PROPOSALS }] },
   { version: 3, docs: [{ id: "settings", kind: "setting", data: REMINDER_DEFAULTS }] },
   { version: 4, docs: [{ id: "settings", kind: "setting", data: NOTIFICATION_DEFAULTS }] },
+  { version: 5, docs: FLOW_DOCS },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -291,10 +304,15 @@ const SETTINGS = {
   seedVersion: SEED_VERSION,
 };
 
-const seeded = (id: string, kind: Kind, data: Record<string, unknown>): Doc => ({
+const seeded = (
+  id: string,
+  kind: Kind,
+  data: Record<string, unknown>,
+  collection: string | null = null,
+): Doc => ({
   id,
   kind,
-  collection: null,
+  collection,
   data: structuredClone(data),
   stamps: Object.fromEntries(Object.keys(data).map((key) => [key, SEED_STAMP])),
   actor: "seed",
@@ -305,6 +323,7 @@ export function seedDocs(): Doc[] {
   return [
     ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
     seeded("proposals", "collection", PROPOSALS),
+    ...FLOW_DOCS.map((d) => seeded(d.id, d.kind, d.data, d.collection ?? null)),
     seeded("settings", "setting", SETTINGS),
   ];
 }

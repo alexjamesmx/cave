@@ -40,6 +40,7 @@ export interface Store {
   /** Change rows by seq, in seq order. */
   changesBySeq(seqs: number[]): Change[];
   seedIfEmpty(docs: Doc[], at: number): boolean;
+  /** Whether the owner has records yet; items the seed wrote (the flow drafts) don't count. */
   hasItems(): boolean;
   /** A collection's items that are not deleted. */
   itemsOf(collection: string): Doc[];
@@ -74,7 +75,9 @@ export function createStore(db: Database): Store {
     "SELECT * FROM docs WHERE seq > ? ORDER BY seq LIMIT ?",
   );
   const countDocs = db.query<{ n: number }, []>("SELECT count(*) AS n FROM docs");
-  const anyItem = db.query<{ id: string }, []>("SELECT id FROM docs WHERE kind = 'item' LIMIT 1");
+  const anyItem = db.query<{ id: string }, []>(
+    "SELECT id FROM docs WHERE kind = 'item' AND actor != 'seed' LIMIT 1",
+  );
   const selectCollections = db.query<DocRow, []>("SELECT * FROM docs WHERE kind = 'collection'");
   const selectItems = db.query<DocRow, [string]>(
     "SELECT * FROM docs WHERE kind = 'item' AND collection = ?",
