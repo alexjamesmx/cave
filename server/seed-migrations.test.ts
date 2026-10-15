@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
 import { SEED_VERSION, seedDocs } from "../shared/seed.ts";
 import type { Doc } from "../shared/types.ts";
 import { openDb } from "./db.ts";
@@ -14,19 +15,21 @@ test("a database seeded before seed migrations gets the proposals and the remind
   expect(store.get("proposals")).toBeUndefined();
   expect(seedVersionOf(store)).toBe(1);
 
-  expect(migrateSeed(store, NOW)).toEqual([2, 3]);
+  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4]);
   const proposals = store.get("proposals");
   expect(proposals?.data).toMatchObject({ name: "Proposals", hidden: true });
   expect(proposals?.actor).toBe("seed");
   expect(store.get("settings")?.data).toEqual({
     timezone: "America/Mexico_City",
     reminderTime: "09:00",
+    notifications: DEFAULT_NOTIFICATIONS,
     seedVersion: SEED_VERSION,
   });
   // The migration and the version bump are one change batch with one actor and time.
   const log = store.changeLog().filter((c) => c.at === NOW);
   expect(log.map((c) => [c.id, c.actor])).toEqual([
     ["proposals", "seed"],
+    ["settings", "seed"],
     ["settings", "seed"],
     ["settings", "seed"],
   ]);
