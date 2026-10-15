@@ -73,3 +73,24 @@ test("jump returns a path; ask and reject explain themselves", async () => {
     message: "Try todo",
   });
 });
+
+test("a reminder is saved open, with its due and repeat", async () => {
+  const result = await run({
+    kind: "reminder",
+    title: "Pay rent",
+    due: "2026-10-22T09:00",
+    repeat: "monthly",
+    preview: "Reminder · Pay rent · Thu Oct 22, 09:00 · monthly",
+  });
+  expect(result).toEqual({
+    ok: true,
+    message: "Saved · Reminder · Pay rent · Thu Oct 22, 09:00 · monthly",
+  });
+  const [doc] = await items("reminders");
+  expect(doc?.data).toMatchObject({
+    _title: "Pay rent",
+    due: "2026-10-22T09:00",
+    repeat: "monthly",
+    done: false,
+  });
+});

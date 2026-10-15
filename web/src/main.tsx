@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { boot } from "./app/boot.ts";
 import { CaveContext } from "./app/context.ts";
-import { interceptLinks } from "./app/router.ts";
+import { interceptLinks, listenForShortcuts } from "./app/router.ts";
 import { warmShellCache } from "./app/shell-cache.ts";
 // Fonts ship with the app (SIL OFL), so the shell works offline and no request leaves the origin.
 import "@fontsource-variable/space-grotesk";
@@ -18,6 +18,7 @@ if (!container) throw new Error("index.html has no #root");
 const cave = await boot();
 void navigator.storage?.persist?.();
 interceptLinks(document);
+listenForShortcuts(document);
 
 createRoot(container).render(
   <StrictMode>

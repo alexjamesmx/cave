@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { applyFilter, defaultSort, readFilter, titleOf } from "../logic/views.ts";
 import { FieldValue } from "../ui/fields.tsx";
+import { ReminderActions } from "../ui/ReminderActions.tsx";
 import { NewItem } from "./NewItem.tsx";
 import type { ViewProps } from "./types.ts";
 
@@ -10,6 +11,7 @@ const PAGE = 200;
 export function TableView({ collection, view, items, open }: ViewProps) {
   const { fields } = collection.data;
   const [shown, setShown] = useState(PAGE);
+  const reminders = collection.id === "reminders";
   const rows = useMemo(
     () => defaultSort(applyFilter(items, readFilter(view.config)), fields),
     [items, view.config, fields],
@@ -24,6 +26,7 @@ export function TableView({ collection, view, items, open }: ViewProps) {
             {fields.map((f) => (
               <th key={f.id}>{f.name}</th>
             ))}
+            {reminders && <th aria-label="Actions" />}
           </tr>
         </thead>
         <tbody>
@@ -39,6 +42,11 @@ export function TableView({ collection, view, items, open }: ViewProps) {
                   <FieldValue field={f} value={doc.data[f.id]} />
                 </td>
               ))}
+              {reminders && (
+                <td>
+                  <ReminderActions doc={doc} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

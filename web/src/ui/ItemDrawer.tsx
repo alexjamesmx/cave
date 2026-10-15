@@ -8,6 +8,7 @@ import { useLive } from "../store/live.ts";
 import { type CollectionDoc, useDoc } from "../store/queries.ts";
 import { FieldInput } from "./fields.tsx";
 import { Icon } from "./icon.tsx";
+import { ReminderActions } from "./ReminderActions.tsx";
 
 interface Props {
   collection: CollectionDoc;
@@ -72,6 +73,7 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
           Not synced: the server refused {refusal.error}. Fix the value to sync it.
         </p>
       )}
+      {collection.id === "reminders" && <ReminderActions doc={doc} />}
       <dl className="field-grid">
         {collection.data.fields.map((field) => (
           <div key={field.id} style={{ display: "contents" }}>

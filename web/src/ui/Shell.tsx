@@ -28,6 +28,13 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             <Icon name="house" size={17} color="var(--lime)" />
             Cave
           </a>
+          <a href="/calendar" className={on(route.name === "calendar")}>
+            <Icon name="calendar-days" size={17} color="var(--expense)" />
+            Calendar
+            <span className="kbd" aria-hidden="true">
+              C
+            </span>
+          </a>
           <a href="/agents" className={on(route.name === "agents")}>
             <Icon name="bot" size={17} />
             Agents

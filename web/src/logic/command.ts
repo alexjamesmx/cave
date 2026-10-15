@@ -1,3 +1,6 @@
+import type { Repeat } from "../../../shared/reminders.ts";
+import { parseReminder, preview, type WhenContext } from "../../../shared/when.ts";
+
 export type Command =
   | {
       kind: "money";
@@ -8,6 +11,14 @@ export type Command =
       title: string;
     }
   | { kind: "task"; title: string }
+  | {
+      kind: "reminder";
+      title: string;
+      due: string;
+      repeat: Repeat;
+      /** "Reminder · Pay rent · Thu Oct 22, 09:00 · monthly", shown before it is saved. */
+      preview: string;
+    }
   | { kind: "habit"; habit: string }
   | { kind: "ask"; question: string }
   | { kind: "jump"; path: string }
@@ -18,6 +29,8 @@ export interface CommandContext {
   habits: { id: string; name: string }[];
   /** Jump targets: anything whose name or id starts with the query. */
   targets: { name: string; id: string; path: string }[];
+  /** Now, the settings timezone and the reminder time, for `remind`. */
+  when: WhenContext;
 }
 
 const MONEY_START = /^\+?\$?\d/;
@@ -25,7 +38,7 @@ const MONEY_RE = /^(\+)?\$?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?=\s|$)\s*
 const TAG_RE = /(^|\s)#([\p{L}\p{N}_-]+)(?=\s|$)/gu;
 
 const HINT =
-  "Try “205 tacos”, “+15040 paycheck”, “todo call the bank”, a habit like “gym”, or “> money”.";
+  "Try “205 tacos”, “+15040 paycheck”, “todo call the bank”, “remind stretch in 2h”, a habit like “gym”, or “> money”.";
 
 const norm = (s: string) => s.trim().toLowerCase();
 
@@ -56,6 +69,14 @@ export function parseCommand(raw: string, ctx: CommandContext): Command {
 
   const todo = /^todo\s+(.+)$/i.exec(input);
   if (todo) return { kind: "task", title: (todo[1] as string).trim() };
+
+  const remind = /^remind(?:\s+(.*))?$/i.exec(input);
+  if (remind) {
+    const parsed = parseReminder(remind[1] ?? "", ctx.when);
+    if (!parsed.ok) return { kind: "reject", hint: parsed.hint };
+    const { title, due, repeat } = parsed;
+    return { kind: "reminder", title, due, repeat, preview: preview(parsed, ctx.when) };
+  }
 
   const habit = ctx.habits.find((h) => norm(h.id) === norm(input) || norm(h.name) === norm(input));
   if (habit) return { kind: "habit", habit: habit.id };

@@ -5,7 +5,7 @@ import { monthSummary } from "../../../shared/money.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { runCommand } from "../app/commands.ts";
 import { useCave } from "../app/context.ts";
-import { useTimeZone, useToday } from "../app/hooks.ts";
+import { useNow, useReminderZone, useTimeZone, useToday } from "../app/hooks.ts";
 import { collectionPath, navigate } from "../app/router.ts";
 import { type CommandContext, parseCommand } from "../logic/command.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
@@ -15,9 +15,17 @@ import { entriesByDay, habitsDone } from "../logic/habits.ts";
 import { wealthSummary } from "../logic/wealth.ts";
 import { useLive } from "../store/live.ts";
 import { type CollectionDoc, useCollections, useDoc } from "../store/queries.ts";
+import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
 
-const EXAMPLES = ["205 tacos #food", "+15040 paycheck", "todo call the bank", "gym", "> money"];
+const EXAMPLES = [
+  "205 tacos #food",
+  "+15040 paycheck",
+  "todo call the bank",
+  "remind stretch in 2h",
+  "gym",
+  "> money",
+];
 const CLOSED = new Set(["done", "dropped"]);
 
 export function Home() {
@@ -79,6 +87,7 @@ export function Home() {
         <h1>What's the move?</h1>
         {collections && <CommandBar collections={collections} />}
       </section>
+      {collections && <DueCard collections={collections} />}
       <section className="tiles" aria-label="Today">
         <Tile
           href={collectionPath("money")}
@@ -166,7 +175,9 @@ function CommandBar({ collections }: { collections: CollectionDoc[] }) {
   const [input, setInput] = useState("");
   const [result, setResult] = useState<{ ok: boolean; message: string }>();
 
-  const ctx: CommandContext = useMemo(() => {
+  const zone = useReminderZone();
+  const minute = useNow();
+  const base = useMemo(() => {
     const fields = (id: string) => collections.find((c) => c.id === id)?.data.fields ?? [];
     return {
       categories:
@@ -180,19 +191,27 @@ function CommandBar({ collections }: { collections: CollectionDoc[] }) {
         ...collections
           .filter((c) => !c.data.hidden)
           .map((c) => ({ id: c.id, name: c.data.name, path: collectionPath(c.id) })),
+        { id: "calendar", name: "Calendar", path: "/calendar" },
         { id: "agents", name: "Agents", path: "/agents" },
         { id: "settings", name: "Settings", path: "/settings" },
       ],
     };
   }, [collections]);
+  const ctx = (now: Date): CommandContext => ({
+    ...base,
+    when: { now, timeZone: zone.timeZone, reminderTime: zone.defaultTime },
+  });
+  // A `remind` entry shows what it will save before Enter.
+  const pending = /^remind\b/i.test(input.trim()) ? parseCommand(input, ctx(minute)) : undefined;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const outcome = await runCommand(parseCommand(input, ctx), {
+      const now = new Date();
+      const outcome = await runCommand(parseCommand(input, ctx(now)), {
         local,
         timeZone,
-        now: new Date(),
+        now,
       });
       if (outcome.path) navigate(outcome.path);
       setResult(outcome);
@@ -220,6 +239,15 @@ function CommandBar({ collections }: { collections: CollectionDoc[] }) {
           onChange={(e) => setInput(e.target.value)}
         />
       </form>
+      {pending && (
+        <p className="muted" aria-live="polite" style={{ margin: 0 }}>
+          {pending.kind === "reminder"
+            ? pending.preview
+            : pending.kind === "reject"
+              ? pending.hint
+              : ""}
+        </p>
+      )}
       <p
         role="status"
         className={result?.ok === false ? "error" : "muted"}

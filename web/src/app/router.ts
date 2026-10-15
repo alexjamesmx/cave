@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 export type Route =
   | { name: "home" }
   | { name: "collection"; collection: string; view: string | undefined }
+  | { name: "calendar" }
   | { name: "settings" }
   | { name: "agents" }
   | { name: "not-found" };
@@ -11,6 +12,7 @@ const COLLECTION_RE = /^\/c\/([^/]+)(?:\/([^/]+))?\/?$/;
 
 export function parseRoute(pathname: string): Route {
   if (pathname === "/" || pathname === "") return { name: "home" };
+  if (pathname === "/calendar") return { name: "calendar" };
   if (pathname === "/settings") return { name: "settings" };
   if (pathname === "/agents") return { name: "agents" };
   const m = COLLECTION_RE.exec(pathname);
@@ -43,6 +45,31 @@ export function navigate(path: string): void {
 }
 
 export const usePathname = () => useSyncExternalStore(subscribe, () => location.pathname);
+
+// Single-letter shortcuts, ignored while typing or with a modifier held.
+const SHORTCUTS: Record<string, string> = { c: "/calendar" };
+
+export function isTyping(target: EventTarget | null): boolean {
+  const el = target as { tagName?: unknown; isContentEditable?: unknown } | null;
+  if (!el || typeof el.tagName !== "string") return false;
+  return el.isContentEditable === true || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
+}
+
+export function shortcutPath(
+  event: Pick<KeyboardEvent, "key" | "metaKey" | "ctrlKey" | "altKey" | "target">,
+): string | undefined {
+  if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return undefined;
+  return SHORTCUTS[event.key.toLowerCase()];
+}
+
+export function listenForShortcuts(root: Document): void {
+  root.addEventListener("keydown", (event) => {
+    const path = shortcutPath(event);
+    if (!path || event.defaultPrevented) return;
+    event.preventDefault();
+    navigate(path);
+  });
+}
 
 /**
  * Plain left clicks on same-origin links navigate without a reload, so pages use ordinary

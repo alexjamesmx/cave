@@ -664,3 +664,143 @@ textarea.input {
     font-size: 30px;
   }
 }
+
+/* Keyboard shortcut hint in the sidebar (M7). */
+.kbd {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--line);
+  border: 1px solid var(--control-border);
+  color: var(--muted);
+}
+
+/* Calendar page: the month beside the agenda, the agenda below it on the phone. */
+.calendar-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+.day-add {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.day-add:hover {
+  background: var(--line);
+  color: var(--text);
+}
+.event {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.calendar-page .event {
+  border-left: 3px solid var(--mark, var(--muted));
+}
+.event svg {
+  flex: none;
+}
+.event.done,
+.agenda-row.done {
+  opacity: 0.45;
+}
+.agenda-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.agenda-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+.agenda-time {
+  min-width: 52px;
+  font-size: 12px;
+}
+.agenda-row.overdue .link,
+.agenda-row.overdue .agenda-time {
+  color: var(--expense);
+}
+.agenda-row .mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.reminder-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.reminder-actions .btn {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.snooze-menu {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.snooze-menu .input {
+  padding: 4px 8px;
+  font-size: 12px;
+  width: auto;
+}
+.new-reminder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.new-reminder .k {
+  width: 100%;
+}
+.new-reminder .input:first-of-type {
+  flex: 1;
+  min-width: 160px;
+}
+.due-card {
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .calendar-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Too narrow for text: each entry is a coloured bar, and the agenda below has the detail. */
+  .calendar-page .calendar .day {
+    min-height: 56px;
+  }
+  .calendar-page .event {
+    font-size: 0;
+    padding: 0;
+    height: 5px;
+    border: 0;
+    background: var(--mark, var(--muted));
+  }
+  .calendar-page .event svg {
+    display: none;
+  }
+  .side .kbd {
+    display: none;
+  }
+}

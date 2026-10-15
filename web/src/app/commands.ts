@@ -40,6 +40,14 @@ export async function runCommand(
     case "task":
       await local.write(item("tasks"), { _title: cmd.title, status: "todo" });
       return { ok: true, message: `Task added: ${cmd.title}` };
+    case "reminder":
+      await local.write(item("reminders"), {
+        _title: cmd.title,
+        due: cmd.due,
+        repeat: cmd.repeat,
+        done: false,
+      });
+      return { ok: true, message: `Saved · ${cmd.preview}` };
     case "habit": {
       const today = localDate(now, timeZone);
       const journal = await local.db.docs.where("collection").equals("journal").toArray();

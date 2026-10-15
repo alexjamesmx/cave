@@ -12,6 +12,12 @@ const ctx: CommandContext = {
     { id: "journal", name: "Journal", path: "/c/journal" },
     { id: "settings", name: "Settings", path: "/settings" },
   ],
+  // Thursday 2026-10-15, 10:00 in Mexico City.
+  when: {
+    now: new Date("2026-10-15T16:00:00Z"),
+    timeZone: "America/Mexico_City",
+    reminderTime: "09:00",
+  },
 };
 const parse = (s: string) => parseCommand(s, ctx);
 
@@ -57,4 +63,22 @@ test("anything else is rejected with a hint", () => {
   const result = parse("buy milk");
   expect(result.kind).toBe("reject");
   expect(result.kind === "reject" && result.hint).toContain("todo");
+});
+
+test("remind shows what it will save, and refuses an entry without a date", () => {
+  expect(parse("remind pay rent every month 22 9:00")).toEqual({
+    kind: "reminder",
+    title: "Pay rent",
+    due: "2026-10-22T09:00",
+    repeat: "monthly",
+    preview: "Reminder · Pay rent · Thu Oct 22, 09:00 · monthly",
+  });
+  expect(parse("Remind stretch in 2h")).toMatchObject({
+    kind: "reminder",
+    due: "2026-10-15T12:00",
+  });
+  expect(parse("remind call mom")).toMatchObject({ kind: "reject" });
+  expect(parse("remind")).toMatchObject({ kind: "reject" });
+  // "reminders" is a word, not the command.
+  expect(parse("reminders")).toMatchObject({ kind: "reject" });
 });

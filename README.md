@@ -53,6 +53,14 @@ It never imports on its own: a note renamed in Obsidian would come back as a dup
 
 Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each with its own token. See [docs/agents.md](docs/agents.md).
 
+## Reminders and the calendar
+
+- **`remind <text> <when>`** in the command bar, in English or Spanish: `remind pay rent tomorrow 9am`, `remind llamar a mamá vie 18:00`, `remind stretch in 2h`, `remind renta every month 22 9:00`. The bar shows what it will save before Enter, and refuses an entry without a date.
+- **Done and Snooze** on every reminder (the drawer, the table, the agenda, the Due card). A repeating reminder moves to its next occurrence and stays open; the 31st becomes the 30th in shorter months and returns to the 31st. Undo puts the previous values back.
+- **`/calendar`** (or `C`): a month grid with repeats shown ahead, and a 14-day agenda with anything overdue on top. Click a day to add a reminder.
+- **The Due card** on Home: overdue, today and tomorrow.
+- A reminder with a date and no time is due at the reminder time in Settings (09:00 by default).
+
 ## Hosting
 
 The Cave can run on a VPS as the server every device syncs with. Today that is a Hostinger KVM 2 on Ubuntu 26.04, at `https://cave.alexjamesmx.dev`, behind Caddy. The laptop and the phone become clients.

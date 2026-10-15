@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Status } from "../../../server/owner-api.ts";
 import { TOKEN_KEY } from "../app/boot.ts";
 import { useCave } from "../app/context.ts";
-import { useTimeZone } from "../app/hooks.ts";
+import { useReminderZone, useTimeZone } from "../app/hooks.ts";
 import { ownerDownload, ownerGet } from "../app/owner-api.ts";
 import { COMMIT_URL, deployLine } from "../logic/deploy-line.ts";
 import { useDoc } from "../store/queries.ts";
@@ -23,6 +23,7 @@ export function Settings() {
     <>
       <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Settings</h1>
       <OwnerName />
+      <ReminderTime />
       <section className="panel" style={{ padding: 18, display: "grid", gap: 14, maxWidth: 560 }}>
         <label style={{ display: "grid", gap: 6 }}>
           <span className="k">Server token</span>
@@ -46,6 +47,33 @@ export function Settings() {
       </section>
       <ServerStatus />
     </>
+  );
+}
+
+/** When a reminder with only a date is due; Part B's notifications will use it too. */
+function ReminderTime() {
+  const { local } = useCave();
+  const zone = useReminderZone();
+  return (
+    <section className="panel" style={{ padding: 18, display: "grid", gap: 6, maxWidth: 560 }}>
+      <label style={{ display: "grid", gap: 6 }}>
+        <span className="k">Reminder time</span>
+        <input
+          key={zone.defaultTime}
+          className="input"
+          type="time"
+          defaultValue={zone.defaultTime}
+          onBlur={(e) => {
+            const next = e.target.value;
+            if (next && next !== zone.defaultTime)
+              void local.write(SETTINGS, { reminderTime: next });
+          }}
+        />
+      </label>
+      <span className="muted" style={{ fontSize: 13 }}>
+        For reminders with a date and no time, in {zone.timeZone}.
+      </span>
+    </section>
   );
 }
 
