@@ -7,7 +7,13 @@ import { AgentWriter } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
 import { openDb } from "../db.ts";
 import { createStore, type Store } from "../store.ts";
-import { MAX_ON_FLOWS, MAX_SAVES_PER_DAY, type SaveFlowArgs, saveFlow } from "./flows.ts";
+import {
+  listFlows,
+  MAX_ON_FLOWS,
+  MAX_SAVES_PER_DAY,
+  type SaveFlowArgs,
+  saveFlow,
+} from "./flows.ts";
 
 const NOW = Date.parse("2026-10-15T16:00:00Z");
 const claude: Agent = {
@@ -112,4 +118,25 @@ test("limits: saves a day, and flows on per agent", () => {
   for (let i = 0; i < MAX_ON_FLOWS; i++) expect(save({ definition: weekly }).ok).toBe(true);
   expect(save({ definition: weekly })).toMatchObject({ ok: false });
   expect(save({ definition: weekly, status: "draft" })).toMatchObject({ ok: true });
+});
+
+test("an allowlisted agent neither sees nor replaces a flow outside its collections", () => {
+  const saved = save({ definition: weekly });
+  const id = saved.ok ? saved.id : "";
+  const moneyFlow: FlowDefinition = {
+    version: 1,
+    trigger: { type: "item-added", collection: "money" },
+    steps: [{ type: "notify", title: "New entry: {{item.title}}", open: "trigger-item" }],
+  };
+  const own = save({ definition: moneyFlow }, moneyOnly);
+  const ids = (agent: Agent) => {
+    const listed = listFlows(store, agent);
+    return listed.ok ? (listed.value as { flows: { id: string }[] }).flows.map((f) => f.id) : [];
+  };
+  expect(ids(claude)).toEqual(expect.arrayContaining([id, "flow-rent", "flow-salary"]));
+  expect(ids(moneyOnly)).toEqual([own.ok ? own.id : ""]);
+  expect(save({ id, definition: moneyFlow }, moneyOnly)).toEqual({
+    ok: false,
+    error: `flow ${id} not found`,
+  });
 });

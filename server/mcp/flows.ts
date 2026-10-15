@@ -2,6 +2,7 @@ import { fieldsOf } from "../../shared/fields.ts";
 import { describeFlow } from "../../shared/flows/describe.ts";
 import { type FlowDefinition, isSensitive, parseDefinition } from "../../shared/flows/registry.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
+import type { Doc } from "../../shared/types.ts";
 import type { CallLog } from "../agent-calls.ts";
 import { type AgentWriter, visibleCollectionDoc, type WriteResult } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
@@ -22,22 +23,34 @@ export interface SaveFlowArgs {
 
 const live = (store: Store) => store.itemsOf(FLOWS).filter((d) => d.data._deleted !== true);
 
-/** Every flow, owner's included: agents edit flows by id, so they need to see them. */
-export function listFlows(store: Store): ToolOutcome {
+/**
+ * Whether a stored flow is within this agent's reach: an agent sees and replaces only flows
+ * whose every collection and field it may see. One that doesn't parse is reachable only by an
+ * agent without an allowlist.
+ */
+function reachable(store: Store, agent: Agent, flow: Doc): boolean {
+  const parsed = parseDefinition(flow.data.definition);
+  return parsed.ok ? !reachError(store, agent, parsed.value) : agent.collections === null;
+}
+
+/** The flows within the agent's reach, owner's included: agents edit flows by id. */
+export function listFlows(store: Store, agent: Agent): ToolOutcome {
   return {
     ok: true,
     value: {
-      flows: live(store).map((d) => {
-        const parsed = parseDefinition(d.data.definition);
-        return {
-          id: d.id,
-          title: d.data._title ?? null,
-          status: d.data.status ?? null,
-          author: d.data.author ?? null,
-          definition: d.data.definition ?? null,
-          steps: parsed.ok ? describeFlow(parsed.value) : [],
-        };
-      }),
+      flows: live(store)
+        .filter((d) => reachable(store, agent, d))
+        .map((d) => {
+          const parsed = parseDefinition(d.data.definition);
+          return {
+            id: d.id,
+            title: d.data._title ?? null,
+            status: d.data.status ?? null,
+            author: d.data.author ?? null,
+            definition: d.data.definition ?? null,
+            steps: parsed.ok ? describeFlow(parsed.value) : [],
+          };
+        }),
     },
   };
 }
@@ -115,7 +128,12 @@ export function saveFlow(
   if (!args.title.trim()) return { ok: false, error: "title is required" };
 
   const current = args.id ? store.get(args.id) : undefined;
-  if (args.id && (current?.collection !== FLOWS || current.data._deleted === true))
+  if (
+    args.id &&
+    (current?.collection !== FLOWS ||
+      current.data._deleted === true ||
+      !reachable(store, agent, current))
+  )
     return { ok: false, error: `flow ${args.id} not found` };
 
   if (calls.countSince(agent.name, "save_flow", now - DAY_MS) >= MAX_SAVES_PER_DAY)

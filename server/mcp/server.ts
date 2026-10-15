@@ -146,7 +146,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
           "List the owner's flows (automations): id, title, status (draft, on, off, pending-approval), who made it, its definition and a line per step.",
         annotations: READ,
       },
-      () => run("list_flows", {}, () => listFlows(store)),
+      () => run("list_flows", {}, () => listFlows(store, agent)),
     );
   }
 
