@@ -804,3 +804,17 @@ textarea.input {
     display: none;
   }
 }
+
+/* Settings: one row per notification channel (M7 Part B). */
+.channel-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.channel-row .input {
+  width: auto;
+  padding: 4px 8px;
+}

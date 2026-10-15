@@ -62,3 +62,41 @@ test("refuses a database written by a newer build", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("migration 8 adds the server-only notification and job tables to a v7 database", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cave-db-v7-"));
+  try {
+    const path = join(dir, "cave.db");
+    openDb(path).close();
+    const v7 = new Database(path);
+    for (const table of [
+      "push_subscriptions",
+      "notifications_sent",
+      "notification_log",
+      "channel_state",
+      "job_runs",
+    ])
+      v7.run(`DROP TABLE ${table}`);
+    v7.run("PRAGMA user_version = 7");
+    v7.close();
+
+    const db = openDb(path);
+    const tables = db
+      .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .all()
+      .map((t) => t.name);
+    expect(tables).toEqual(
+      expect.arrayContaining([
+        "push_subscriptions",
+        "notifications_sent",
+        "notification_log",
+        "channel_state",
+        "job_runs",
+      ]),
+    );
+    expect(userVersion(db)).toBe(8);
+    db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

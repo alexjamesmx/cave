@@ -56,6 +56,15 @@ test("the env template starts a public production server once a token is filled 
   expect(env.BUN_RUNTIME_TRANSPILER_CACHE_PATH).toBe("0");
   expect(env.CAVE_TOKEN).toBe("");
   expect(env.CAVE_DEPLOY_STATUS).toBe("/var/lib/cave-deploy/status.json");
+  // Notification secrets ship empty: push is off and the channels say what they need.
+  for (const key of [
+    "CAVE_VAPID_PUBLIC",
+    "CAVE_VAPID_PRIVATE",
+    "CAVE_VAPID_SUBJECT",
+    "CAVE_TELEGRAM_BOT_TOKEN",
+    "CAVE_DISCORD_WEBHOOK_URL",
+  ])
+    expect(env[key]).toBe("");
   expect(resolveConfig(env, { production: true }).ok).toBe(false);
   const filled = resolveConfig({ ...env, CAVE_TOKEN: "x".repeat(64) }, { production: true });
   expect(filled.ok && filled.value).toMatchObject({

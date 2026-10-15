@@ -94,6 +94,28 @@ flowchart TD
 - Each release lives in `/opt/cave/releases/<commit>`, and `current` points at the running one. Five are kept. The last result is in `/var/lib/cave-deploy/status.json`.
 - **Details:** `deploy/cave-deploy`, `deploy/release.sh`, `docs/hosting.md`.
 
+## 3b. How a reminder reaches the phone
+
+```mermaid
+sequenceDiagram
+  participant S as Cave server (job scheduler, every 30 s)
+  participant N as Notifier
+  participant P as Push service (Apple, Google, Mozilla)
+  participant T as Telegram / Discord
+  participant D as Phone (Home Screen app)
+  S->>S: reminder due, key reminder:id:due not sent yet
+  S->>N: notify(title, due time, Done / Snooze 1h)
+  N->>P: Web Push, encrypted (aes128gcm) and signed (VAPID), full detail
+  N->>T: titles only, unless the owner chose full
+  P->>D: notification shown (Declarative Web Push, or the service worker)
+  D->>D: tap opens /r/:id?do=done in the app: a stamped write, then sync
+```
+
+- **One job loop** runs the reminder sweep, Telegram's long poll and the hourly backup check (`server/jobs/`). Flows join it in Part C.
+- **Channels sit behind one interface** (`server/notify/types.ts`): Web Push is the private default; Telegram is two-way for one linked chat; Discord is one-way. Each says what it needs ("needs keys", "needs linking", "webhook gone").
+- **Nothing is sent twice:** `notifications_sent` keeps every key; a snooze or the next repeat is a new key. A reminder more than 6 hours late after downtime is recorded as missed, not sent.
+- **No token in the service worker:** a notification's buttons open the app, which does the write.
+
 ## 4. How backups move
 
 ```mermaid
@@ -212,6 +234,9 @@ Don't touch the other records (portfolio, mail).
 | The GitHub account | your password manager, with two-factor login | anywhere else: whoever can merge to `main` ships code that runs with all the data |
 | SSH keys | `~/.ssh` on the laptop; the VPS deploy key in `/var/lib/cave/.ssh` | anywhere else |
 | MCP keys (Context7, Exa, Firecrawl, GitHub) | user environment variables | git |
+| Web Push private key `CAVE_VAPID_PRIVATE` | `/etc/cave/cave.env` only (`bun run push-keys` appends it) | logs, API answers, the client, docs |
+| Telegram bot token `CAVE_TELEGRAM_BOT_TOKEN` | `/etc/cave/cave.env`; @BotFather can reissue it | logs, API answers, the client |
+| Discord webhook `CAVE_DISCORD_WEBHOOK_URL` | `/etc/cave/cave.env`: anyone holding it can post | logs, API answers, the client |
 
 ## 8. Where to look next
 - `docs/plan-v0.1.md`: data model, sync protocol, milestones.

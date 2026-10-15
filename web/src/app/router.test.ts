@@ -5,6 +5,7 @@ test("parses the app's routes", () => {
   expect(parseRoute("/")).toEqual({ name: "home" });
   expect(parseRoute("/settings")).toEqual({ name: "settings" });
   expect(parseRoute("/calendar")).toEqual({ name: "calendar" });
+  expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
   expect(parseRoute("/agents")).toEqual({ name: "agents" });
   expect(parseRoute("/c/money")).toEqual({
     name: "collection",

@@ -2,6 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
+import webpush from "web-push";
 
 const PORT = 3210;
 
@@ -9,6 +10,10 @@ const PORT = 3210;
 // Workers load this file again; the variable makes them reuse the runner's folder.
 process.env.CAVE_E2E_DIR ??= mkdtempSync(join(tmpdir(), "cave-e2e-"));
 const dbPath = join(process.env.CAVE_E2E_DIR, "cave.db");
+// Throwaway VAPID keys, made once per run like the folder, so the server has Web Push on.
+if (!process.env.CAVE_E2E_VAPID)
+  process.env.CAVE_E2E_VAPID = JSON.stringify(webpush.generateVAPIDKeys());
+const vapid = JSON.parse(process.env.CAVE_E2E_VAPID) as { publicKey: string; privateKey: string };
 
 export default defineConfig({
   testDir: "e2e",
@@ -37,6 +42,11 @@ export default defineConfig({
       CAVE_HOST: "",
       CAVE_ALLOWED_HOSTS: "",
       CAVE_PUBLIC_ORIGIN: "",
+      CAVE_VAPID_PUBLIC: vapid.publicKey,
+      CAVE_VAPID_PRIVATE: vapid.privateKey,
+      CAVE_VAPID_SUBJECT: "mailto:e2e@example.test",
+      CAVE_TELEGRAM_BOT_TOKEN: "",
+      CAVE_DISCORD_WEBHOOK_URL: "",
     },
   },
 });

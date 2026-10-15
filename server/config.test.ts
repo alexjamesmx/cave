@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
+import webpush from "web-push";
 import { resolveConfig } from "./config.ts";
 
 describe("resolveConfig", () => {
@@ -16,6 +17,9 @@ describe("resolveConfig", () => {
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
         deployStatusPath: undefined,
+        push: undefined,
+        telegramToken: undefined,
+        discordWebhook: undefined,
       },
     });
   });
@@ -53,6 +57,9 @@ describe("resolveConfig", () => {
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
         deployStatusPath: undefined,
+        push: undefined,
+        telegramToken: undefined,
+        discordWebhook: undefined,
       },
     });
   });
@@ -141,5 +148,69 @@ describe("resolveConfig", () => {
       // A loopback server with no public origin keeps working without a token.
       expect(resolveConfig({}, { production: true }).ok).toBe(true);
     });
+  });
+});
+
+describe("notification settings", () => {
+  const keys = webpush.generateVAPIDKeys();
+  const vapid = {
+    CAVE_VAPID_PUBLIC: keys.publicKey,
+    CAVE_VAPID_PRIVATE: keys.privateKey,
+    CAVE_VAPID_SUBJECT: "mailto:owner@example.com",
+  };
+
+  test("no VAPID settings means push is off; all three turn it on", () => {
+    const off = resolveConfig({});
+    expect(off.ok && off.value.push).toBeUndefined();
+    const on = resolveConfig(vapid);
+    expect(on.ok && on.value.push).toEqual({
+      publicKey: keys.publicKey,
+      privateKey: keys.privateKey,
+      subject: "mailto:owner@example.com",
+    });
+  });
+
+  test("some VAPID settings refuse to start, naming the missing ones but never a value", () => {
+    const partial = resolveConfig({ CAVE_VAPID_PUBLIC: keys.publicKey });
+    expect(partial).toEqual({
+      ok: false,
+      error:
+        "Web Push needs all three VAPID settings; missing: CAVE_VAPID_PRIVATE, CAVE_VAPID_SUBJECT",
+    });
+    for (const bad of [
+      { ...vapid, CAVE_VAPID_PUBLIC: "short" },
+      { ...vapid, CAVE_VAPID_PRIVATE: keys.publicKey },
+      { ...vapid, CAVE_VAPID_SUBJECT: "owner@example.com" },
+    ]) {
+      const result = resolveConfig(bad);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).not.toContain(keys.privateKey);
+    }
+  });
+
+  test("a Telegram token and a Discord webhook are checked for shape, never echoed", () => {
+    const token = `123456789:${"A".repeat(35)}`;
+    const ok = resolveConfig({
+      CAVE_TELEGRAM_BOT_TOKEN: token,
+      CAVE_DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/123/abc-DEF_9",
+    });
+    expect(ok.ok && [ok.value.telegramToken, ok.value.discordWebhook]).toEqual([
+      token,
+      "https://discord.com/api/webhooks/123/abc-DEF_9",
+    ]);
+    const badToken = resolveConfig({ CAVE_TELEGRAM_BOT_TOKEN: "secret-value" });
+    expect(!badToken.ok && badToken.error).not.toContain("secret-value");
+    for (const url of [
+      "http://discord.com/api/webhooks/123/abc",
+      "https://evil.example/api/webhooks/123/abc",
+      "https://discord.com/api/other/123/abc",
+    ]) {
+      const result = resolveConfig({ CAVE_DISCORD_WEBHOOK_URL: url });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).not.toContain(url);
+    }
+    expect(
+      resolveConfig({ CAVE_DISCORD_WEBHOOK_URL: "https://discordapp.com/api/webhooks/1/x" }).ok,
+    ).toBe(true);
   });
 });

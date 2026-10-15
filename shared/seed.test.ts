@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { SEED_STAMP } from "./hlc.ts";
+import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { FIELD_TYPES, VIEW_TYPES } from "./schema.ts";
 import { SEED_VERSION, seedDocs } from "./seed.ts";
 
@@ -35,7 +36,12 @@ test("seeds the plan's eight collections, hidden proposals and the settings doc"
   expect(byId.get("settings")).toMatchObject({
     kind: "setting",
     collection: null,
-    data: { timezone: "America/Mexico_City", reminderTime: "09:00", seedVersion: SEED_VERSION },
+    data: {
+      timezone: "America/Mexico_City",
+      reminderTime: "09:00",
+      notifications: DEFAULT_NOTIFICATIONS,
+      seedVersion: SEED_VERSION,
+    },
   });
   expect(docs).toHaveLength(10);
 });

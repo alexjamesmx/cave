@@ -232,6 +232,33 @@ The service runs under `ProtectSystem=strict`, which makes `/var/lib/cave-deploy
 
 A change to `deploy/cave-deploy` or its units is a reviewed template change: after the merge, repeat the install lines above.
 
+## 12. Notifications
+Web Push, Telegram and Discord are each optional: a channel without its settings shows what it needs in Settings → Notifications. Every secret goes into `/etc/cave/cave.env` without being shown on screen. Run these in **hPanel's browser terminal**, as root.
+
+**Web Push.** `bun run push-keys` prints three env lines (the subject is `CAVE_PUBLIC_ORIGIN`); appending them keeps the private key off the screen. It refuses when keys already exist: new keys unsubscribe every device.
+```bash
+sed -i '/^CAVE_VAPID_[A-Z]*=$/d' /etc/cave/cave.env      # drops empty template lines, if any
+sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run push-keys' >> /etc/cave/cave.env
+grep -c '^CAVE_VAPID_[A-Z]*=.' /etc/cave/cave.env          # expect 3
+systemctl restart cave
+```
+
+**Telegram.** Create a bot with @BotFather and copy its token. `read -rs` takes it without echoing it:
+```bash
+read -rs TG && printf 'CAVE_TELEGRAM_BOT_TOKEN=%s\n' "$TG" >> /etc/cave/cave.env; unset TG
+systemctl restart cave
+```
+Then Settings → Notifications → Telegram → **Link** shows a code; send `/start <code>` to the bot within 10 minutes. Only that chat is ever answered. **Unlink** clears it.
+
+**Discord.** In a private server, a channel named `cave`: Channel settings → Integrations → Webhooks → New webhook → Copy URL. Set the channel's notifications to "All messages" on the phone.
+```bash
+read -rs DW && printf 'CAVE_DISCORD_WEBHOOK_URL=%s\n' "$DW" >> /etc/cave/cave.env; unset DW
+systemctl restart cave
+```
+The server refuses to start with a malformed token or webhook URL, naming the setting but never its value.
+
+**Egress.** The firewall allows outgoing traffic (step 6). The server reaches the push services (`*.push.apple.com`, `fcm.googleapis.com`, Mozilla's `*.push.services.mozilla.com`), `api.telegram.org` and `discord.com` with Bun's `fetch` and a 10-second timeout; nothing else on the server sends anything.
+
 ## Deploying and rolling back (after setup)
 - **Merging to `main` deploys.** `cave-deploy.timer` runs `cave-deploy auto` 2 minutes after the last run ended. When the tip of `main` is new and not held, it:
   1. takes a verified backup with the running release's code (`bun run backup --dir $BACKUP_DIR/pre-deploy --keep 5 --sha <new commit>`, as `cave`): `/var/lib/cave/backups/pre-deploy/cave-<UTC time>-<short sha>.db`, named after the commit about to ship. The newest five are kept, apart from the daily and monthly backups;

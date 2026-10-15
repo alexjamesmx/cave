@@ -56,6 +56,45 @@ const MIGRATIONS = [
   // their cursor and copy may be ahead of it.
   `CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
    INSERT INTO meta (key, value) VALUES ('db_id', lower(hex(randomblob(16))));`,
+  // Notifications and jobs (M7 Part B). Server-only: never synced, exported or shown in full.
+  // No title or body is stored anywhere here; keys name items by id.
+  `CREATE TABLE push_subscriptions (
+     endpoint TEXT PRIMARY KEY,
+     p256dh TEXT NOT NULL,
+     auth TEXT NOT NULL,
+     device_id TEXT NOT NULL,
+     label TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     last_ok_at INTEGER,
+     last_error TEXT
+   );
+   CREATE TABLE notifications_sent (
+     key TEXT PRIMARY KEY,
+     item_id TEXT,
+     sent_at INTEGER NOT NULL,
+     delivered INTEGER NOT NULL,
+     failed INTEGER NOT NULL
+   );
+   CREATE TABLE notification_log (
+     seq INTEGER PRIMARY KEY AUTOINCREMENT,
+     key TEXT NOT NULL,
+     channel TEXT NOT NULL,
+     sent_at INTEGER NOT NULL,
+     result TEXT NOT NULL
+   );
+   CREATE TABLE channel_state (
+     channel TEXT PRIMARY KEY,
+     config TEXT NOT NULL,
+     updated_at INTEGER NOT NULL
+   );
+   CREATE TABLE job_runs (
+     seq INTEGER PRIMARY KEY AUTOINCREMENT,
+     job TEXT NOT NULL,
+     started_at INTEGER NOT NULL,
+     finished_at INTEGER NOT NULL,
+     result TEXT NOT NULL,
+     summary TEXT NOT NULL
+   );`,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
