@@ -125,7 +125,7 @@ bun run dev                                           # http://127.0.0.1:3000, n
 bun run check; bun test; bun run e2e                  # e2e uses its own temp database
 ```
 
-**Agents against the local server.** `.mcp.json` points `cave` at production. To try MCP changes locally, add a second entry `cave-dev` with URL `http://127.0.0.1:3000/mcp` and the same `${CAVE_AGENT_TOKEN}`. A restored dev copy contains the production agent tokens' hashes, so the same token works locally.
+**Agents against the local server.** `.mcp.json` points `cave` at production. To try MCP changes locally, add a second entry `cave-dev` with URL `http://127.0.0.1:3000/mcp` and the same `${CAVE_AGENT_TOKEN}`. A restored dev copy contains the production agent tokens' hashes, so the same token works locally, but only if the backup is newer than the token. After minting a new agent token, take a fresh backup on the VPS first (`bun run backup` as `cave`, as in `docs/hosting.md`), then pull and restore.
 
 **Rules:**
 - Never point a local server at the VPS database, and never copy `data/dev.db` up to the VPS.

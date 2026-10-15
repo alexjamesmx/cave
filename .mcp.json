@@ -24,6 +24,11 @@
       "type": "http",
       "url": "https://cave.alexjamesmx.dev/mcp",
       "headers": { "Authorization": "Bearer ${CAVE_AGENT_TOKEN}" }
+    },
+    "cave-dev": {
+      "type": "http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": { "Authorization": "Bearer ${CAVE_AGENT_TOKEN}" }
     }
   }
 }
