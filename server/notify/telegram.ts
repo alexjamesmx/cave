@@ -1,6 +1,8 @@
 import { localDate, localDateTime } from "../../shared/dates.ts";
+import { FLOWS } from "../../shared/flows/seed.ts";
 import type { NotificationSettings } from "../../shared/notifications.ts";
 import { complete, snooze, type Zone } from "../../shared/reminders.ts";
+import type { Doc } from "../../shared/types.ts";
 import { parseReminder, preview } from "../../shared/when.ts";
 import { every, type Job } from "../jobs/scheduler.ts";
 import type { Store } from "../store.ts";
@@ -136,7 +138,7 @@ export function createTelegram({
     if (action === "approve" || action === "reject") {
       if (action === "approve" && !settings().telegramApprovals)
         return "Approving from Telegram is off. Approve in the Cave, or turn it on in Settings.";
-      return approvals?.decide(id, action === "approve") ?? "Flows arrive in a later update.";
+      return approvals?.decide(id, action === "approve") ?? "Approvals are off.";
     }
     const doc = store.get(id);
     if (!doc || doc.data._deleted === true || doc.kind !== "item") return "That item is gone.";
@@ -203,7 +205,18 @@ export function createTelegram({
       }
       return;
     }
-    if (name === "/flows") return reply(chatId, "Flows arrive in a later update.");
+    if (name === "/flows") {
+      const flows = store.itemsOf(FLOWS).filter((d) => d.data._deleted !== true);
+      if (flows.length === 0) return reply(chatId, "No flows yet.");
+      const title = (d: Doc) => (typeof d.data._title === "string" ? d.data._title : "Untitled");
+      const pending = flows.filter((d) => d.data.status === "pending-approval");
+      const rest = flows.filter((d) => d.data.status !== "pending-approval");
+      if (rest.length > 0)
+        await reply(chatId, rest.map((d) => `${title(d)} · ${String(d.data.status)}`).join("\n"));
+      for (const d of pending)
+        await reply(chatId, `Waiting for approval: ${title(d)}`, keyboard("flow", d.id, undefined));
+      return;
+    }
     if (name === "/start") return reply(chatId, "This chat is already linked to the Cave.");
     return reply(chatId, HELP);
   }

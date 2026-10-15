@@ -241,3 +241,30 @@ test("a reminder goes out with Done, Snooze and Open; titles detail sends the ti
   });
   for (const call of calls) expect(JSON.stringify(call)).not.toContain(TOKEN);
 });
+
+test("/flows lists each flow's status; one waiting for approval carries its buttons", async () => {
+  const t = await link();
+  const stamp = formatStamp(now, 0, "test");
+  store.applyChanges(
+    [
+      {
+        id: "f1",
+        kind: "item",
+        collection: "flows",
+        data: { _title: "Archive", status: "pending-approval" },
+        stamps: { _title: stamp, status: stamp },
+        actor: "agent:claude",
+      },
+    ],
+    "agent:claude",
+    now,
+  );
+  calls = [];
+  inbox.push([text(OWNER, "/flows")]);
+  await t.job.run({ now });
+  expect(sent().map((c) => c.params.text)).toEqual([
+    "Rent reminder · draft\nSalary → save · draft",
+    "Waiting for approval: Archive",
+  ]);
+  expect(JSON.stringify(sent()[1]?.params.reply_markup)).toContain("reject:f1");
+});

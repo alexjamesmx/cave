@@ -2,6 +2,8 @@ import type { Database } from "bun:sqlite";
 import { notificationSettings } from "../../shared/notifications.ts";
 import { zoneOf } from "../../shared/reminders.ts";
 import type { VapidKeys } from "../config.ts";
+import { createApprovals } from "../flows/approvals.ts";
+import { createFlowEngine } from "../flows/engine.ts";
 import type { Job } from "../jobs/scheduler.ts";
 import type { Store } from "../store.ts";
 import { notificationRoutes } from "./api.ts";
@@ -10,7 +12,7 @@ import { createChannelWriter } from "./channel-writer.ts";
 import { createDiscordChannel } from "./discord.ts";
 import { createNotifier, createSentLog } from "./notifier.ts";
 import { createReminderSweep } from "./reminder-sweep.ts";
-import { createTelegram } from "./telegram.ts";
+import { type Approvals, createTelegram } from "./telegram.ts";
 import { createTelegramApi } from "./telegram-api.ts";
 import { createSubscriptions, createWebPushChannel } from "./webpush.ts";
 
@@ -29,8 +31,9 @@ export interface NotificationSystemOptions {
 }
 
 /**
- * The notifier and its three channels, the reminder sweep, Telegram's poll and the routes.
- * Reminders and flows call the notifier; nothing else talks to a channel.
+ * The notifier and its three channels, the reminder sweep, Telegram's poll, the flow engine
+ * and approvals, and the routes. Reminders and flows call the notifier; nothing else talks to
+ * a channel.
  */
 export function createNotificationSystem(o: NotificationSystemOptions) {
   const log = o.log ?? console.log;
@@ -56,13 +59,17 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     fetch: fetchFn,
     log,
   });
+  const telegramWriter = createChannelWriter(o.store, "telegram", o.now);
+  // Telegram asks for approvals before the notifier exists; it only calls them on a tap.
+  let approvals: Approvals | undefined;
   const telegram = createTelegram({
     api: o.telegramToken
       ? createTelegramApi({ token: o.telegramToken, now: o.now, fetch: fetchFn })
       : undefined,
     state,
     store: o.store,
-    writer: createChannelWriter(o.store, "telegram", o.now),
+    writer: telegramWriter,
+    approvals: { decide: (id, approve) => approvals?.decide(id, approve) ?? "Not ready yet." },
     zone,
     settings,
     now: o.now,
@@ -76,8 +83,10 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     origin: o.origin,
     log,
   });
+  approvals = createApprovals({ store: o.store, notifier, writer: telegramWriter, log });
   const sweep = createReminderSweep({ store: o.store, notifier, sent, zone });
-  const jobs: Job[] = [sweep, telegram.job];
+  const flows = createFlowEngine({ store: o.store, db: o.db, notifier, now: o.now, zone, log });
+  const jobs: Job[] = [sweep, flows.job, telegram.job];
   const routes = notificationRoutes({
     notifier,
     sent,
@@ -87,5 +96,5 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     now: o.now,
     allowLoopbackHttp: !o.production,
   });
-  return { notifier, sent, routes, jobs, telegram };
+  return { notifier, sent, routes, jobs, telegram, flows };
 }

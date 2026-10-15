@@ -36,7 +36,14 @@ beforeEach(() => {
   notified = [];
   ready = true;
   clock = NOW;
-  engine = createFlowEngine({ store, db, notifier, now: () => clock, zone: () => MX, log: () => {} });
+  engine = createFlowEngine({
+    store,
+    db,
+    notifier,
+    now: () => clock,
+    zone: () => MX,
+    log: () => {},
+  });
 });
 
 function write(id: string, collection: string, data: Record<string, unknown>, at = clock) {
@@ -105,7 +112,11 @@ test("a flow's own writes never trigger flows", async () => {
   });
   write("t1", "tasks", { _title: "Start" });
   await engine.settled();
-  expect(tasks().map((t) => t.data._title).sort()).toEqual(["Echo of Start", "Start"]);
+  expect(
+    tasks()
+      .map((t) => t.data._title)
+      .sort(),
+  ).toEqual(["Echo of Start", "Start"]);
 });
 
 test("item-changed fires only when the field changes to the value asked for", async () => {
@@ -162,11 +173,7 @@ test("notify is skipped when no channel is ready, and more than 3 notifications 
 
   ready = true;
   const note = { type: "notify", title: "Hi", open: "calendar" } as const;
-  flow(
-    "f-loud",
-    { ...rent, steps: [note, note, note, note] },
-    Date.parse("2026-10-01T12:00:00Z"),
-  );
+  flow("f-loud", { ...rent, steps: [note, note, note, note] }, Date.parse("2026-10-01T12:00:00Z"));
   await engine.job.run({ now: NOW });
   expect(notified).toHaveLength(3);
   expect(engine.runs("f-loud")[0]?.result).toBe("failed");

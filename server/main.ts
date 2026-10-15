@@ -7,6 +7,7 @@ import { createAgentRegistry } from "./agents.ts";
 import { serveCave } from "./app.ts";
 import { resolveConfig } from "./config.ts";
 import { openDb } from "./db.ts";
+import { flowRoutes } from "./flows/api.ts";
 import { formatReport, importIfEmpty, importVault, newNotes } from "./import/importer.ts";
 import { createBackupJob } from "./jobs/backup-job.ts";
 import { createScheduler } from "./jobs/scheduler.ts";
@@ -114,6 +115,7 @@ const server = serveCave({
     ...(deployStatusPath ? { deployStatusPath } : {}),
   },
   notifications: notifications.routes,
+  flows: flowRoutes(notifications.flows),
   development: !production,
 });
 console.log(`Cave server listening on ${server.url}${production ? "" : " (development)"}`);
