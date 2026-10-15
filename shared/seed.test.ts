@@ -35,7 +35,7 @@ test("seeds the plan's eight collections, hidden proposals and the settings doc"
   expect(byId.get("settings")).toMatchObject({
     kind: "setting",
     collection: null,
-    data: { timezone: "America/Mexico_City", seedVersion: SEED_VERSION },
+    data: { timezone: "America/Mexico_City", reminderTime: "09:00", seedVersion: SEED_VERSION },
   });
   expect(docs).toHaveLength(10);
 });

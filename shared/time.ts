@@ -1,7 +1,7 @@
 const LOCAL_RE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?$/;
 
 // Offset of `timeZone` from UTC at instant `ms`, in ms, read back through Intl.
-function offsetAt(ms: number, timeZone: string): number {
+export function offsetAt(ms: number, timeZone: string): number {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hourCycle: "h23",

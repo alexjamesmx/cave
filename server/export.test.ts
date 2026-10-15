@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { seedDocs } from "../shared/seed.ts";
+import { SEED_VERSION, seedDocs } from "../shared/seed.ts";
 import { AgentWriter } from "./agent-writer.ts";
 import { createAgentRegistry } from "./agents.ts";
 import { openDb } from "./db.ts";
@@ -54,7 +54,7 @@ test("an export imported into an empty store gives back every doc byte for byte"
   expect(exported).toMatchObject({
     format: 1,
     exportedAt: "2026-10-13T14:05:12.000Z",
-    seedVersion: 2,
+    seedVersion: SEED_VERSION,
   });
   expect(exported.docs.some((d: { id: string }) => d.id === "t2")).toBe(true);
   const text = JSON.stringify(exported);

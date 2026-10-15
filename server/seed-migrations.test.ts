@@ -8,24 +8,26 @@ import { createStore } from "./store.ts";
 
 const NOW = 1_791_900_000_000;
 
-test("a database seeded before seed migrations gets the proposals collection once", () => {
+test("a database seeded before seed migrations gets the proposals and the reminder time once", () => {
   const store = createStore(openDb(":memory:"));
   store.seedIfEmpty(m2Seed as Doc[], 1);
   expect(store.get("proposals")).toBeUndefined();
   expect(seedVersionOf(store)).toBe(1);
 
-  expect(migrateSeed(store, NOW)).toEqual([2]);
+  expect(migrateSeed(store, NOW)).toEqual([2, 3]);
   const proposals = store.get("proposals");
   expect(proposals?.data).toMatchObject({ name: "Proposals", hidden: true });
   expect(proposals?.actor).toBe("seed");
   expect(store.get("settings")?.data).toEqual({
     timezone: "America/Mexico_City",
+    reminderTime: "09:00",
     seedVersion: SEED_VERSION,
   });
   // The migration and the version bump are one change batch with one actor and time.
   const log = store.changeLog().filter((c) => c.at === NOW);
   expect(log.map((c) => [c.id, c.actor])).toEqual([
     ["proposals", "seed"],
+    ["settings", "seed"],
     ["settings", "seed"],
   ]);
 

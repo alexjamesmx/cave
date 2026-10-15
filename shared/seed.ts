@@ -1,4 +1,5 @@
 import { SEED_STAMP } from "./hlc.ts";
+import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
 import type { Doc, Kind } from "./types.ts";
 
@@ -267,15 +268,23 @@ export interface SeedMigration {
   docs: { id: string; kind: Kind; data: Record<string, unknown> }[];
 }
 
+// A date-only reminder is due at this local time; the owner changes it in Settings.
+const REMINDER_DEFAULTS = { reminderTime: DEFAULT_REMINDER_TIME };
+
 export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 2, docs: [{ id: "proposals", kind: "collection", data: PROPOSALS }] },
+  { version: 3, docs: [{ id: "settings", kind: "setting", data: REMINDER_DEFAULTS }] },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
 export const SEED_VERSION = Math.max(1, ...SEED_MIGRATIONS.map((m) => m.version));
 
 // Reminders and the daily brief resolve local date-times through this timezone.
-const SETTINGS = { timezone: "America/Mexico_City", seedVersion: SEED_VERSION };
+const SETTINGS = {
+  timezone: "America/Mexico_City",
+  ...REMINDER_DEFAULTS,
+  seedVersion: SEED_VERSION,
+};
 
 const seeded = (id: string, kind: Kind, data: Record<string, unknown>): Doc => ({
   id,
