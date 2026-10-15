@@ -2,7 +2,7 @@
 
 Open-source, local-first, multi-agent personal brain: money, tasks, habits, diary, ideas, learning and notes in one installable web app, with one API that any agent can use.
 
-Status: pre-v0.1. Agent instructions: [AGENTS.md](AGENTS.md).
+Status: pre-v0.1. How the whole system fits together (architecture, flows, local dev, rebuilding): [docs/system.md](docs/system.md). Agent instructions: [AGENTS.md](AGENTS.md).
 
 ## First run
 
