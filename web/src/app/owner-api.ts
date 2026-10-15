@@ -31,3 +31,21 @@ export async function ownerDownload(path: string): Promise<boolean> {
     return false;
   }
 }
+
+/** POST JSON to the owner API; `undefined` when unreachable or refused. */
+export async function ownerPost<T>(path: string, body: unknown): Promise<T | undefined> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  try {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    return res.ok ? ((await res.json()) as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}

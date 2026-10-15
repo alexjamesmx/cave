@@ -6,6 +6,7 @@ import { useReminderZone, useTimeZone } from "../app/hooks.ts";
 import { ownerDownload, ownerGet } from "../app/owner-api.ts";
 import { COMMIT_URL, deployLine } from "../logic/deploy-line.ts";
 import { useDoc } from "../store/queries.ts";
+import { DeviceNotifications, NotificationChannels } from "../ui/NotificationSettings.tsx";
 
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 
@@ -24,6 +25,8 @@ export function Settings() {
       <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Settings</h1>
       <OwnerName />
       <ReminderTime />
+      <DeviceNotifications />
+      <NotificationChannels />
       <section className="panel" style={{ padding: 18, display: "grid", gap: 14, maxWidth: 560 }}>
         <label style={{ display: "grid", gap: 6 }}>
           <span className="k">Server token</span>

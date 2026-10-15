@@ -4,6 +4,8 @@ export type Route =
   | { name: "home" }
   | { name: "collection"; collection: string; view: string | undefined }
   | { name: "calendar" }
+  /** A reminder opened from a notification; `?do=done|snooze60` acts on it once. */
+  | { name: "reminder"; id: string }
   | { name: "settings" }
   | { name: "agents" }
   | { name: "not-found" };
@@ -13,6 +15,8 @@ const COLLECTION_RE = /^\/c\/([^/]+)(?:\/([^/]+))?\/?$/;
 export function parseRoute(pathname: string): Route {
   if (pathname === "/" || pathname === "") return { name: "home" };
   if (pathname === "/calendar") return { name: "calendar" };
+  const reminder = /^\/r\/([^/]+)\/?$/.exec(pathname);
+  if (reminder) return { name: "reminder", id: decodeURIComponent(reminder[1] as string) };
   if (pathname === "/settings") return { name: "settings" };
   if (pathname === "/agents") return { name: "agents" };
   const m = COLLECTION_RE.exec(pathname);

@@ -3,6 +3,7 @@ import { Agents } from "./pages/Agents.tsx";
 import { Calendar } from "./pages/Calendar.tsx";
 import { CollectionPage } from "./pages/CollectionPage.tsx";
 import { Home } from "./pages/Home.tsx";
+import { ReminderLink } from "./pages/ReminderLink.tsx";
 import { Settings } from "./pages/Settings.tsx";
 import { Shell } from "./ui/Shell.tsx";
 
@@ -15,6 +16,7 @@ export function App() {
         <CollectionPage key={route.collection} id={route.collection} viewId={route.view} />
       )}
       {route.name === "calendar" && <Calendar />}
+      {route.name === "reminder" && <ReminderLink key={route.id} id={route.id} />}
       {route.name === "settings" && <Settings />}
       {route.name === "agents" && <Agents />}
       {route.name === "not-found" && <p className="muted">Nothing here yet.</p>}
