@@ -1,4 +1,7 @@
 import { beforeEach, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { FlowDefinition } from "../../shared/flows/registry.ts";
 import { formatStamp } from "../../shared/hlc.ts";
 import type { Zone } from "../../shared/reminders.ts";
@@ -208,4 +211,37 @@ test("a test run describes what would happen and writes or sends nothing", async
   expect(tasks()).toHaveLength(0);
   expect(notified).toHaveLength(0);
   expect(engine.runs("f-rent")).toHaveLength(0);
+});
+
+test("run keys survive a restart: a slot or change that ran never runs again", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "cave-flows-"));
+  const path = join(dir, "cave.db");
+  const start = () => {
+    const db = openDb(path);
+    const s = createStore(db);
+    const e = createFlowEngine({
+      store: s,
+      db,
+      notifier,
+      now: () => clock,
+      zone: () => MX,
+      log: () => {},
+    });
+    return { db, s, e };
+  };
+  try {
+    const first = start();
+    first.s.seedIfEmpty(seedDocs(), 1);
+    store = first.s;
+    flow("f-rent", rent, Date.parse("2026-10-01T12:00:00Z"));
+    await first.e.job.run({ now: NOW });
+    first.db.close();
+
+    const second = start();
+    expect(await second.e.job.run({ now: NOW + 60_000 })).toMatchObject({ didSomething: false });
+    expect(second.s.itemsOf("tasks")).toHaveLength(1);
+    second.db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

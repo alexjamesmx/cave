@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 import { allHold, holds } from "./conditions.ts";
-import { FlowDefinitionSchema, isSensitive, parseDefinition, STEPS, TRIGGERS } from "./registry.ts";
+import {
+  FlowDefinitionSchema,
+  isSensitive,
+  parseDefinition,
+  STEPS,
+  schemaOf,
+  TRIGGERS,
+} from "./registry.ts";
 import { latestSlot, nextSlot } from "./schedule.ts";
 import { renderTemplate, templateErrors } from "./templates.ts";
 
@@ -84,6 +91,11 @@ describe("definition validation", () => {
     for (const spec of [...TRIGGERS, ...STEPS]) expect(spec.describe({}).length).toBeGreaterThan(0);
     const json = JSON.stringify(z.toJSONSchema(FlowDefinitionSchema, { unrepresentable: "any" }));
     for (const spec of [...TRIGGERS, ...STEPS]) expect(json).toContain(`"${spec.type}"`);
+  });
+
+  test("the editor's parameters are exactly the schema's keys", () => {
+    for (const spec of [...TRIGGERS, ...STEPS])
+      expect(Object.keys(schemaOf(spec).shape)).toEqual(["type", ...spec.params.map((p) => p.key)]);
   });
 });
 
