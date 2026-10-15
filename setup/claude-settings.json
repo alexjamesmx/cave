@@ -5,6 +5,20 @@
     "deny": ["Read(/.env)", "Read(/.env.local)", "Read(/.env.*.local)", "Read(/.env.production)", "Read(/data/**)", "Edit(/data/**)"],
     "ask": ["Bash(git push *)", "Bash(git reset --hard *)", "Bash(git rebase *)"]
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git",
+            "args": ["-C", "${CLAUDE_PROJECT_DIR}", "config", "core.hooksPath", ".githooks"]
+          }
+        ]
+      }
+    ]
+  },
   "attribution": {
     "commit": "",
     "pr": "",

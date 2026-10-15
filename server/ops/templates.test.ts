@@ -135,3 +135,32 @@ test("the deploy units run the installed wrapper as root every 2 minutes after t
     expect(timer).toContain(line);
   }
 });
+
+test("Claude Code settings: setup's template is the committed file, which turns the commit hook on", () => {
+  const read = (path: string) => readFileSync(join(import.meta.dir, "../..", path), "utf8");
+  const committed = read(".claude/settings.json");
+  expect(read("setup/claude-settings.json")).toBe(committed);
+  const settings = JSON.parse(committed);
+  expect(settings.attribution).toEqual({ commit: "", pr: "", sessionUrl: false });
+  expect(settings.hooks.SessionStart).toEqual([
+    {
+      matcher: "startup|resume",
+      hooks: [
+        {
+          type: "command",
+          command: "git",
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: a Claude Code path placeholder
+          args: ["-C", "${CLAUDE_PROJECT_DIR}", "config", "core.hooksPath", ".githooks"],
+        },
+      ],
+    },
+  ]);
+});
+
+test("the cloud setup script pins Bun from npm and never installs dependencies", () => {
+  const script = readFileSync(join(import.meta.dir, "../../setup/cloud-setup.sh"), "utf8");
+  expect(script).toContain("BUN_VERSION=1.4.3");
+  expect(script).toContain('npm install --global --no-fund --no-audit "bun@$BUN_VERSION"');
+  expect(script).not.toMatch(/^[^#]*bun install/m);
+  expect(script).not.toMatch(/^[^#]*bun\.sh/m);
+});
