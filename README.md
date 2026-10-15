@@ -61,6 +61,13 @@ Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each w
 - **The Due card** on Home: overdue, today and tomorrow.
 - A reminder with a date and no time is due at the reminder time in Settings (09:00 by default).
 
+## Notifications
+
+- **Reminders reach you when they're due**, within a minute: by Web Push on each device that enabled it (Settings → Notifications on this device; on iPhone, from the Home Screen app), by Telegram once linked, and by Discord if a webhook is set.
+- **Web Push is private and the default.** Telegram and Discord can read what they carry, so they get titles only unless you choose full detail in Settings.
+- **Act from the notification:** Done and Snooze 1h open the Cave and apply there; in Telegram the buttons work in the chat, and `/remind`, `/due` and `/help` work too.
+- Setup: `docs/hosting.md` step 12.
+
 ## Hosting
 
 The Cave can run on a VPS as the server every device syncs with. Today that is a Hostinger KVM 2 on Ubuntu 26.04, at `https://cave.alexjamesmx.dev`, behind Caddy. The laptop and the phone become clients.
