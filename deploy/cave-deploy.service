@@ -11,3 +11,21 @@ ExecStart=/usr/local/sbin/cave-deploy auto
 Environment=CAVE_RUN_AS=cave
 PrivateTmp=true
 ProtectHome=true
+
+# Only what the job never uses is taken away: kernel tunables, modules and logs, the clock,
+# the hostname, cgroupfs writes, realtime scheduling, setuid files, foreign ABIs, new
+# namespaces and exotic sockets. Unix sockets carry systemctl and the journal, inet git fetch
+# and the health check, netlink PAM in runuser. Bun's JIT needs writable executable memory,
+# git needs the network and the restart needs root, so those stay (docs/log/m6.md).
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
