@@ -5,6 +5,7 @@ import { createStore, type Store } from "../../../server/store.ts";
 import { createSyncHandler } from "../../../server/sync.ts";
 import { seedDocs } from "../../../shared/seed.ts";
 import type { SyncRequest } from "../../../shared/types.ts";
+import { failedStatus } from "../app/sync-status.ts";
 import { openLocalDb } from "./db.ts";
 import { LocalStore } from "./local-store.ts";
 import {
@@ -12,6 +13,7 @@ import {
   type DeviceClock,
   PUSH_BATCH_SIZE,
   readSyncResponse,
+  SyncRefusedError,
   syncOnce,
   type Transport,
 } from "./sync.ts";
@@ -260,4 +262,33 @@ describe("syncOnce", () => {
       "item",
     ]);
   });
+});
+
+test("a device without the server's token gets nothing and is told to enter it", async () => {
+  // A web app added to the iPhone Home Screen starts with empty storage: no token, no data.
+  const guarded = createStore(openDb(":memory:"));
+  guarded.seedIfEmpty(seedDocs(), 1);
+  const handle = createSyncHandler({ store: guarded, token: "secret", now: () => REAL_NOW });
+  const clock: DeviceClock = { rawNow: () => REAL_NOW, now: () => REAL_NOW };
+  const transport: Transport = async (req) =>
+    readSyncResponse(
+      await handle(
+        new Request("http://cave.test/api/sync", { method: "POST", body: JSON.stringify(req) }),
+      ),
+      clock,
+    );
+  const phone = await LocalStore.open({
+    db: openLocalDb(`cave-phone-${crypto.randomUUID()}`, { indexedDB, IDBKeyRange }),
+    deviceId: "phone",
+    now: () => REAL_NOW,
+  });
+
+  const error = await syncOnce(phone, transport).catch((e: unknown) => e);
+  expect(error).toBeInstanceOf(SyncRefusedError);
+  expect((error as SyncRefusedError).status).toBe(401);
+  expect(failedStatus(error, undefined, true)).toEqual({
+    phase: "unauthorized",
+    lastSyncedAt: undefined,
+  });
+  expect(await phone.db.docs.count()).toBe(0);
 });

@@ -8,6 +8,7 @@ const LABELS = {
   syncing: ["SYNCING", "var(--cyan)"],
   offline: ["OFFLINE · SAVED HERE", "var(--gold)"],
   "clock-ahead": ["CLOCK AHEAD", "var(--expense)"],
+  unauthorized: ["TOKEN NEEDED", "var(--expense)"],
   error: ["SYNC ERROR", "var(--expense)"],
 } as const;
 
@@ -31,6 +32,36 @@ export function SyncBadge() {
     <div className="sync num" role="status" title={title}>
       <span className="dot" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
       {label}
+    </div>
+  );
+}
+
+/**
+ * Why sync stopped, in words a phone can show: a title tooltip needs a mouse. A refused token
+ * (a fresh Home Screen install has none) says where to enter it.
+ */
+export function SyncProblemBanner() {
+  const status = useSignal(useCave().status);
+  if (status.phase === "unauthorized") {
+    return (
+      <div className="panel banner" role="alert">
+        <span>
+          The server didn't accept this device's token, so nothing syncs yet. A new install, or a
+          changed token, needs it entered once.
+        </span>
+        <a href="/settings" className="btn primary">
+          Enter the server token
+        </a>
+      </div>
+    );
+  }
+  if (status.phase !== "error") return null;
+  return (
+    <div className="panel banner" role="alert">
+      <span>
+        Sync stopped: <span className="num">{status.message}</span>. Your changes are kept on this
+        device and sync once it works again.
+      </span>
     </div>
   );
 }

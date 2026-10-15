@@ -28,6 +28,17 @@ export class ClockAheadError extends Error {
   }
 }
 
+/** The server answered with an error; `status` 401 means it refused this device's token. */
+export class SyncRefusedError extends Error {
+  constructor(
+    readonly status: number,
+    readonly reason: string | undefined,
+  ) {
+    super(`sync failed: HTTP ${status}${reason ? `: ${reason}` : ""}`);
+    this.name = "SyncRefusedError";
+  }
+}
+
 export async function readSyncResponse(res: Response, clock: DeviceClock): Promise<SyncResponse> {
   const rawDeviceTime = clock.rawNow();
   const deviceTime = clock.now();
@@ -38,8 +49,7 @@ export async function readSyncResponse(res: Response, clock: DeviceClock): Promi
   if (body?.error === "clock ahead" && typeof body.serverTime === "number") {
     throw new ClockAheadError(body.serverTime, rawDeviceTime, deviceTime);
   }
-  const reason = typeof body?.error === "string" ? `: ${body.error}` : "";
-  throw new Error(`sync failed: HTTP ${res.status}${reason}`);
+  throw new SyncRefusedError(res.status, typeof body?.error === "string" ? body.error : undefined);
 }
 
 export function httpTransport(url: string, clock: DeviceClock, token?: string): Transport {
