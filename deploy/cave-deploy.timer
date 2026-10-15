@@ -1,0 +1,13 @@
+# /etc/systemd/system/cave-deploy.timer on the VPS: checks main 2 minutes after the last
+# check ended, however long its build took.
+[Unit]
+Description=Check main for a new commit to deploy
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+Persistent=false
+Unit=cave-deploy.service
+
+[Install]
+WantedBy=timers.target

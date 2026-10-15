@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+# /usr/local/sbin/cave-deploy on the VPS: owner root, mode 755. Installed by hand from this
+# template and never by a deploy, so code merged to main never runs as root.
+#   auto      the timer: deploy the tip of main unless it is current or held; skip if busy
+#   now       deploy the tip of main even if held, waiting for a running deploy
+#   rollback  point current at previous, restart, hold the tip of main
+#   status    print the last result
+# Each commit is built by its own deploy/release.sh, as cave, without privileges.
+set -Eeuo pipefail
+
+root="${CAVE_ROOT:-/opt/cave}"
+state="${CAVE_STATE_DIR:-/var/lib/cave-deploy}"
+env_file="${CAVE_ENV_FILE:-/etc/cave/cave.env}"
+health_url="${CAVE_HEALTH_URL:-http://127.0.0.1:3000/api/status}"
+health_seconds="${CAVE_HEALTH_SECONDS:-20}"
+systemctl="${CAVE_SYSTEMCTL:-systemctl}"
+lock="${CAVE_LOCK_FILE:-/run/cave-deploy.lock}"
+run_as="${CAVE_RUN_AS:-cave}"
+cave_home="${CAVE_HOME:-/var/lib/cave}"
+repo="$root/repo.git"
+
+# The repository belongs to cave: root running git there would trip git's ownership check
+# and could leave root-owned files behind.
+as_cave() { runuser -u "$run_as" -- env HOME="$cave_home" CAVE_ROOT="$root" "$@"; }
+
+fetch() { as_cave git -C "$repo" fetch --quiet origin '+refs/heads/main:refs/heads/main'; }
+main_sha() { as_cave git -C "$repo" rev-parse --verify 'main^{commit}'; }
+# Runs the release script of commit $1 with the remaining arguments.
+release() { as_cave git -C "$repo" show "$1:deploy/release.sh" | as_cave bash -s -- "${@:2}"; }
+
+target_of() { if [ -L "$root/$1" ]; then basename "$(readlink "$root/$1")"; fi; }
+
+write_status() {
+  local sha="$1" result="$2" step="${3:-}" tmp
+  tmp=$(mktemp "$state/.status.XXXXXX")
+  {
+    printf '{"sha":"%s","result":"%s",' "$sha" "$result"
+    if [ -n "$step" ]; then printf '"step":"%s",' "$step"; fi
+    printf '"at":"%s","running":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(target_of current)"
+  } >"$tmp"
+  chmod 644 "$tmp"
+  mv -f "$tmp" "$state/status.json"
+}
+
+hold() { printf '%s\n' "$1" >"$state/held"; chmod 644 "$state/held"; }
+held() { if [ -f "$state/held" ]; then head -n 1 "$state/held"; fi; }
+
+# The token goes to curl in a root-only file, never on a command line.
+healthy() {
+  local sha="$1" token hdr body deadline
+  token=$(sed -n 's/^CAVE_TOKEN=//p' "$env_file" | head -n 1)
+  token="${token%\"}"; token="${token#\"}"; token="${token%\'}"; token="${token#\'}"
+  hdr=$(umask 077 && mktemp)
+  printf 'authorization: Bearer %s\n' "$token" >"$hdr"
+  deadline=$((SECONDS + health_seconds))
+  while :; do
+    if body=$(curl -q -fsS --max-time 3 -H "@$hdr" "$health_url" 2>/dev/null) &&
+      [[ "$body" == *"\"commit\":\"$sha\""* ]]; then
+      rm -f "$hdr"
+      return 0
+    fi
+    if [ "$SECONDS" -ge "$deadline" ]; then break; fi
+    sleep 1
+  done
+  rm -f "$hdr"
+  return 1
+}
+
+restart_and_check() {
+  echo "== restart"
+  "$systemctl" restart cave
+  echo "== health"
+  healthy "$(target_of current)"
+}
+
+running() { echo "== running $(target_of current)"; }
+
+deploy() {
+  local sha="$1" log step
+  if [ "$sha" = "$(target_of current)" ]; then
+    echo "== $sha is already current"
+    rm -f "$state/held"
+    running
+    return 0
+  fi
+  echo "== build $sha"
+  log=$(mktemp)
+  if ! release "$sha" build "$sha" 2>&1 | tee "$log"; then
+    step=$(sed -n 's/^deploy failed at: //p' "$log" | tail -n 1)
+    rm -f "$log"
+    hold "$sha"
+    write_status "$sha" failed "${step:-build}"
+    echo "Not deployed: failed at ${step:-build}; the running release is unchanged" >&2
+    running
+    return 1
+  fi
+  rm -f "$log"
+  if restart_and_check; then
+    rm -f "$state/held"
+    write_status "$sha" deployed
+    running
+    return 0
+  fi
+  echo "Unhealthy: rolling back" >&2
+  hold "$sha"
+  if ! release "$sha" rollback; then
+    write_status "$sha" failed health
+    echo "No previous release to roll back to" >&2
+    return 1
+  fi
+  restart_and_check || echo "The release rolled back to is unhealthy too" >&2
+  write_status "$sha" rolled-back
+  running
+  return 1
+}
+
+rollback() {
+  local from main
+  from=$(target_of current)
+  # An emergency rollback must not depend on GitHub: if the fetch fails, the last fetched
+  # main is held.
+  fetch || echo "fetch failed; holding the last fetched main" >&2
+  main=$(main_sha)
+  release "$from" rollback
+  hold "$main"
+  if restart_and_check; then
+    write_status "$from" rolled-back
+    running
+    return 0
+  fi
+  write_status "$from" failed health
+  echo "The release rolled back to is unhealthy" >&2
+  running
+  return 1
+}
+
+case "${1:-}" in
+  status) cat "$state/status.json" 2>/dev/null || echo "no deploy recorded yet" ;;
+  auto | now | rollback)
+    mkdir -p "$state"
+    exec 9>"$lock"
+    if [ "$1" = auto ]; then
+      flock -n 9 || exit 0
+      fetch
+      sha=$(main_sha)
+      if [ "$sha" = "$(target_of current)" ] || [ "$sha" = "$(held)" ]; then exit 0; fi
+      deploy "$sha"
+    else
+      flock -w 600 9 || { echo "another deploy is still running" >&2; exit 1; }
+      if [ "$1" = now ]; then
+        fetch
+        sha=$(main_sha)
+        deploy "$sha"
+      else
+        rollback
+      fi
+    fi
+    ;;
+  *) echo "usage: cave-deploy auto | now | rollback | status" >&2; exit 2 ;;
+esac

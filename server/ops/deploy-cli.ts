@@ -1,11 +1,4 @@
-import {
-  checkLocal,
-  healthCheck,
-  RELEASE_SCRIPT_PATH,
-  type Run,
-  remote,
-  rolledBackTo,
-} from "./deploy.ts";
+import { checkLocal, healthCheck, type Run, remote, runningCommit } from "./deploy.ts";
 
 const ssh = process.env.CAVE_SSH || "cave-vps";
 const url = process.env.CAVE_REMOTE_URL;
@@ -15,52 +8,47 @@ if (!url || !token) {
   process.exit(1);
 }
 const rollback = process.argv.includes("--rollback");
-const script = await Bun.file(RELEASE_SCRIPT_PATH).bytes();
 
 const run: Run = (cmd) => {
   const result = Bun.spawnSync(cmd, { stdout: "pipe", stderr: "inherit" });
   return { ok: result.success, out: result.stdout.toString() };
 };
 
-/** Runs the release script on the VPS, echoing its output; null when it failed. */
-async function release(cmd: string[]): Promise<string | null> {
-  const proc = Bun.spawn(cmd, { stdin: script, stdout: "pipe", stderr: "inherit" });
-  const out = await new Response(proc.stdout).text();
-  process.stdout.write(out);
-  return (await proc.exited) === 0 ? out : null;
-}
-
 function fail(message: string): never {
   console.error(message);
   process.exit(1);
 }
 
-let sha: string;
+/** Runs the wrapper on the VPS, streaming its output as it comes. */
+async function onVps(cmd: string[]): Promise<{ ok: boolean; out: string }> {
+  const proc = Bun.spawn(cmd, { stdin: "ignore", stdout: "pipe", stderr: "inherit" });
+  const decoder = new TextDecoder();
+  let out = "";
+  for await (const chunk of proc.stdout) {
+    const text = decoder.decode(chunk, { stream: true });
+    process.stdout.write(text);
+    out += text;
+  }
+  return { ok: (await proc.exited) === 0, out };
+}
+
+let result: { ok: boolean; out: string };
 if (rollback) {
   console.log(`Rolling back on ${ssh}`);
-  const out = await release(remote.rollback(ssh));
-  const target = out === null ? undefined : rolledBackTo(out);
-  if (!target) fail("Not rolled back: see the message above");
-  sha = target;
+  result = await onVps(remote.rollback(ssh));
 } else {
   const local = checkLocal(run);
   if (!local.ok) fail(`Not deployed: ${local.error}`);
-  sha = local.sha;
-  console.log(`Deploying ${sha.slice(0, 7)} to ${ssh}`);
-  // Built and tested in its own release directory; `current` moves only when that passed.
-  if ((await release(remote.build(ssh, sha))) === null) {
-    fail("Not deployed: the step named above failed on the VPS; the running release is unchanged");
-  }
+  console.log(`Deploying ${local.sha.slice(0, 7)} on ${ssh}`);
+  result = await onVps(remote.now(ssh));
 }
+const sha = runningCommit(result.out);
+if (!result.ok) {
+  fail(`The VPS reported a failure above${sha ? `; it runs ${sha.slice(0, 7)}` : ""}`);
+}
+if (!sha) fail("The VPS did not say which commit it runs");
 
-console.log("== restart");
-if (!run(remote.restart(ssh)).ok) fail("The release is switched, but the restart failed");
-
-console.log("== health");
+console.log("== public health");
 const health = await healthCheck({ url, token, sha });
-if (!health.ok) {
-  fail(
-    `The health check failed: ${health.error}. bun run deploy --rollback returns to the previous release`,
-  );
-}
+if (!health.ok) fail(`The public health check failed: ${health.error}`);
 console.log(`Healthy: ${url} runs ${sha.slice(0, 7)}`);

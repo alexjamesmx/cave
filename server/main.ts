@@ -22,8 +22,17 @@ if (!config.ok) {
   console.error(`Cave server not started: ${config.error}`);
   process.exit(1);
 }
-const { hostname, port, token, dbPath, vaultPath, allowedHosts, publicOrigin, backupDir } =
-  config.value;
+const {
+  hostname,
+  port,
+  token,
+  dbPath,
+  vaultPath,
+  allowedHosts,
+  publicOrigin,
+  backupDir,
+  deployStatusPath,
+} = config.value;
 
 if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
 const lock = lockPathOf(dbPath);
@@ -91,7 +100,13 @@ const server = serveCave({
   },
   allowedHosts,
   ...(publicOrigin ? { publicOrigin } : {}),
-  status: { version, commit, backupDir, newVaultNotes: () => newVaultNotes },
+  status: {
+    version,
+    commit,
+    backupDir,
+    newVaultNotes: () => newVaultNotes,
+    ...(deployStatusPath ? { deployStatusPath } : {}),
+  },
   development: !production,
 });
 console.log(`Cave server listening on ${server.url}${production ? "" : " (development)"}`);

@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveConfig } from "../config.ts";
 import { MAX_BODY_BYTES } from "../sync.ts";
-import { RELEASE_SCRIPT_PATH } from "./deploy.ts";
+import { WRAPPER } from "./deploy.ts";
 
 const template = (name: string) =>
   readFileSync(join(import.meta.dir, "../../deploy", name), "utf8");
@@ -55,6 +55,7 @@ test("the env template starts a public production server once a token is filled 
   expect(env.VAULT_PATH).toBeUndefined();
   expect(env.BUN_RUNTIME_TRANSPILER_CACHE_PATH).toBe("0");
   expect(env.CAVE_TOKEN).toBe("");
+  expect(env.CAVE_DEPLOY_STATUS).toBe("/var/lib/cave-deploy/status.json");
   expect(resolveConfig(env, { production: true }).ok).toBe(false);
   const filled = resolveConfig({ ...env, CAVE_TOKEN: "x".repeat(64) }, { production: true });
   expect(filled.ok && filled.value).toMatchObject({
@@ -63,12 +64,13 @@ test("the env template starts a public production server once a token is filled 
     publicOrigin: "https://cave.alexjamesmx.dev",
     port: 3000,
     hostname: "127.0.0.1",
+    deployStatusPath: "/var/lib/cave-deploy/status.json",
   });
 });
 
 test("cave has no sudo rights: no sudoers template, and the release script never calls sudo", () => {
   expect(existsSync(join(import.meta.dir, "../../deploy/sudoers-cave"))).toBe(false);
-  const script = readFileSync(RELEASE_SCRIPT_PATH, "utf8");
+  const script = template("release.sh");
   expect(script).not.toMatch(/\bsudo\b/);
   expect(script.startsWith("#!/usr/bin/env bash\n")).toBe(true);
   expect(script).toContain("set -Eeuo pipefail");
@@ -84,4 +86,52 @@ test("cave has no sudo rights: no sudoers template, and the release script never
     expect(script).toContain(`export ${variable}`);
   }
   expect(script).toContain("bun install --frozen-lockfile");
+});
+
+test("the deploy wrapper defaults to the VPS paths and runs every build step as cave", () => {
+  const wrapper = template("cave-deploy");
+  expect(wrapper.startsWith("#!/usr/bin/env bash\n")).toBe(true);
+  expect(wrapper).toContain("set -Eeuo pipefail");
+  expect(wrapper).not.toMatch(/\bsudo\b/);
+  for (const [name, variable, value] of [
+    ["root", "CAVE_ROOT", "/opt/cave"],
+    ["state", "CAVE_STATE_DIR", "/var/lib/cave-deploy"],
+    ["env_file", "CAVE_ENV_FILE", "/etc/cave/cave.env"],
+    ["health_url", "CAVE_HEALTH_URL", "http://127.0.0.1:3000/api/status"],
+    ["lock", "CAVE_LOCK_FILE", "/run/cave-deploy.lock"],
+  ]) {
+    expect(wrapper).toContain(`${name}="$\{${variable}:-${value}}"`);
+  }
+  for (const line of [
+    'as_cave() { runuser -u "$run_as" -- env HOME="$cave_home" CAVE_ROOT="$root" "$@"; }',
+    'curl -q -fsS --max-time 3 -H "@$hdr"',
+    "flock -n 9 || exit 0",
+    "flock -w 600 9",
+  ]) {
+    expect(wrapper).toContain(line);
+  }
+});
+
+test("the deploy units run the installed wrapper as root every 2 minutes after the last run", () => {
+  const service = template("cave-deploy.service");
+  for (const line of [
+    "Type=oneshot",
+    `ExecStart=${WRAPPER} auto`,
+    "Environment=CAVE_RUN_AS=cave",
+    "PrivateTmp=true",
+    "ProtectHome=true",
+  ]) {
+    expect(service).toContain(line);
+  }
+  expect(service).not.toMatch(/^User=/m);
+  const timer = template("cave-deploy.timer");
+  for (const line of [
+    "OnBootSec=2min",
+    "OnUnitInactiveSec=2min",
+    "Persistent=false",
+    "Unit=cave-deploy.service",
+    "WantedBy=timers.target",
+  ]) {
+    expect(timer).toContain(line);
+  }
 });

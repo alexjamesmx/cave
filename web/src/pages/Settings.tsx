@@ -4,6 +4,7 @@ import { TOKEN_KEY } from "../app/boot.ts";
 import { useCave } from "../app/context.ts";
 import { useTimeZone } from "../app/hooks.ts";
 import { ownerDownload, ownerGet } from "../app/owner-api.ts";
+import { COMMIT_URL, deployLine } from "../logic/deploy-line.ts";
 import { useDoc } from "../store/queries.ts";
 
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
@@ -117,6 +118,29 @@ function ServerStatus() {
                 ? "None"
                 : `${status.newVaultNotes}: run bun run import`}
           </dd>
+          {status.deploy && (
+            <>
+              <dt className="muted">Deploy</dt>
+              <dd style={{ margin: 0 }}>
+                {deployLine(status.deploy, when).map((part, i) =>
+                  typeof part === "string" ? (
+                    part
+                  ) : (
+                    <a
+                      // biome-ignore lint/suspicious/noArrayIndexKey: the parts never reorder
+                      key={i}
+                      className="num"
+                      href={COMMIT_URL + part.commit}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {part.commit.slice(0, 7)}
+                    </a>
+                  ),
+                )}
+              </dd>
+            </>
+          )}
           <dt className="muted">Version</dt>
           <dd className="num" style={{ margin: 0 }}>
             {status.version}
