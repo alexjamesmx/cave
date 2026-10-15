@@ -12,6 +12,7 @@ flowchart LR
   end
   subgraph Agents["Agents"]
     CC["Claude Code<br/>(laptop, in the repo)"]
+    CA["Claude apps<br/>(desktop, phone: connector)"]
   end
   subgraph VPS["VPS · Ubuntu · cave.alexjamesmx.dev"]
     C["Caddy :443<br/>HTTPS, certificate, headers"]
@@ -24,6 +25,7 @@ flowchart LR
   L -- "HTTPS + server token<br/>/api/sync" --> C
   P -- "HTTPS + server token<br/>/api/sync" --> C
   CC -- "HTTPS + agent token<br/>/mcp" --> C
+  CA -- "HTTPS + agent token<br/>/mcp" --> C
   C --> S
   S --> DB
   S -- "daily, verified" --> B
@@ -36,8 +38,9 @@ flowchart LR
 | Caddy | VPS, ports 80 and 443 | HTTPS with automatic Let's Encrypt certificates, security headers, forwarding to the server |
 | Cave server | VPS, `127.0.0.1:3000` | sync hub, MCP server for agents, backups; never reachable directly from outside |
 | SQLite | VPS, `/var/lib/cave` | the one server-side copy of every record |
-| GitHub | cloud | the code; the VPS can only read it |
-| Laptop repo | `C:\Users\sgale\projects\jarvis` | where code is written, tested and deployed from |
+| GitHub | cloud | the code; the VPS can only read it, and deploys the tip of `main` |
+| Claude Code cloud sessions | Anthropic VM | change the code from the phone or browser; push branches and open PRs, never merge; no production access |
+| Laptop repo | `C:\Users\sgale\projects\jarvis` | where code is written and tested; `bun run deploy` deploys now |
 
 **Who gets in.** Every `/api` request needs the server token, and `/mcp` needs an agent token. Before any token check, the request guard refuses unknown hosts, foreign origins and non-JSON posts. The firewall lets in only 22, 80 and 443, and SSH takes keys only.
 
@@ -69,25 +72,26 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  A["Branch on the laptop"] --> B["bun run dev<br/>local server + local dev copy"]
-  B --> C["bun run check · bun test · bun run e2e"]
-  C --> D["Push, open a PR"]
-  D --> E{"CI green<br/>and review OK?"}
+  A["Claude Code: a cloud session (phone or browser)<br/>or the laptop repo"] --> C["bun run check · bun test<br/>(bun run e2e on the laptop)"]
+  C --> D["Push a branch, open a PR"]
+  D --> E{"CI green<br/>and the owner agrees?"}
   E -- no --> A
-  E -- yes --> F["Merge to main"]
-  F --> G["bun run deploy (from main)"]
-  G --> H["VPS, as user cave:<br/>new release dir, install, check, test"]
+  E -- yes --> F["The owner merges to main<br/>(GitHub app or web)"]
+  F --> G["VPS: cave-deploy.timer, every 2 min,<br/>sees a new tip of main"]
+  G --> H["As user cave: new release dir,<br/>install, check, test"]
   H --> I{"passed?"}
-  I -- no --> J["Running release untouched;<br/>the failed step is named"]
-  I -- yes --> K["Switch current atomically,<br/>restart, health check"]
+  I -- no --> J["Running release untouched;<br/>commit held, failed step in Settings"]
+  I -- yes --> K["Switch current, restart,<br/>loopback health check"]
   K --> L{"healthy?"}
-  L -- no --> M["bun run deploy --rollback"]
-  L -- yes --> N["Live"]
+  L -- no --> M["Automatic rollback;<br/>commit held"]
+  L -- yes --> N["Live; Settings shows the commit"]
 ```
 
-- Only commits already on `origin/main` can be deployed.
-- Each release lives in `/opt/cave/releases/<commit>`, and `current` points at the running one. Five are kept.
-- **Details:** `deploy/release.sh`, `docs/hosting.md`.
+- **Merging to `main` deploys.** Nothing on GitHub can stop a merge on a private repo with GitHub Free, so the gates are the owner's merge, the VPS re-running `check` and `test`, and the health check with automatic rollback.
+- **One deploy path.** `/usr/local/sbin/cave-deploy` (root, installed by hand from `deploy/cave-deploy`) is the only thing that deploys. The timer runs `cave-deploy auto`; `bun run deploy` runs `cave-deploy now` over SSH, then checks the public URL.
+- **A held commit** (failed or rolled back) is skipped by the timer until `cave-deploy now` retries it or a newer commit lands on `main`.
+- Each release lives in `/opt/cave/releases/<commit>`, and `current` points at the running one. Five are kept. The last result is in `/var/lib/cave-deploy/status.json`.
+- **Details:** `deploy/cave-deploy`, `deploy/release.sh`, `docs/hosting.md`.
 
 ## 4. How backups move
 
@@ -170,7 +174,9 @@ bun run check; bun test; bun run e2e                  # e2e uses its own temp da
 6. **Claude Code:** start `claude` in the repo, check `/mcp` shows `cave` connected, then make the dev copy (section 5).
 
 ### A new phone, tablet or browser
-Open `https://cave.alexjamesmx.dev`, enter the server token in Settings, and install the app. The first sync downloads everything.
+1. **The app:** open `https://cave.alexjamesmx.dev`, enter the server token in Settings, and install the app. The first sync downloads everything.
+2. **Claude:** sign in to the Claude app. The Cave connector is part of the account, so it is already there; if not, add it as `docs/agents.md` "Claude apps" says.
+3. **Code:** the Code tab of the Claude app starts cloud sessions on `alexjamesmx/cave` in the `cave` environment. Nothing to install on the phone.
 
 ### A lost device
 1. Replace the server token on the VPS:
@@ -183,7 +189,7 @@ Open `https://cave.alexjamesmx.dev`, enter the server token in Settings, and ins
 ### A new VPS
 1. Create the VPS with plain Ubuntu (no panel template) and your SSH key.
 2. Point the `cave` A and AAAA records at it.
-3. Run `docs/hosting.md` from step 0.
+3. Run `docs/hosting.md` from step 0, including step 11: the `cave-deploy` wrapper, its state directory and units.
 4. In step 9, restore the newest backup from `data/vps-backups` instead of the laptop database.
 5. Generate a new server token, and new agent tokens if the old database is gone.
 
@@ -201,6 +207,8 @@ Don't touch the other records (portfolio, mail).
 |---|---|---|
 | Server token `CAVE_TOKEN` | `/etc/cave/cave.env` (root:cave 640), your password manager, each device's Settings, the laptop `.env` as `CAVE_REMOTE_TOKEN` | git, logs, chats, command lines |
 | Agent tokens | shown once at creation; the agent's environment variable (`CAVE_AGENT_TOKEN`); only their SHA-256 on the server | git, `.mcp.json` (it uses `${CAVE_AGENT_TOKEN}`) |
+| The `claude-apps` agent token | the Claude account's Cave connector (request header); your password manager | git, cloud environments, chats |
+| The GitHub account | your password manager, with two-factor login | anywhere else: whoever can merge to `main` ships code that runs with all the data |
 | SSH keys | `~/.ssh` on the laptop; the VPS deploy key in `/var/lib/cave/.ssh` | anywhere else |
 | MCP keys (Context7, Exa, Firecrawl, GitHub) | user environment variables | git |
 
