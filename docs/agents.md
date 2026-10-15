@@ -23,6 +23,7 @@ bun run agent revoke codex
 - **Amounts, categories and accounts:** never guess them. A value that isn't one of a field's options is refused; ask the owner or leave the field out.
 - **Deletes:** agents can't delete. `propose_delete` puts a proposal on the Agents page, and the owner approves or declines it.
 - **Undo:** every agent write can be undone from the Agents page. A key the owner changed afterwards is kept.
+- **Reminders:** a reminder whose `repeat` isn't `none` repeats on completion. `update` with `done: true` moves `due` to the next occurrence and keeps it open, as the app's Done does. Notifications arrive with M7 Part B; until then a due reminder shows on Home. Agents must not offer outside scheduled tasks for Cave reminders.
 - **Notes:** `add_note` only creates new files under `Inbox/` in the vault. It never changes an existing note.
 
 ## 2. Configure the agent

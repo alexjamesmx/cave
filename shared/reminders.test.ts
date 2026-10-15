@@ -9,6 +9,7 @@ import {
   snoozeTo,
   upcoming,
   type Zone,
+  zoneOf,
 } from "./reminders.ts";
 
 const MX: Zone = { timeZone: "America/Mexico_City", defaultTime: "09:00" };
@@ -197,4 +198,16 @@ describe("overdue and upcoming", () => {
     expect(upcoming({ data: { ...r.data, done: true } }, from, to, MX)).toEqual([]);
     expect(upcoming({ data: { due: "2026-10-22T09:00" } }, from, to, MX)).toEqual([]);
   });
+});
+
+test("zoneOf reads the settings timezone and reminder time, with fallbacks", () => {
+  expect(zoneOf({ timezone: "America/Mexico_City", reminderTime: "08:30" }, "UTC")).toEqual({
+    timeZone: "America/Mexico_City",
+    defaultTime: "08:30",
+  });
+  expect(zoneOf({ reminderTime: "25:00" }, "UTC")).toEqual({
+    timeZone: "UTC",
+    defaultTime: "09:00",
+  });
+  expect(zoneOf(undefined, "UTC")).toEqual({ timeZone: "UTC", defaultTime: "09:00" });
 });

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { localDate } from "../../../shared/dates.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
-import { DEFAULT_REMINDER_TIME, type Zone } from "../../../shared/reminders.ts";
+import { type Zone, zoneOf } from "../../../shared/reminders.ts";
 import { useDoc } from "../store/queries.ts";
 import { useCave } from "./context.ts";
 
@@ -27,15 +27,13 @@ export function useToday(): string {
   return localDate(useNow(), useTimeZone());
 }
 
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
-
 /** The settings timezone and reminder time, which every reminder rule reads. */
 export function useReminderZone(): Zone {
   const settings = useDoc(useCave().local.db, "settings");
-  const tz = settings?.data.timezone;
-  const time = settings?.data.reminderTime;
-  const timeZone = typeof tz === "string" ? tz : Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const defaultTime = typeof time === "string" && TIME_RE.test(time) ? time : DEFAULT_REMINDER_TIME;
+  const { timeZone, defaultTime } = zoneOf(
+    settings?.data,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
   return useMemo(() => ({ timeZone, defaultTime }), [timeZone, defaultTime]);
 }
 

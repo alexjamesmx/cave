@@ -187,3 +187,38 @@ test("a hidden collection is invisible to writes, as it is to reads", () => {
   });
   expect(writer().proposeDelete("secret", "why")).toMatchObject({ ok: false });
 });
+
+test("done on a repeating reminder advances due and keeps it open, as the app's Done does", () => {
+  const w = writer();
+  const created = w.create("reminders", {
+    title: "Pay rent",
+    fields: { due: "2026-10-22T09:00", repeat: "monthly", done: false },
+  });
+  if (!created.ok) throw new Error(created.error);
+  // NOW is Oct 13; finishing early still moves it to the next occurrence.
+  expect(w.update(created.id, { fields: { done: true } })).toMatchObject({ ok: true });
+  expect(store.get(created.id)?.data).toMatchObject({ due: "2026-11-22T09:00", done: false });
+});
+
+test("done with a new due in the same patch starts the series from that due", () => {
+  const w = writer();
+  const created = w.create("reminders", {
+    title: "Water plants",
+    fields: { due: "2026-10-10T09:00", repeat: "weekly" },
+  });
+  if (!created.ok) throw new Error(created.error);
+  w.update(created.id, { fields: { due: "2026-10-14T18:00", done: true } });
+  expect(store.get(created.id)?.data).toMatchObject({ due: "2026-10-21T18:00" });
+  expect(store.get(created.id)?.data.done).not.toBe(true);
+});
+
+test("done on a reminder that doesn't repeat is written as is", () => {
+  const w = writer();
+  const once = w.create("reminders", {
+    title: "Call bank",
+    fields: { due: "2026-10-14T10:00", repeat: "none" },
+  });
+  if (!once.ok) throw new Error(once.error);
+  w.update(once.id, { fields: { done: true } });
+  expect(store.get(once.id)?.data).toMatchObject({ due: "2026-10-14T10:00", done: true });
+});

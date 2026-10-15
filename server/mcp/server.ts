@@ -27,6 +27,8 @@ export interface McpDeps {
 
 const DATA_RULE =
   "Never guess an amount, category or account: ask the owner, or leave the field out.";
+const REMINDER_RULE =
+  'Reminders: one whose repeat isn\'t "none" repeats on completion; done: true moves due to the next occurrence and keeps it open. Notifications arrive with M7 Part B; never offer outside scheduled tasks for Cave reminders.';
 const DAY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -141,7 +143,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
     server.registerTool(
       "create",
       {
-        description: `Create an item in a collection with a title, field values and a Markdown body. ${DATA_RULE}`,
+        description: `Create an item in a collection with a title, field values and a Markdown body. ${DATA_RULE} ${REMINDER_RULE}`,
         inputSchema: z.object({
           collection: z.string(),
           title: z.string(),
@@ -164,7 +166,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
     server.registerTool(
       "update",
       {
-        description: `Change an item's title, field values or body; only keys that change are written. ${DATA_RULE}`,
+        description: `Change an item's title, field values or body; only keys that change are written. ${DATA_RULE} ${REMINDER_RULE}`,
         inputSchema: z.object({
           id: z.string(),
           title: z.string().optional(),

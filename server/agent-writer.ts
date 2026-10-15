@@ -1,6 +1,7 @@
 import { activeFields, fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
 import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
+import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
 import type { CollectionData } from "../shared/schema.ts";
 import type { Doc } from "../shared/types.ts";
 import type { Agent } from "./agents.ts";
@@ -9,6 +10,7 @@ import type { Store } from "./store.ts";
 export const MAX_TITLE_CHARS = 500;
 export const MAX_BODY_BYTES = 100 * 1024;
 export const PROPOSALS = "proposals";
+const REMINDERS = "reminders";
 
 export interface AgentPatch {
   title?: string | undefined;
@@ -79,6 +81,7 @@ export class AgentWriter {
     const collection = this.store.get(doc.value.collection as string);
     const data = this.toData(collection, patch);
     if (!data.ok) return data;
+    if (doc.value.collection === REMINDERS) data.value = this.completing(doc.value, data.value);
     // Only keys whose value actually changes are written, so the log shows real edits.
     const changed = Object.fromEntries(
       Object.entries(data.value).filter(
@@ -112,6 +115,21 @@ export class AgentWriter {
       collection: PROPOSALS,
       data: { _created: new Date(now).toISOString(), ...data },
     });
+  }
+
+  /**
+   * `done: true` on a repeating reminder completes it the way the app's Done does: `due`
+   * moves to the next occurrence and the reminder stays open. A `due` in the same patch
+   * starts the series from itself.
+   */
+  private completing(doc: Doc, data: Record<string, unknown>): Record<string, unknown> {
+    const { done, ...rest } = data;
+    const merged = { ...doc.data, ...rest };
+    if (done !== true || repeatOf(merged) === "none") return data;
+    if (rest.due !== undefined) delete merged._repeatFrom;
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const zone = zoneOf(this.store.get("settings")?.data, fallback);
+    return { ...rest, ...complete({ data: merged, stamps: doc.stamps }, this.now(), zone) };
   }
 
   private visibleItem(id: string): { ok: true; value: Doc } | { ok: false; error: string } {

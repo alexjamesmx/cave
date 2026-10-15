@@ -30,6 +30,21 @@ interface Wall {
   timed: boolean;
 }
 
+const CLOCK_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** The zone the `settings` doc names; `fallbackTimeZone` when it names none. */
+export function zoneOf(
+  settings: Record<string, unknown> | undefined,
+  fallbackTimeZone: string,
+): Zone {
+  const tz = settings?.timezone;
+  const time = settings?.reminderTime;
+  return {
+    timeZone: typeof tz === "string" ? tz : fallbackTimeZone,
+    defaultTime: typeof time === "string" && CLOCK_RE.test(time) ? time : DEFAULT_REMINDER_TIME,
+  };
+}
+
 const LOCAL_RE = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::\d{2})?)?$/;
 const TIME_RE = /^(\d{2}):(\d{2})$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
