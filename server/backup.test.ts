@@ -9,7 +9,11 @@ import {
   backupName,
   backupTime,
   newestBackupAt,
+  PRE_DEPLOY_PATTERN,
+  preDeployName,
   pruneBackups,
+  pruneBeyondNewest,
+  selectBeyondNewest,
   selectPrunable,
   takeBackup,
   verifyBackup,
@@ -117,4 +121,51 @@ test("a backup is due with none or when the newest is a day old", () => {
   expect(newestBackupAt(backups)).toBe(NOW);
   expect(backupIfDue(db, backups, NOW + 23 * 60 * 60 * 1000)).toBeUndefined();
   expect(backupIfDue(db, backups, NOW + 24 * 60 * 60 * 1000)?.ok).toBe(true);
+});
+
+test("pre-deploy names carry the UTC second and the short commit, and match only their pattern", () => {
+  const name = preDeployName(NOW + 7_000, "abc1234def5678abc1234def5678abc1234def5");
+  expect(name).toBe("cave-2026-10-13T140507-abc1234.db");
+  expect(PRE_DEPLOY_PATTERN.test(name)).toBe(true);
+  expect(backupTime(name)).toBeUndefined();
+  expect(PRE_DEPLOY_PATTERN.test(backupName(NOW))).toBe(false);
+});
+
+test("pre-deploy retention keeps the newest five and never touches daily backups", () => {
+  const minute = 60_000;
+  const deploys = Array.from({ length: 30 }, (_, i) => preDeployName(NOW - i * minute, "abc1234"));
+  const daily = Array.from({ length: 20 }, (_, i) => backupName(NOW - i * 24 * 60 * minute));
+  const beyond = selectBeyondNewest([...daily, ...deploys], PRE_DEPLOY_PATTERN, 5);
+  expect(beyond).toEqual(deploys.slice(5));
+  // Thirty deploys in a row leave the daily selection exactly as it was without them.
+  expect(selectPrunable([...daily, ...deploys], NOW)).toEqual(selectPrunable(daily, NOW));
+});
+
+test("pruning pre-deploy backups deletes only the older pre-deploy files", () => {
+  const minute = 60_000;
+  for (let i = 0; i < 8; i++)
+    writeFileSync(join(dir, preDeployName(NOW - i * minute, "abc1234")), "");
+  writeFileSync(join(dir, backupName(NOW - 10 * minute)), "");
+  writeFileSync(join(dir, "keep-me.txt"), "");
+  expect(pruneBeyondNewest(dir, PRE_DEPLOY_PATTERN, 5)).toHaveLength(3);
+  const left = readdirSync(dir);
+  expect(left.filter((n) => PRE_DEPLOY_PATTERN.test(n))).toHaveLength(5);
+  expect(left).toContain(backupName(NOW - 10 * minute));
+  expect(left).toContain("keep-me.txt");
+});
+
+test("a daily backup directory ignores its pre-deploy subdirectory", () => {
+  const db = seededDb();
+  const backups = join(dir, "backups");
+  const result = takeBackup(
+    db,
+    join(backups, "pre-deploy"),
+    NOW,
+    verifyBackup,
+    preDeployName(NOW, "abc1234"),
+  );
+  expect(result).toMatchObject({ ok: true });
+  expect(newestBackupAt(backups)).toBeUndefined();
+  expect(pruneBackups(backups, NOW)).toEqual([]);
+  expect(readdirSync(join(backups, "pre-deploy"))).toEqual(["cave-2026-10-13T140500-abc1234.db"]);
 });

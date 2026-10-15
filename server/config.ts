@@ -17,6 +17,8 @@ export interface ServerConfig {
    * unless it is a wildcard, the public origin's host and the comma list in `CAVE_ALLOWED_HOSTS`.
    */
   allowedHosts: string[];
+  /** `status.json` written by `cave-deploy`; unset means `/api/status` reports no deploy. */
+  deployStatusPath: string | undefined;
 }
 
 const WILDCARDS = new Set(["0.0.0.0", "::", "[::]"]);
@@ -112,6 +114,7 @@ export function resolveConfig(
       backupDir: env.BACKUP_DIR || join(dirname(dbPath), "backups"),
       publicOrigin,
       allowedHosts: allowedHosts(hostname, env.CAVE_ALLOWED_HOSTS, publicOrigin),
+      deployStatusPath: env.CAVE_DEPLOY_STATUS || undefined,
     },
   };
 }

@@ -1,13 +1,13 @@
 import { expect, test } from "bun:test";
-import { checkLocal, healthCheck, type Run, remote, rolledBackTo } from "./deploy.ts";
+import { checkLocal, healthCheck, type Run, remote, runningCommit } from "./deploy.ts";
 
 const SHA = "0123456789abcdef0123456789abcdef01234567";
+const OLDER = "fedcba9876543210fedcba9876543210fedcba98";
 
-/** A fake git: answers by the first two words of each command. */
+/** A fake git: answers by the whole command, else by its first two words. */
 function git(answers: Record<string, { ok: boolean; out?: string }>): Run {
   return (cmd) => {
-    const key = cmd.slice(0, 2).join(" ");
-    const answer = answers[key] ?? { ok: true };
+    const answer = answers[cmd.join(" ")] ?? answers[cmd.slice(0, 2).join(" ")] ?? { ok: true };
     return { ok: answer.ok, out: answer.out ?? "" };
   };
 }
@@ -29,38 +29,35 @@ test("a dirty tree is refused", () => {
   expect(result).toEqual({ ok: false, error: "working tree is not clean; commit first" });
 });
 
-test("a commit that is not on origin/main is refused", () => {
-  const result = checkLocal(git({ ...clean, "git merge-base": { ok: false } }));
+test("a HEAD other than the tip of origin/main is refused, older or unmerged", () => {
+  const result = checkLocal(git({ ...clean, "git rev-parse HEAD": { ok: true, out: OLDER } }));
   expect(result).toMatchObject({ ok: false });
-  expect(!result.ok && result.error).toContain("not on origin/main");
+  expect(!result.ok && result.error).toContain("fedcba9 is not the tip of origin/main (0123456)");
 });
 
 test("a failed fetch stops the deploy", () => {
   expect(checkLocal(git({ ...clean, "git fetch": { ok: false } }))).toMatchObject({ ok: false });
 });
 
-test("build and rollback run as cave, which has no sudo rights; the restart runs as the admin login", () => {
-  expect(remote.build("cave-vps", SHA)).toEqual([
+test("deploy and rollback call the root wrapper on the VPS, with no secret on the line", () => {
+  expect(remote.now("cave-vps")).toEqual(["ssh", "cave-vps", "/usr/local/sbin/cave-deploy", "now"]);
+  expect(remote.rollback("cave-vps")).toEqual([
     "ssh",
     "cave-vps",
-    "sudo",
-    "-u",
-    "cave",
-    "-H",
-    "bash",
-    "-s",
-    "--",
-    "build",
-    SHA,
+    "/usr/local/sbin/cave-deploy",
+    "rollback",
   ]);
-  expect(remote.rollback("cave-vps").slice(-2)).toEqual(["--", "rollback"]);
-  expect(remote.restart("cave-vps")).toEqual(["ssh", "cave-vps", "systemctl", "restart", "cave"]);
 });
 
-test("a rollback reports the commit it switched to", () => {
-  expect(rolledBackTo(`== rolled back to ${SHA}\n`)).toBe(SHA);
-  expect(rolledBackTo("no previous release to roll back to")).toBeUndefined();
-  expect(rolledBackTo("== rolled back to deadbeef")).toBeUndefined();
+test("the running commit comes from the wrapper's last line", () => {
+  expect(
+    runningCommit(`== build ${SHA}
+== restart
+== running ${SHA}
+`),
+  ).toBe(SHA);
+  expect(runningCommit("another deploy is still running")).toBeUndefined();
+  expect(runningCommit("== running deadbeef")).toBeUndefined();
 });
 
 const answer = (status: number, body: unknown) =>

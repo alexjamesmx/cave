@@ -1,0 +1,13 @@
+# /etc/systemd/system/cave-deploy.service on the VPS. Started by cave-deploy.timer.
+[Unit]
+Description=Cave deploy of the tip of main
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Root, for the restart; every build step runs as cave through runuser.
+ExecStart=/usr/local/sbin/cave-deploy auto
+Environment=CAVE_RUN_AS=cave
+PrivateTmp=true
+ProtectHome=true

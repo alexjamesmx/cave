@@ -63,15 +63,19 @@ The Cave can run on a VPS as the server every device syncs with. Today that is a
   - Bun 1.4.3 in `/opt/bun`;
   - a read-only deploy key and the clone in `/opt/cave`;
   - `/etc/cave/cave.env` with a generated token;
-  - Caddy, the firewall, key-only SSH and the systemd service.
-- **Deploying:** `bun run deploy` from the laptop.
-  - It needs a clean tree whose commit is already on `origin/main`.
-  - On the VPS, as `cave` (which has no sudo rights), it builds that commit in its own release directory and runs `bun install --frozen-lockfile`, `bun run check` and `bun test` there.
-  - Only if all three pass does it switch the `current` symlink atomically, keeping the newest five releases.
-  - It then restarts the service as root and checks that `/api/status` reports the new commit.
-  - If a step fails, it stops and names the step. The running release is untouched.
-  - `bun run deploy --rollback` returns to the previous release.
-  - It needs `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN` and, optionally, `CAVE_SSH` (default `cave-vps`) in the laptop's `.env`.
+  - Caddy, the firewall, key-only SSH and the systemd service;
+  - the `cave-deploy` wrapper and its timer (step 11).
+- **Deploying happens on merge.** Every 2 minutes `cave-deploy.timer` on the VPS looks at `main`. It first takes a verified backup of the database, named after the commit about to ship (`/var/lib/cave/backups/pre-deploy`, newest five kept). A new tip is then built in its own release directory as `cave` (which has no sudo rights), with `bun install --frozen-lockfile`, `bun run check` and `bun test`.
+  - Only if all three pass is the `current` symlink switched and the service restarted; the newest five releases are kept.
+  - The restarted server must report the new commit on `/api/status` within 20 seconds, or the VPS rolls back by itself.
+  - A commit that failed or was rolled back is held: the timer leaves it alone until a newer commit lands.
+  - Settings shows the last deploy: the running commit, or the step that failed.
+- **Deploying now:** `bun run deploy` from the laptop, on a clean tree whose `HEAD` is the tip of `origin/main`. It runs `cave-deploy now` over SSH (which also retries a held commit), then checks the public URL. It needs `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN` and, optionally, `CAVE_SSH` (default `cave-vps`) in the laptop's `.env`.
+- **Rolling back, from the phone:**
+  1. A deploy that fails its health check rolls back by itself.
+  2. For a bug in a healthy deploy, ask a Claude Code cloud session to revert the PR, then merge the revert.
+  3. In an emergency, open hPanel's browser terminal and run `cave-deploy rollback`. From the laptop, `bun run deploy --rollback` does the same.
+- **Changing code from the phone:** the Code tab of the Claude app runs cloud sessions on this repo in the `cave` environment. They push a branch and open a PR; the owner merges. See AGENTS.md "Cloud sessions".
 - **Backups:**
   - **On the VPS:** the server backs itself up to `/var/lib/cave/backups`, with the same verification and retention as on the laptop.
   - **On the laptop:** `bun run pull-backups` copies new ones into `BACKUP_PULL_DIR` with `scp` and verifies each. It never deletes anything on the VPS. To run it daily, create a Windows Task Scheduler task that runs `bun run pull-backups` in this folder (optional).
@@ -82,7 +86,7 @@ The Cave can run on a VPS as the server every device syncs with. Today that is a
   3. `systemctl start cave`.
 - **Devices and agents:**
   - open `https://cave.alexjamesmx.dev`, enter the server token in Settings, and install the app;
-  - agents use `https://cave.alexjamesmx.dev/mcp` with their own token (`docs/agents.md`).
+  - agents use `https://cave.alexjamesmx.dev/mcp` with their own token (`docs/agents.md`); Claude's desktop and phone apps through a custom connector (`docs/agents.md` "Claude apps").
 
 ## Developing
 

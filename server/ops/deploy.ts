@@ -3,8 +3,9 @@ export type Run = (cmd: string[]) => { ok: boolean; out: string };
 export type Checked = { ok: true; sha: string } | { ok: false; error: string };
 
 /**
- * The laptop side of a deploy: only a clean tree whose HEAD is already on `origin/main` is
- * shipped, so the VPS can fetch exactly the commit that was tested and reviewed.
+ * The laptop side of a deploy: the VPS deploys the tip of `origin/main`, so only a clean tree
+ * whose HEAD is that tip is accepted; anything else would ship a commit other than the one the
+ * owner is looking at.
  */
 export function checkLocal(run: Run): Checked {
   const status = run(["git", "status", "--porcelain"]);
@@ -14,32 +15,31 @@ export function checkLocal(run: Run): Checked {
     return { ok: false, error: "git fetch origin failed" };
   }
   const head = run(["git", "rev-parse", "HEAD"]);
-  if (!head.ok) return { ok: false, error: "git rev-parse HEAD failed" };
+  const tip = run(["git", "rev-parse", "origin/main"]);
+  if (!head.ok || !tip.ok) return { ok: false, error: "git rev-parse failed" };
   const sha = head.out.trim();
-  if (!run(["git", "merge-base", "--is-ancestor", sha, "origin/main"]).ok) {
-    return { ok: false, error: `${sha.slice(0, 7)} is not on origin/main; push and merge first` };
+  const main = tip.out.trim();
+  if (sha !== main) {
+    return {
+      ok: false,
+      error: `HEAD ${sha.slice(0, 7)} is not the tip of origin/main (${main.slice(0, 7)}); the VPS deploys the tip: check out main and pull, or push and merge first`,
+    };
   }
   return { ok: true, sha };
 }
 
-/** The script that builds, switches and rolls back releases on the VPS (`deploy/release.sh`). */
-export const RELEASE_SCRIPT_PATH = new URL("../../deploy/release.sh", import.meta.url);
+/** Installed by hand on the VPS from `deploy/cave-deploy`; the only thing that deploys. */
+export const WRAPPER = "/usr/local/sbin/cave-deploy";
 
-/**
- * Commands run over SSH. The release script goes over stdin and runs as `cave`, which has no
- * sudo rights; the restart runs as the admin login itself. Only a commit id appears on any
- * command line.
- */
-const AS_CAVE = ["sudo", "-u", "cave", "-H", "bash", "-s", "--"];
-
+/** Commands run over SSH as root. No token or other secret appears on either line. */
 export const remote = {
-  build: (ssh: string, sha: string) => ["ssh", ssh, ...AS_CAVE, "build", sha],
-  rollback: (ssh: string) => ["ssh", ssh, ...AS_CAVE, "rollback"],
-  restart: (ssh: string) => ["ssh", ssh, "systemctl", "restart", "cave"],
+  now: (ssh: string) => ["ssh", ssh, WRAPPER, "now"],
+  rollback: (ssh: string) => ["ssh", ssh, WRAPPER, "rollback"],
 };
-/** The commit a rollback switched to, from the script's `== rolled back to <sha>` line. */
-export function rolledBackTo(output: string): string | undefined {
-  return /^== rolled back to ([0-9a-f]{40})$/m.exec(output)?.[1];
+
+/** The commit the VPS runs after the wrapper finished, from its `== running <sha>` line. */
+export function runningCommit(output: string): string | undefined {
+  return /^== running ([0-9a-f]{40})$/m.exec(output)?.[1];
 }
 
 export interface HealthOptions {
@@ -51,7 +51,10 @@ export interface HealthOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
-/** Waits for the restarted server to answer `/api/status` with the deployed commit. */
+/**
+ * Asks the public URL for `/api/status` until it reports the commit. The VPS already checked
+ * loopback; this proves the path through Caddy.
+ */
 export async function healthCheck({
   url,
   token,

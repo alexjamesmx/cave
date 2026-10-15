@@ -7,6 +7,7 @@ import { createCallLog } from "./agent-calls.ts";
 import { createAgentRegistry } from "./agents.ts";
 import { serveCave } from "./app.ts";
 import { openDb } from "./db.ts";
+import type { DeployStatus } from "./deploy-status.ts";
 import type { CaveExport } from "./export.ts";
 import type { Status } from "./owner-api.ts";
 import { createStore, type Store } from "./store.ts";
@@ -16,9 +17,11 @@ let server: ReturnType<typeof serveCave>;
 let store: Store;
 let agentToken: string;
 let backupDir: string;
+let deployDir: string;
 
 beforeAll(() => {
   backupDir = mkdtempSync(join(tmpdir(), "cave-status-"));
+  deployDir = mkdtempSync(join(tmpdir(), "cave-deploy-"));
   writeFileSync(join(backupDir, "cave-2026-10-13T1405.db"), "");
   writeFileSync(join(backupDir, "cave-2026-10-14T0900.db.failed"), "");
   const db = openDb(":memory:");
@@ -35,13 +38,20 @@ beforeAll(() => {
     token: OWNER,
     now: () => Date.UTC(2026, 9, 13, 14, 5, 12),
     agents: { registry, calls: createCallLog(db), vaultPath: undefined },
-    status: { version: "0.1.0-dev", commit: "abc123", backupDir, newVaultNotes: () => 3 },
+    status: {
+      version: "0.1.0-dev",
+      commit: "abc123",
+      backupDir,
+      newVaultNotes: () => 3,
+      deployStatusPath: join(deployDir, "status.json"),
+    },
   });
 });
 
 afterAll(() => {
   server.stop(true);
   rmSync(backupDir, { recursive: true, force: true });
+  rmSync(deployDir, { recursive: true, force: true });
 });
 
 const get = (path: string, bearer?: string) =>
@@ -66,7 +76,29 @@ test("status reports version, doc count, db id, the newest real backup and new v
     dbId: store.dbId(),
     lastBackupAt: "2026-10-13T14:05:00.000Z",
     newVaultNotes: 3,
+    deploy: null,
   });
+});
+
+test("status reports the last deploy from its file, and null for a malformed one", async () => {
+  const deploy: DeployStatus = {
+    sha: "b".repeat(40),
+    result: "failed",
+    step: "test",
+    at: "2026-10-14T12:03:00Z",
+    running: "a".repeat(40),
+  };
+  const path = join(deployDir, "status.json");
+  writeFileSync(
+    path,
+    `${JSON.stringify(deploy)}
+`,
+  );
+  expect(((await (await get("/api/status", OWNER)).json()) as Status).deploy).toEqual(deploy);
+  writeFileSync(path, "{ half");
+  const res = await get("/api/status", OWNER);
+  expect(res.status).toBe(200);
+  expect(((await res.json()) as Status).deploy).toBeNull();
 });
 
 test("export downloads every doc as a named attachment", async () => {

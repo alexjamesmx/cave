@@ -15,6 +15,7 @@ describe("resolveConfig", () => {
         publicOrigin: undefined,
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
+        deployStatusPath: undefined,
       },
     });
   });
@@ -51,6 +52,7 @@ describe("resolveConfig", () => {
         publicOrigin: undefined,
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
+        deployStatusPath: undefined,
       },
     });
   });

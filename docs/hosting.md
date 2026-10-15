@@ -13,7 +13,9 @@ The one-time setup of the VPS, run step by step. Each step is shown to the owner
   | `/opt/cave/repo.git` | bare clone, fetched with the deploy key |
   | `/opt/cave/releases/<sha>` | one checkout per deployed commit (a git worktree), with its own `node_modules` |
   | `/opt/cave/current` | symlink to the release the service runs; switched atomically, only after the release passed install, check and test |
-  | `/opt/cave/previous` | symlink to the release before it; target of `bun run deploy --rollback` |
+  | `/opt/cave/previous` | symlink to the release before it; target of `cave-deploy rollback` |
+| `/usr/local/sbin/cave-deploy` | the deploy wrapper, root-owned, installed by hand from `deploy/cave-deploy` (step 11); never updated by a deploy |
+| `/var/lib/cave-deploy` | the wrapper's state, root-owned and world-readable: `status.json` (last result) and `held` (a commit the timer skips) |
   | `/var/lib/cave` | data only: database, backups, lock. Home of `cave` |
   | `/var/cache/cave-bun` | build caches: Bun's install and transpiler caches, Biome's cache (`XDG_CACHE_HOME`). The service itself writes no cache |
   | `/opt/bun` | Bun itself, root-owned |
@@ -22,7 +24,7 @@ The one-time setup of the VPS, run step by step. Each step is shown to the owner
 
 **Rules:**
 - **Secrets.** Tokens are generated on the VPS and never printed into a shared terminal, Claude Code's session or a log. They never go on a command line either, where any user could see them in `ps`. Commands that need the settings read `/etc/cave/cave.env` inside the shell. The owner reads each token once in **hPanel's browser terminal** and keeps it in a password manager.
-- **Privileges.** `cave` has **no sudo rights**. It builds releases; the admin login (root, with a key) restarts the service.
+- **Privileges.** `cave` has **no sudo rights**. It builds releases; `cave-deploy`, running as root, restarts the service. Code merged to `main` never runs as root: the wrapper only runs each commit's `release.sh` as `cave`.
 
 ## 0. Prerequisites
 - **The M5 code is on `origin/main`.** `deploy/release.sh` builds only commits on `origin/main`, and the server needs `CAVE_PUBLIC_ORIGIN` support to run behind Caddy.
@@ -99,7 +101,7 @@ printf 'CAVE_TOKEN=%s\n' "$(openssl rand -base64 48)" >> /etc/cave/cave.env
 grep -c '^CAVE_TOKEN=.\{64\}$' /etc/cave/cave.env    # expect 1, without showing the value
 ```
 
-The owner then reads it once in hPanel's browser terminal (`grep ^CAVE_TOKEN= /etc/cave/cave.env`) and stores it in a password manager. It is also the laptop's `CAVE_REMOTE_TOKEN`, used for deploys.
+The owner then reads it once in hPanel's browser terminal (`grep ^CAVE_TOKEN= /etc/cave/cave.env`) and stores it in a password manager. It is also the laptop's `CAVE_REMOTE_TOKEN`, used for the public health check after `bun run deploy`.
 
 ## 5. Caddy
 Install from Caddy's official repository; its `any-version` source works on Ubuntu 26.04. First confirm 80 and 443 are still free (`ss -tlnp`).
@@ -199,13 +201,55 @@ timeout 5 bash -c '</dev/tcp/203.0.113.10/3000' && echo OPEN || echo closed
   sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run agent add claude-code --scopes read,write'
   ```
   Then put it in `CAVE_AGENT_TOKEN` on the laptop and add the MCP entry from `docs/agents.md`.
+- **Claude apps (desktop and phone):** a `claude-apps` agent token in a custom connector; see `docs/agents.md` "Claude apps".
+
+## 11. Deploy on merge
+A root-owned wrapper and a timer deploy the tip of `main` within minutes of a merge. Install them from `main` in the bare clone, never from a checkout that a deploy can change:
+
+```bash
+sudo -u cave git -C /opt/cave/repo.git fetch --quiet origin '+refs/heads/main:refs/heads/main'
+for f in cave-deploy cave-deploy.service cave-deploy.timer; do
+  sudo -u cave git -C /opt/cave/repo.git show "main:deploy/$f" > "/root/$f"
+done
+install -o root -g root -m 755 /root/cave-deploy /usr/local/sbin/cave-deploy
+install -o root -g root -m 644 /root/cave-deploy.service /root/cave-deploy.timer /etc/systemd/system/
+rm /root/cave-deploy /root/cave-deploy.service /root/cave-deploy.timer
+install -d -o root -g root -m 755 /var/lib/cave-deploy
+grep -q '^CAVE_DEPLOY_STATUS=' /etc/cave/cave.env || echo 'CAVE_DEPLOY_STATUS=/var/lib/cave-deploy/status.json' >> /etc/cave/cave.env
+systemd-analyze verify /etc/systemd/system/cave-deploy.service /etc/systemd/system/cave-deploy.timer
+systemctl daemon-reload
+cave-deploy now
+```
+
+If `cave-deploy now` said "already current", run `systemctl restart cave`, so the server reads `CAVE_DEPLOY_STATUS`. Otherwise the deploy already restarted it. Then turn the timer on:
+
+```bash
+systemctl enable --now cave-deploy.timer
+systemctl list-timers cave-deploy.timer --no-pager
+```
+
+The service runs under `ProtectSystem=strict`, which makes `/var/lib/cave-deploy` read-only to it, not hidden; the directory is 755 and `status.json` 644, so `cave` can read it.
+
+A change to `deploy/cave-deploy` or its units is a reviewed template change: after the merge, repeat the install lines above.
 
 ## Deploying and rolling back (after setup)
-- **`bun run deploy`**, from the laptop:
-  1. Checks for a clean tree whose commit is on `origin/main`.
-  2. Sends `deploy/release.sh` over SSH, run as `cave`. It builds and tests the commit in `releases/<sha>`, and only then switches `current` atomically, keeping the newest five releases (never `current` or `previous`).
-  3. Restarts `cave` as root.
-  4. Waits for `/api/status` to report the new commit.
+- **Merging to `main` deploys.** `cave-deploy.timer` runs `cave-deploy auto` 2 minutes after the last run ended. When the tip of `main` is new and not held, it:
+  1. takes a verified backup with the running release's code (`bun run backup --dir $BACKUP_DIR/pre-deploy --keep 5 --sha <new commit>`, as `cave`): `/var/lib/cave/backups/pre-deploy/cave-<UTC time>-<short sha>.db`, named after the commit about to ship. The newest five are kept, apart from the daily and monthly backups;
+  2. builds and tests it as `cave` in `releases/<sha>`, with that commit's own `deploy/release.sh`; only then is `current` switched;
+  3. restarts `cave`;
+  4. waits up to 20 seconds for `http://127.0.0.1:3000/api/status` to report the commit.
 
-  If install, check or test fails, `current` and the running service are unchanged.
-- **`bun run deploy --rollback`:** points `current` at `previous`, restarts, and runs the health check.
+  A failed backup or build leaves the running release untouched and holds the commit. An unhealthy restart rolls back to `previous`, restarts again and holds the commit. A held commit is skipped until a newer one lands on `main` or `cave-deploy now` retries it. Settings shows the last result, and `status.json` names the backup.
+- **A rollback across a migration does not come up.** A release that migrated the database leaves a schema the older release refuses to open, so the rolled-back server fails its health check too. The wrapper then prints the recovery; it is the same for an automatic rollback and for `cave-deploy rollback`:
+  ```bash
+  systemctl stop cave
+  sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run restore /var/lib/cave/backups/pre-deploy/<the backup it names>'
+  systemctl start cave
+  ```
+  - `current` already points at the release rolled back to. Don't roll back again: that would switch back to the migrated release.
+  - The backup to restore is the one taken before the migrating deploy: the file named with that commit's short id.
+  - The restore gives the database a new `db_id`, so devices push their newer edits back (M4).
+- **`bun run deploy`**, from the laptop: checks for a clean tree whose `HEAD` is the tip of `origin/main`, runs `ssh cave-vps cave-deploy now` (deploys the tip even if held, waiting for a running deploy), then checks the public URL.
+- **`bun run deploy --rollback`**: runs `cave-deploy rollback`, which points `current` at `previous`, restarts, checks health and holds the tip of `main`, so the timer doesn't ship it again. `cave-deploy now` brings the tip back.
+- **On the VPS:** `cave-deploy status` prints the last result; `journalctl -u cave-deploy` shows each run's output.
+- **Pause auto-deploy:** `systemctl stop cave-deploy.timer` until the next boot; `systemctl disable --now cave-deploy.timer` keeps it off. `systemctl enable --now cave-deploy.timer` turns it back on.

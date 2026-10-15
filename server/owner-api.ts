@@ -2,6 +2,7 @@ import type { Change } from "../shared/types.ts";
 import type { AgentCall, CallLog } from "./agent-calls.ts";
 import type { AgentRegistry } from "./agents.ts";
 import { newestBackupAt } from "./backup.ts";
+import { type DeployStatus, readDeployStatus } from "./deploy-status.ts";
 import type { Store } from "./store.ts";
 
 export const ACTIVITY_LIMIT = 50;
@@ -49,6 +50,8 @@ export interface StatusOptions {
   backupDir: string;
   /** Vault notes not imported yet, from the start-up dry run; `null` without a vault. */
   newVaultNotes: () => number | null;
+  /** `status.json` written by `cave-deploy`, read on every request; unset on a laptop. */
+  deployStatusPath?: string;
 }
 
 export interface Status {
@@ -58,6 +61,8 @@ export interface Status {
   dbId: string;
   lastBackupAt: string | null;
   newVaultNotes: number | null;
+  /** The last deploy on the VPS; `null` without one or when its file is unreadable. */
+  deploy: DeployStatus | null;
 }
 
 /** `GET /api/status`: what Settings shows about the server. */
@@ -71,6 +76,7 @@ export function statusHandler(store: Store, options: StatusOptions) {
       dbId: store.dbId(),
       lastBackupAt: last === undefined ? null : new Date(last).toISOString(),
       newVaultNotes: options.newVaultNotes(),
+      deploy: readDeployStatus(options.deployStatusPath),
     };
     return Response.json(status);
   };

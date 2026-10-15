@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs on the VPS as user cave; `bun run deploy` sends it over SSH stdin.
+# Runs on the VPS as user cave; cave-deploy pipes in the copy from the commit it builds.
 #   build <sha>  fetch <sha>, install, check and test it in its own release directory,
 #                and only then switch `current` to it
 #   rollback     point `current` at the previous release

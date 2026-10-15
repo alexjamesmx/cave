@@ -119,6 +119,21 @@ In `opencode.json`. `oauth: false` stops OpenCode from trying OAuth discovery ag
 
 Checked against opencode.ai/docs/mcp-servers (remote servers, `headers`, `{env:…}`, `oauth: false`).
 
-## Claude in the desktop and mobile apps
+## Claude apps (desktop and phone)
 
-Claude's apps reach custom connectors from Anthropic's cloud, not from your machine. That needs a public HTTPS URL with OAuth, which the Cave doesn't offer yet. It comes with the VPS milestone. Until then, use Claude Code, Codex or OpenCode on a machine that can reach the server.
+Claude's apps reach custom connectors from Anthropic's cloud, so they use the hosted server, `https://cave.alexjamesmx.dev/mcp`. No OAuth: the connector sends the agent token in a request header. Verified from Cowork and the phone on 2026-10-14.
+
+1. **Mint the token in hPanel's browser terminal**, never over an SSH session an agent can read:
+   ```bash
+   sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run agent add claude-apps --scopes read,write'
+   ```
+   Keep the printed token in your password manager.
+2. **Add a custom connector** in Claude's connector settings:
+   - URL: `https://cave.alexjamesmx.dev/mcp`;
+   - sign-in: **No sign-in**;
+   - request header: name `authorization`, value `Bearer <token>`, **Required**.
+3. **Set the write tools to ask first:** `create`, `update`, `propose_delete` and `add_note`. Read tools can stay allowed.
+
+- The connector belongs to the Claude account, so every device signed in to it has the Cave.
+- **Changing the token** (lost, leaked, rotated) means revoking `claude-apps`, minting a new one, then removing and re-adding the connector: the header value can't be edited in place.
+- Request-header authentication is a beta for a limited set of organizations. If Anthropic removes it, OAuth on `/mcp` comes back as a milestone (`docs/decisions.md`).
