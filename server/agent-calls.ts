@@ -43,6 +43,8 @@ export interface CallLog {
   /** Newest first, older than `before` when given. */
   page(before: number | undefined, limit: number): AgentCall[];
   lastAt(agent: string): number | undefined;
+  /** Successful calls of one tool by one agent since `since`, for daily limits. */
+  countSince(agent: string, tool: string, since: number): number;
 }
 
 export function createCallLog(db: Database): CallLog {
@@ -59,6 +61,9 @@ export function createCallLog(db: Database): CallLog {
   );
   const last = db.query<{ at: number }, [string]>(
     "SELECT at FROM agent_calls WHERE agent = ? ORDER BY seq DESC LIMIT 1",
+  );
+  const count = db.query<{ n: number }, [string, string, number]>(
+    "SELECT count(*) AS n FROM agent_calls WHERE agent = ? AND tool = ? AND ok = 1 AND at >= ?",
   );
   return {
     record: (call) => {
@@ -77,5 +82,6 @@ export function createCallLog(db: Database): CallLog {
     page: (before, limit) =>
       (before === undefined ? newest.all(limit) : older.all(before, limit)).map(toCall),
     lastAt: (agent) => last.get(agent)?.at,
+    countSince: (agent, tool, since) => count.get(agent, tool, since)?.n ?? 0,
   };
 }

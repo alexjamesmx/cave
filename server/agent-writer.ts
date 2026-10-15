@@ -1,4 +1,5 @@
 import { activeFields, fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
+import { FLOWS } from "../shared/flows/seed.ts";
 import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
 import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
@@ -113,6 +114,31 @@ export class AgentWriter {
       id: newId(now),
       kind: "item",
       collection: PROPOSALS,
+      data: { _created: new Date(now).toISOString(), ...data },
+    });
+  }
+
+  /**
+   * The flows collection is hidden from every other write; `save_flow` decides the status
+   * and checks the flow's reach first, then writes here.
+   */
+  writeFlow(current: Doc | undefined, data: Record<string, unknown>): WriteResult {
+    const errors = validateFields(activeFields(fieldsOf(this.store.get(FLOWS))), data);
+    if (errors.length > 0) return fail(formatFieldErrors(errors));
+    if (current) {
+      const changed = Object.fromEntries(
+        Object.entries(data).filter(
+          ([key, value]) => JSON.stringify(current.data[key]) !== JSON.stringify(value),
+        ),
+      );
+      if (Object.keys(changed).length === 0) return { ok: true, id: current.id, seqs: [] };
+      return this.apply(current, { ...current, data: changed });
+    }
+    const now = this.now();
+    return this.apply(undefined, {
+      id: newId(now),
+      kind: "item",
+      collection: FLOWS,
       data: { _created: new Date(now).toISOString(), ...data },
     });
   }

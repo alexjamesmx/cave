@@ -161,12 +161,20 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "query",
     "get",
     "money_month",
+    "list_flows",
     "create",
     "update",
     "propose_delete",
+    "save_flow",
     "add_note",
   ]);
-  expect(await names("reader")).toEqual(["list_collections", "query", "get", "money_month"]);
+  expect(await names("reader")).toEqual([
+    "list_collections",
+    "query",
+    "get",
+    "money_month",
+    "list_flows",
+  ]);
   const tools = (await (await connect("reader")).listTools()).tools;
   expect(tools.every((t) => t.annotations?.readOnlyHint === true)).toBe(true);
   // Only update changes existing values; the other write tools only add.
@@ -177,6 +185,7 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     ["create", false],
     ["update", true],
     ["propose_delete", false],
+    ["save_flow", true],
     ["add_note", false],
   ]);
 });
@@ -197,6 +206,38 @@ test("the allowlist hides collections everywhere", async () => {
     collections: { id: string }[];
   };
   expect(all.collections.map((c) => c.id)).not.toContain("proposals");
+});
+
+test("flows change only through save_flow; create and update can't reach them", async () => {
+  const client = await connect("claude");
+  expect(textOf(await call(client, "create", { collection: "flows", title: "x" }))).toBe(
+    "collection flows not found",
+  );
+  expect(textOf(await call(client, "update", { id: "flow-rent", fields: { status: "on" } }))).toBe(
+    "item flow-rent not found",
+  );
+  const saved = await call(client, "save_flow", {
+    title: "Plan the week",
+    definition: {
+      version: 1,
+      trigger: { type: "schedule", every: "week", weekday: 1, at: "08:00" },
+      steps: [{ type: "create", collection: "tasks", title: "Plan the week" }],
+    },
+  });
+  expect(saved.structuredContent).toMatchObject({ status: "on" });
+  const bad = await call(client, "save_flow", {
+    title: "x",
+    definition: { version: 1, trigger: { type: "webhook" }, steps: [] },
+  });
+  expect(bad.isError).toBe(true);
+  const { flows } = (await call(client, "list_flows")).structuredContent as {
+    flows: { title: string; status: string; author: string; steps: string[] }[];
+  };
+  expect(flows.find((f) => f.title === "Plan the week")).toMatchObject({
+    status: "on",
+    author: "claude",
+    steps: ["Every week on weekday 1 at 08:00", "Create “Plan the week” in tasks"],
+  });
 });
 
 test("create refuses a guessed category and an attempt to set _deleted", async () => {
