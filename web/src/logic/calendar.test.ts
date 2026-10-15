@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Zone } from "../../../shared/reminders.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { byDay, mergeEvents, reminderSource, taskSource } from "./calendar.ts";
+import { byDay, flowSource, mergeEvents, reminderSource, taskSource } from "./calendar.ts";
 
 const MX: Zone = { timeZone: "America/Mexico_City", defaultTime: "09:00" };
 const NOW = Date.parse("2026-10-15T16:00:00Z"); // Thu 10:00 local
@@ -62,4 +62,26 @@ test("a range outside the month finds nothing stored, only what repeats into it"
     nov,
   );
   expect(events.map((e) => e.key)).toEqual(["rent@2026-11-05T09:00"]);
+});
+
+test("flows that are on and run on a schedule show their next run", () => {
+  const monthly = {
+    version: 1,
+    trigger: { type: "schedule", every: "month", day: 22, at: "09:00" },
+    steps: [{ type: "create", collection: "tasks", title: "Pay rent" }],
+  };
+  const flows = [
+    item("on", "flows", { status: "on", definition: monthly }),
+    item("draft", "flows", { status: "draft", definition: monthly }),
+    item("event", "flows", {
+      status: "on",
+      definition: { ...monthly, trigger: { type: "item-added", collection: "money" } },
+    }),
+  ];
+  const events = mergeEvents([flowSource(flows, MX, NOW)], OCT);
+  expect(events.map((e) => [e.itemId, e.due, e.collection])).toEqual([
+    ["on", "2026-10-22T09:00", "flows"],
+  ]);
+  const november = { from: OCT.to, to: Date.parse("2026-12-01T06:00:00Z") };
+  expect(mergeEvents([flowSource(flows, MX, NOW)], november)).toEqual([]);
 });

@@ -69,7 +69,9 @@ test("a test run of a seeded draft describes it; unknown and invalid flows say w
     ],
   });
   expect((await call("/api/flows/nope/test", "POST")).status).toBe(404);
-  expect((await call("/api/flows/bad/test", "POST")).status).toBe(422);
+  expect(await (await call("/api/flows/bad/test", "POST")).json()).toEqual({
+    error: "the definition is not valid",
+  });
 });
 
 test("run history is the owner's only", async () => {

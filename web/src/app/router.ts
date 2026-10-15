@@ -4,6 +4,8 @@ export type Route =
   | { name: "home" }
   | { name: "collection"; collection: string; view: string | undefined }
   | { name: "calendar" }
+  /** `/flows`, or one flow; `?do=approve|reject` from a notification asks to confirm. */
+  | { name: "flows"; id: string | undefined }
   /** A reminder opened from a notification; `?do=done|snooze60` acts on it once. */
   | { name: "reminder"; id: string }
   | { name: "settings" }
@@ -15,6 +17,9 @@ const COLLECTION_RE = /^\/c\/([^/]+)(?:\/([^/]+))?\/?$/;
 export function parseRoute(pathname: string): Route {
   if (pathname === "/" || pathname === "") return { name: "home" };
   if (pathname === "/calendar") return { name: "calendar" };
+  const flows = /^\/flows(?:\/([^/]+))?\/?$/.exec(pathname);
+  if (flows)
+    return { name: "flows", id: flows[1] === undefined ? undefined : decodeURIComponent(flows[1]) };
   const reminder = /^\/r\/([^/]+)\/?$/.exec(pathname);
   if (reminder) return { name: "reminder", id: decodeURIComponent(reminder[1] as string) };
   if (pathname === "/settings") return { name: "settings" };
@@ -29,6 +34,8 @@ export function parseRoute(pathname: string): Route {
 
 export const collectionPath = (collection: string, view?: string) =>
   `/c/${encodeURIComponent(collection)}${view ? `/${encodeURIComponent(view)}` : ""}`;
+
+export const flowPath = (id?: string) => (id ? `/flows/${encodeURIComponent(id)}` : "/flows");
 
 // pushState fires no event, so navigation announces itself for subscribers.
 const NAVIGATE = "cave:navigate";

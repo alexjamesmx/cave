@@ -35,6 +35,10 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               C
             </span>
           </a>
+          <a href="/flows" className={on(route.name === "flows")}>
+            <Icon name="workflow" size={17} color="var(--violet)" />
+            Flows
+          </a>
           <a href="/agents" className={on(route.name === "agents")}>
             <Icon name="bot" size={17} />
             Agents

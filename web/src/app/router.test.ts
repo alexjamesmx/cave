@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { collectionPath, parseRoute, shortcutPath } from "./router.ts";
+import { collectionPath, flowPath, parseRoute, shortcutPath } from "./router.ts";
 
 test("parses the app's routes", () => {
   expect(parseRoute("/")).toEqual({ name: "home" });
@@ -7,6 +7,9 @@ test("parses the app's routes", () => {
   expect(parseRoute("/calendar")).toEqual({ name: "calendar" });
   expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
   expect(parseRoute("/agents")).toEqual({ name: "agents" });
+  expect(parseRoute("/flows")).toEqual({ name: "flows", id: undefined });
+  expect(parseRoute(flowPath("flow-rent"))).toEqual({ name: "flows", id: "flow-rent" });
+  expect(parseRoute("/flows/a/b")).toEqual({ name: "not-found" });
   expect(parseRoute("/c/money")).toEqual({
     name: "collection",
     collection: "money",
