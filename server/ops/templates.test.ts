@@ -124,10 +124,34 @@ test("the deploy units run the installed wrapper as root every 2 minutes after t
     "Environment=CAVE_RUN_AS=cave",
     "PrivateTmp=true",
     "ProtectHome=true",
+    "ProtectKernelTunables=true",
+    "ProtectKernelModules=true",
+    "ProtectKernelLogs=true",
+    "ProtectClock=true",
+    "ProtectHostname=true",
+    "ProtectControlGroups=true",
+    "LockPersonality=true",
+    "RestrictRealtime=true",
+    "RestrictSUIDSGID=true",
+    "SystemCallArchitectures=native",
+    "RestrictNamespaces=true",
+    "RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK",
   ]) {
-    expect(service).toContain(line);
+    expect(service).toContain(`\n${line}\n`);
   }
-  expect(service).not.toMatch(/^User=/m);
+  // Each would break the job: Bun's JIT, git fetch, the root-only restart. The rest of the
+  // review's list is tried one at a time on the VPS before it lands here.
+  for (const directive of [
+    "User",
+    "MemoryDenyWriteExecute",
+    "PrivateNetwork",
+    "NoNewPrivileges",
+    "PrivateDevices",
+    "CapabilityBoundingSet",
+    "ProtectSystem",
+  ]) {
+    expect(service).not.toMatch(new RegExp(`^${directive}=`, "m"));
+  }
   const timer = template("cave-deploy.timer");
   for (const line of [
     "OnBootSec=2min",
