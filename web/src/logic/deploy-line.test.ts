@@ -10,7 +10,7 @@ test("a healthy deploy names the running commit and when", () => {
   expect(deployLine({ sha: A, result: "deployed", at, running: A }, time)).toEqual([
     "Running ",
     { commit: A },
-    ", deployed 12:03",
+    ", live since 12:03",
   ]);
 });
 

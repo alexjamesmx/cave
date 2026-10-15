@@ -10,7 +10,7 @@ export function deployLine(deploy: DeployStatus, time: (iso: string) => string):
   const running = deploy.running ? [{ commit: deploy.running }] : ["nothing"];
   switch (deploy.result) {
     case "deployed":
-      return ["Running ", ...running, `, deployed ${time(deploy.at)}`];
+      return ["Running ", ...running, `, live since ${time(deploy.at)}`];
     case "failed":
       return [
         "Last deploy of ",
