@@ -19,6 +19,11 @@
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp/",
       "headers": { "Authorization": "Bearer ${GITHUB_PAT}" }
+    },
+    "cave": {
+      "type": "http",
+      "url": "https://cave.alexjamesmx.dev/mcp",
+      "headers": { "Authorization": "Bearer ${CAVE_AGENT_TOKEN}" }
     }
   }
 }
