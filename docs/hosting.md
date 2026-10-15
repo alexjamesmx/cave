@@ -218,8 +218,12 @@ install -d -o root -g root -m 755 /var/lib/cave-deploy
 grep -q '^CAVE_DEPLOY_STATUS=' /etc/cave/cave.env || echo 'CAVE_DEPLOY_STATUS=/var/lib/cave-deploy/status.json' >> /etc/cave/cave.env
 systemd-analyze verify /etc/systemd/system/cave-deploy.service /etc/systemd/system/cave-deploy.timer
 systemctl daemon-reload
-cave-deploy now                  # deploys the tip of main, or says it is already current
-systemctl restart cave           # only if it was already current: picks up CAVE_DEPLOY_STATUS
+cave-deploy now
+```
+
+If `cave-deploy now` said "already current", run `systemctl restart cave`, so the server reads `CAVE_DEPLOY_STATUS`. Otherwise the deploy already restarted it. Then turn the timer on:
+
+```bash
 systemctl enable --now cave-deploy.timer
 systemctl list-timers cave-deploy.timer --no-pager
 ```
@@ -230,11 +234,21 @@ A change to `deploy/cave-deploy` or its units is a reviewed template change: aft
 
 ## Deploying and rolling back (after setup)
 - **Merging to `main` deploys.** `cave-deploy.timer` runs `cave-deploy auto` 2 minutes after the last run ended. When the tip of `main` is new and not held, it:
-  1. builds and tests it as `cave` in `releases/<sha>`, with that commit's own `deploy/release.sh`; only then is `current` switched;
-  2. restarts `cave`;
-  3. waits up to 20 seconds for `http://127.0.0.1:3000/api/status` to report the commit.
+  1. takes a verified backup with the running release's code (`bun run backup --dir $BACKUP_DIR/pre-deploy --keep 5 --sha <new commit>`, as `cave`): `/var/lib/cave/backups/pre-deploy/cave-<UTC time>-<short sha>.db`, named after the commit about to ship. The newest five are kept, apart from the daily and monthly backups;
+  2. builds and tests it as `cave` in `releases/<sha>`, with that commit's own `deploy/release.sh`; only then is `current` switched;
+  3. restarts `cave`;
+  4. waits up to 20 seconds for `http://127.0.0.1:3000/api/status` to report the commit.
 
-  A failed build leaves the running release untouched and holds the commit. An unhealthy restart rolls back to `previous`, restarts again and holds the commit. A held commit is skipped until a newer one lands on `main` or `cave-deploy now` retries it. Settings shows the last result.
+  A failed backup or build leaves the running release untouched and holds the commit. An unhealthy restart rolls back to `previous`, restarts again and holds the commit. A held commit is skipped until a newer one lands on `main` or `cave-deploy now` retries it. Settings shows the last result, and `status.json` names the backup.
+- **A rollback across a migration does not come up.** A release that migrated the database leaves a schema the older release refuses to open, so the rolled-back server fails its health check too. The wrapper then prints the recovery; it is the same for an automatic rollback and for `cave-deploy rollback`:
+  ```bash
+  systemctl stop cave
+  sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run restore /var/lib/cave/backups/pre-deploy/<the backup it names>'
+  systemctl start cave
+  ```
+  - `current` already points at the release rolled back to. Don't roll back again: that would switch back to the migrated release.
+  - The backup to restore is the one taken before the migrating deploy: the file named with that commit's short id.
+  - The restore gives the database a new `db_id`, so devices push their newer edits back (M4).
 - **`bun run deploy`**, from the laptop: checks for a clean tree whose `HEAD` is the tip of `origin/main`, runs `ssh cave-vps cave-deploy now` (deploys the tip even if held, waiting for a running deploy), then checks the public URL.
 - **`bun run deploy --rollback`**: runs `cave-deploy rollback`, which points `current` at `previous`, restarts, checks health and holds the tip of `main`, so the timer doesn't ship it again. `cave-deploy now` brings the tip back.
 - **On the VPS:** `cave-deploy status` prints the last result; `journalctl -u cave-deploy` shows each run's output.

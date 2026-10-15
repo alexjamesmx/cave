@@ -89,6 +89,7 @@ flowchart TD
 
 - **Merging to `main` deploys.** Nothing on GitHub can stop a merge on a private repo with GitHub Free, so the gates are the owner's merge, the VPS re-running `check` and `test`, and the health check with automatic rollback.
 - **One deploy path.** `/usr/local/sbin/cave-deploy` (root, installed by hand from `deploy/cave-deploy`) is the only thing that deploys. The timer runs `cave-deploy auto`; `bun run deploy` runs `cave-deploy now` over SSH, then checks the public URL.
+- **A backup before every switch.** Each deploy first takes a verified backup with the running release's code, in `/var/lib/cave/backups/pre-deploy` (newest five kept). A rollback across a migration needs it: the older release refuses the newer schema (`docs/hosting.md`).
 - **A held commit** (failed or rolled back) is skipped by the timer until `cave-deploy now` retries it or a newer commit lands on `main`.
 - Each release lives in `/opt/cave/releases/<commit>`, and `current` points at the running one. Five are kept. The last result is in `/var/lib/cave-deploy/status.json`.
 - **Details:** `deploy/cave-deploy`, `deploy/release.sh`, `docs/hosting.md`.

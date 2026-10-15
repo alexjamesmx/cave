@@ -99,6 +99,7 @@ test("the deploy wrapper defaults to the VPS paths and runs every build step as 
     ["env_file", "CAVE_ENV_FILE", "/etc/cave/cave.env"],
     ["health_url", "CAVE_HEALTH_URL", "http://127.0.0.1:3000/api/status"],
     ["lock", "CAVE_LOCK_FILE", "/run/cave-deploy.lock"],
+    ["bun_bin", "CAVE_BUN_BIN", "/opt/bun/bin"],
   ]) {
     expect(wrapper).toContain(`${name}="$\{${variable}:-${value}}"`);
   }
@@ -107,6 +108,9 @@ test("the deploy wrapper defaults to the VPS paths and runs every build step as 
     'curl -q -fsS --max-time 3 -H "@$hdr"',
     "flock -n 9 || exit 0",
     "flock -w 600 9",
+    "keep_backups=5",
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell syntax, not a JS template
+    '--dir "${BACKUP_DIR:?BACKUP_DIR is not set in $1}/pre-deploy" --keep "$4" --sha "$5"',
   ]) {
     expect(wrapper).toContain(line);
   }
@@ -155,6 +159,61 @@ test("Claude Code settings: setup's template is the committed file, which turns 
       ],
     },
   ]);
+});
+
+/**
+ * A Bash rule as code.claude.com/docs/en/permissions describes it: the text matches as written,
+ * `*` stands for any text, and a trailing ` *` that is the rule's only wildcard also matches the
+ * bare command. Only what the deny list needs; Claude Code itself is the authority.
+ */
+function bashRuleMatches(rule: string, command: string): boolean {
+  const pattern = /^Bash\((.*)\)$/.exec(rule)?.[1];
+  if (pattern === undefined) return false;
+  const literal = (text: string) => text.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+  const wildcards = pattern.split("*").length - 1;
+  const source =
+    wildcards === 1 && pattern.endsWith(" *")
+      ? `${literal(pattern.slice(0, -2))}( .*)?`
+      : pattern.split("*").map(literal).join(".*");
+  return new RegExp(`^${source}$`).test(command);
+}
+
+test("Claude Code refuses pushes to main and asks before any other push", () => {
+  const settings = JSON.parse(
+    readFileSync(join(import.meta.dir, "../../.claude/settings.json"), "utf8"),
+  );
+  const denied = (command: string) =>
+    (settings.permissions.deny as string[]).some((rule) => bashRuleMatches(rule, command));
+  const asked = (command: string) =>
+    (settings.permissions.ask as string[]).some((rule) => bashRuleMatches(rule, command));
+  for (const command of [
+    "git push origin main",
+    "git push -u origin main",
+    "git push origin main --force",
+    "git push origin HEAD:main",
+    "git push origin m6-anywhere:main",
+    "git push origin +main",
+    "git push origin +HEAD:main",
+    "git push --force origin HEAD:main",
+    "git push origin refs/heads/main",
+    "git push origin HEAD:refs/heads/main",
+  ]) {
+    expect({ command, denied: denied(command) }).toEqual({ command, denied: true });
+  }
+  for (const command of [
+    "git push -u origin m6-anywhere",
+    "git push origin claude/fix-main-label",
+    "git push origin main-fix",
+    "git push origin HEAD:mainline",
+    "git push --force origin m6-anywhere",
+    "git push -f origin m6-anywhere",
+  ]) {
+    expect({ command, denied: denied(command), asked: asked(command) }).toEqual({
+      command,
+      denied: false,
+      asked: true,
+    });
+  }
 });
 
 test("the cloud setup script pins Bun from npm and never installs dependencies", () => {

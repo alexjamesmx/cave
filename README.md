@@ -65,7 +65,7 @@ The Cave can run on a VPS as the server every device syncs with. Today that is a
   - `/etc/cave/cave.env` with a generated token;
   - Caddy, the firewall, key-only SSH and the systemd service;
   - the `cave-deploy` wrapper and its timer (step 11).
-- **Deploying happens on merge.** Every 2 minutes `cave-deploy.timer` on the VPS looks at `main`. A new tip is built in its own release directory as `cave` (which has no sudo rights), with `bun install --frozen-lockfile`, `bun run check` and `bun test`.
+- **Deploying happens on merge.** Every 2 minutes `cave-deploy.timer` on the VPS looks at `main`. It first takes a verified backup of the database, named after the commit about to ship (`/var/lib/cave/backups/pre-deploy`, newest five kept). A new tip is then built in its own release directory as `cave` (which has no sudo rights), with `bun install --frozen-lockfile`, `bun run check` and `bun test`.
   - Only if all three pass is the `current` symlink switched and the service restarted; the newest five releases are kept.
   - The restarted server must report the new commit on `/api/status` within 20 seconds, or the VPS rolls back by itself.
   - A commit that failed or was rolled back is held: the timer leaves it alone until a newer commit lands.

@@ -34,8 +34,12 @@ test("a file cave-deploy wrote is read as is", () => {
     result: "deployed",
     at: "2026-10-14T12:03:00Z",
     running: A,
+    backup: "cave-2026-10-14T120255-bbbbbbb.db",
   };
   expect(readDeployStatus(file("deployed.json", JSON.stringify(deployed)))).toEqual(deployed);
+  // The first M6 deploy runs the M5 CLI, which writes a daily-named backup.
+  const first = { ...deployed, backup: "cave-2026-10-14T1202.db" };
+  expect(readDeployStatus(file("first.json", JSON.stringify(first)))).toEqual(first);
 });
 
 test("a malformed file is null", () => {
@@ -50,6 +54,8 @@ test("a malformed file is null", () => {
     JSON.stringify({ ...good, at: "yesterday" }),
     JSON.stringify({ ...good, running: 3 }),
     JSON.stringify({ ...good, step: "<script>" }),
+    JSON.stringify({ ...good, backup: "../../etc/passwd" }),
+    JSON.stringify({ ...good, backup: 1 }),
   ]) {
     expect(readDeployStatus(file("bad.json", body))).toBeNull();
   }

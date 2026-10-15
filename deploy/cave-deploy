@@ -17,6 +17,8 @@ systemctl="${CAVE_SYSTEMCTL:-systemctl}"
 lock="${CAVE_LOCK_FILE:-/run/cave-deploy.lock}"
 run_as="${CAVE_RUN_AS:-cave}"
 cave_home="${CAVE_HOME:-/var/lib/cave}"
+bun_bin="${CAVE_BUN_BIN:-/opt/bun/bin}"
+keep_backups=5
 repo="$root/repo.git"
 
 # The repository belongs to cave: root running git there would trip git's ownership check
@@ -31,11 +33,12 @@ release() { as_cave git -C "$repo" show "$1:deploy/release.sh" | as_cave bash -s
 target_of() { if [ -L "$root/$1" ]; then basename "$(readlink "$root/$1")"; fi; }
 
 write_status() {
-  local sha="$1" result="$2" step="${3:-}" tmp
+  local sha="$1" result="$2" step="${3:-}" backup="${4:-}" tmp
   tmp=$(mktemp "$state/.status.XXXXXX")
   {
     printf '{"sha":"%s","result":"%s",' "$sha" "$result"
     if [ -n "$step" ]; then printf '"step":"%s",' "$step"; fi
+    if [ -n "$backup" ]; then printf '"backup":"%s",' "$(basename "$backup")"; fi
     printf '"at":"%s","running":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(target_of current)"
   } >"$tmp"
   chmod 644 "$tmp"
@@ -75,13 +78,56 @@ restart_and_check() {
 
 running() { echo "== running $(target_of current)"; }
 
+# A release that migrated the database leaves a schema the release before it refuses to open,
+# so every switch starts from a verified copy taken with the running release's code. Prints the
+# CLI's output; its "Backup <file>: integrity ok" line names the copy.
+pre_deploy_backup() {
+  # shellcheck disable=SC2016 # expanded by the inner shell, after it reads the settings
+  as_cave bash -c 'set -a; . "$1"; set +a; cd "$2" && exec "$3/bun" run backup \
+    --dir "${BACKUP_DIR:?BACKUP_DIR is not set in $1}/pre-deploy" --keep "$4" --sha "$5"' \
+    _ "$env_file" "$root/current" "$bun_bin" "$keep_backups" "$1"
+}
+
+# The newest pre-deploy backup taken before $1 was deployed, from the settings' BACKUP_DIR.
+backup_before() {
+  local dir
+  dir="$(sed -n 's/^BACKUP_DIR=//p' "$env_file" | head -n 1)/pre-deploy"
+  ls -1 "$dir"/cave-*-"${1:0:7}".db 2>/dev/null | sort | tail -n 1
+}
+
+recovery() {
+  local backup="$1"
+  cat >&2 <<EOF
+The release rolled back to does not come up. If the release it replaced migrated the
+database, the old code refuses the newer schema. Restore the backup taken before that deploy:
+  systemctl stop cave
+  runuser -u $run_as -- bash -c 'set -a; . $env_file; set +a; cd $root/current && $bun_bin/bun run restore ${backup:-<the newest file in BACKUP_DIR/pre-deploy>}'
+  systemctl start cave
+current already points at the release rolled back to; do not roll back again, which would
+switch to the migrated release. Devices push their newer edits back after the restore.
+EOF
+}
+
 deploy() {
-  local sha="$1" log step
+  local sha="$1" log step out backup=""
   if [ "$sha" = "$(target_of current)" ]; then
     echo "== $sha is already current"
     rm -f "$state/held"
     running
     return 0
+  fi
+  if [ -n "$(target_of current)" ]; then
+    echo "== backup"
+    if ! out=$(pre_deploy_backup "$sha" 2>&1); then
+      printf '%s\n' "$out"
+      hold "$sha"
+      write_status "$sha" failed backup
+      echo "Not deployed: the pre-deploy backup failed; the running release is unchanged" >&2
+      running
+      return 1
+    fi
+    printf '%s\n' "$out"
+    backup=$(sed -n 's/^Backup \(.*\): integrity ok.*/\1/p' <<<"$out" | tail -n 1)
   fi
   echo "== build $sha"
   log=$(mktemp)
@@ -89,7 +135,7 @@ deploy() {
     step=$(sed -n 's/^deploy failed at: //p' "$log" | tail -n 1)
     rm -f "$log"
     hold "$sha"
-    write_status "$sha" failed "${step:-build}"
+    write_status "$sha" failed "${step:-build}" "$backup"
     echo "Not deployed: failed at ${step:-build}; the running release is unchanged" >&2
     running
     return 1
@@ -97,19 +143,19 @@ deploy() {
   rm -f "$log"
   if restart_and_check; then
     rm -f "$state/held"
-    write_status "$sha" deployed
+    write_status "$sha" deployed "" "$backup"
     running
     return 0
   fi
   echo "Unhealthy: rolling back" >&2
   hold "$sha"
   if ! release "$sha" rollback; then
-    write_status "$sha" failed health
+    write_status "$sha" failed health "$backup"
     echo "No previous release to roll back to" >&2
     return 1
   fi
-  restart_and_check || echo "The release rolled back to is unhealthy too" >&2
-  write_status "$sha" rolled-back
+  restart_and_check || recovery "$backup"
+  write_status "$sha" rolled-back "" "$backup"
   running
   return 1
 }
@@ -129,7 +175,7 @@ rollback() {
     return 0
   fi
   write_status "$from" failed health
-  echo "The release rolled back to is unhealthy" >&2
+  recovery "$(backup_before "$from")"
   running
   return 1
 }

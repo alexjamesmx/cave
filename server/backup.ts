@@ -14,6 +14,19 @@ export function backupName(now: number): string {
   return `cave-${iso.slice(0, 10)}T${iso.slice(11, 13)}${iso.slice(14, 16)}.db`;
 }
 
+/**
+ * `cave-2026-10-14T120305-abc1234.db`: taken by `cave-deploy` right before it switches to the
+ * named commit. Seconds keep two deploys in one minute apart; the pattern never matches a daily
+ * name, so the two kinds never prune each other.
+ */
+export const PRE_DEPLOY_PATTERN = /^cave-\d{4}-\d{2}-\d{2}T\d{6}-[0-9a-f]{7}\.db$/;
+
+export function preDeployName(now: number, sha: string): string {
+  const iso = new Date(now).toISOString();
+  const stamp = `${iso.slice(0, 10)}T${iso.slice(11, 13)}${iso.slice(14, 16)}${iso.slice(17, 19)}`;
+  return `cave-${stamp}-${sha.slice(0, 7)}.db`;
+}
+
 export function backupTime(name: string): number | undefined {
   const m = BACKUP_PATTERN.exec(name);
   if (!m) return undefined;
@@ -61,9 +74,10 @@ export function takeBackup(
   dir: string,
   now: number,
   verify: (file: string) => Verified = verifyBackup,
+  name: string = backupName(now),
 ): BackupResult {
   mkdirSync(dir, { recursive: true });
-  const file = join(dir, backupName(now));
+  const file = join(dir, name);
   if (existsSync(file)) return { ok: false, file, error: "a backup with this name already exists" };
 
   let error: string;
@@ -112,6 +126,21 @@ const backupNames = (dir: string) => (existsSync(dir) ? readdirSync(dir) : []);
 
 export function pruneBackups(dir: string, now: number): string[] {
   const prunable = selectPrunable(backupNames(dir), now);
+  for (const name of prunable) rmSync(join(dir, name));
+  return prunable;
+}
+
+/** Names matching `pattern` beyond the newest `keep`; the names sort in time order. */
+export function selectBeyondNewest(names: string[], pattern: RegExp, keep: number): string[] {
+  return names
+    .filter((name) => pattern.test(name))
+    .sort()
+    .reverse()
+    .slice(keep);
+}
+
+export function pruneBeyondNewest(dir: string, pattern: RegExp, keep: number): string[] {
+  const prunable = selectBeyondNewest(backupNames(dir), pattern, keep);
   for (const name of prunable) rmSync(join(dir, name));
   return prunable;
 }
