@@ -162,7 +162,7 @@ export function createWebPushChannel({
         const res = await send(sub.endpoint, {
           method: "POST",
           headers,
-          body: request.body,
+          body: new Uint8Array(request.body as Buffer),
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
         status = res.status;

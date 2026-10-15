@@ -13,9 +13,10 @@ import {
 // RFC 8291 (Message Encryption for Web Push) written out with Web Crypto, independent of the
 // library: it checks the library against the standard rather than against itself.
 const subtle = crypto.subtle;
-const b64u = (s: string) => new Uint8Array(Buffer.from(s.replace(/\s+/g, ""), "base64url"));
-const text = (s: string) => new TextEncoder().encode(s);
-const concat = (...parts: Uint8Array[]) => {
+type Bytes = Uint8Array<ArrayBuffer>;
+const b64u = (s: string): Bytes => new Uint8Array(Buffer.from(s.replace(/\s+/g, ""), "base64url"));
+const text = (s: string): Bytes => new TextEncoder().encode(s);
+const concat = (...parts: Bytes[]): Bytes => {
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let at = 0;
   for (const p of parts) {
@@ -26,13 +27,13 @@ const concat = (...parts: Uint8Array[]) => {
 };
 const zero = new Uint8Array([0]);
 
-async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length: number) {
+async function hkdf(salt: Bytes, ikm: Bytes, info: Bytes, length: number) {
   const key = await subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
   return new Uint8Array(
     await subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, key, length * 8),
   );
 }
-const privateKey = (d: Uint8Array, publicRaw: Uint8Array) =>
+const privateKey = (d: Bytes, publicRaw: Bytes) =>
   subtle.importKey(
     "jwk",
     {
@@ -46,16 +47,10 @@ const privateKey = (d: Uint8Array, publicRaw: Uint8Array) =>
     false,
     ["deriveBits"],
   );
-const publicKey = (raw: Uint8Array) =>
+const publicKey = (raw: Bytes) =>
   subtle.importKey("raw", raw, { name: "ECDH", namedCurve: "P-256" }, false, []);
 
-async function keys(
-  ecdh: Uint8Array,
-  auth: Uint8Array,
-  uaPublic: Uint8Array,
-  asPublic: Uint8Array,
-  salt: Uint8Array,
-) {
+async function keys(ecdh: Bytes, auth: Bytes, uaPublic: Bytes, asPublic: Bytes, salt: Bytes) {
   const ikm = await hkdf(auth, ecdh, concat(text("WebPush: info"), zero, uaPublic, asPublic), 32);
   const cek = await hkdf(salt, ikm, concat(text("Content-Encoding: aes128gcm"), zero), 16);
   const nonce = await hkdf(salt, ikm, concat(text("Content-Encoding: nonce"), zero), 12);
@@ -66,12 +61,12 @@ async function keys(
 }
 
 async function encrypt(
-  plain: Uint8Array,
-  uaPublic: Uint8Array,
-  auth: Uint8Array,
-  asPrivate: Uint8Array,
-  asPublic: Uint8Array,
-  salt: Uint8Array,
+  plain: Bytes,
+  uaPublic: Bytes,
+  auth: Bytes,
+  asPrivate: Bytes,
+  asPublic: Bytes,
+  salt: Bytes,
 ) {
   const ecdh = new Uint8Array(
     await subtle.deriveBits(
@@ -88,12 +83,7 @@ async function encrypt(
   return concat(salt, rs, new Uint8Array([asPublic.length]), asPublic, sealed);
 }
 
-async function decrypt(
-  body: Uint8Array,
-  uaPrivate: Uint8Array,
-  uaPublic: Uint8Array,
-  auth: Uint8Array,
-) {
+async function decrypt(body: Bytes, uaPrivate: Bytes, uaPublic: Bytes, auth: Bytes) {
   const salt = body.slice(0, 16);
   const idLength = body[20] as number;
   const asPublic = body.slice(21, 21 + idLength);
@@ -266,14 +256,14 @@ describe("the Web Push channel", () => {
     ]);
     const p256dh = Buffer.from(await subtle.exportKey("raw", ua.publicKey)).toString("base64url");
     const auth = Buffer.alloc(16, 2).toString("base64url");
-    answers.forEach((_, i) =>
+    for (const i of answers.keys()) {
       subscriptions.upsert(
         { endpoint: `https://push.example.test/${i}`, p256dh, auth },
         `device-${i}`,
         `Phone ${i}`,
         i,
-      ),
-    );
+      );
+    }
     const calls: { url: string; headers: Record<string, string> }[] = [];
     const slept: number[] = [];
     const lines: string[] = [];
