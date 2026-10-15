@@ -8,14 +8,7 @@
       "Read(/.env.*.local)",
       "Read(/.env.production)",
       "Read(/data/**)",
-      "Edit(/data/**)",
-      "Bash(git push * main)",
-      "Bash(git push * main *)",
-      "Bash(git push * *:main)",
-      "Bash(git push * *:main *)",
-      "Bash(git push * +main*)",
-      "Bash(git push * refs/heads/main)",
-      "Bash(git push * *:refs/heads/main)"
+      "Edit(/data/**)"
     ],
     "ask": ["Bash(git push *)", "Bash(git reset --hard *)", "Bash(git rebase *)"]
   },

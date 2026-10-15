@@ -202,7 +202,7 @@ function bashRuleMatches(rule: string, command: string): boolean {
   return new RegExp(`^${source}$`).test(command);
 }
 
-test("Claude Code refuses pushes to main and asks before any other push", () => {
+test("every push asks the owner, main included, and none is refused outright", () => {
   const settings = JSON.parse(
     readFileSync(join(import.meta.dir, "../../.claude/settings.json"), "utf8"),
   );
@@ -210,27 +210,17 @@ test("Claude Code refuses pushes to main and asks before any other push", () => 
     (settings.permissions.deny as string[]).some((rule) => bashRuleMatches(rule, command));
   const asked = (command: string) =>
     (settings.permissions.ask as string[]).some((rule) => bashRuleMatches(rule, command));
+  // Small changes ship straight to main; the push prompt is the gate (M7 shipping rule).
   for (const command of [
+    "git push",
     "git push origin main",
     "git push -u origin main",
-    "git push origin main --force",
     "git push origin HEAD:main",
-    "git push origin m6-anywhere:main",
-    "git push origin +main",
-    "git push origin +HEAD:main",
     "git push --force origin HEAD:main",
-    "git push origin refs/heads/main",
-    "git push origin HEAD:refs/heads/main",
-  ]) {
-    expect({ command, denied: denied(command) }).toEqual({ command, denied: true });
-  }
-  for (const command of [
-    "git push -u origin m6-anywhere",
+    "git push -u origin m7-flows",
     "git push origin claude/fix-main-label",
-    "git push origin main-fix",
-    "git push origin HEAD:mainline",
-    "git push --force origin m6-anywhere",
-    "git push -f origin m6-anywhere",
+    "git push --force origin m7-flows",
+    "git push -f origin m7-flows",
   ]) {
     expect({ command, denied: denied(command), asked: asked(command) }).toEqual({
       command,
