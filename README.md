@@ -68,6 +68,15 @@ Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each w
 - **Act from the notification:** Done and Snooze 1h open the Cave and apply there; in Telegram the buttons work in the chat, and `/remind`, `/due` and `/help` work too.
 - Setup: `docs/hosting.md` step 12.
 
+## Flows
+
+- **`/flows`** (Flows in the sidebar): automations as a trigger and steps, drawn top to bottom. A trigger is a schedule, an item added, or a field changed; steps are `if`, create an item, change the trigger item, and notify.
+- **Edit with forms** built from the same registry that validates flows and gives agents their schema. Text can use `{{item.amount|pct:20}}`, `{{today}}` and the like from a picker.
+- **Test run** shows what each step would do against now or the newest matching item, and writes and sends nothing. **Run history** keeps the last 20 runs; anything a run wrote links to the item and has Undo.
+- **Two drafts to start from:** "Rent reminder" and "Salary → save". Set the real day and amounts, then Turn on.
+- **Agents build flows** through `save_flow`. One that changes existing items waits for your Approve (Flows page, Agents page, or Telegram if you allow it); see `docs/agents.md`.
+- The calendar shows each scheduled flow's next run.
+
 ## Hosting
 
 The Cave can run on a VPS as the server every device syncs with. Today that is a Hostinger KVM 2 on Ubuntu 26.04, at `https://cave.alexjamesmx.dev`, behind Caddy. The laptop and the phone become clients.
