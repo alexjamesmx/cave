@@ -5,16 +5,16 @@ import web from "../web/index.html";
 import { createCallLog } from "./agent-calls.ts";
 import { createAgentRegistry } from "./agents.ts";
 import { serveCave } from "./app.ts";
-import { backupIfDue } from "./backup.ts";
 import { resolveConfig } from "./config.ts";
 import { openDb } from "./db.ts";
 import { formatReport, importIfEmpty, importVault, newNotes } from "./import/importer.ts";
+import { createBackupJob } from "./jobs/backup-job.ts";
+import { createScheduler } from "./jobs/scheduler.ts";
 import { acquireLock, lockPathOf, releaseLock } from "./lock.ts";
+import { createNotificationSystem } from "./notify/system.ts";
 import { migrateSeed } from "./seed-migrations.ts";
 import { createStore } from "./store.ts";
 import { buildServiceWorker } from "./sw.ts";
-
-const BACKUP_CHECK_MS = 60 * 60 * 1000;
 
 const production = process.argv.includes("--production");
 const config = resolveConfig(process.env, { production });
@@ -32,6 +32,9 @@ const {
   publicOrigin,
   backupDir,
   deployStatusPath,
+  push,
+  telegramToken,
+  discordWebhook,
 } = config.value;
 
 if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
@@ -66,17 +69,20 @@ if (vaultPath) {
   if (newVaultNotes > 0) console.log(`Vault has ${newVaultNotes} new notes: run bun run import`);
 }
 
-const backUp = () => {
-  try {
-    const result = backupIfDue(db, backupDir, Date.now());
-    if (result?.ok) console.log(`Backup ${result.file}: integrity ok, ${result.docs} docs`);
-    else if (result) console.error(`Backup failed: ${result.error}`);
-  } catch (error) {
-    console.error(`Backup failed: ${(error as Error).message}`);
-  }
-};
-backUp();
-setInterval(backUp, BACKUP_CHECK_MS);
+// Links in messages point at the address the owner opens: the public origin behind Caddy.
+const origin =
+  publicOrigin ?? `http://${hostname.includes(":") ? `[${hostname}]` : hostname}:${port}`;
+const notifications = createNotificationSystem({
+  db,
+  store,
+  now: Date.now,
+  origin,
+  push,
+  telegramToken,
+  discordWebhook,
+  production,
+});
+if (!push) console.log("Web Push is off: no VAPID keys (bun run push-keys)");
 
 const { version } = (await Bun.file(new URL("../package.json", import.meta.url)).json()) as {
   version: string;
@@ -107,6 +113,14 @@ const server = serveCave({
     newVaultNotes: () => newVaultNotes,
     ...(deployStatusPath ? { deployStatusPath } : {}),
   },
+  notifications: notifications.routes,
   development: !production,
 });
 console.log(`Cave server listening on ${server.url}${production ? "" : " (development)"}`);
+
+// One loop for every server job; the backup check moved here from its own timer.
+createScheduler({
+  jobs: [...notifications.jobs, createBackupJob(db, backupDir)],
+  db,
+  now: Date.now,
+}).start();

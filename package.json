@@ -15,7 +15,8 @@
     "restore": "bun run server/restore-cli.ts",
     "export": "bun run server/export-cli.ts",
     "deploy": "bun run server/ops/deploy-cli.ts",
-    "pull-backups": "bun run server/ops/pull-backups-cli.ts"
+    "pull-backups": "bun run server/ops/pull-backups-cli.ts",
+    "push-keys": "bun run server/push-keys-cli.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",

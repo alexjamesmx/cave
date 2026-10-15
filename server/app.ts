@@ -6,6 +6,7 @@ import { carriesAgentToken, isAuthorized } from "./auth.ts";
 import { exportHandler } from "./export.ts";
 import { createHistoryHandler } from "./history.ts";
 import { createMcpRoute } from "./mcp/route.ts";
+import type { NotificationRoutes } from "./notify/api.ts";
 import { activityHandler, agentsHandler, type StatusOptions, statusHandler } from "./owner-api.ts";
 import { guardRequest, LOOPBACK_HOSTS } from "./request-guard.ts";
 import { staticRoutes } from "./static.ts";
@@ -36,6 +37,8 @@ export interface AppOptions {
   publicOrigin?: string;
   /** `/api/status`; absent means it is not served. */
   status?: StatusOptions;
+  /** Push, channel tests and Telegram linking; absent means they are not served. */
+  notifications?: NotificationRoutes;
   /** `false` serves minified, cached bundles; Bun's default follows `NODE_ENV`. */
   development?: boolean;
 }
@@ -55,6 +58,7 @@ export function serveCave({
   allowedHosts = LOOPBACK_HOSTS,
   publicOrigin,
   status,
+  notifications,
   development,
 }: AppOptions) {
   const notFound = Response.json({ error: "not found" }, { status: 404 });
@@ -89,6 +93,9 @@ export function serveCave({
   const agentList = agents ? owner(agentsHandler(agents.registry, agents.calls)) : guarded(missing);
   const activity = agents ? owner(activityHandler(store, agents.calls)) : guarded(missing);
   const statusRoute = status ? owner(statusHandler(store, status)) : guarded(missing);
+  const n = notifications;
+  const notify = (pick: (routes: NotificationRoutes) => Handler): Handler =>
+    n ? owner(pick(n)) : guarded(missing);
   return Bun.serve({
     hostname,
     port,
@@ -104,6 +111,14 @@ export function serveCave({
       "/api/activity": { GET: activity },
       "/api/status": { GET: statusRoute },
       "/api/export": { GET: owner(exportHandler(store, now)) },
+      "/api/push": { GET: notify((r) => (req) => r.push(req)) },
+      "/api/push/subscribe": { POST: notify((r) => (req) => r.subscribe(req)) },
+      "/api/push/unsubscribe": { POST: notify((r) => (req) => r.unsubscribe(req)) },
+      "/api/push/test": { POST: notify((r) => (req) => r.pushTest(req)) },
+      "/api/notifications": { GET: notify((r) => () => r.notifications()) },
+      "/api/notifications/test": { POST: notify((r) => (req) => r.channelTest(req)) },
+      "/api/telegram/link": { POST: notify((r) => () => r.telegramLink()) },
+      "/api/telegram/unlink": { POST: notify((r) => () => r.telegramUnlink()) },
       "/api/*": guarded(missing),
       ...staticRoutes,
       "/sw.js": serviceWorker ?? notFound,
