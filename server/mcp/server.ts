@@ -9,6 +9,7 @@ import type { Agent } from "../agents.ts";
 import type { Store } from "../store.ts";
 import { listFlows, MAX_ON_FLOWS, MAX_SAVES_PER_DAY, saveFlow } from "./flows.ts";
 import { addNote } from "./note.ts";
+import { getProject } from "./project.ts";
 import {
   getItem,
   listCollections,
@@ -139,6 +140,16 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
         annotations: READ,
       },
       (args) => run("money_month", args, () => moneyMonth(store, agent, args.month, deps.now())),
+    );
+    server.registerTool(
+      "get_project",
+      {
+        description:
+          "Get one project (an item in projects): its data, its parts as a tree, its open tasks, and per collection how many items point at it (their `project` field) with the latest 20. Items link to a project through a `project` ref field holding its id; query with where {project: id} for more.",
+        inputSchema: z.object({ id: z.string() }),
+        annotations: READ,
+      },
+      (args) => run("get_project", args, () => getProject(store, agent, args.id)),
     );
     server.registerTool(
       "list_flows",

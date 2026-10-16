@@ -22,6 +22,8 @@ export type PageId =
   | "calendar-agenda"
   | "review"
   | "projects-all"
+  | "projects-ideas"
+  | "project"
   | "agents"
   | "flows"
   | "ai-overview"
@@ -109,8 +111,13 @@ export const SECTIONS: Section[] = [
     icon: "rocket",
     color: "var(--purple)",
     path: "/projects",
-    tabs: [page("all", "All", "projects-all"), view("ideas", "Ideas", "ideas")],
-    owns: ["projects", "ideas", "leetcode"],
+    tabs: [
+      page("all", "All", "projects-all"),
+      page("ideas", "Ideas", "projects-ideas"),
+      // One project's page, at `/projects/<id>/<tab>`; pinned ones also show as tabs.
+      page("project", "Project", "project", true),
+    ],
+    owns: ["projects", "ideas", "leetcode", "parts"],
   },
   {
     id: "life",

@@ -55,6 +55,10 @@ function check(field: Field, value: unknown): string | undefined {
       const parsed = parseDefinition(value);
       return parsed.ok ? undefined : `is not a valid flow: ${parsed.error}`;
     }
+    case "ref":
+      return typeof value === "string" && /^[A-Za-z0-9_.:-]{1,64}$/.test(value)
+        ? undefined
+        : "must be an item id";
     case "select":
       return field.options?.some((o) => o.value === value)
         ? undefined
@@ -69,6 +73,21 @@ export interface ValidateOptions {
    * syncs (and shows greyed out) instead of blocking every later push of that item.
    */
   selectMembership?: boolean;
+  /**
+   * Looks up a `ref` field's target. Device and agent writes pass it, so a ref must point at
+   * a live item of the field's collection; sync doesn't, as with select membership.
+   */
+  refTarget?: (id: string) => Doc | undefined;
+}
+
+/** Why a ref's target doesn't do, or `undefined` when it does. */
+function refError(field: Field, target: Doc | undefined): string | undefined {
+  const collection = field.config?.collection;
+  if (target?.kind !== "item") return `points to no item in ${collection}`;
+  if (target.collection !== collection)
+    return `points to an item in ${target.collection}, not ${collection}`;
+  if (target.data._deleted === true) return "points to a deleted item";
+  return undefined;
 }
 
 /**
@@ -79,7 +98,7 @@ export interface ValidateOptions {
 export function validateFields(
   fields: readonly Field[],
   data: Record<string, unknown>,
-  { selectMembership = true }: ValidateOptions = {},
+  { selectMembership = true, refTarget }: ValidateOptions = {},
 ): FieldError[] {
   const errors: FieldError[] = [];
   for (const field of activeFields(fields)) {
@@ -90,7 +109,9 @@ export function validateFields(
       if (typeof value !== "string") errors.push({ key: field.id, error: "must be a string" });
       continue;
     }
-    const error = check(field, value);
+    const error =
+      check(field, value) ??
+      (field.type === "ref" && refTarget ? refError(field, refTarget(value as string)) : undefined);
     if (error) errors.push({ key: field.id, error });
   }
   return errors;

@@ -1355,3 +1355,21 @@ a.btn {
   color: var(--text-strong);
   border-bottom-color: var(--lime);
 }
+
+.project-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.project-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.project-card:hover {
+  border-color: var(--lime);
+}

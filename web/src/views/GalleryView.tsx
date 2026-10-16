@@ -7,7 +7,7 @@ import type { ViewProps } from "./types.ts";
 const excerpt = (body: unknown) =>
   typeof body === "string" ? body.replace(/[#*_>`-]/g, "").slice(0, 220) : "";
 
-export function GalleryView({ collection, view, items, open }: ViewProps) {
+export function GalleryView({ collection, view, items, open, preset }: ViewProps) {
   const { fields } = collection.data;
   const cards = useMemo(
     () => defaultSort(applyFilter(items, readFilter(view.config)), fields),
@@ -17,7 +17,7 @@ export function GalleryView({ collection, view, items, open }: ViewProps) {
 
   return (
     <>
-      <NewItem collection={collection.id} onCreated={open} />
+      <NewItem collection={collection.id} {...(preset ? { preset } : {})} onCreated={open} />
       <div className="gallery">
         {cards.map((doc) => (
           <button key={doc.id} type="button" className="panel card" onClick={() => open(doc.id)}>

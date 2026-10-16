@@ -18,7 +18,9 @@ export function createFlowWriter(store: Store, flowId: string, now: () => number
     const target = store.get(collection);
     if (target?.kind !== "collection" || target.data._deleted === true)
       return `collection ${collection} not found`;
-    const errors = validateFields(activeFields(fieldsOf(target)), data);
+    const errors = validateFields(activeFields(fieldsOf(target)), data, {
+      refTarget: (id) => store.get(id),
+    });
     return errors.length > 0 ? formatFieldErrors(errors) : undefined;
   }
 

@@ -5,6 +5,13 @@ import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { PAYMENTS, PAYMENTS_COLLECTION, TASK_FIELDS } from "./payments.ts";
+import { DEFAULT_TEMPLATES, PARTS, PARTS_COLLECTION } from "./projects.ts";
+import {
+  LEETCODE_PROJECT,
+  LEETCODE_PROJECT_DATA,
+  projectsMigration,
+  withProjectFields,
+} from "./projects-seed.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
 import type { Doc, Kind } from "./types.ts";
@@ -280,7 +287,11 @@ export interface SeedMigration {
    * Docs computed from what the database holds now, for changes that must merge with the
    * owner's edits (a field's options) rather than replace them.
    */
-  update?: (get: (id: string) => Doc | undefined) => SeedMigration["docs"];
+  update?: (
+    get: (id: string) => Doc | undefined,
+    items: (collection: string) => Doc[],
+    now: string,
+  ) => SeedMigration["docs"];
 }
 
 /**
@@ -348,6 +359,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 7, docs: [], update: repeatingTasksAndPayments },
   // M7b part 8: the AI collection, empty until `bun run ai-sync` fills it.
   { version: 8, docs: [{ id: AI, kind: "collection", data: AI_COLLECTION }] },
+  // M8 part 2: project refs, parts, templates, and the LeetCode and Cave projects.
+  { version: 9, docs: [], update: projectsMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -356,6 +369,7 @@ export const SEED_VERSION = Math.max(1, ...SEED_MIGRATIONS.map((m) => m.version)
 // Reminders and the daily brief resolve local date-times through this timezone.
 const SETTINGS = {
   timezone: "America/Mexico_City",
+  projectTemplates: DEFAULT_TEMPLATES,
   ...REMINDER_DEFAULTS,
   ...NOTIFICATION_DEFAULTS,
   seedVersion: SEED_VERSION,
@@ -376,13 +390,31 @@ const seeded = (
 });
 
 /** Seed collections and settings stamped at time 0, so any edit from a device wins. */
+/** A collection as a fresh seed has it: with the M8 project fields. */
+const withProjects = (id: string, data: CollectionData): CollectionData => ({
+  ...data,
+  fields: withProjectFields(id, data.fields),
+});
+
 export function seedDocs(): Doc[] {
   return [
-    ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
+    ...Object.entries(COLLECTIONS).map(([id, data]) =>
+      seeded(id, "collection", withProjects(id, data)),
+    ),
     seeded("proposals", "collection", PROPOSALS),
-    seeded(PAYMENTS, "collection", PAYMENTS_COLLECTION),
+    seeded(PAYMENTS, "collection", withProjects(PAYMENTS, PAYMENTS_COLLECTION)),
     seeded(AI, "collection", AI_COLLECTION),
-    ...FLOW_DOCS.map((d) => seeded(d.id, d.kind, d.data, d.collection ?? null)),
+    seeded(PARTS, "collection", PARTS_COLLECTION),
+    // LeetCode is a project from the start, so its old link always has somewhere to go.
+    seeded(LEETCODE_PROJECT, "item", LEETCODE_PROJECT_DATA, "projects"),
+    ...FLOW_DOCS.map((d) =>
+      seeded(
+        d.id,
+        d.kind,
+        d.id === FLOWS ? withProjects(FLOWS, d.data as unknown as CollectionData) : d.data,
+        d.collection ?? null,
+      ),
+    ),
     seeded("settings", "setting", SETTINGS),
   ];
 }

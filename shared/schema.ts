@@ -8,6 +8,8 @@ export const FIELD_TYPES = [
   "url",
   // A structured value checked by a named schema; it merges as one unit (M7 flows).
   "json",
+  // An item id in another collection (M8): a task's project, a part's parent.
+  "ref",
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
@@ -58,10 +60,13 @@ export interface FieldConfig {
   withTime?: boolean;
   /** For `json` fields: the schema the value must pass. Only `flow` exists. */
   schema?: "flow";
+  /** For `ref` fields: the collection the target lives in. */
+  collection?: string;
 }
 
 /** Field types the owner can add from the field editor; `json` only comes from the seed. */
-export const EDITABLE_FIELD_TYPES = FIELD_TYPES.filter((t) => t !== "json");
+// A ref needs its target collection chosen; the seed sets those up, not the field editor.
+export const EDITABLE_FIELD_TYPES = FIELD_TYPES.filter((t) => t !== "json" && t !== "ref");
 
 export interface View {
   id: string;

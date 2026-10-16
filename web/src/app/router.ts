@@ -27,6 +27,8 @@ export function redirectOf(pathname: string): string | undefined {
   if (first !== "c" || !second) return undefined;
   const collection = second;
   const view = third;
+  // LeetCode is a project now (M8 part 2): its items live on that project's Items tab.
+  if (collection === "leetcode") return "/projects/proj-leetcode/items";
   const owner = ownerOf(collection);
   const tabs = owner?.tabs.filter((t) => t.kind === "view" && t.collection === collection) ?? [];
   const tab = view
@@ -34,6 +36,7 @@ export function redirectOf(pathname: string): string | undefined {
     : (tabs.find((t) => t.kind === "view" && t.view === undefined) ?? tabs[0]);
   if (owner && tab) return tabPath(owner, tab);
   if (collection === "projects") return "/projects";
+  if (collection === "ideas") return "/projects/ideas";
   if (collection === "flows") return "/ai/flows";
   if (collection === "ai") return "/ai/setup";
   return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);
@@ -47,6 +50,9 @@ export function parseRoute(pathname: string): Route {
   if (p[0] === "r" && p[1] && p.length === 2) return { name: "reminder", id: p[1] };
   const section = sectionById(p[0] as string);
   if (!section || section.id === "home") return { name: "not-found" };
+  // `/projects/<id>/<tab>`: anything after Projects that is not a tab is a project.
+  if (section.id === "projects" && p[1] && !section.tabs.some((t) => t.id === p[1]))
+    return { name: "section", section: "projects", tab: "project", rest: p.slice(1) };
   // An unknown tab falls back to the section's first.
   const tab = section.tabs.find((t) => t.id === p[1]) ?? (section.tabs[0] as Tab);
   const rest = section.tabs.some((t) => t.id === p[1]) ? p.slice(2) : [];
@@ -58,6 +64,9 @@ export const collectionPath = (collection: string, view?: string) => {
   const old = `/c/${encodeURIComponent(collection)}${view ? `/${encodeURIComponent(view)}` : ""}`;
   return redirectOf(old) ?? old;
 };
+
+export const projectPath = (id: string, tab?: string) =>
+  tab ? enc("projects", id, tab) : enc("projects", id);
 
 export const flowPath = (id?: string) => (id ? enc("ai", "flows", id) : "/ai/flows");
 

@@ -85,11 +85,19 @@ export class LocalStore {
     const doc = await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
       await this.loadSharedClock();
       if (target.kind === "item" && target.collection) {
-        const errors = validateFields(
-          fieldsOf(await db.docs.get(target.collection)),
-          patch,
-          options,
-        );
+        const fields = fieldsOf(await db.docs.get(target.collection));
+        // Refs are checked against this device's copy: the targets are read up front.
+        const targets = new Map<string, Doc>();
+        for (const f of fields) {
+          const id = patch[f.id];
+          if (f.type !== "ref" || typeof id !== "string") continue;
+          const found = await db.docs.get(id);
+          if (found) targets.set(id, found);
+        }
+        const errors = validateFields(fields, patch, {
+          refTarget: (id) => targets.get(id),
+          ...options,
+        });
         if (errors.length > 0) throw new FieldValueError(errors);
       }
       const local = await db.docs.get(target.id);

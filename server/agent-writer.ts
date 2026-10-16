@@ -251,7 +251,7 @@ export class AgentWriter {
       }
       data._body = patch.body;
     }
-    const errors = validateFields(active, data);
+    const errors = validateFields(active, data, { refTarget: (id) => this.store.get(id) });
     if (errors.length > 0) return fail(formatFieldErrors(errors));
     return { ok: true, value: data };
   }

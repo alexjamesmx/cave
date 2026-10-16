@@ -1,11 +1,14 @@
 import { type ComponentType, useCallback, useState } from "react";
+import { linkedTo } from "../../../shared/projects.ts";
 import type { ViewType } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
+import { useSearch } from "../app/router.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { FieldEditor } from "../ui/FieldEditor.tsx";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { ProjectFilter, projectFilterOf } from "../ui/ProjectFilter.tsx";
 import { BoardView } from "../views/BoardView.tsx";
 import { CalendarView } from "../views/CalendarView.tsx";
 import { GalleryView } from "../views/GalleryView.tsx";
@@ -31,11 +34,24 @@ const VIEWS: Record<ViewType, ComponentType<ViewProps>> = {
   payments: PaymentsView,
 };
 
-/** One view of a collection, with the item drawer: what a section's tab shows. */
-export function CollectionView({ id, viewId }: { id: string; viewId: string | undefined }) {
+/**
+ * One view of a collection, with the item drawer: what a section's tab shows. `project`
+ * scopes it to one project (a project's Board and Items); without it, a collection with a
+ * project field gets a project filter kept in the URL.
+ */
+export function CollectionView({
+  id,
+  viewId,
+  project,
+}: {
+  id: string;
+  viewId: string | undefined;
+  project?: string;
+}) {
   const { db } = useCave().local;
   const collections = useCollections(db);
   const items = useItems(db, id);
+  const search = useSearch();
   const [open, setOpen] = useState<string>();
   const show = useCallback((item: string) => setOpen(item), []);
   const close = useCallback(() => setOpen(undefined), []);
@@ -46,10 +62,21 @@ export function CollectionView({ id, viewId }: { id: string; viewId: string | un
   const collection = withActiveFields(stored);
   const view = collection.data.views.find((v) => v.id === viewId) ?? collection.data.views[0];
   const View = view ? VIEWS[view.type] : undefined;
+  const linkable = collection.data.fields.some((f) => f.id === "project" && f.type === "ref");
+  const filter = project ?? (linkable ? projectFilterOf(search) : undefined);
+  const shown = filter && items ? linkedTo(items, filter) : items;
   return (
     <>
-      {view && View && items && (
-        <View key={view.id} collection={collection} view={view} items={items} open={show} />
+      {linkable && project === undefined && <ProjectFilter value={filter} />}
+      {view && View && shown && (
+        <View
+          key={view.id}
+          collection={collection}
+          view={view}
+          items={shown}
+          open={show}
+          {...(filter ? { preset: { project: filter } } : {})}
+        />
       )}
       {open && <ItemDrawer key={open} collection={collection} id={open} onClose={close} />}
     </>

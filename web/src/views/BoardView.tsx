@@ -14,7 +14,7 @@ import type { ViewProps } from "./types.ts";
 // `data-column` can't hold null; the "no value" column uses this instead.
 const NONE = "";
 
-export function BoardView({ collection, view, items, open }: ViewProps) {
+export function BoardView({ collection, view, items, open, preset }: ViewProps) {
   const { fields } = collection.data;
   const field = fields.find((f) => f.id === view.config.groupBy && f.type === "select");
   const saver = useSaver(collection.id);
@@ -48,7 +48,12 @@ export function BoardView({ collection, view, items, open }: ViewProps) {
   const { drag, handlers } = useCardDrag((id, target) => move(id, target.column, target.index));
 
   if (!field) return <p className="muted">This board needs a select field to group by.</p>;
-  const shownFields = fields.filter((f) => f.id !== field.id).slice(0, 2);
+  const shownFields = fields.filter((f) => f.id !== field.id && f.type !== "ref").slice(0, 2);
+  // A card names its project, unless the board shows one project only.
+  const projectField =
+    preset?.project === undefined
+      ? fields.find((f) => f.id === "project" && f.type === "ref")
+      : undefined;
   const first = field.options?.[0]?.value;
 
   // Left and right move a focused card to the end of the next column.
@@ -75,7 +80,7 @@ export function BoardView({ collection, view, items, open }: ViewProps) {
           <div style={{ flex: "1 1 280px", maxWidth: 480 }}>
             <NewItem
               collection={collection.id}
-              preset={{ [field.id]: first }}
+              preset={{ ...preset, [field.id]: first }}
               placeholder={isTasks ? "New task" : "New item"}
               onCreated={() => setAdding(false)}
             />
@@ -135,6 +140,11 @@ export function BoardView({ collection, view, items, open }: ViewProps) {
                         doc.data[f.id] === undefined ? null : (
                           <FieldValue key={f.id} field={f} value={doc.data[f.id]} />
                         ),
+                      )}
+                      {projectField && typeof doc.data.project === "string" && (
+                        <span className="chip">
+                          <FieldValue field={projectField} value={doc.data.project} />
+                        </span>
                       )}
                     </span>
                   </button>

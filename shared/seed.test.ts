@@ -28,6 +28,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       "leetcode",
       "ai",
       "money",
+      "parts",
       "payments",
       "projects",
       "proposals",
@@ -60,12 +61,12 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     ["flow-salary", "draft"],
   ]);
   for (const d of drafts) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(15);
+  expect(docs).toHaveLength(17);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {
   for (const doc of docs) {
-    expect(doc.collection).toBe(doc.kind === "item" ? "flows" : null);
+    if (doc.kind !== "item") expect(doc.collection).toBeNull();
     expect(Object.keys(doc.stamps).sort()).toEqual(Object.keys(doc.data).sort());
     expect(Object.values(doc.stamps).every((s) => s === SEED_STAMP)).toBe(true);
   }

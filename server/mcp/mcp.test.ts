@@ -161,6 +161,7 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "query",
     "get",
     "money_month",
+    "get_project",
     "list_flows",
     "create",
     "update",
@@ -174,6 +175,7 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "query",
     "get",
     "money_month",
+    "get_project",
     "list_flows",
   ]);
   const tools = (await (await connect("reader")).listTools()).tools;
@@ -190,6 +192,59 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     ["save_flow", true],
     ["add_note", false],
   ]);
+});
+
+test("get_project: parts as a tree, open tasks and linked items; refs are checked", async () => {
+  const client = await connect("claude");
+  const created = async (collection: string, title: string, fields: Record<string, unknown>) => {
+    const r = await call(client, "create", { collection, title, fields });
+    expect([textOf(r), r.isError]).toEqual([expect.any(String), undefined]);
+    return (r.structuredContent as { id: string }).id;
+  };
+  const project = await created("projects", "Garden", { status: "active", template: "generic" });
+  const bed = await created("parts", "Beds", { project, status: "active", order: 1 });
+  await created("parts", "Soil", { project, parent: bed, status: "planned" });
+  await created("tasks", "Buy seeds", { project, part: bed, status: "todo" });
+  await created("tasks", "Old task", { project, status: "done" });
+  await created("ideas", "Raised beds", { project });
+
+  const bad = await call(client, "create", {
+    collection: "tasks",
+    title: "x",
+    fields: { project: bed },
+  });
+  expect(textOf(bad)).toContain(`points to an item in parts, not projects`);
+  expect(
+    textOf(
+      await call(client, "create", {
+        collection: "tasks",
+        title: "x",
+        fields: { project: "nope" },
+      }),
+    ),
+  ).toContain("points to no item in projects");
+
+  const got = (await call(client, "get_project", { id: project })).structuredContent as {
+    project: { title: string };
+    parts: { title: string; children: { title: string }[] }[];
+    openTasks: { title: string }[];
+    items: Record<string, { count: number }>;
+    runs: unknown[];
+  };
+  expect(got.project.title).toBe("Garden");
+  expect(got.parts.map((p) => [p.title, p.children.map((c) => c.title)])).toEqual([
+    ["Beds", ["Soil"]],
+  ]);
+  expect(got.openTasks.map((t) => t.title)).toEqual(["Buy seeds"]);
+  expect(Object.fromEntries(Object.entries(got.items).map(([c, v]) => [c, v.count]))).toEqual({
+    ideas: 1,
+    tasks: 2,
+  });
+  expect(got.runs).toEqual([]);
+  expect(textOf(await call(client, "get_project", { id: bed }))).toBe(`project ${bed} not found`);
+  expect(textOf(await call(await connect("money-only"), "get_project", { id: project }))).toBe(
+    `project ${project} not found`,
+  );
 });
 
 test("the allowlist hides collections everywhere", async () => {

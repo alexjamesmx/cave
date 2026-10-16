@@ -13,7 +13,7 @@ bun run agent revoke codex
 
 - The token (`cave_…`) is printed once. Only its SHA-256 is stored, so it can't be shown again. A lost token means revoking the agent and adding a new one.
 - Scopes:
-  - `read`: `list_collections`, `query`, `get`, `money_month`, `list_flows`.
+  - `read`: `list_collections`, `query`, `get`, `money_month`, `get_project`, `list_flows`.
   - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, and `add_note` (only when `VAULT_PATH` is set).
 - `--collections` limits what the agent can see. Other collections don't appear in its lists, and anything in them answers "not found".
 - Keep the token in an environment variable, `CAVE_AGENT_TOKEN` below. Never put it in a committed file.
@@ -28,6 +28,7 @@ bun run agent revoke codex
 - **Payments:** the `payments` collection holds what the owner pays on a date (subscriptions, cards, bills, loans). `mark_paid` logs the expense (title, category and account from the payment) and moves the payment to its next date; a one-off one becomes inactive. A payment with `approx: true` (a card statement) needs `amount`: ask the owner, never guess it.
 - **Money categories:** each option has a `kind` (`expense`, `income`, `transfer`); use one that fits the direction. Transfers count as neither spending nor income.
 - **The `ai` collection:** the owner's AI rules, skills, MCP servers, plugins and memory, from `bun run ai-sync`, with secrets replaced by `‹redacted›`. Agents may read them and improve them with `update` (the `_body`); the owner's `ai-sync --apply` writes an edit back to its file after confirming it, and never writes a body that holds `‹redacted›`. Never put a secret in an item.
+- **Projects:** items point at a project (an item in `projects`) through a `ref` field, `project`, holding its id; tasks also have `part` (an item in `parts`). A ref must name a live item of its collection, or the write is refused. `get_project` returns the project, its parts as a tree, its open tasks and per collection the count and latest 20 linked items; `query` with `where: { project: "<id>" }` lists more.
 - **Flows:** only through `save_flow` and `list_flows`. `create` and `update` can't reach the `flows` collection. See "Flows" below.
 - **Notes:** `add_note` only creates new files under `Inbox/` in the vault. It never changes an existing note.
 

@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { collectionPath, flowPath, parseRoute, redirectOf, shortcutPath } from "./router.ts";
+import {
+  collectionPath,
+  flowPath,
+  parseRoute,
+  projectPath,
+  redirectOf,
+  shortcutPath,
+} from "./router.ts";
 
 const section = (s: string, tab: string, rest: string[] = []) => ({
   name: "section" as const,
@@ -40,6 +47,8 @@ test("every old path redirects to its new home", () => {
     ["/c/tasks/table", "/tasks/list"],
     ["/c/ideas", "/projects/ideas"],
     ["/c/projects", "/projects"],
+    ["/c/leetcode", "/projects/proj-leetcode/items"],
+    ["/c/leetcode/table", "/projects/proj-leetcode/items"],
     ["/c/flows", "/ai/flows"],
     ["/c/ai", "/ai/setup"],
     ["/c/proposals", "/settings/data/proposals"],
@@ -56,6 +65,22 @@ test("every old path redirects to its new home", () => {
   }
   for (const current of ["/", "/money/overview", "/ai/setup", "/r/x", "/calendar"])
     expect(redirectOf(current)).toBeUndefined();
+});
+
+test("anything after Projects that is not a tab is a project's page", () => {
+  expect(parseRoute("/projects/proj-cave/board")).toEqual({
+    name: "section",
+    section: "projects",
+    tab: "project",
+    rest: ["proj-cave", "board"],
+  });
+  expect(parseRoute("/projects/ideas")).toEqual({
+    name: "section",
+    section: "projects",
+    tab: "ideas",
+    rest: [],
+  });
+  expect(projectPath("proj-cave", "items")).toBe("/projects/proj-cave/items");
 });
 
 test("links to a collection or a flow go straight to their new home", () => {
