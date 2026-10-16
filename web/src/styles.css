@@ -403,6 +403,7 @@ textarea.input {
   white-space: nowrap;
 }
 
+/* The board fills the page; columns scroll sideways rather than overlap (M7b). */
 .board {
   display: grid;
   grid-auto-flow: column;
@@ -410,12 +411,59 @@ textarea.input {
   gap: 12px;
   overflow-x: auto;
   align-items: start;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 4px;
 }
 
-.column {
+.board-column {
   padding: 12px;
   display: grid;
   gap: 8px;
+  align-content: start;
+  min-width: 0;
+  min-height: 120px;
+}
+
+.board-column.drop-here {
+  border-color: rgba(182, 255, 59, 0.45);
+}
+
+.board-card {
+  min-width: 0;
+  touch-action: pan-x pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.board-card.dragging {
+  position: relative;
+  z-index: 5;
+  opacity: 0.85;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.9);
+}
+
+.board-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.drop-line {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--lime);
+}
+
+@media (max-width: 760px) {
+  .board {
+    grid-auto-columns: 80%;
+    scroll-snap-type: x mandatory;
+  }
+
+  .board-column {
+    scroll-snap-align: start;
+  }
 }
 
 .card {
