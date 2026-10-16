@@ -43,6 +43,10 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             <Icon name="bot" size={17} />
             Agents
           </a>
+          <a href="/system" className={on(route.name === "system")}>
+            <Icon name="activity" size={17} color="var(--cyan)" />
+            System
+          </a>
           <a href="/settings" className={on(route.name === "settings")}>
             <Icon name="settings" size={17} />
             Settings

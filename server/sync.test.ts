@@ -350,3 +350,16 @@ describe("auth", () => {
     expect((await handle(request(body, { authorization: "Bearer s3cret" }))).status).toBe(200);
   });
 });
+
+test("every device that syncs is reported, pulls included, and a refused request is not", async () => {
+  const seen: [string, number][] = [];
+  handle = createSyncHandler({
+    store,
+    token: undefined,
+    now: () => NOW,
+    onSync: (id, at) => seen.push([id, at]),
+  });
+  await sync({ deviceId: "phone", cursor: 0, changes: [] });
+  expect((await handle(request("{"))).status).toBe(400);
+  expect(seen).toEqual([["phone", NOW]]);
+});

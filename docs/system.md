@@ -113,6 +113,7 @@ sequenceDiagram
 
 - **One job loop** runs the reminder sweep, scheduled flows, Telegram's long poll and the hourly backup check (`server/jobs/`).
 - **Flows** (`server/flows/`): scheduled ones run from that loop; item triggers run after the write that caused them commits (`Store.onApplied`). Each slot or change runs once (`flow_runs`), writes as `flow:<id>`, and never triggers another flow. Agents save flows through `save_flow`; one that changes existing items waits as `pending-approval`.
+- **`/system`** shows all of it: jobs and their runs, schedules for 7 days, flows, agents, devices, integrations and the notification log. `GET /api/system` (`server/system/report.ts`) answers with what only the server knows, by id, channel and key, never a secret; the rest comes from the device's copy.
 - **Channels sit behind one interface** (`server/notify/types.ts`): Web Push is the private default; Telegram is two-way for one linked chat; Discord is one-way. Each says what it needs ("needs keys", "needs linking", "webhook gone").
 - **Nothing is sent twice:** `notifications_sent` keeps every key; a snooze or the next repeat is a new key. A reminder more than 6 hours late after downtime is recorded as missed, not sent.
 - **No token in the service worker:** a notification's buttons open the app, which does the write.

@@ -10,11 +10,13 @@ export interface SyncHandlerOptions {
   /** When set, requests need `Authorization: Bearer <token>`. */
   token: string | undefined;
   now: () => number;
+  /** Told of every device that syncs, pulls included, for the system view. */
+  onSync?: (deviceId: string, at: number) => void;
 }
 
 const error = (status: number, message: string) => Response.json({ error: message }, { status });
 
-export function createSyncHandler({ store, token, now }: SyncHandlerOptions) {
+export function createSyncHandler({ store, token, now, onSync }: SyncHandlerOptions) {
   return async (req: Request): Promise<Response> => {
     if (token !== undefined && !isAuthorized(req, token)) return error(401, "unauthorized");
 
@@ -41,6 +43,7 @@ export function createSyncHandler({ store, token, now }: SyncHandlerOptions) {
     // No await between this check and the write, so nothing can change in between.
     const { accepted, rejected } = rejectInvalid(changes, store.get);
     store.applyChanges(accepted, `user:${deviceId}`, serverTime);
+    onSync?.(deviceId, serverTime);
     const page = store.changesSince(cursor, SYNC_PAGE_SIZE);
     const response: SyncResponse = {
       cursor: page.at(-1)?.seq ?? cursor,

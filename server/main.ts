@@ -16,6 +16,7 @@ import { createNotificationSystem } from "./notify/system.ts";
 import { migrateSeed } from "./seed-migrations.ts";
 import { createStore } from "./store.ts";
 import { buildServiceWorker } from "./sw.ts";
+import { createSystemReport } from "./system/report.ts";
 
 const production = process.argv.includes("--production");
 const config = resolveConfig(process.env, { production });
@@ -92,6 +93,15 @@ const { version } = (await Bun.file(new URL("../package.json", import.meta.url))
 const git = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: import.meta.dir });
 const commit = git.success ? git.stdout.toString().trim() : null;
 const serviceWorker = await buildServiceWorker();
+const registry = createAgentRegistry(db);
+const calls = createCallLog(db);
+// One loop for every server job; the backup check moved here from its own timer.
+const scheduler = createScheduler({
+  jobs: [...notifications.jobs, createBackupJob(db, backupDir)],
+  db,
+  now: Date.now,
+});
+const syncs = new Map<string, number>();
 const server = serveCave({
   hostname,
   port,
@@ -101,8 +111,8 @@ const server = serveCave({
   web,
   serviceWorker,
   agents: {
-    registry: createAgentRegistry(db),
-    calls: createCallLog(db),
+    registry,
+    calls,
     vaultPath,
   },
   allowedHosts,
@@ -116,13 +126,21 @@ const server = serveCave({
   },
   notifications: notifications.routes,
   flows: flowRoutes(notifications.flows),
+  system: createSystemReport({
+    db,
+    version,
+    commit,
+    backupDir,
+    deployStatusPath,
+    jobs: () => scheduler.status(),
+    notifier: notifications.notifier,
+    agents: registry,
+    syncs: () => syncs,
+    now: Date.now,
+  }),
+  onSync: (deviceId, at) => syncs.set(deviceId, at),
   development: !production,
 });
 console.log(`Cave server listening on ${server.url}${production ? "" : " (development)"}`);
 
-// One loop for every server job; the backup check moved here from its own timer.
-createScheduler({
-  jobs: [...notifications.jobs, createBackupJob(db, backupDir)],
-  db,
-  now: Date.now,
-}).start();
+scheduler.start();

@@ -13,6 +13,7 @@ import { guardRequest, LOOPBACK_HOSTS } from "./request-guard.ts";
 import { staticRoutes } from "./static.ts";
 import type { Store } from "./store.ts";
 import { createSyncHandler, MAX_BODY_BYTES } from "./sync.ts";
+import type { SystemReportFn } from "./system/report.ts";
 
 export interface AgentOptions {
   registry: AgentRegistry;
@@ -42,6 +43,10 @@ export interface AppOptions {
   notifications?: NotificationRoutes;
   /** Test runs and run history; absent means they are not served. */
   flows?: FlowRoutes;
+  /** `/api/system`; absent means it is not served. */
+  system?: SystemReportFn;
+  /** Told of each device that syncs; the system view lists them. */
+  onSync?: (deviceId: string, at: number) => void;
   /** `false` serves minified, cached bundles; Bun's default follows `NODE_ENV`. */
   development?: boolean;
 }
@@ -63,6 +68,8 @@ export function serveCave({
   status,
   notifications,
   flows,
+  system,
+  onSync,
   development,
 }: AppOptions) {
   const notFound = Response.json({ error: "not found" }, { status: 404 });
@@ -106,7 +113,9 @@ export function serveCave({
     ...(development === undefined ? {} : { development }),
     maxRequestBodySize: MAX_BODY_BYTES,
     routes: {
-      "/api/sync": { POST: owner(createSyncHandler({ store, token, now })) },
+      "/api/sync": {
+        POST: owner(createSyncHandler({ store, token, now, ...(onSync ? { onSync } : {}) })),
+      },
       "/api/history/:id": {
         GET: owner(createHistoryHandler({ store, token }) as Handler),
       },
@@ -123,6 +132,7 @@ export function serveCave({
       "/api/notifications/test": { POST: notify((r) => (req) => r.channelTest(req)) },
       "/api/telegram/link": { POST: notify((r) => () => r.telegramLink()) },
       "/api/telegram/unlink": { POST: notify((r) => () => r.telegramUnlink()) },
+      "/api/system": { GET: system ? owner(() => Response.json(system())) : guarded(missing) },
       "/api/flows/:id/test": { POST: flows ? owner((req) => flows.test(req)) : guarded(missing) },
       "/api/flows/:id/runs": { GET: flows ? owner((req) => flows.runs(req)) : guarded(missing) },
       "/api/*": guarded(missing),

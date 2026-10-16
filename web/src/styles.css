@@ -993,3 +993,44 @@ textarea.input {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* System (M7 Part D): tabs as links, rows that stack on a phone. */
+.system-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.system-tabs a {
+  padding: 7px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--control-border);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.system-tabs a[aria-current="page"] {
+  background: #161a21;
+  color: var(--text-strong);
+  border-color: #2a303b;
+}
+
+.system-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .system-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

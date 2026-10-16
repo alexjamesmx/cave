@@ -21,6 +21,14 @@ export function useItems(db: LocalDb, collection: string): Doc[] | undefined {
   );
 }
 
+/** Every live item, for counts across collections. */
+export function useAllItems(db: LocalDb): Doc[] | undefined {
+  return useLive(
+    async () => (await db.docs.where("kind").equals("item").toArray()).filter(live),
+    [db],
+  );
+}
+
 export function useDoc(db: LocalDb, id: string | undefined): Doc | undefined {
   return useLive(async () => (id ? db.docs.get(id) : undefined), [db, id]);
 }

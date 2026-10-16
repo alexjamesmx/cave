@@ -77,6 +77,14 @@ Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each w
 - **Agents build flows** through `save_flow`. One that changes existing items waits for your Approve (Flows page, Agents page, or Telegram if you allow it); see `docs/agents.md`.
 - The calendar shows each scheduled flow's next run.
 
+## The system view
+
+- **`/system`** (System in the sidebar): everything the Cave has and runs, on one page with tabs.
+  - **Overview:** items per collection and when each last changed, devices that synced in the last 30 days, the running commit and last deploy, the last backup, and each integration's status.
+  - **Schedules:** what runs in the next 7 days: reminder notifications, flow slots, server jobs, and the deploy timer's next check (approximate).
+  - **Jobs**, **Flows** (with Approve/Reject for waiting ones), **Agents**, and **Notifications** (the last 100 sends by channel and key; titles are never stored).
+- Counts, schedules and flows come from this device's copy and work offline; the server's parts say "offline" when it can't be reached. The page never shows a token, key, webhook, push endpoint or chat id.
+
 ## Hosting
 
 The Cave can run on a VPS as the server every device syncs with. Today that is a Hostinger KVM 2 on Ubuntu 26.04, at `https://cave.alexjamesmx.dev`, behind Caddy. The laptop and the phone become clients.

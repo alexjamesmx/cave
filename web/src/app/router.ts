@@ -9,6 +9,8 @@ export type Route =
   /** A reminder opened from a notification; `?do=done|snooze60` acts on it once. */
   | { name: "reminder"; id: string }
   | { name: "settings" }
+  /** `/system`, or one of its tabs: `/system/jobs`. */
+  | { name: "system"; tab: string | undefined }
   | { name: "agents" }
   | { name: "not-found" };
 
@@ -23,6 +25,8 @@ export function parseRoute(pathname: string): Route {
   const reminder = /^\/r\/([^/]+)\/?$/.exec(pathname);
   if (reminder) return { name: "reminder", id: decodeURIComponent(reminder[1] as string) };
   if (pathname === "/settings") return { name: "settings" };
+  const system = /^\/system(?:\/([a-z]+))?\/?$/.exec(pathname);
+  if (system) return { name: "system", tab: system[1] };
   if (pathname === "/agents") return { name: "agents" };
   const m = COLLECTION_RE.exec(pathname);
   if (m) {
