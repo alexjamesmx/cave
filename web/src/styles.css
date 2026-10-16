@@ -1331,3 +1331,27 @@ a.btn {
   text-decoration: none;
   color: var(--text);
 }
+
+/* Section tabs (M8): one row, scrolling sideways on a phone. */
+.section-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+
+.section-tabs a {
+  padding: 9px 14px;
+  white-space: nowrap;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+}
+
+.section-tabs a[aria-current="page"] {
+  color: var(--text-strong);
+  border-bottom-color: var(--lime);
+}

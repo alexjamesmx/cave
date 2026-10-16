@@ -50,7 +50,6 @@ export function Agents() {
   return (
     <>
       <header>
-        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Agents</h1>
         <p className="muted" style={{ margin: "6px 0 0" }}>
           Agents work through <span className="num">/mcp</span> with their own tokens. Nothing is
           hard-deleted, and every agent change is logged and can be undone.

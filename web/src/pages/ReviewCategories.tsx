@@ -133,7 +133,7 @@ export function ReviewCategories() {
   return (
     <>
       <header style={{ display: "grid", gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Review categories</h1>
+        <h2 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>Review categories</h2>
         <p className="muted" style={{ margin: 0 }}>
           Proposals from <span className="num">bun run money-review</span>. Nothing changes until
           you approve it; each approval has one Undo.{" "}

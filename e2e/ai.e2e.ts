@@ -115,7 +115,7 @@ test("ai-sync shows the repo's and the laptop's rules and skills with no secret,
     await page.reload();
     await expect(list2.getByRole("button")).toHaveText(["e2e-notes", ".claude/CLAUDE.md"]);
     await page.getByRole("button", { name: "Clear" }).click();
-    await expect(page).toHaveURL(/\/ai$/);
+    await expect(page).toHaveURL(/\/ai\/setup$/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

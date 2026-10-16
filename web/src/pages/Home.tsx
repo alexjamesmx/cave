@@ -225,7 +225,7 @@ function Glance() {
         </span>
         <span className="muted">solved</span>
       </Tile>
-      <Tile href="/system" icon="activity" color="var(--cyan)" label="Sync and deploy">
+      <Tile href="/settings/system" icon="activity" color="var(--cyan)" label="Sync and deploy">
         <span className="num">synced {when(status.lastSyncedAt ?? null)}</span>
         <span className="num muted">
           {typeof server === "object"

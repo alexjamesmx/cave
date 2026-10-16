@@ -1,32 +1,29 @@
-import { parseRoute, usePathname } from "./app/router.ts";
-import { Agents } from "./pages/Agents.tsx";
-import { AiPage } from "./pages/AiPage.tsx";
-import { Calendar } from "./pages/Calendar.tsx";
-import { CollectionPage } from "./pages/CollectionPage.tsx";
-import { Flows } from "./pages/Flows.tsx";
-import { Home } from "./pages/Home.tsx";
+import { useEffect } from "react";
+import { parseRoute, replacePath, usePathname } from "./app/router.ts";
+import { sectionById } from "./app/sections.ts";
 import { ReminderLink } from "./pages/ReminderLink.tsx";
-import { ReviewCategories } from "./pages/ReviewCategories.tsx";
-import { Settings } from "./pages/Settings.tsx";
-import { System } from "./pages/System.tsx";
+import { SectionPage } from "./pages/SectionPage.tsx";
 import { Shell } from "./ui/Shell.tsx";
+
+/** An old path: swap it for its new home, keeping the query string. */
+function Redirect({ to }: { to: string }) {
+  useEffect(() => replacePath(to), [to]);
+  return null;
+}
 
 export function App() {
   const route = parseRoute(usePathname());
   return (
     <Shell route={route}>
-      {route.name === "home" && <Home />}
-      {route.name === "collection" && (
-        <CollectionPage key={route.collection} id={route.collection} viewId={route.view} />
+      {route.name === "section" && (
+        <SectionPage
+          section={sectionById(route.section) ?? (sectionById("home") as never)}
+          tabId={route.tab}
+          rest={route.rest}
+        />
       )}
-      {route.name === "calendar" && <Calendar />}
-      {route.name === "flows" && <Flows id={route.id} />}
       {route.name === "reminder" && <ReminderLink key={route.id} id={route.id} />}
-      {route.name === "settings" && <Settings />}
-      {route.name === "review" && <ReviewCategories />}
-      {route.name === "ai" && <AiPage />}
-      {route.name === "agents" && <Agents />}
-      {route.name === "system" && <System tab={route.tab} />}
+      {route.name === "redirect" && <Redirect to={route.to} />}
       {route.name === "not-found" && <p className="muted">Nothing here yet.</p>}
     </Shell>
   );

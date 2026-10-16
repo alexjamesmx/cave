@@ -33,7 +33,7 @@ test("a reminder due in a minute reaches the device's push endpoint, encrypted a
   try {
     const context = await ownerContext(browser, { permissions: ["notifications"] });
     const page = await context.newPage();
-    await page.goto("/settings");
+    await page.goto("/settings/notifications");
     const section = page.getByText("Notifications on this device").locator("..");
     await expect(section.getByRole("button", { name: "Enable notifications" })).toBeVisible();
 

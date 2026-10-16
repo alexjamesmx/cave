@@ -64,7 +64,6 @@ export function AiPage() {
   return (
     <>
       <header style={{ display: "grid", gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>AI</h1>
         <p className="muted" style={{ margin: 0 }}>
           Rules, skills, MCP servers, plugins, memory and agents, from{" "}
           <span className="num">bun run ai-sync</span> with secrets removed. Edits here go back to

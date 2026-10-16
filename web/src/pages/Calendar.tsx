@@ -59,7 +59,7 @@ function useSources(): CalendarSource[] | undefined {
   );
 }
 
-export function Calendar() {
+export function Calendar({ mode }: { mode: "month" | "agenda" }) {
   const { db } = useCave().local;
   const collections = useCollections(db);
   const sources = useSources();
@@ -96,75 +96,71 @@ export function Calendar() {
 
   return (
     <>
-      <header style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <span className="ico" style={{ background: "#ff5c7a1f", color: "var(--expense)" }}>
-          <Icon name="calendar-days" size={20} />
-        </span>
-        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Calendar</h1>
-      </header>
-      <div className="calendar-page">
-        <section className="panel" style={{ padding: 16, display: "grid", gap: 12 }}>
-          <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              type="button"
-              className="btn"
-              aria-label="Previous month"
-              onClick={() => setMonth(shiftMonth(month, -1))}
-            >
-              <Icon name="chevron-left" size={15} />
-            </button>
-            <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>{monthName(month)}</h2>
-            <button type="button" className="btn" onClick={() => setMonth(monthOf(today))}>
-              Today
-            </button>
-            <button
-              type="button"
-              className="btn"
-              aria-label="Next month"
-              onClick={() => setMonth(shiftMonth(month, 1))}
-            >
-              <Icon name="chevron-right" size={15} />
-            </button>
-          </header>
-          <div className="calendar">
-            {WEEKDAYS.map((d) => (
-              <span key={d} className="k">
-                {d}
-              </span>
-            ))}
-            {grid.flat().map((day, i) =>
-              day ? (
-                <div key={day} className={`day${day === today ? " today" : ""}`}>
-                  <button
-                    type="button"
-                    className="day-add num muted"
-                    aria-label={`New reminder on ${shortDay(day)}`}
-                    onClick={() => setAdding(day)}
-                  >
-                    {Number(day.slice(8))}
-                  </button>
-                  {(monthEvents.get(day) ?? []).map((e) => (
+      <div className={mode === "month" ? "calendar-page" : undefined}>
+        {mode === "month" && (
+          <section className="panel" style={{ padding: 16, display: "grid", gap: 12 }}>
+            <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                type="button"
+                className="btn"
+                aria-label="Previous month"
+                onClick={() => setMonth(shiftMonth(month, -1))}
+              >
+                <Icon name="chevron-left" size={15} />
+              </button>
+              <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>{monthName(month)}</h2>
+              <button type="button" className="btn" onClick={() => setMonth(monthOf(today))}>
+                Today
+              </button>
+              <button
+                type="button"
+                className="btn"
+                aria-label="Next month"
+                onClick={() => setMonth(shiftMonth(month, 1))}
+              >
+                <Icon name="chevron-right" size={15} />
+              </button>
+            </header>
+            <div className="calendar">
+              {WEEKDAYS.map((d) => (
+                <span key={d} className="k">
+                  {d}
+                </span>
+              ))}
+              {grid.flat().map((day, i) =>
+                day ? (
+                  <div key={day} className={`day${day === today ? " today" : ""}`}>
                     <button
-                      key={e.key}
                       type="button"
-                      className={`event${e.done ? " done" : ""}`}
-                      style={{ "--mark": color(e.collection) } as CSSProperties}
-                      onClick={() => show(e)}
+                      className="day-add num muted"
+                      aria-label={`New reminder on ${shortDay(day)}`}
+                      onClick={() => setAdding(day)}
                     >
-                      {e.repeat && <Icon name="repeat" size={11} aria-label="repeats" />}
-                      {e.time && <span className="num">{e.time} </span>}
-                      {e.title}
+                      {Number(day.slice(8))}
                     </button>
-                  ))}
-                </div>
-              ) : (
-                // biome-ignore lint/suspicious/noArrayIndexKey: padding cells have no identity
-                <div key={`pad-${i}`} />
-              ),
-            )}
-          </div>
-          {adding && <NewReminder day={adding} onDone={() => setAdding(undefined)} />}
-        </section>
+                    {(monthEvents.get(day) ?? []).map((e) => (
+                      <button
+                        key={e.key}
+                        type="button"
+                        className={`event${e.done ? " done" : ""}`}
+                        style={{ "--mark": color(e.collection) } as CSSProperties}
+                        onClick={() => show(e)}
+                      >
+                        {e.repeat && <Icon name="repeat" size={11} aria-label="repeats" />}
+                        {e.time && <span className="num">{e.time} </span>}
+                        {e.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: padding cells have no identity
+                  <div key={`pad-${i}`} />
+                ),
+              )}
+            </div>
+            {adding && <NewReminder day={adding} onDone={() => setAdding(undefined)} />}
+          </section>
+        )}
         {agenda && <Agenda events={agenda} today={today} color={color} open={show} />}
       </div>
       {open && openCollection && (

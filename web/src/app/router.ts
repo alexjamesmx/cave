@@ -1,51 +1,65 @@
 import { useSyncExternalStore } from "react";
+import { ownerOf, sectionById, type Tab, tabPath } from "./sections.ts";
 
 export type Route =
-  | { name: "home" }
-  | { name: "collection"; collection: string; view: string | undefined }
-  | { name: "calendar" }
-  /** `/flows`, or one flow; `?do=approve|reject` from a notification asks to confirm. */
-  | { name: "flows"; id: string | undefined }
+  /** A section's tab; `rest` is what follows it (a flow id, a collection in Data, a sub-tab). */
+  | { name: "section"; section: string; tab: string; rest: string[] }
   /** A reminder opened from a notification; `?do=done|snooze60` acts on it once. */
   | { name: "reminder"; id: string }
-  | { name: "settings" }
-  /** The money category review (M7b part 5). */
-  | { name: "review" }
-  /** Everything the AIs know and use (M7b part 8). */
-  | { name: "ai" }
-  /** `/system`, or one of its tabs: `/system/jobs`. */
-  | { name: "system"; tab: string | undefined }
-  | { name: "agents" }
+  /** An old path: the app replaces it with its new home. */
+  | { name: "redirect"; to: string }
   | { name: "not-found" };
 
-const COLLECTION_RE = /^\/c\/([^/]+)(?:\/([^/]+))?\/?$/;
+const parts = (pathname: string) => pathname.split("/").filter(Boolean).map(decodeURIComponent);
+const enc = (...segments: string[]) => `/${segments.map(encodeURIComponent).join("/")}`;
 
-export function parseRoute(pathname: string): Route {
-  if (pathname === "/" || pathname === "") return { name: "home" };
-  if (pathname === "/calendar") return { name: "calendar" };
-  const flows = /^\/flows(?:\/([^/]+))?\/?$/.exec(pathname);
-  if (flows)
-    return { name: "flows", id: flows[1] === undefined ? undefined : decodeURIComponent(flows[1]) };
-  const reminder = /^\/r\/([^/]+)\/?$/.exec(pathname);
-  if (reminder) return { name: "reminder", id: decodeURIComponent(reminder[1] as string) };
-  if (pathname === "/settings") return { name: "settings" };
-  if (pathname === "/money/review") return { name: "review" };
-  if (pathname === "/ai") return { name: "ai" };
-  const system = /^\/system(?:\/([a-z]+))?\/?$/.exec(pathname);
-  if (system) return { name: "system", tab: system[1] };
-  if (pathname === "/agents") return { name: "agents" };
-  const m = COLLECTION_RE.exec(pathname);
-  if (m) {
-    const view = m[2] === undefined ? undefined : decodeURIComponent(m[2]);
-    return { name: "collection", collection: decodeURIComponent(m[1] as string), view };
-  }
-  return { name: "not-found" };
+/**
+ * Where an old path (before M8's sections) lives now; `undefined` when it is current. Every
+ * collection goes to the tab that shows it, else to Settings → Data.
+ */
+export function redirectOf(pathname: string): string | undefined {
+  const p = parts(pathname);
+  const [first, second, third] = p;
+  if (first === "agents" && p.length === 1) return "/ai/agents";
+  if (first === "flows") return second ? enc("ai", "flows", second) : "/ai/flows";
+  if (first === "ai" && p.length === 1) return "/ai/setup";
+  if (first === "system") return second ? enc("settings", "system", second) : "/settings/system";
+  if (first !== "c" || !second) return undefined;
+  const collection = second;
+  const view = third;
+  const owner = ownerOf(collection);
+  const tabs = owner?.tabs.filter((t) => t.kind === "view" && t.collection === collection) ?? [];
+  const tab = view
+    ? tabs.find((t) => t.kind === "view" && t.view === view)
+    : (tabs.find((t) => t.kind === "view" && t.view === undefined) ?? tabs[0]);
+  if (owner && tab) return tabPath(owner, tab);
+  if (collection === "projects") return "/projects";
+  if (collection === "flows") return "/ai/flows";
+  if (collection === "ai") return "/ai/setup";
+  return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);
 }
 
-export const collectionPath = (collection: string, view?: string) =>
-  `/c/${encodeURIComponent(collection)}${view ? `/${encodeURIComponent(view)}` : ""}`;
+export function parseRoute(pathname: string): Route {
+  const redirect = redirectOf(pathname);
+  if (redirect) return { name: "redirect", to: redirect };
+  const p = parts(pathname);
+  if (p.length === 0) return { name: "section", section: "home", tab: "home", rest: [] };
+  if (p[0] === "r" && p[1] && p.length === 2) return { name: "reminder", id: p[1] };
+  const section = sectionById(p[0] as string);
+  if (!section || section.id === "home") return { name: "not-found" };
+  // An unknown tab falls back to the section's first.
+  const tab = section.tabs.find((t) => t.id === p[1]) ?? (section.tabs[0] as Tab);
+  const rest = section.tabs.some((t) => t.id === p[1]) ? p.slice(2) : [];
+  return { name: "section", section: section.id, tab: tab.id, rest };
+}
 
-export const flowPath = (id?: string) => (id ? `/flows/${encodeURIComponent(id)}` : "/flows");
+/** Where a collection (and one of its views) lives now. */
+export const collectionPath = (collection: string, view?: string) => {
+  const old = `/c/${encodeURIComponent(collection)}${view ? `/${encodeURIComponent(view)}` : ""}`;
+  return redirectOf(old) ?? old;
+};
+
+export const flowPath = (id?: string) => (id ? enc("ai", "flows", id) : "/ai/flows");
 
 // pushState fires no event, so navigation announces itself for subscribers.
 const NAVIGATE = "cave:navigate";
@@ -71,6 +85,12 @@ export const usePathname = () => useSyncExternalStore(subscribe, () => location.
 /** The query string (`?a=1`), for state a view keeps in the URL so it can be bookmarked. */
 export const useSearch = () => useSyncExternalStore(subscribe, () => location.search);
 
+/** Swaps the current entry for `path` (a redirect), keeping the query string. */
+export function replacePath(path: string): void {
+  history.replaceState(null, "", path + location.search);
+  window.dispatchEvent(new Event(NAVIGATE));
+}
+
 /** Replaces the query string without a new history entry (filters change as you type). */
 export function setSearch(search: string): void {
   if (search === location.search) return;
@@ -79,7 +99,7 @@ export function setSearch(search: string): void {
 }
 
 // Single-letter shortcuts, ignored while typing or with a modifier held.
-const SHORTCUTS: Record<string, string> = { c: "/calendar" };
+const SHORTCUTS: Record<string, string> = { c: "/calendar/month" };
 
 export function isTyping(target: EventTarget | null): boolean {
   const el = target as { tagName?: unknown; isContentEditable?: unknown } | null;

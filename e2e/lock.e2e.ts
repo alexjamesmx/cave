@@ -49,7 +49,7 @@ test("Lock this device returns to the lock screen and keeps the local copy", asy
   await page.getByLabel("Server token").fill(E2E_TOKEN);
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
-  await page.goto("/settings");
+  await page.goto("/settings/devices");
   await page.getByRole("button", { name: "Lock this device" }).click();
   await expect(page.getByRole("button", { name: "Unlock" })).toBeVisible();
   const kept = await page.evaluate(

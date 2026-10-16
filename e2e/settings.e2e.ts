@@ -8,13 +8,15 @@ test("the owner's name reaches the greeting; Settings shows the server and downl
   const context = await ownerContext(browser);
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
-  await page.goto("/settings");
+  // The server, the backup and the export are under Data; the name under General.
+  await page.goto("/settings/data");
 
   // The server backs up at start, so a fresh database already has one.
   await expect(page.getByText("Last backup")).toBeVisible();
   await expect(page.getByText("None yet")).toHaveCount(0);
   await expect(page.getByText("No vault set")).toBeVisible();
 
+  await page.goto("/settings/general");
   const pushed = page.waitForResponse(
     (r) => r.url().endsWith("/api/sync") && (r.request().postData() ?? "").includes("ownerName"),
   );
@@ -22,6 +24,7 @@ test("the owner's name reaches the greeting; Settings shows the server and downl
   await page.getByLabel("Your name").blur();
   expect((await pushed).ok()).toBe(true);
 
+  await page.goto("/settings/data");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download export" }).click();
   const file = await download;

@@ -5,13 +5,38 @@ import { useCave } from "../app/context.ts";
 import { useReminderZone, useTimeZone } from "../app/hooks.ts";
 import { forgetDevice, lockDevice } from "../app/lock.ts";
 import { ownerDownload, ownerGet } from "../app/owner-api.ts";
+import { ownerOf } from "../app/sections.ts";
 import { deployLine } from "../logic/deploy-line.ts";
-import { useDoc } from "../store/queries.ts";
+import { useCollections, useDoc } from "../store/queries.ts";
+import { Icon } from "../ui/icon.tsx";
 import { DeviceNotifications, NotificationChannels } from "../ui/NotificationSettings.tsx";
+import { CollectionPage } from "./CollectionPage.tsx";
 
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 
-export function Settings() {
+/** Settings → General: who you are, when date-only reminders are due, and the AI in use. */
+export function SettingsGeneral() {
+  return (
+    <>
+      <OwnerName />
+      <ReminderTime />
+      <AiSettings />
+    </>
+  );
+}
+
+/** Settings → Notifications: this device's Web Push, and the channels. */
+export function SettingsNotifications() {
+  return (
+    <>
+      <DeviceNotifications />
+      <NotificationChannels />
+    </>
+  );
+}
+
+/** Settings → Devices: this device's lock and its copy. */
+export function SettingsDevices() {
   const cave = useCave();
   const forget = () => {
     if (
@@ -21,33 +46,56 @@ export function Settings() {
     )
       void forgetDevice(() => cave.local.db.close());
   };
+  return (
+    <section className="panel" style={{ padding: 18, display: "grid", gap: 14, maxWidth: 560 }}>
+      <span className="k">This device</span>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button type="button" className="btn" onClick={lockDevice}>
+          Lock this device
+        </button>
+        <button type="button" className="btn" onClick={forget}>
+          Forget this device
+        </button>
+      </div>
+      <span className="muted" style={{ fontSize: 13 }}>
+        Lock asks for the server token again and keeps this device's copy. Forget also deletes the
+        copy and the offline files. Every device that synced lately is in Settings → System.
+      </span>
+      <div className="muted" style={{ fontSize: 13 }}>
+        Device <span className="num">{cave.local.deviceId}</span>
+      </div>
+    </section>
+  );
+}
 
+/**
+ * Settings → Data: every collection, raw, with its views and the field editor; the server, the
+ * backup and the export. `rest` opens one collection: `/settings/data/<id>/<view>`.
+ */
+export function SettingsData({ rest }: { rest: string[] }) {
+  const { db } = useCave().local;
+  const collections = useCollections(db) ?? [];
+  const [id, view] = rest;
+  if (id) return <CollectionPage key={id} id={id} viewId={view} />;
   return (
     <>
-      <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Settings</h1>
-      <OwnerName />
-      <ReminderTime />
-      <DeviceNotifications />
-      <NotificationChannels />
-      <section className="panel" style={{ padding: 18, display: "grid", gap: 14, maxWidth: 560 }}>
-        <span className="k">This device</span>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" className="btn" onClick={lockDevice}>
-            Lock this device
-          </button>
-          <button type="button" className="btn" onClick={forget}>
-            Forget this device
-          </button>
-        </div>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Lock asks for the server token again and keeps this device's copy. Forget also deletes the
-          copy and the offline files.
-        </span>
-        <div className="muted" style={{ fontSize: 13 }}>
-          Device <span className="num">{cave.local.deviceId}</span>
-        </div>
+      <section className="panel" style={{ padding: 16, display: "grid", gap: 4 }}>
+        <span className="k">Collections</span>
+        {collections.map((c) => (
+          <a
+            key={c.id}
+            className="entry"
+            href={`/settings/data/${encodeURIComponent(c.id)}`}
+            style={{ textDecoration: "none", color: "var(--text)" }}
+          >
+            <Icon name={c.data.icon} size={16} color={c.data.color} />
+            <span style={{ flex: 1 }}>{c.data.name}</span>
+            <span className="muted num" style={{ fontSize: 12 }}>
+              {ownerOf(c.id)?.label ?? "Data only"}
+            </span>
+          </a>
+        ))}
       </section>
-      <AiSettings />
       <ServerStatus />
     </>
   );

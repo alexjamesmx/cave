@@ -97,9 +97,6 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
         <button type="button" className="btn primary" onClick={() => setAdding(!adding)}>
           <Icon name="plus" size={15} /> New entry
         </button>
-        <a className="btn" href={collectionPath("payments")}>
-          <Icon name="calendar-clock" size={15} /> Payments
-        </a>
         <a className="btn" href="/money/review">
           <Icon name="list-checks" size={15} /> Review categories
         </a>

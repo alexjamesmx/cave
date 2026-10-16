@@ -1,7 +1,6 @@
 import { type ComponentType, useCallback, useState } from "react";
 import type { ViewType } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
-import { collectionPath } from "../app/router.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { FieldEditor } from "../ui/FieldEditor.tsx";
@@ -32,24 +31,47 @@ const VIEWS: Record<ViewType, ComponentType<ViewProps>> = {
   payments: PaymentsView,
 };
 
-type Panel = { kind: "item"; id: string } | { kind: "fields" } | undefined;
-
-export function CollectionPage({ id, viewId }: { id: string; viewId: string | undefined }) {
+/** One view of a collection, with the item drawer: what a section's tab shows. */
+export function CollectionView({ id, viewId }: { id: string; viewId: string | undefined }) {
   const { db } = useCave().local;
   const collections = useCollections(db);
   const items = useItems(db, id);
-  const [panel, setPanel] = useState<Panel>();
-  const open = useCallback((item: string) => setPanel({ kind: "item", id: item }), []);
-  const close = useCallback(() => setPanel(undefined), []);
+  const [open, setOpen] = useState<string>();
+  const show = useCallback((item: string) => setOpen(item), []);
+  const close = useCallback(() => setOpen(undefined), []);
 
   if (!collections) return null;
   const stored = collections.find((c) => c.id === id);
   if (!stored) return <p className="muted">No collection called “{id}”.</p>;
-  // Views and the drawer see active fields only; the field editor needs archived ones too.
   const collection = withActiveFields(stored);
-  const { name, icon, color, views } = collection.data;
-  const view = views.find((v) => v.id === viewId) ?? views[0];
+  const view = collection.data.views.find((v) => v.id === viewId) ?? collection.data.views[0];
   const View = view ? VIEWS[view.type] : undefined;
+  return (
+    <>
+      {view && View && items && (
+        <View key={view.id} collection={collection} view={view} items={items} open={show} />
+      )}
+      {open && <ItemDrawer key={open} collection={collection} id={open} onClose={close} />}
+    </>
+  );
+}
+
+/**
+ * Raw access to one collection (Settings → Data): every view, the field editor and the items.
+ * Sections show the same views as tabs; this is where the structure itself is edited.
+ */
+export function CollectionPage({ id, viewId }: { id: string; viewId: string | undefined }) {
+  const { db } = useCave().local;
+  const collections = useCollections(db);
+  const items = useItems(db, id);
+  const [fields, setFields] = useState(false);
+
+  if (!collections) return null;
+  const stored = collections.find((c) => c.id === id);
+  if (!stored) return <p className="muted">No collection called “{id}”.</p>;
+  const { name, icon, color, views } = stored.data;
+  const view = views.find((v) => v.id === viewId) ?? views[0];
+  const base = `/settings/data/${encodeURIComponent(id)}`;
 
   return (
     <>
@@ -57,13 +79,13 @@ export function CollectionPage({ id, viewId }: { id: string; viewId: string | un
         <span className="ico" style={{ background: `${color}1f`, color }}>
           <Icon name={icon} size={20} />
         </span>
-        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>{name}</h1>
+        <h2 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>{name}</h2>
         <span className="num muted">{items?.length ?? "…"}</span>
         <button
           type="button"
           className="btn"
           style={{ marginLeft: "auto" }}
-          onClick={() => setPanel({ kind: "fields" })}
+          onClick={() => setFields(true)}
         >
           <Icon name="sliders-horizontal" size={15} />
           Fields
@@ -73,7 +95,7 @@ export function CollectionPage({ id, viewId }: { id: string; viewId: string | un
         {views.map((v) => (
           <a
             key={v.id}
-            href={collectionPath(id, v.id)}
+            href={`${base}/${encodeURIComponent(v.id)}`}
             className="chip"
             aria-current={v.id === view?.id ? "page" : undefined}
             style={{
@@ -86,13 +108,8 @@ export function CollectionPage({ id, viewId }: { id: string; viewId: string | un
           </a>
         ))}
       </nav>
-      {view && View && items && (
-        <View key={view.id} collection={collection} view={view} items={items} open={open} />
-      )}
-      {panel?.kind === "item" && (
-        <ItemDrawer key={panel.id} collection={collection} id={panel.id} onClose={close} />
-      )}
-      {panel?.kind === "fields" && <FieldEditor collection={stored} onClose={close} />}
+      {view && <CollectionView key={view.id} id={id} viewId={view.id} />}
+      {fields && <FieldEditor collection={stored} onClose={() => setFields(false)} />}
     </>
   );
 }

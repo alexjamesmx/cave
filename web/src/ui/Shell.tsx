@@ -1,15 +1,13 @@
 import type { ReactNode } from "react";
-import { useCave } from "../app/context.ts";
-import { collectionPath, type Route } from "../app/router.ts";
-import { useCollections } from "../store/queries.ts";
+import type { Route } from "../app/router.ts";
+import { SECTIONS } from "../app/sections.ts";
 import { Dock } from "./Dock.tsx";
 import { Icon } from "./icon.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
+/** The sidebar lists the eight sections from the registry, each once; the dock reads the same. */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
-  const collections = useCollections(useCave().local.db) ?? [];
-  const on = (active: boolean) => (active ? "on" : undefined);
-
+  const active = route.name === "section" ? route.section : undefined;
   return (
     <div className="app">
       <nav aria-label="Main" className="side">
@@ -25,54 +23,22 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           </div>
         </div>
         <div className="nav-group">
-          <a href="/" className={on(route.name === "home")}>
-            <Icon name="house" size={17} color="var(--lime)" />
-            Cave
-          </a>
-          <a href="/calendar" className={on(route.name === "calendar")}>
-            <Icon name="calendar-days" size={17} color="var(--expense)" />
-            Calendar
-            <span className="kbd" aria-hidden="true">
-              C
-            </span>
-          </a>
-          <a href="/flows" className={on(route.name === "flows")}>
-            <Icon name="workflow" size={17} color="var(--violet)" />
-            Flows
-          </a>
-          <a href="/agents" className={on(route.name === "agents")}>
-            <Icon name="bot" size={17} />
-            Agents
-          </a>
-          <a href="/ai" className={on(route.name === "ai")}>
-            <Icon name="sparkles" size={17} color="var(--purple)" />
-            AI
-          </a>
-          <a href="/system" className={on(route.name === "system")}>
-            <Icon name="activity" size={17} color="var(--cyan)" />
-            System
-          </a>
-          <a href="/settings" className={on(route.name === "settings")}>
-            <Icon name="settings" size={17} />
-            Settings
-          </a>
-        </div>
-        <div className="nav-group">
-          <span className="k" style={{ padding: "0 10px 8px" }}>
-            Collections
-          </span>
-          {collections
-            .filter((c) => !c.data.hidden)
-            .map((c) => (
-              <a
-                key={c.id}
-                href={collectionPath(c.id)}
-                className={on(route.name === "collection" && route.collection === c.id)}
-              >
-                <Icon name={c.data.icon} size={17} color={c.data.color} />
-                {c.data.name}
-              </a>
-            ))}
+          {SECTIONS.map((s) => (
+            <a
+              key={s.id}
+              href={s.path}
+              className={s.id === active ? "on" : undefined}
+              aria-current={s.id === active ? "page" : undefined}
+            >
+              <Icon name={s.icon} size={17} color={s.color} />
+              {s.label}
+              {s.id === "calendar" && (
+                <span className="kbd" aria-hidden="true">
+                  C
+                </span>
+              )}
+            </a>
+          ))}
         </div>
         <SyncBadge />
       </nav>

@@ -17,7 +17,7 @@ test("the phone dock: four sections and Ask, More with every section, and an edi
   const dock = page.getByRole("navigation", { name: "Dock" });
   await expect(dock).toBeVisible();
   await expect(
-    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Flows" }),
+    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "AI" }),
   ).toBeHidden();
   await expect(dock.getByRole("link")).toHaveText(["Home", "Money", "Tasks", "Calendar"]);
   await expect(dock.getByRole("link", { name: "Money" })).toHaveAttribute("aria-current", "page");
@@ -46,34 +46,33 @@ test("the phone dock: four sections and Ask, More with every section, and an edi
   // More: every section, and Edit dock.
   await dock.getByRole("button", { name: "More" }).click();
   const more = page.getByRole("dialog", { name: "Everything" });
-  for (const name of [
-    "Reminders",
-    "Flows",
+  // The same eight sections as the sidebar, each once.
+  await expect(more.getByRole("link")).toHaveText([
+    "Home",
+    "Money",
+    "Calendar",
+    "Tasks",
+    "Projects",
+    "Life",
     "AI",
-    "System",
-    "Diary",
-    "Ideas",
-    "LeetCode",
-    "Wealth",
     "Settings",
-  ])
-    await expect(more.getByRole("link", { name })).toBeVisible();
+  ]);
   await more.getByRole("button", { name: "Edit dock" }).click();
   const edit = page.getByRole("dialog", { name: "Edit dock" });
   for (const name of ["Home", "Money", "Tasks", "Calendar"])
     await edit.getByRole("button", { name: new RegExp(`${name}$`) }).click();
   await expect(edit.getByRole("button", { name: "Save dock" })).toBeDisabled();
-  for (const name of ["Flows", "Money", "System", "Ideas"])
+  for (const name of ["AI", "Money", "Settings", "Projects"])
     await edit.getByRole("button", { name: new RegExp(`${name}$`) }).click();
   await edit.getByRole("button", { name: "Save dock" }).click();
-  await expect(dock.getByRole("link")).toHaveText(["Flows", "Money", "System", "Ideas"]);
+  await expect(dock.getByRole("link")).toHaveText(["AI", "Money", "Settings", "Projects"]);
 
   // Another phone gets the same dock through sync.
   const other = await (await ownerContext(browser, { viewport: PHONE })).newPage();
   await expect(async () => {
     await other.goto("/");
     await expect(other.getByRole("navigation", { name: "Dock" }).getByRole("link")).toHaveText(
-      ["Flows", "Money", "System", "Ideas"],
+      ["AI", "Money", "Settings", "Projects"],
       { timeout: 2_000 },
     );
   }).toPass({ timeout: 30_000 });
@@ -82,7 +81,7 @@ test("the phone dock: four sections and Ask, More with every section, and an edi
   await dock.getByRole("button", { name: "More" }).click();
   await page.getByRole("button", { name: "Edit dock" }).click();
   const reset = page.getByRole("dialog", { name: "Edit dock" });
-  for (const name of ["Flows", "Money", "System", "Ideas", "Home", "Money", "Tasks", "Calendar"])
+  for (const name of ["AI", "Money", "Settings", "Projects", "Home", "Money", "Tasks", "Calendar"])
     await reset.getByRole("button", { name: new RegExp(`${name}$`) }).click();
   await reset.getByRole("button", { name: "Save dock" }).click();
   await expect(dock.getByRole("link")).toHaveText(["Home", "Money", "Tasks", "Calendar"]);
@@ -95,6 +94,6 @@ test("on a desktop the sidebar stays and there is no dock", async ({ browser }) 
   await page.goto("/");
   await expect(page.getByRole("navigation", { name: "Dock" })).toBeHidden();
   await expect(
-    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Flows" }),
+    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "AI" }),
   ).toBeVisible();
 });

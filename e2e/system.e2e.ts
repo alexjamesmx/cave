@@ -20,9 +20,14 @@ test("/system renders each tab with a flow, a reminder and a job run", async ({
 
   await page
     .getByRole("navigation", { name: "Main" })
+    .getByRole("link", { name: "Settings" })
+    .click();
+  await expect(page).toHaveURL(/\/settings$/);
+  await page
+    .getByRole("navigation", { name: "Settings tabs" })
     .getByRole("link", { name: "System" })
     .click();
-  await expect(page).toHaveURL(/\/system$/);
+  await expect(page).toHaveURL(/\/settings\/system$/);
   const tabs = page.getByRole("navigation", { name: "System sections" });
   await expect(
     page.getByRole("region", { name: "Collections" }).getByText("Reminders"),
@@ -32,7 +37,7 @@ test("/system renders each tab with a flow, a reminder and a job run", async ({
   ).toBeVisible();
 
   await tabs.getByRole("link", { name: "Schedules" }).click();
-  await expect(page).toHaveURL(/\/system\/schedules$/);
+  await expect(page).toHaveURL(/\/settings\/system\/schedules$/);
   const schedule = page.getByRole("region", { name: "Next 7 days" });
   await expect(schedule.getByRole("link", { name: "system check" })).toBeVisible();
   await expect(schedule.getByRole("link", { name: "Reminder notifications" })).toBeVisible();

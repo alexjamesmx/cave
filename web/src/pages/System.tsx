@@ -87,7 +87,7 @@ export function System({ tab }: { tab: string | undefined }) {
   return (
     <>
       <header style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em", flex: 1 }}>System</h1>
+        <span style={{ flex: 1 }} />
         <button type="button" className="btn" onClick={() => void load()}>
           Refresh
         </button>
@@ -96,7 +96,7 @@ export function System({ tab }: { tab: string | undefined }) {
         {TABS.map(([id, label]) => (
           <a
             key={id}
-            href={id === "overview" ? "/system" : `/system/${id}`}
+            href={id === "overview" ? "/settings/system" : `/settings/system/${id}`}
             aria-current={id === current ? "page" : undefined}
           >
             {label}

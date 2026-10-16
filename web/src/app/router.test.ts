@@ -1,39 +1,69 @@
 import { expect, test } from "bun:test";
-import { collectionPath, flowPath, parseRoute, shortcutPath } from "./router.ts";
+import { collectionPath, flowPath, parseRoute, redirectOf, shortcutPath } from "./router.ts";
 
-test("parses the app's routes", () => {
-  expect(parseRoute("/")).toEqual({ name: "home" });
-  expect(parseRoute("/settings")).toEqual({ name: "settings" });
-  expect(parseRoute("/calendar")).toEqual({ name: "calendar" });
-  expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
-  expect(parseRoute("/agents")).toEqual({ name: "agents" });
-  expect(parseRoute("/flows")).toEqual({ name: "flows", id: undefined });
-  expect(parseRoute(flowPath("flow-rent"))).toEqual({ name: "flows", id: "flow-rent" });
-  expect(parseRoute("/flows/a/b")).toEqual({ name: "not-found" });
-  expect(parseRoute("/system")).toEqual({ name: "system", tab: undefined });
-  expect(parseRoute("/money/review")).toEqual({ name: "review" });
-  expect(parseRoute("/ai")).toEqual({ name: "ai" });
-  expect(parseRoute("/system/jobs")).toEqual({ name: "system", tab: "jobs" });
-  expect(parseRoute("/c/money")).toEqual({
-    name: "collection",
-    collection: "money",
-    view: undefined,
-  });
-  expect(parseRoute("/c/money/untagged/")).toEqual({
-    name: "collection",
-    collection: "money",
-    view: "untagged",
-  });
-  expect(parseRoute("/radar")).toEqual({ name: "not-found" });
-  expect(parseRoute("/c/")).toEqual({ name: "not-found" });
+const section = (s: string, tab: string, rest: string[] = []) => ({
+  name: "section" as const,
+  section: s,
+  tab,
+  rest,
 });
 
-test("collection paths round-trip", () => {
-  expect(parseRoute(collectionPath("tasks", "board"))).toEqual({
-    name: "collection",
-    collection: "tasks",
-    view: "board",
-  });
+test("sections and their tabs; an unknown tab falls back to the first", () => {
+  expect(parseRoute("/")).toEqual(section("home", "home"));
+  expect(parseRoute("/money")).toEqual(section("money", "overview"));
+  expect(parseRoute("/money/payments")).toEqual(section("money", "payments"));
+  expect(parseRoute("/money/review")).toEqual(section("money", "review"));
+  expect(parseRoute("/money/nope")).toEqual(section("money", "overview"));
+  expect(parseRoute("/calendar/agenda")).toEqual(section("calendar", "agenda"));
+  expect(parseRoute("/ai/flows/flow-rent")).toEqual(section("ai", "flows", ["flow-rent"]));
+  expect(parseRoute("/settings/data/money/untagged")).toEqual(
+    section("settings", "data", ["money", "untagged"]),
+  );
+  expect(parseRoute("/settings/system/jobs")).toEqual(section("settings", "system", ["jobs"]));
+  expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
+  expect(parseRoute("/radar")).toEqual({ name: "not-found" });
+});
+
+test("every old path redirects to its new home", () => {
+  const cases: [string, string][] = [
+    ["/c/money", "/money/overview"],
+    ["/c/money/dashboard", "/money/overview"],
+    ["/c/money/table", "/money/transactions"],
+    ["/c/money/untagged", "/settings/data/money/untagged"],
+    ["/c/payments", "/money/payments"],
+    ["/c/payments/table", "/settings/data/payments/table"],
+    ["/c/wealth", "/money/wealth"],
+    ["/c/reminders", "/calendar/reminders"],
+    ["/c/journal", "/life/diary"],
+    ["/c/journal/habits", "/life/habits"],
+    ["/c/tasks/board", "/tasks/board"],
+    ["/c/tasks/table", "/tasks/list"],
+    ["/c/ideas", "/projects/ideas"],
+    ["/c/projects", "/projects"],
+    ["/c/flows", "/ai/flows"],
+    ["/c/ai", "/ai/setup"],
+    ["/c/proposals", "/settings/data/proposals"],
+    ["/agents", "/ai/agents"],
+    ["/flows", "/ai/flows"],
+    ["/flows/flow-rent", "/ai/flows/flow-rent"],
+    ["/ai", "/ai/setup"],
+    ["/system", "/settings/system"],
+    ["/system/jobs", "/settings/system/jobs"],
+  ];
+  for (const [from, to] of cases) {
+    expect([from, redirectOf(from)]).toEqual([from, to]);
+    expect(parseRoute(from)).toEqual({ name: "redirect", to });
+  }
+  for (const current of ["/", "/money/overview", "/ai/setup", "/r/x", "/calendar"])
+    expect(redirectOf(current)).toBeUndefined();
+});
+
+test("links to a collection or a flow go straight to their new home", () => {
+  expect(collectionPath("tasks", "board")).toBe("/tasks/board");
+  expect(collectionPath("money")).toBe("/money/overview");
+  expect(collectionPath("proposals")).toBe("/settings/data/proposals");
+  expect(flowPath("flow-rent")).toBe("/ai/flows/flow-rent");
+  expect(flowPath()).toBe("/ai/flows");
 });
 
 test("C opens the calendar, except while typing or with a modifier", () => {
@@ -45,8 +75,8 @@ test("C opens the calendar, except while typing or with a modifier", () => {
     ...extra,
     target: target as EventTarget | null,
   });
-  expect(shortcutPath(key("c"))).toBe("/calendar");
-  expect(shortcutPath(key("C"))).toBe("/calendar");
+  expect(shortcutPath(key("c"))).toBe("/calendar/month");
+  expect(shortcutPath(key("C"))).toBe("/calendar/month");
   expect(shortcutPath(key("c", { ctrlKey: true }))).toBeUndefined();
   expect(shortcutPath(key("c", { metaKey: true }))).toBeUndefined();
   expect(shortcutPath(key("c", {}, { tagName: "INPUT" }))).toBeUndefined();

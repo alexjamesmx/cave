@@ -33,7 +33,7 @@ test("a reminder from Home's form, seen in in the calendar and the Due card; Don
   // C opens the calendar when no field has focus.
   await page.locator("body").focus();
   await page.keyboard.press("c");
-  await expect(page).toHaveURL(/\/calendar$/);
+  await expect(page).toHaveURL(/\/calendar\/month$/);
   await expect(page.getByRole("heading", { name: "October 2026" })).toBeVisible();
   await expect(page.getByRole("button", { name: "09:00 Test" })).toBeVisible();
   const agenda = page.getByRole("region", { name: "Agenda" });
