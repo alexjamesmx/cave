@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { redactFile, redactValue } from "./redact.ts";
 
 /** One thing an AI knows or uses, read from a file and already redacted. */
@@ -170,15 +170,21 @@ export function collectAi({ repo, home }: Roots): AiItem[] {
   ];
 }
 
-/** Where a file source lives on this machine; `undefined` for entries inside a file or the Cave. */
+/**
+ * Where a file source lives on this machine; `undefined` for entries inside a file, the Cave,
+ * plugins, and anything that would land outside the repository or `~/.claude`.
+ */
 export function pathOf(source: string, { repo, home }: Roots): string | undefined {
   if (source.includes("#") || source.startsWith("cave:") || source === "manual") return undefined;
-  if (source.startsWith("repo:")) return join(repo, source.slice(5));
-  if (source.startsWith("~/")) {
-    const rel = source.slice(2);
-    // A plugin's source names the plugin, not a file to write.
-    if (rel.startsWith(".claude/plugins/")) return undefined;
-    return join(home, rel);
-  }
-  return undefined;
+  const rel = source.startsWith("repo:")
+    ? source.slice(5)
+    : source.startsWith("~/")
+      ? source.slice(2)
+      : undefined;
+  if (rel === undefined || rel.split(/[\\/]/).includes("..")) return undefined;
+  // A plugin's source names the plugin, not a file to write.
+  if (source.startsWith("~/") && rel.startsWith(".claude/plugins/")) return undefined;
+  const root = resolve(source.startsWith("repo:") ? repo : join(home, ".claude"));
+  const path = resolve(source.startsWith("repo:") ? repo : home, rel);
+  return path.startsWith(root + sep) ? path : undefined;
 }

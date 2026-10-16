@@ -132,6 +132,9 @@ test("the plan pushes new and changed files, waits on Cave edits, and never dele
   ]);
 });
 
+/** What a run read: item ids to the source each came from. */
+const readMap = () => new Map(collectAi(roots).map((i) => [aiId(i.source), i.source]));
+
 test("apply writes after a yes, refuses redacted bodies, and moves deleted files to .ai-trash/", () => {
   const agents = doc("repo:AGENTS.md", {
     _title: "AGENTS.md",
@@ -155,12 +158,14 @@ test("apply writes after a yes, refuses redacted bodies, and moves deleted files
     _deleted: true,
   });
   const asked: string[] = [];
+  const read = readMap();
   const result = applyEdits(
     [agents, claude, mcp],
     [memory],
     roots,
     (q) => (asked.push(q), true),
     () => {},
+    read,
   );
   expect(readFileSync(join(roots.repo, "AGENTS.md"), "utf8")).toBe(
     "# Rules\nRun bun test first.\n",
@@ -179,9 +184,41 @@ test("apply writes after a yes, refuses redacted bodies, and moves deleted files
     roots,
     () => false,
     () => {},
+    read,
   );
   expect(no.written).toEqual([]);
   expect(readFileSync(join(roots.repo, "AGENTS.md"), "utf8")).toBe(
     "# Rules\nRun bun test first.\n",
   );
+});
+
+test("an edited source never decides where apply writes: only files this run read, inside the repo or ~/.claude", () => {
+  const read = readMap();
+  // An item that was read, whose stored source someone pointed at another file.
+  const forged = {
+    ...doc("repo:AGENTS.md", { _title: "AGENTS.md", _body: "pwned\n" }),
+    data: { source: "~/.bashrc", _title: "AGENTS.md", _body: "pwned\n" },
+  };
+  // An item this run never read, with a source that climbs out of the repository.
+  const outside = doc("repo:../outside.txt", { _title: "outside", _body: "pwned\n" });
+  const asked: string[] = [];
+  const result = applyEdits(
+    [forged, outside],
+    [],
+    roots,
+    (q) => (asked.push(q), true),
+    () => {},
+    read,
+  );
+  // The forged one goes to the file it was read from, never to ~/.bashrc.
+  expect(asked).toEqual([`Write this to ${join(roots.repo, "AGENTS.md")}?`]);
+  expect(existsSync(join(roots.home, ".bashrc"))).toBe(false);
+  expect(existsSync(join(dir, "outside.txt"))).toBe(false);
+  expect(result.skipped.map((s) => s.title)).toEqual(["outside"]);
+
+  expect(pathOf("repo:../outside.txt", roots)).toBeUndefined();
+  expect(pathOf("repo:docs/../../outside.txt", roots)).toBeUndefined();
+  expect(pathOf("~/.bashrc", roots)).toBeUndefined();
+  expect(pathOf("~/../etc/passwd", roots)).toBeUndefined();
+  expect(pathOf("~/.claude/CLAUDE.md", roots)).toBe(join(roots.home, ".claude", "CLAUDE.md"));
 });

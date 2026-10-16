@@ -4,7 +4,7 @@ import { formatStamp } from "../../shared/hlc.ts";
 import type { Doc } from "../../shared/types.ts";
 import { applyEdits } from "./apply.ts";
 import { type AiItem, collectAi } from "./collect.ts";
-import { hashOf, planSync } from "./plan.ts";
+import { aiId, hashOf, planSync } from "./plan.ts";
 
 /**
  * `bun run ai-sync`: reads the repository's and this laptop's AI rules, skills, MCP servers,
@@ -108,7 +108,9 @@ if (!apply) {
 }
 
 const ask = (question: string) => (prompt(`${question} [y/N]`) ?? "").trim().toLowerCase() === "y";
-const done = applyEdits(plan.edited, plan.deleted, roots, ask, (line) => console.log(line));
+// Only files this run read can be written, at the path they were read from.
+const read = new Map(items.map((i) => [aiId(i.source), i.source]));
+const done = applyEdits(plan.edited, plan.deleted, roots, ask, (line) => console.log(line), read);
 // Written files now match the Cave: record that, so the next sync sees both sides in step.
 await push(done.written.map((w) => ({ id: w.id, data: { _syncHash: hashOf(w.body) } })));
 console.log(`Wrote ${done.written.length}; moved ${done.trashed.length} to .ai-trash/.`);

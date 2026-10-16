@@ -29,6 +29,10 @@ export interface Applied {
  * Writes Cave edits back to their files, asking before each one. Never writes a body that
  * holds a redacted value, never deletes a file: a deleted item's file moves to `.ai-trash/`
  * beside it, after asking.
+ *
+ * `read` maps each item id to the source this run read it from. Only those files are touched,
+ * at the path they were read from: an item's stored `source` can be edited by anyone who
+ * can write the collection (an agent, too), so it never decides where a write goes.
  */
 export function applyEdits(
   edited: Doc[],
@@ -36,18 +40,22 @@ export function applyEdits(
   roots: Roots,
   ask: Ask,
   log: (line: string) => void,
+  read: ReadonlyMap<string, string>,
 ): Applied {
   const result: Applied = { written: [], trashed: [], skipped: [] };
   const title = (d: Doc) => String(d.data._title ?? d.id);
+  const pathFor = (doc: Doc) => {
+    const source = read.get(doc.id);
+    return source === undefined ? undefined : pathOf(source, roots);
+  };
 
   for (const doc of edited) {
-    const source = String(doc.data.source ?? "");
-    const path = pathOf(source, roots);
+    const path = pathFor(doc);
     const body = String(doc.data._body ?? "");
     if (!path) {
       result.skipped.push({
         title: title(doc),
-        why: "it isn't a whole file; edit it where it lives",
+        why: "it isn't a file this sync read; edit it where it lives",
       });
       continue;
     }
@@ -69,7 +77,7 @@ export function applyEdits(
   }
 
   for (const doc of deleted) {
-    const path = pathOf(String(doc.data.source ?? ""), roots);
+    const path = pathFor(doc);
     if (!path || !existsSync(path)) continue;
     const trash = join(dirname(path), ".ai-trash");
     if (!ask(`“${title(doc)}” was deleted in the Cave. Move ${path} to ${trash}?`)) {
