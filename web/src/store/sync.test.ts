@@ -241,7 +241,7 @@ describe("syncOnce", () => {
     expect((await phone.db.outbox.toArray()).map((r) => r.id)).toEqual(["bad"]);
     expect(await phone.db.rejected.get("bad")).toEqual({
       id: "bad",
-      error: "field due: must be YYYY-MM-DD",
+      error: "field due: must be YYYY-MM-DD or YYYY-MM-DDTHH:mm[:ss]",
     });
 
     await phone.write({ id: "bad", ...task }, { due: "2026-10-13" });

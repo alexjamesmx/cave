@@ -18,7 +18,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
   expect(store.get("proposals")).toBeUndefined();
   expect(seedVersionOf(store)).toBe(1);
 
-  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6]);
+  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6, 7]);
   expect(store.get("flows")?.data).toMatchObject({ name: "Flows", hidden: true });
   expect(store.get("flow-rent")).toMatchObject({ collection: "flows", actor: "seed" });
   const proposals = store.get("proposals");
@@ -40,6 +40,8 @@ test("a database seeded before seed migrations gets the proposals and the remind
     ["flow-rent", "seed"],
     ["flow-salary", "seed"],
     ["money", "seed"],
+    ["tasks", "seed"],
+    ["payments", "seed"],
     ["settings", "seed"],
   ]);
 

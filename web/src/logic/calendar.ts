@@ -1,6 +1,7 @@
 import { dayOf, localDateTime } from "../../../shared/dates.ts";
 import { parseDefinition } from "../../../shared/flows/registry.ts";
 import { nextSlot } from "../../../shared/flows/schedule.ts";
+import { isActive } from "../../../shared/payments.ts";
 import {
   dueInstant,
   isOpen,
@@ -130,6 +131,12 @@ export function flowSource(docs: Doc[], zone: Zone, now: number): CalendarSource
       return found;
     },
   };
+}
+
+/** Active payments by `due`, with their repeats ahead; overdue once past. */
+export function paymentSource(docs: Doc[], zone: Zone, now: number): CalendarSource {
+  const reminders = reminderSource(docs.filter(isActive), zone, now);
+  return { id: "payments", label: "Payments", events: reminders.events };
 }
 
 /** Every source's entries in time order; within a moment, open before done. */

@@ -222,3 +222,19 @@ test("done on a reminder that doesn't repeat is written as is", () => {
   w.update(once.id, { fields: { done: true } });
   expect(store.get(once.id)?.data).toMatchObject({ due: "2026-10-14T10:00", done: true });
 });
+
+test("status done on a repeating task brings it back on its next date, still open", () => {
+  const w = writer();
+  const created = w.create("tasks", {
+    title: "Pay rent",
+    fields: { due: "2026-11-01", repeat: "monthly", status: "todo" },
+  });
+  if (!created.ok) throw new Error(created.error);
+  expect(w.update(created.id, { fields: { status: "done" } })).toMatchObject({ ok: true });
+  expect(store.get(created.id)?.data).toMatchObject({ due: "2026-12-01", status: "todo" });
+  expect(store.get(created.id)?.data.completed).toBeString();
+  const once = w.create("tasks", { title: "Once", fields: { status: "todo" } });
+  if (!once.ok) throw new Error(once.error);
+  w.update(once.id, { fields: { status: "done" } });
+  expect(store.get(once.id)?.data.status).toBe("done");
+});

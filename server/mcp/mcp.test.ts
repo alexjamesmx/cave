@@ -165,6 +165,7 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "create",
     "update",
     "propose_delete",
+    "mark_paid",
     "save_flow",
     "add_note",
   ]);
@@ -185,6 +186,7 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     ["create", false],
     ["update", true],
     ["propose_delete", false],
+    ["mark_paid", false],
     ["save_flow", true],
     ["add_note", false],
   ]);
@@ -238,6 +240,38 @@ test("flows change only through save_flow; create and update can't reach them", 
     author: "claude",
     steps: ["Every week on weekday 1 at 08:00", "Create “Plan the week” in tasks"],
   });
+});
+
+test("mark_paid logs the expense and moves the payment to next month; a varying amount must be given", async () => {
+  const client = await connect("claude");
+  const card = await call(client, "create", {
+    collection: "payments",
+    title: "Nu card",
+    fields: {
+      kind: "card",
+      amount: 3000,
+      approx: true,
+      due: "2026-10-22T09:00",
+      repeat: "monthly",
+      active: true,
+    },
+  });
+  const { id } = card.structuredContent as { id: string };
+  const refused = await call(client, "mark_paid", { id });
+  expect(textOf(refused)).toContain("amount varies");
+  const paid = await call(client, "mark_paid", { id, amount: 2875.5, date: "2026-09-21T18:00" });
+  const { expense, next } = paid.structuredContent as { expense: string; next: { due: string } };
+  expect(next.due).toBe("2026-11-22T09:00");
+  expect(store.get(expense)?.data).toMatchObject({
+    _title: "Nu card",
+    amount: 2875.5,
+    direction: "expense",
+    date: "2026-09-21T18:00",
+  });
+  expect(store.get(id)?.data.due).toBe("2026-11-22T09:00");
+  expect(textOf(await call(client, "mark_paid", { id: expense }))).toBe(
+    `item ${expense} is not a payment`,
+  );
 });
 
 test("create refuses a guessed category and an attempt to set _deleted", async () => {

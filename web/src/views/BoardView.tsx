@@ -1,6 +1,8 @@
 import { type CSSProperties, type KeyboardEvent, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
-import { useSaver, useTimeZone } from "../app/hooks.ts";
+import { repeatOf } from "../../../shared/reminders.ts";
+import { completeTask } from "../../../shared/tasks.ts";
+import { useReminderZone, useSaver, useTimeZone } from "../app/hooks.ts";
 import { byRank, dropPatch } from "../logic/board.ts";
 import { groupBy, titleOf } from "../logic/views.ts";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
@@ -17,6 +19,7 @@ export function BoardView({ collection, view, items, open }: ViewProps) {
   const field = fields.find((f) => f.id === view.config.groupBy && f.type === "select");
   const saver = useSaver(collection.id);
   const timeZone = useTimeZone();
+  const zone = useReminderZone();
   const [adding, setAdding] = useState(false);
   const isTasks = collection.id === "tasks";
 
@@ -25,6 +28,12 @@ export function BoardView({ collection, view, items, open }: ViewProps) {
     const doc = items.find((d) => d.id === id);
     const group = groups.find((g) => (g.value ?? NONE) === column);
     if (!doc || !group || !field) return;
+    const repeating = isTasks && group.value === "done" && repeatOf(doc.data) !== "none";
+    if (repeating) {
+      const now = localDateTime(new Date(), timeZone);
+      void saver.save(id, completeTask(doc, Date.now(), zone, now));
+      return;
+    }
     const patch = dropPatch({
       doc,
       field: field.id,

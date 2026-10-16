@@ -12,6 +12,13 @@ export const SECTIONS: Section[] = [
   { id: "money", label: "Money", icon: "wallet", color: "var(--income)", path: "/c/money" },
   { id: "tasks", label: "Tasks", icon: "square-check", color: "var(--cyan)", path: "/c/tasks" },
   {
+    id: "payments",
+    label: "Payments",
+    icon: "calendar-clock",
+    color: "var(--orange)",
+    path: "/c/payments",
+  },
+  {
     id: "calendar",
     label: "Calendar",
     icon: "calendar-days",

@@ -14,7 +14,7 @@ bun run agent revoke codex
 - The token (`cave_…`) is printed once. Only its SHA-256 is stored, so it can't be shown again. A lost token means revoking the agent and adding a new one.
 - Scopes:
   - `read`: `list_collections`, `query`, `get`, `money_month`, `list_flows`.
-  - `write`: `create`, `update`, `propose_delete`, `save_flow`, and `add_note` (only when `VAULT_PATH` is set).
+  - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, and `add_note` (only when `VAULT_PATH` is set).
 - `--collections` limits what the agent can see. Other collections don't appear in its lists, and anything in them answers "not found".
 - Keep the token in an environment variable, `CAVE_AGENT_TOKEN` below. Never put it in a committed file.
 
@@ -24,6 +24,9 @@ bun run agent revoke codex
 - **Deletes:** agents can't delete. `propose_delete` puts a proposal on the Agents page, and the owner approves or declines it.
 - **Undo:** every agent write can be undone from the Agents page. A key the owner changed afterwards is kept.
 - **Reminders:** a reminder whose `repeat` isn't `none` repeats on completion. `update` with `done: true` moves `due` to the next occurrence and keeps it open, as the app's Done does. The Cave sends a due reminder's notification itself, so agents must not offer outside scheduled tasks for Cave reminders.
+- **Repeating tasks:** a task with `repeat` other than `none` comes back: `update` with `status: "done"` moves `due` to the next date, keeps it open (`todo`) and sets `completed`, as the app's Done does. The change log keeps every completion.
+- **Payments:** the `payments` collection holds what the owner pays on a date (subscriptions, cards, bills, loans). `mark_paid` logs the expense (title, category and account from the payment) and moves the payment to its next date; a one-off one becomes inactive. A payment with `approx: true` (a card statement) needs `amount`: ask the owner, never guess it.
+- **Money categories:** each option has a `kind` (`expense`, `income`, `transfer`); use one that fits the direction. Transfers count as neither spending nor income.
 - **Flows:** only through `save_flow` and `list_flows`. `create` and `update` can't reach the `flows` collection. See "Flows" below.
 - **Notes:** `add_note` only creates new files under `Inbox/` in the vault. It never changes an existing note.
 
@@ -163,7 +166,7 @@ Claude's apps reach custom connectors from Anthropic's cloud, so they use the ho
    - URL: `https://cave.alexjamesmx.dev/mcp`;
    - sign-in: **No sign-in**;
    - request header: name `authorization`, value `Bearer <token>`, **Required**.
-3. **Set the write tools to ask first:** `create`, `update`, `propose_delete`, `save_flow` and `add_note`. Read tools can stay allowed.
+3. **Set the write tools to ask first:** `create`, `update`, `propose_delete`, `mark_paid`, `save_flow` and `add_note`. Read tools can stay allowed.
 
 - The connector belongs to the Claude account, so every device signed in to it has the Cave.
 - **Changing the token** (lost, leaked, rotated) means revoking `claude-apps`, minting a new one, then removing and re-adding the connector: the header value can't be edited in place.

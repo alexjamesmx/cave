@@ -1,9 +1,12 @@
+import { localDateTime } from "../shared/dates.ts";
 import { activeFields, fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
 import { FLOWS } from "../shared/flows/seed.ts";
 import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
+import { PAYMENTS, paidPatch } from "../shared/payments.ts";
 import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
 import type { CollectionData } from "../shared/schema.ts";
+import { completeTask } from "../shared/tasks.ts";
 import type { Doc } from "../shared/types.ts";
 import type { Agent } from "./agents.ts";
 import type { Store } from "./store.ts";
@@ -83,6 +86,7 @@ export class AgentWriter {
     const data = this.toData(collection, patch);
     if (!data.ok) return data;
     if (doc.value.collection === REMINDERS) data.value = this.completing(doc.value, data.value);
+    if (doc.value.collection === "tasks") data.value = this.completingTask(doc.value, data.value);
     // Only keys whose value actually changes are written, so the log shows real edits.
     const changed = Object.fromEntries(
       Object.entries(data.value).filter(
@@ -156,6 +160,55 @@ export class AgentWriter {
     const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const zone = zoneOf(this.store.get("settings")?.data, fallback);
     return { ...rest, ...complete({ data: merged, stamps: doc.stamps }, this.now(), zone) };
+  }
+
+  /**
+   * "Paid" on a payment: the expense (validated like any agent create), then the payment's
+   * next date from the recurrence engine, which may set `_repeatFrom`. One call, two writes.
+   */
+  markPaid(
+    id: string,
+    expense: { amount: number; date: string },
+  ): WriteResult & {
+    expense?: string;
+    next?: Record<string, unknown>;
+  } {
+    const payment = this.visibleItem(id);
+    if (!payment.ok) return payment;
+    if (payment.value.collection !== PAYMENTS) return fail(`item ${id} is not a payment`);
+    const d = payment.value.data;
+    const text = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+    const created = this.create("money", {
+      title: text(d._title) ?? "Payment",
+      fields: {
+        amount: expense.amount,
+        direction: "expense",
+        date: expense.date,
+        ...(text(d.category) ? { category: d.category } : {}),
+        ...(text(d.account) ? { account: d.account } : {}),
+      },
+    });
+    if (!created.ok) return created;
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const zone = zoneOf(this.store.get("settings")?.data, fallback);
+    const next = paidPatch(payment.value, this.now(), zone);
+    const moved = this.apply(payment.value, { ...payment.value, data: next });
+    if (!moved.ok) return moved;
+    return { ok: true, id, seqs: [...created.seqs, ...moved.seqs], expense: created.id, next };
+  }
+
+  /** `status: "done"` on a repeating task moves it to its next date and keeps it open. */
+  private completingTask(doc: Doc, data: Record<string, unknown>): Record<string, unknown> {
+    const { status, ...rest } = data;
+    const merged = { ...doc.data, ...rest };
+    if (status !== "done" || repeatOf(merged) === "none") return data;
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const zone = zoneOf(this.store.get("settings")?.data, fallback);
+    const nowLocal = localDateTime(new Date(this.now()), zone.timeZone);
+    return {
+      ...rest,
+      ...completeTask({ data: merged, stamps: doc.stamps }, this.now(), zone, nowLocal),
+    };
   }
 
   private visibleItem(id: string): { ok: true; value: Doc } | { ok: false; error: string } {

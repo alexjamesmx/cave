@@ -1,11 +1,19 @@
 import { useMemo, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
-import { zonedInstant } from "../../../shared/reminders.ts";
+import { PAYMENTS } from "../../../shared/payments.ts";
+import { repeatOf, type Zone, zonedInstant } from "../../../shared/reminders.ts";
+import { completeTask } from "../../../shared/tasks.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone, useToday } from "../app/hooks.ts";
 import { collectionPath } from "../app/router.ts";
-import { type CalendarEvent, mergeEvents, reminderSource, taskSource } from "../logic/calendar.ts";
+import {
+  type CalendarEvent,
+  mergeEvents,
+  paymentSource,
+  reminderSource,
+  taskSource,
+} from "../logic/calendar.ts";
 import { type CollectionDoc, useItems } from "../store/queries.ts";
 import { Icon } from "./icon.tsx";
 import { ReminderActions } from "./ReminderActions.tsx";
@@ -15,23 +23,28 @@ const nextDay = (day: string) => {
   return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
 };
 
-/** Overdue, today's and tomorrow's reminders and tasks, each with Done and Snooze. */
+/** Overdue, today's and tomorrow's reminders, tasks and payments, each with its actions. */
 export function DueCard({ collections }: { collections: CollectionDoc[] }) {
   const { db } = useCave().local;
   const reminders = useItems(db, "reminders");
   const tasks = useItems(db, "tasks");
+  const payments = useItems(db, PAYMENTS);
   const zone = useReminderZone();
   const now = useNow().getTime();
   const today = useToday();
   const tomorrow = nextDay(today);
 
   const events = useMemo(() => {
-    if (!reminders || !tasks) return [];
+    if (!reminders || !tasks || !payments) return [];
     const [y, m, d] = nextDay(tomorrow).split("-").map(Number) as [number, number, number];
     const range = { from: 0, to: zonedInstant(Date.UTC(y, m - 1, d), zone.timeZone) };
-    const sources = [reminderSource(reminders, zone, now), taskSource(tasks, zone, today)];
+    const sources = [
+      reminderSource(reminders, zone, now),
+      taskSource(tasks, zone, today),
+      paymentSource(payments, zone, now),
+    ];
     return mergeEvents(sources, range).filter((e) => !e.repeat && !e.done);
-  }, [reminders, tasks, zone, now, today, tomorrow]);
+  }, [reminders, tasks, payments, zone, now, today, tomorrow]);
 
   const groups: [string, CalendarEvent[]][] = [
     ["Overdue", events.filter((e) => e.overdue)],
@@ -74,7 +87,7 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
                     </a>
                     {item && e.collection === "reminders" && <ReminderActions doc={item} />}
                     {item && e.collection === "tasks" && (
-                      <TaskActions doc={item} timeZone={zone.timeZone} tomorrow={tomorrow} />
+                      <TaskActions doc={item} zone={zone} tomorrow={tomorrow} />
                     )}
                   </li>
                 );
@@ -87,15 +100,8 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
 }
 
 /** Done closes the task; Snooze moves its due day to tomorrow. Both can be undone at once. */
-function TaskActions({
-  doc,
-  timeZone,
-  tomorrow,
-}: {
-  doc: Doc;
-  timeZone: string;
-  tomorrow: string;
-}) {
+function TaskActions({ doc, zone, tomorrow }: { doc: Doc; zone: Zone; tomorrow: string }) {
+  const { timeZone } = zone;
   const { local } = useCave();
   const [undo, setUndo] = useState<{ label: string; before: Record<string, unknown> }>();
   const target = { id: doc.id, kind: "item" as const, collection: "tasks" };
@@ -126,7 +132,10 @@ function TaskActions({
         type="button"
         className="btn"
         onClick={() =>
-          void write({ status: "done", completed: localDateTime(new Date(), timeZone) }, "Done")
+          void write(
+            completeTask(doc, Date.now(), zone, localDateTime(new Date(), timeZone)),
+            repeatOf(doc.data) === "none" ? "Done" : "Done · next date set",
+          )
         }
       >
         <Icon name="check" size={14} />

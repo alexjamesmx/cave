@@ -22,6 +22,7 @@ export const VIEW_TYPES = [
   "wealth",
   "habits",
   "progress",
+  "payments",
 ] as const;
 export type ViewType = (typeof VIEW_TYPES)[number];
 

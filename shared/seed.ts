@@ -3,6 +3,7 @@ import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
+import { PAYMENTS, PAYMENTS_COLLECTION, TASK_FIELDS } from "./payments.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
 import type { Doc, Kind } from "./types.ts";
@@ -109,10 +110,11 @@ const COLLECTIONS: Record<string, CollectionData> = {
         opt("normal", "minus", C.grey),
         opt("low", "chevrons-down", C.cyan),
       ]),
-      field("due", "Due", "date"),
+      dateTime("due", "Due"),
       field("area", "Area", "text"),
       dateTime("completed", "Completed"),
       dateTime("cancelled", "Cancelled"),
+      ...TASK_FIELDS,
     ],
     views: [
       view("board", "Board", "board", { groupBy: "status" }),
@@ -280,6 +282,27 @@ export interface SeedMigration {
   update?: (get: (id: string) => Doc | undefined) => SeedMigration["docs"];
 }
 
+/**
+ * M7b part 6: tasks repeat and can notify, and their `due` takes a time; payments arrive.
+ * Fields the owner already has keep their settings; only missing ones are added.
+ */
+function repeatingTasksAndPayments(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
+  const docs: SeedMigration["docs"] = [];
+  const tasks = get("tasks");
+  const fields = (tasks?.data as unknown as CollectionData | undefined)?.fields;
+  if (tasks?.kind === "collection" && tasks.data._deleted !== true && Array.isArray(fields)) {
+    const next = [
+      ...fields.map((f) =>
+        f.id === "due" && f.type === "date" ? { ...f, config: { ...f.config, withTime: true } } : f,
+      ),
+      ...TASK_FIELDS.filter((t) => !fields.some((f) => f.id === t.id)),
+    ];
+    docs.push({ id: "tasks", kind: "collection", data: { fields: next } });
+  }
+  if (!get(PAYMENTS)) docs.push({ id: PAYMENTS, kind: "collection", data: PAYMENTS_COLLECTION });
+  return docs;
+}
+
 /** M7b part 5: the money categories gain emoji, labels and kinds, and the new set is added. */
 function mergeMoneyCategories(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
   const money = get("money");
@@ -321,6 +344,7 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 4, docs: [{ id: "settings", kind: "setting", data: NOTIFICATION_DEFAULTS }] },
   { version: 5, docs: FLOW_DOCS },
   { version: 6, docs: [], update: mergeMoneyCategories },
+  { version: 7, docs: [], update: repeatingTasksAndPayments },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -353,6 +377,7 @@ export function seedDocs(): Doc[] {
   return [
     ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
     seeded("proposals", "collection", PROPOSALS),
+    seeded(PAYMENTS, "collection", PAYMENTS_COLLECTION),
     ...FLOW_DOCS.map((d) => seeded(d.id, d.kind, d.data, d.collection ?? null)),
     seeded("settings", "setting", SETTINGS),
   ];

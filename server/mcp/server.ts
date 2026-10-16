@@ -1,5 +1,6 @@
 import { type CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
+import { localDateTime } from "../../shared/dates.ts";
 import { FlowDefinitionSchema } from "../../shared/flows/registry.ts";
 import type { Hlc } from "../../shared/hlc.ts";
 import type { CallLog } from "../agent-calls.ts";
@@ -204,6 +205,44 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       (args) =>
         run("propose_delete", args, () => fromWrite(writer().proposeDelete(args.id, args.reason))),
+    );
+    server.registerTool(
+      "mark_paid",
+      {
+        description:
+          "Mark a payment (from the payments collection) paid: it logs the expense with the payment's title, category and account, and moves the payment to its next date (a one-off one becomes inactive). Pass amount for payments whose amount varies (approx); otherwise the expected amount is used. date is local YYYY-MM-DDTHH:mm, default now. Never guess an amount.",
+        inputSchema: z.object({
+          id: z.string(),
+          amount: z.number().positive().optional(),
+          date: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "YYYY-MM-DDTHH:mm")
+            .optional(),
+        }),
+        annotations: WRITE,
+      },
+      (args) =>
+        run("mark_paid", args, () => {
+          const payment = store.get(args.id);
+          const expected = payment?.data.amount;
+          const amount =
+            args.amount ??
+            (payment?.data.approx === true || typeof expected !== "number" ? undefined : expected);
+          if (amount === undefined)
+            return {
+              ok: false,
+              error: "this payment's amount varies: pass amount (ask the owner)",
+            };
+          const date = args.date ?? localDateTime(new Date(deps.now()), timeZone());
+          const result = writer().markPaid(args.id, { amount, date });
+          return result.ok
+            ? {
+                ok: true,
+                value: { expense: result.expense, payment: args.id, next: result.next },
+                seqs: result.seqs,
+              }
+            : result;
+        }),
     );
     server.registerTool(
       "save_flow",

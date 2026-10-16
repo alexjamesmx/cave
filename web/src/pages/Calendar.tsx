@@ -2,6 +2,7 @@ import { type CSSProperties, type FormEvent, useMemo, useState } from "react";
 import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../../../shared/dates.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
 import { newId } from "../../../shared/ids.ts";
+import { PAYMENTS } from "../../../shared/payments.ts";
 import { zonedInstant } from "../../../shared/reminders.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone, useToday } from "../app/hooks.ts";
@@ -12,6 +13,7 @@ import {
   type CalendarSource,
   flowSource,
   mergeEvents,
+  paymentSource,
   reminderSource,
   taskSource,
 } from "../logic/calendar.ts";
@@ -39,19 +41,21 @@ function useSources(): CalendarSource[] | undefined {
   const reminders = useItems(db, "reminders");
   const tasks = useItems(db, "tasks");
   const flows = useItems(db, FLOWS);
+  const payments = useItems(db, PAYMENTS);
   const zone = useReminderZone();
   const now = useNow().getTime();
   const today = useToday();
   return useMemo(
     () =>
-      reminders && tasks && flows
+      reminders && tasks && flows && payments
         ? [
             reminderSource(reminders, zone, now),
             taskSource(tasks, zone, today),
             flowSource(flows, zone, now),
+            paymentSource(payments, zone, now),
           ]
         : undefined,
-    [reminders, tasks, flows, zone, now, today],
+    [reminders, tasks, flows, payments, zone, now, today],
   );
 }
 

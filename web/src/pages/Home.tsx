@@ -4,9 +4,10 @@ import { transferCategories } from "../../../shared/categories.ts";
 import { monthName, monthOf } from "../../../shared/dates.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
 import { monthSummary } from "../../../shared/money.ts";
+import { PAYMENTS, upcomingPayments } from "../../../shared/payments.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
-import { useTimeZone, useToday } from "../app/hooks.ts";
+import { useReminderZone, useTimeZone, useToday } from "../app/hooks.ts";
 import { ownerGet } from "../app/owner-api.ts";
 import { collectionPath } from "../app/router.ts";
 import { useSignal } from "../app/signal.ts";
@@ -20,6 +21,7 @@ import { AskBox } from "../ui/AskBox.tsx";
 import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { MoneyForm } from "../ui/MoneyForm.tsx";
+import { PaymentForm } from "../ui/PaymentForm.tsx";
 import { type QuickKind, ReminderForm, TaskForm } from "../ui/QuickForms.tsx";
 
 const CLOSED = new Set(["done", "dropped"]);
@@ -28,6 +30,7 @@ const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
   { kind: "expense", label: "Expense", icon: "wallet" },
   { kind: "task", label: "Task", icon: "square-check" },
   { kind: "reminder", label: "Reminder", icon: "bell" },
+  { kind: "payment", label: "Payment", icon: "calendar-clock" },
 ];
 
 const when = (ms: number | null | undefined) =>
@@ -80,6 +83,7 @@ export function Home() {
           </fieldset>
           {quick === "expense" && <MoneyForm onSaved={(_id, message) => done(message)} />}
           {collections && quick === "task" && <TaskForm collections={collections} onDone={done} />}
+          {quick === "payment" && <PaymentForm onSaved={done} />}
           {collections && quick === "reminder" && (
             <ReminderForm collections={collections} onDone={done} />
           )}
@@ -101,6 +105,7 @@ function Glance() {
   const collections = useCollections(local.db);
   const items = useAllItems(local.db);
   const today = useToday();
+  const zone = useReminderZone();
   const status = useSignal(cave.status);
   const [server, setServer] = useState<
     { deploy: Status["deploy"]; flowRuns: number } | "offline"
@@ -145,6 +150,13 @@ function Glance() {
   const week = habitsThisWeek(entriesByDay(of("journal")), habits, today);
   const waiting = of(FLOWS).filter((f) => f.data.status === "pending-approval").length;
   const wealth = wealthSummary(of("wealth"));
+  const payments = of(PAYMENTS);
+  const nowMs = Date.now();
+  const dueSoon = upcomingPayments(payments, nowMs, nowMs + 7 * DAY_MS, zone);
+  const dueSoonTotal = dueSoon.reduce((sum, p) => {
+    const amount = payments.find((d) => d.id === p.id)?.data.amount;
+    return sum + (typeof amount === "number" ? amount : 0);
+  }, 0);
   const leetcode = of("leetcode");
   const solved = leetcode.filter((d) => d.data.status === "solved").length;
 
@@ -179,6 +191,19 @@ function Glance() {
         <span className="muted">
           waiting for approval ·{" "}
           {typeof server === "object" ? `${server.flowRuns} ran in 24 h` : "runs need the server"}
+        </span>
+      </Tile>
+      <Tile
+        href={collectionPath(PAYMENTS)}
+        icon="calendar-clock"
+        color="var(--orange)"
+        label="Payments · 7 days"
+      >
+        <span className="num big">{formatMoney(dueSoonTotal)}</span>
+        <span className="num muted">
+          {dueSoon.length} due
+          {dueSoon.some((p) => p.overdue) &&
+            ` · ${dueSoon.filter((p) => p.overdue).length} overdue`}
         </span>
       </Tile>
       <Tile

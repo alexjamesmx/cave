@@ -27,6 +27,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       "journal",
       "leetcode",
       "money",
+      "payments",
       "projects",
       "proposals",
       "reminders",
@@ -58,7 +59,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     ["flow-salary", "draft"],
   ]);
   for (const d of drafts) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(13);
+  expect(docs).toHaveLength(14);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {
@@ -72,7 +73,7 @@ test("every key is stamped with time 0 so any edit wins", () => {
 test("dates that carry a time are flagged withTime", () => {
   expect(fieldOf("reminders", "due")).toMatchObject({ type: "date", config: { withTime: true } });
   expect(fieldOf("money", "date")).toMatchObject({ type: "date", config: { withTime: true } });
-  expect(fieldOf("tasks", "due")?.config).toBeUndefined();
+  expect(fieldOf("tasks", "due")).toMatchObject({ type: "date", config: { withTime: true } });
 });
 
 test("seeded select options and colours", () => {

@@ -2,6 +2,7 @@ import { localDate, localDateTime } from "../../shared/dates.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import type { NotificationSettings } from "../../shared/notifications.ts";
 import { complete, snooze, type Zone } from "../../shared/reminders.ts";
+import { completeTask } from "../../shared/tasks.ts";
 import type { Doc } from "../../shared/types.ts";
 import { parseReminder, preview } from "../../shared/when.ts";
 import { every, type Job } from "../jobs/scheduler.ts";
@@ -158,11 +159,13 @@ export function createTelegram({
       }
       case "tdone":
         if (doc.collection !== "tasks") return "Not a task.";
-        writer.update(doc, {
-          status: "done",
-          completed: localDateTime(new Date(now()), z.timeZone),
-        });
-        return "Done ✓";
+        {
+          const patch = completeTask(doc, now(), z, localDateTime(new Date(now()), z.timeZone));
+          writer.update(doc, patch);
+          return typeof patch.due === "string"
+            ? `Done ✓ · next ${patch.due.replace("T", " ")}`
+            : "Done ✓";
+        }
       case "tsnooze": {
         if (doc.collection !== "tasks") return "Not a task.";
         const today = localDate(new Date(now()), z.timeZone);

@@ -221,7 +221,9 @@ describe("field values", () => {
       item("bad", { _title: "x", due: "tomorrow" }, 1, "dev-a"),
       item("good", { _title: "y", due: "2026-10-12" }, 1, "dev-a"),
     ]);
-    expect(res.rejected).toEqual([{ id: "bad", error: "field due: must be YYYY-MM-DD" }]);
+    expect(res.rejected).toEqual([
+      { id: "bad", error: "field due: must be YYYY-MM-DD or YYYY-MM-DDTHH:mm[:ss]" },
+    ]);
     expect(store.get("bad")).toBeUndefined();
     expect(store.get("good")?.data.due).toBe("2026-10-12");
     expect(res.serverTime).toBe(NOW);

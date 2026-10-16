@@ -2,13 +2,14 @@ import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
+import { REPEATS } from "../../../shared/recurrence.ts";
 import { preview, type WhenContext } from "../../../shared/when.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone, useTimeZone } from "../app/hooks.ts";
 import { parseWhen } from "../logic/when-field.ts";
 import type { CollectionDoc } from "../store/queries.ts";
 
-export type QuickKind = "expense" | "task" | "reminder";
+export type QuickKind = "expense" | "task" | "reminder" | "payment";
 
 interface FormProps {
   collections: CollectionDoc[];
@@ -74,6 +75,7 @@ export function TaskForm({ onDone }: FormProps) {
   const { write, error } = useWrite();
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
+  const [repeat, setRepeat] = useState<string>("none");
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -81,6 +83,7 @@ export function TaskForm({ onDone }: FormProps) {
       _title: title.trim(),
       status: "todo",
       ...(due ? { due } : {}),
+      ...(repeat !== "none" ? { repeat } : {}),
     });
     if (saved) onDone(`Saved · Task · ${title.trim()}`);
   };
@@ -103,13 +106,34 @@ export function TaskForm({ onDone }: FormProps) {
             <input
               id={id}
               className="input"
-              type="date"
+              type="datetime-local"
               value={due}
               onChange={(e) => setDue(e.target.value)}
             />
           )}
         </Field>
+        <Field label="Repeat">
+          {(id) => (
+            <select
+              id={id}
+              className="input"
+              value={repeat}
+              onChange={(e) => setRepeat(e.target.value)}
+            >
+              {REPEATS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
       </div>
+      {repeat !== "none" && (
+        <span className="muted" style={{ fontSize: 13 }}>
+          Done moves this same task to its next date; it never piles up copies.
+        </span>
+      )}
       <button type="submit" className="btn primary" disabled={!title.trim()}>
         Save
       </button>

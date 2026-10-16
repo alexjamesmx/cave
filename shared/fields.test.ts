@@ -58,7 +58,11 @@ describe("validateFields", () => {
   });
 
   test("date fields follow their withTime setting", () => {
-    expect(keysOf(tasks, { due: "2026-10-12T10:00" })).toEqual(["due"]);
+    const dateOnly: Field[] = [{ id: "day", name: "Day", type: "date" }];
+    expect(keysOf(dateOnly, { day: "2026-10-12T10:00" })).toEqual(["day"]);
+    expect(keysOf(dateOnly, { day: "2026-10-12" })).toEqual([]);
+    // A task's due takes a time since M7b, and a date alone still.
+    expect(keysOf(tasks, { due: "2026-10-12T10:00" })).toEqual([]);
     expect(keysOf(money, { date: "2026-10-12T10:00" })).toEqual([]);
   });
 
