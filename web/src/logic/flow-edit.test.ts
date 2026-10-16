@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
+import { SEEDED_FLOWS } from "../../../shared/flows/drafts.ts";
 import { MAX_STEPS, parseDefinition, STEPS, TRIGGERS } from "../../../shared/flows/registry.ts";
-import { FLOWS_COLLECTION, SEEDED_FLOWS } from "../../../shared/flows/seed.ts";
+import { FLOWS_COLLECTION } from "../../../shared/flows/seed.ts";
 import {
   addStep,
   blankFlow,

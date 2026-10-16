@@ -1,4 +1,5 @@
 import { TOKEN_KEY } from "./boot.ts";
+import { expire } from "./lock.ts";
 
 /** GET from the owner API with this device's server token; `undefined` when unreachable. */
 export async function ownerGet<T>(path: string): Promise<T | undefined> {
@@ -7,6 +8,7 @@ export async function ownerGet<T>(path: string): Promise<T | undefined> {
     const res = await fetch(path, {
       headers: token ? { authorization: `Bearer ${token}` } : {},
     });
+    if (res.status === 401) expire();
     return res.ok ? ((await res.json()) as T) : undefined;
   } catch {
     return undefined;
@@ -20,6 +22,7 @@ export async function ownerDownload(path: string): Promise<boolean> {
     const res = await fetch(path, {
       headers: token ? { authorization: `Bearer ${token}` } : {},
     });
+    if (res.status === 401) expire();
     if (!res.ok) return false;
     const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1];
     const url = URL.createObjectURL(await res.blob());
@@ -44,6 +47,7 @@ export async function ownerPost<T>(path: string, body: unknown): Promise<T | und
       },
       body: JSON.stringify(body),
     });
+    if (res.status === 401) expire();
     return res.ok ? ((await res.json()) as T) : undefined;
   } catch {
     return undefined;

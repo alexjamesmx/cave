@@ -14,6 +14,8 @@ const dbPath = join(process.env.CAVE_E2E_DIR, "cave.db");
 if (!process.env.CAVE_E2E_VAPID)
   process.env.CAVE_E2E_VAPID = JSON.stringify(webpush.generateVAPIDKeys());
 const vapid = JSON.parse(process.env.CAVE_E2E_VAPID) as { publicKey: string; privateKey: string };
+// The server needs a token, as in production; specs unlock with it (`e2e/helpers.ts`).
+process.env.CAVE_E2E_TOKEN ??= crypto.randomUUID().replaceAll("-", "");
 
 export default defineConfig({
   testDir: "e2e",
@@ -38,7 +40,7 @@ export default defineConfig({
       CAVE_DB_PATH: dbPath,
       VAULT_PATH: "",
       BACKUP_DIR: "",
-      CAVE_TOKEN: "",
+      CAVE_TOKEN: process.env.CAVE_E2E_TOKEN,
       CAVE_HOST: "",
       CAVE_ALLOWED_HOSTS: "",
       CAVE_PUBLIC_ORIGIN: "",

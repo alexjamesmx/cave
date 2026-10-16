@@ -3,6 +3,7 @@ import { openLocalDb } from "../store/db.ts";
 import { LocalStore } from "../store/local-store.ts";
 import { startSyncScheduler } from "../store/scheduler.ts";
 import { type ClockAheadError, httpTransport, syncOnce } from "../store/sync.ts";
+import { expire } from "./lock.ts";
 import { createSignal, type Signal } from "./signal.ts";
 import { failedStatus, type SyncStatus } from "./sync-status.ts";
 
@@ -45,7 +46,9 @@ export async function boot(): Promise<Cave> {
       await syncOnce(local, httpTransport("/api/sync", local, token));
       status.set({ phase: "idle", lastSyncedAt: Date.now() });
     } catch (error) {
-      status.set(failedStatus(error, lastSyncedAt, navigator.onLine));
+      const failed = failedStatus(error, lastSyncedAt, navigator.onLine);
+      if (failed.phase === "unauthorized") return expire();
+      status.set(failed);
     }
   };
 

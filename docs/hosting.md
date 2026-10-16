@@ -194,7 +194,7 @@ timeout 5 bash -c '</dev/tcp/203.0.113.10/3000' && echo OPEN || echo closed
    The restored database and the set-aside `cave.db.before-restore-*` (an empty server's) remain.
 
 ## 10. Clients
-- **Laptop:** open `https://cave.alexjamesmx.dev`, enter the server token in Settings and install the app. Uninstall the old `127.0.0.1` app; its data is already in the restored database.
+- **Laptop:** open `https://cave.alexjamesmx.dev`, unlock it with the server token and install the app. Uninstall the old `127.0.0.1` app; its data is already in the restored database.
 - **Phone:** the same, over cellular data.
 - **Claude Code:** the owner mints the agent token **in hPanel's browser terminal**, not over an SSH session, so it never enters Claude Code's own output:
   ```bash

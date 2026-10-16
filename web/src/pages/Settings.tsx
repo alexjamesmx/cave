@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Status } from "../../../server/owner-api.ts";
-import { TOKEN_KEY } from "../app/boot.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone, useTimeZone } from "../app/hooks.ts";
+import { forgetDevice, lockDevice } from "../app/lock.ts";
 import { ownerDownload, ownerGet } from "../app/owner-api.ts";
-import { COMMIT_URL, deployLine } from "../logic/deploy-line.ts";
+import { deployLine } from "../logic/deploy-line.ts";
 import { useDoc } from "../store/queries.ts";
 import { DeviceNotifications, NotificationChannels } from "../ui/NotificationSettings.tsx";
 
@@ -12,12 +12,13 @@ const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 
 export function Settings() {
   const cave = useCave();
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) ?? "");
-
-  const save = () => {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-    cave.syncNow();
+  const forget = () => {
+    if (
+      confirm(
+        "Forget this device? Its copy of the Cave and the offline files are deleted here; the server keeps everything. Changes not synced yet are lost.",
+      )
+    )
+      void forgetDevice(() => cave.local.db.close());
   };
 
   return (
@@ -28,22 +29,19 @@ export function Settings() {
       <DeviceNotifications />
       <NotificationChannels />
       <section className="panel" style={{ padding: 18, display: "grid", gap: 14, maxWidth: 560 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <span className="k">Server token</span>
-          <input
-            className="input"
-            type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Only needed when the server sets CAVE_TOKEN"
-          />
-        </label>
-        <div>
-          <button type="button" className="btn primary" onClick={save}>
-            Save and sync
+        <span className="k">This device</span>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className="btn" onClick={lockDevice}>
+            Lock this device
+          </button>
+          <button type="button" className="btn" onClick={forget}>
+            Forget this device
           </button>
         </div>
+        <span className="muted" style={{ fontSize: 13 }}>
+          Lock asks for the server token again and keeps this device's copy. Forget also deletes the
+          copy and the offline files.
+        </span>
         <div className="muted" style={{ fontSize: 13 }}>
           Device <span className="num">{cave.local.deviceId}</span>
         </div>
@@ -157,16 +155,11 @@ function ServerStatus() {
                   typeof part === "string" ? (
                     part
                   ) : (
-                    <a
-                      // biome-ignore lint/suspicious/noArrayIndexKey: the parts never reorder
-                      key={i}
-                      className="num"
-                      href={COMMIT_URL + part.commit}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    // The repository is private and its address isn't shipped in the app.
+                    // biome-ignore lint/suspicious/noArrayIndexKey: the parts never reorder
+                    <span key={i} className="num" title={part.commit}>
                       {part.commit.slice(0, 7)}
-                    </a>
+                    </span>
                   ),
                 )}
               </dd>

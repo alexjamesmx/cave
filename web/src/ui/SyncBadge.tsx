@@ -38,23 +38,10 @@ export function SyncBadge() {
 
 /**
  * Why sync stopped, in words a phone can show: a title tooltip needs a mouse. A refused token
- * (a fresh Home Screen install has none) says where to enter it.
+ * never shows here: it returns the device to the lock screen.
  */
 export function SyncProblemBanner() {
   const status = useSignal(useCave().status);
-  if (status.phase === "unauthorized") {
-    return (
-      <div className="panel banner" role="alert">
-        <span>
-          The server didn't accept this device's token, so nothing syncs yet. A new install, or a
-          changed token, needs it entered once.
-        </span>
-        <a href="/settings" className="btn primary">
-          Enter the server token
-        </a>
-      </div>
-    );
-  }
   if (status.phase !== "error") return null;
   return (
     <div className="panel banner" role="alert">

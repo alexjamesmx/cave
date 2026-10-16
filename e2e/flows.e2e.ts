@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests } from "./helpers.ts";
+import { offOriginRequests, ownerContext } from "./helpers.ts";
 
 test("a copy of Salary → save with a 100 threshold creates the task for an income of 200; Undo removes it", async ({
   browser,
   baseURL,
 }) => {
   test.setTimeout(90_000);
-  const context = await browser.newContext();
+  const context = await ownerContext(browser);
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
   await page.goto("/flows/flow-salary");

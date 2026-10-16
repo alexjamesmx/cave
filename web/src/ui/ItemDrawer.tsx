@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Change } from "../../../shared/types.ts";
-import { TOKEN_KEY } from "../app/boot.ts";
 import { useCave } from "../app/context.ts";
 import { useSaver } from "../app/hooks.ts";
+import { ownerGet } from "../app/owner-api.ts";
 import { titleOf } from "../logic/views.ts";
 import { useLive } from "../store/live.ts";
 import { type CollectionDoc, useDoc } from "../store/queries.ts";
@@ -112,13 +112,10 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
 function History({ id }: { id: string }) {
   const [changes, setChanges] = useState<Change[] | "offline">();
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const headers: Record<string, string> = token ? { authorization: `Bearer ${token}` } : {};
     let live = true;
-    fetch(`/api/history/${encodeURIComponent(id)}`, { headers })
-      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
-      .then((body: { changes: Change[] }) => live && setChanges(body.changes))
-      .catch(() => live && setChanges("offline"));
+    void ownerGet<{ changes: Change[] }>(`/api/history/${encodeURIComponent(id)}`).then(
+      (body) => live && setChanges(body?.changes ?? "offline"),
+    );
     return () => {
       live = false;
     };

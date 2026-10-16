@@ -117,7 +117,7 @@ The Cave can run on a VPS as the server every device syncs with. Today that is a
   2. run `bun run restore <file>` as `cave` (the command is in `docs/hosting.md`, step 9);
   3. `systemctl start cave`.
 - **Devices and agents:**
-  - open `https://cave.alexjamesmx.dev`, enter the server token in Settings, and install the app;
+  - open `https://cave.alexjamesmx.dev`, unlock it with the server token, and install the app;
   - agents use `https://cave.alexjamesmx.dev/mcp` with their own token (`docs/agents.md`); Claude's desktop and phone apps through a custom connector (`docs/agents.md` "Claude apps").
 
 ## Developing

@@ -1,8 +1,6 @@
 import type { DeployStatus } from "../../../server/deploy-status.ts";
 
-export const COMMIT_URL = "https://github.com/alexjamesmx/cave/commit/";
-
-/** Text, or a commit to show short and link to GitHub. */
+/** Text, or a commit to show short. */
 export type Part = string | { commit: string };
 
 /** Settings' one line about the last deploy; `time` formats `deploy.at`. */

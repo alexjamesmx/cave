@@ -1,4 +1,5 @@
-import { FLOWS, FLOWS_COLLECTION, SEEDED_FLOWS } from "./flows/seed.ts";
+import { SEEDED_FLOWS } from "./flows/drafts.ts";
+import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";

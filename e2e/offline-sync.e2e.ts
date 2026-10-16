@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, syncBadge } from "./helpers.ts";
+import { offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
 
 test("an entry added offline syncs after reconnect and shows on a second device", async ({
   browser,
   baseURL,
 }) => {
-  const laptop = await browser.newContext();
+  const laptop = await ownerContext(browser);
   const foreign = offOriginRequests(laptop, baseURL as string);
   const page = await laptop.newPage();
   await page.goto("/");
@@ -21,7 +21,7 @@ test("an entry added offline syncs after reconnect and shows on a second device"
   await laptop.setOffline(false);
   await expect(syncBadge(page)).toHaveText("SYNCED");
 
-  const phone = await browser.newContext();
+  const phone = await ownerContext(browser);
   const other = await phone.newPage();
   await other.goto("/c/money/table");
   await expect(other.getByRole("button", { name: "e2e tacos" })).toBeVisible();

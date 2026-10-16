@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests } from "./helpers.ts";
+import { offOriginRequests, ownerContext } from "./helpers.ts";
 
 test("/system renders each tab with a flow, a reminder and a job run", async ({
   browser,
   baseURL,
 }) => {
-  const context = await browser.newContext();
+  const context = await ownerContext(browser);
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
 

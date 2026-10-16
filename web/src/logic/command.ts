@@ -38,14 +38,13 @@ const MONEY_RE = /^(\+)?\$?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?=\s|$)\s*
 const TAG_RE = /(^|\s)#([\p{L}\p{N}_-]+)(?=\s|$)/gu;
 
 const HINT =
-  "Try “205 tacos”, “+15040 paycheck”, “todo call the bank”, “remind stretch in 2h”, a habit like “gym”, or “> money”.";
+  "Try an amount and a title, “todo call the bank”, “remind stretch in 2h”, a habit like “gym”, or “> money”.";
 
 const norm = (s: string) => s.trim().toLowerCase();
 
 function parseMoney(input: string, ctx: CommandContext): Command {
   const m = MONEY_RE.exec(input);
-  if (!m)
-    return { kind: "reject", hint: "Start with an amount, like “205 tacos” or “$12.50 uber”." };
+  if (!m) return { kind: "reject", hint: "Start with an amount, then a title." };
   const amount = Number((m[2] as string).replaceAll(",", ""));
   const known = new Set(ctx.categories);
   const tags = [...(m[3] ?? "").matchAll(TAG_RE)].map((t) => t[2] as string);

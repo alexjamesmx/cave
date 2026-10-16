@@ -1,6 +1,7 @@
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, test } from "@playwright/test";
+import { ownerContext } from "./helpers.ts";
 
 // A local stand-in for a push service: it records what the Cave server sends it.
 function pushService() {
@@ -30,7 +31,7 @@ test("a reminder due in a minute reaches the device's push endpoint, encrypted a
   test.setTimeout(150_000);
   const service = await pushService();
   try {
-    const context = await browser.newContext({ permissions: ["notifications"] });
+    const context = await ownerContext(browser, { permissions: ["notifications"] });
     const page = await context.newPage();
     await page.goto("/settings");
     const section = page.getByText("Notifications on this device").locator("..");
@@ -50,7 +51,10 @@ test("a reminder due in a minute reaches the device's push endpoint, encrypted a
           .replace(/=+$/, "");
       const res = await fetch("/api/push/subscribe", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${localStorage.getItem("cave.token")}`,
+        },
         body: JSON.stringify({
           subscription: {
             endpoint,

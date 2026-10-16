@@ -18,14 +18,7 @@ import { type CollectionDoc, useCollections, useDoc } from "../store/queries.ts"
 import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
 
-const EXAMPLES = [
-  "205 tacos #food",
-  "+15040 paycheck",
-  "todo call the bank",
-  "remind stretch in 2h",
-  "gym",
-  "> money",
-];
+const EXAMPLES = ["todo call the bank", "remind stretch in 2h", "gym", "> money"];
 const CLOSED = new Set(["done", "dropped"]);
 
 export function Home() {

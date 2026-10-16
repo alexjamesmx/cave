@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests } from "./helpers.ts";
+import { offOriginRequests, ownerContext } from "./helpers.ts";
 
 // Thursday 2026-10-15, 10:00 in Mexico City, the seeded timezone. Timers keep running.
 const NOW = new Date("2026-10-15T16:00:00Z");
@@ -8,7 +8,7 @@ test("remind from the command bar, see it in the calendar and the Due card; Done
   browser,
   baseURL,
 }) => {
-  const context = await browser.newContext();
+  const context = await ownerContext(browser);
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
   await page.clock.setFixedTime(NOW);

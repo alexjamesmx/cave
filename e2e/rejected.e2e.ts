@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, syncBadge } from "./helpers.ts";
+import { offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
 
 test("a value the server refuses shows as not synced, with the reason", async ({
   browser,
   baseURL,
 }) => {
-  const context = await browser.newContext();
+  const context = await ownerContext(browser);
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
   await page.goto("/");

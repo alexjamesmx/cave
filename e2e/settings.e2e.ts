@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests } from "./helpers.ts";
+import { offOriginRequests, ownerContext } from "./helpers.ts";
 
 test("the owner's name reaches the greeting; Settings shows the server and downloads an export", async ({
   browser,
   baseURL,
 }) => {
-  const context = await browser.newContext();
+  const context = await ownerContext(browser);
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
   await page.goto("/settings");
@@ -30,7 +30,7 @@ test("the owner's name reaches the greeting; Settings shows the server and downl
   expect(exported.format).toBe(1);
 
   // A second device gets the name through sync.
-  const phone = await (await browser.newContext()).newPage();
+  const phone = await (await ownerContext(browser)).newPage();
   await phone.goto("/");
   await expect(phone.getByText(/^Good (morning|afternoon|evening), Alex · /)).toBeVisible();
 

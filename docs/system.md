@@ -199,7 +199,7 @@ bun run check; bun test; bun run e2e                  # e2e uses its own temp da
 6. **Claude Code:** start `claude` in the repo, check `/mcp` shows `cave` connected, then make the dev copy (section 5).
 
 ### A new phone, tablet or browser
-1. **The app:** open `https://cave.alexjamesmx.dev`, enter the server token in Settings, and install the app. The first sync downloads everything.
+1. **The app:** open `https://cave.alexjamesmx.dev`, unlock it with the server token, and install the app. The first sync downloads everything.
 2. **Claude:** sign in to the Claude app. The Cave connector is part of the account, so it is already there; if not, add it as `docs/agents.md` "Claude apps" says.
 3. **Code:** the Code tab of the Claude app starts cloud sessions on `alexjamesmx/cave` in the `cave` environment. Nothing to install on the phone.
 
@@ -230,7 +230,7 @@ Don't touch the other records (portfolio, mail).
 
 | Secret | Lives in | Never in |
 |---|---|---|
-| Server token `CAVE_TOKEN` | `/etc/cave/cave.env` (root:cave 640), your password manager, each device's Settings, the laptop `.env` as `CAVE_REMOTE_TOKEN` | git, logs, chats, command lines |
+| Server token `CAVE_TOKEN` | `/etc/cave/cave.env` (root:cave 640), your password manager, each unlocked device (localStorage), the laptop `.env` as `CAVE_REMOTE_TOKEN` | git, logs, chats, command lines |
 | Agent tokens | shown once at creation; the agent's environment variable (`CAVE_AGENT_TOKEN`); only their SHA-256 on the server | git, `.mcp.json` (it uses `${CAVE_AGENT_TOKEN}`) |
 | The `claude-apps` agent token | the Claude account's Cave connector (request header); your password manager | git, cloud environments, chats |
 | The GitHub account | your password manager, with two-factor login | anywhere else: whoever can merge to `main` ships code that runs with all the data |

@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, syncBadge } from "./helpers.ts";
+import { offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
 
 test("after one online visit the app opens offline with its data", async ({ browser, baseURL }) => {
-  const context = await browser.newContext();
+  const context = await ownerContext(browser);
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
 
