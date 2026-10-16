@@ -8,6 +8,7 @@ import { ownerGet } from "../app/owner-api.ts";
 import { undoChange } from "../app/undo.ts";
 import { titleOf } from "../logic/views.ts";
 import { useDoc, useItems } from "../store/queries.ts";
+import { PendingFlows } from "../ui/flows/PendingFlows.tsx";
 
 interface AgentInfo {
   name: string;
@@ -55,6 +56,7 @@ export function Agents() {
           hard-deleted, and every agent change is logged and can be undone.
         </p>
       </header>
+      <PendingFlows />
       <Proposals />
       <section className="panel" style={{ padding: 16, display: "grid", gap: 10 }}>
         <span className="k">Agents</span>

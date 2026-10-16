@@ -95,6 +95,16 @@ const MIGRATIONS = [
      result TEXT NOT NULL,
      summary TEXT NOT NULL
    );`,
+  // Flow runs (M7 Part C), server-only. `key` makes each slot or item change run once;
+  // `log` is each step's outcome and the ids written, never item content.
+  `CREATE TABLE flow_runs (
+     key TEXT PRIMARY KEY,
+     flow_id TEXT NOT NULL,
+     started_at INTEGER NOT NULL,
+     result TEXT NOT NULL,
+     log TEXT NOT NULL
+   );
+   CREATE INDEX flow_runs_flow ON flow_runs (flow_id, started_at);`,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

@@ -2,6 +2,7 @@ import { parseRoute, usePathname } from "./app/router.ts";
 import { Agents } from "./pages/Agents.tsx";
 import { Calendar } from "./pages/Calendar.tsx";
 import { CollectionPage } from "./pages/CollectionPage.tsx";
+import { Flows } from "./pages/Flows.tsx";
 import { Home } from "./pages/Home.tsx";
 import { ReminderLink } from "./pages/ReminderLink.tsx";
 import { Settings } from "./pages/Settings.tsx";
@@ -16,6 +17,7 @@ export function App() {
         <CollectionPage key={route.collection} id={route.collection} viewId={route.view} />
       )}
       {route.name === "calendar" && <Calendar />}
+      {route.name === "flows" && <Flows id={route.id} />}
       {route.name === "reminder" && <ReminderLink key={route.id} id={route.id} />}
       {route.name === "settings" && <Settings />}
       {route.name === "agents" && <Agents />}

@@ -4,6 +4,7 @@ import type { CallLog } from "./agent-calls.ts";
 import type { AgentRegistry } from "./agents.ts";
 import { carriesAgentToken, isAuthorized } from "./auth.ts";
 import { exportHandler } from "./export.ts";
+import type { FlowRoutes } from "./flows/api.ts";
 import { createHistoryHandler } from "./history.ts";
 import { createMcpRoute } from "./mcp/route.ts";
 import type { NotificationRoutes } from "./notify/api.ts";
@@ -39,6 +40,8 @@ export interface AppOptions {
   status?: StatusOptions;
   /** Push, channel tests and Telegram linking; absent means they are not served. */
   notifications?: NotificationRoutes;
+  /** Test runs and run history; absent means they are not served. */
+  flows?: FlowRoutes;
   /** `false` serves minified, cached bundles; Bun's default follows `NODE_ENV`. */
   development?: boolean;
 }
@@ -59,6 +62,7 @@ export function serveCave({
   publicOrigin,
   status,
   notifications,
+  flows,
   development,
 }: AppOptions) {
   const notFound = Response.json({ error: "not found" }, { status: 404 });
@@ -119,6 +123,8 @@ export function serveCave({
       "/api/notifications/test": { POST: notify((r) => (req) => r.channelTest(req)) },
       "/api/telegram/link": { POST: notify((r) => () => r.telegramLink()) },
       "/api/telegram/unlink": { POST: notify((r) => () => r.telegramUnlink()) },
+      "/api/flows/:id/test": { POST: flows ? owner((req) => flows.test(req)) : guarded(missing) },
+      "/api/flows/:id/runs": { GET: flows ? owner((req) => flows.runs(req)) : guarded(missing) },
       "/api/*": guarded(missing),
       ...staticRoutes,
       "/sw.js": serviceWorker ?? notFound,

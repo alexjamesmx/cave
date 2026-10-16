@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { parseDefinition } from "./flows/registry.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { FIELD_TYPES, VIEW_TYPES } from "./schema.ts";
@@ -17,9 +18,10 @@ type SeedField = {
 const fieldOf = (collection: string, id: string) =>
   ((byId.get(collection)?.data.fields ?? []) as SeedField[]).find((f) => f.id === id);
 
-test("seeds the plan's eight collections, hidden proposals and the settings doc", () => {
+test("seeds the plan's eight collections, hidden proposals and flows, and the settings doc", () => {
   expect(collections.map((d) => d.id).sort()).toEqual(
     [
+      "flows",
       "ideas",
       "journal",
       "leetcode",
@@ -32,7 +34,12 @@ test("seeds the plan's eight collections, hidden proposals and the settings doc"
     ].sort(),
   );
   expect(byId.get("proposals")?.data.hidden).toBe(true);
-  expect(collections.filter((c) => c.data.hidden).map((c) => c.id)).toEqual(["proposals"]);
+  expect(
+    collections
+      .filter((c) => c.data.hidden)
+      .map((c) => c.id)
+      .sort(),
+  ).toEqual(["flows", "proposals"]);
   expect(byId.get("settings")).toMatchObject({
     kind: "setting",
     collection: null,
@@ -43,12 +50,19 @@ test("seeds the plan's eight collections, hidden proposals and the settings doc"
       seedVersion: SEED_VERSION,
     },
   });
-  expect(docs).toHaveLength(10);
+  // Two flow drafts, off, and valid definitions.
+  const drafts = docs.filter((d) => d.collection === "flows");
+  expect(drafts.map((d) => [d.id, d.data.status])).toEqual([
+    ["flow-rent", "draft"],
+    ["flow-salary", "draft"],
+  ]);
+  for (const d of drafts) expect(parseDefinition(d.data.definition).ok).toBe(true);
+  expect(docs).toHaveLength(13);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {
   for (const doc of docs) {
-    expect(doc.collection).toBeNull();
+    expect(doc.collection).toBe(doc.kind === "item" ? "flows" : null);
     expect(Object.keys(doc.stamps).sort()).toEqual(Object.keys(doc.data).sort());
     expect(Object.values(doc.stamps).every((s) => s === SEED_STAMP)).toBe(true);
   }

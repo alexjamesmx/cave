@@ -1,4 +1,6 @@
-import { dayOf } from "../../../shared/dates.ts";
+import { dayOf, localDateTime } from "../../../shared/dates.ts";
+import { parseDefinition } from "../../../shared/flows/registry.ts";
+import { nextSlot } from "../../../shared/flows/schedule.ts";
 import {
   dueInstant,
   isOpen,
@@ -35,8 +37,8 @@ export interface CalendarEvent {
 }
 
 /**
- * Something the calendar reads entries from. Reminders and tasks are built in; flows' next
- * runs and external calendars (Google Calendar, CalDAV) are more sources behind the same
+ * Something the calendar reads entries from. Reminders, tasks and flows' next runs are built
+ * in; external calendars (Google Calendar, CalDAV) are more sources behind the same
  * interface. Writing to an external calendar will be a `CalendarTarget`, not built yet.
  */
 export interface CalendarSource {
@@ -104,6 +106,26 @@ export function taskSource(docs: Doc[], zone: Zone, today: string): CalendarSour
         const at = dueInstant(day, zone);
         if (at === undefined || at < from || at >= to) continue;
         found.push(entry(doc, day, at, { overdue: day < today }));
+      }
+      return found;
+    },
+  };
+}
+
+/** The next run of each flow that is on and runs on a schedule; it opens the flow. */
+export function flowSource(docs: Doc[], zone: Zone, now: number): CalendarSource {
+  return {
+    id: "flows",
+    label: "Flows",
+    events({ from, to }) {
+      const found: CalendarEvent[] = [];
+      for (const doc of docs) {
+        if (doc.data._deleted === true || doc.data.status !== "on") continue;
+        const parsed = parseDefinition(doc.data.definition);
+        if (!parsed.ok || parsed.value.trigger.type !== "schedule") continue;
+        const at = nextSlot(parsed.value.trigger, now, zone.timeZone);
+        if (at === undefined || at < from || at >= to) continue;
+        found.push(entry(doc, localDateTime(new Date(at), zone.timeZone), at, {}));
       }
       return found;
     },

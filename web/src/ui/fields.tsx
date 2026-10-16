@@ -35,6 +35,8 @@ export function FieldValue({ field, value }: { field: Field; value: unknown }) {
       const time = text.length > 10 ? ` ${text.slice(11, 16)}` : "";
       return <span className="num">{`${shortDay(text)}${time}`}</span>;
     }
+    case "json":
+      return <span className="muted">Flow definition</span>;
     case "url":
       // Checked again here: a value written before validation, or by an older client, may
       // carry another scheme and must never become a clickable link.
@@ -79,6 +81,12 @@ export function FieldInput({ field, value, onChange, id }: InputProps) {
             <option value={text}>{text} (not an option)</option>
           )}
         </select>
+      );
+    case "json":
+      return (
+        <a id={id} href="/flows" className="link">
+          Edit on the Flows page
+        </a>
       );
     case "checkbox":
       return (

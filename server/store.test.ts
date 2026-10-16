@@ -80,7 +80,7 @@ describe("openDb", () => {
   });
 });
 
-test("hasItems ignores seeded collections and settings", () => {
+test("hasItems ignores everything the seed wrote, the flow drafts included", () => {
   const store = createStore(openDb(":memory:"));
   store.seedIfEmpty(seedDocs(), 1);
   expect(store.hasItems()).toBe(false);

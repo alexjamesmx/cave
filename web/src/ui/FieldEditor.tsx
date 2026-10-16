@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import {
-  FIELD_TYPES,
+  EDITABLE_FIELD_TYPES,
   type Field,
   type FieldType,
   type SelectOption,
@@ -135,7 +135,7 @@ export function FieldEditor({
           style={{ flex: 1 }}
         />
         <select name="type" className="input" aria-label="New field type" defaultValue="text">
-          {FIELD_TYPES.map((t) => (
+          {EDITABLE_FIELD_TYPES.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>

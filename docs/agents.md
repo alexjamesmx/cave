@@ -13,8 +13,8 @@ bun run agent revoke codex
 
 - The token (`cave_…`) is printed once. Only its SHA-256 is stored, so it can't be shown again. A lost token means revoking the agent and adding a new one.
 - Scopes:
-  - `read`: `list_collections`, `query`, `get`, `money_month`.
-  - `write`: `create`, `update`, `propose_delete`, and `add_note` (only when `VAULT_PATH` is set).
+  - `read`: `list_collections`, `query`, `get`, `money_month`, `list_flows`.
+  - `write`: `create`, `update`, `propose_delete`, `save_flow`, and `add_note` (only when `VAULT_PATH` is set).
 - `--collections` limits what the agent can see. Other collections don't appear in its lists, and anything in them answers "not found".
 - Keep the token in an environment variable, `CAVE_AGENT_TOKEN` below. Never put it in a committed file.
 
@@ -23,8 +23,38 @@ bun run agent revoke codex
 - **Amounts, categories and accounts:** never guess them. A value that isn't one of a field's options is refused; ask the owner or leave the field out.
 - **Deletes:** agents can't delete. `propose_delete` puts a proposal on the Agents page, and the owner approves or declines it.
 - **Undo:** every agent write can be undone from the Agents page. A key the owner changed afterwards is kept.
-- **Reminders:** a reminder whose `repeat` isn't `none` repeats on completion. `update` with `done: true` moves `due` to the next occurrence and keeps it open, as the app's Done does. Notifications arrive with M7 Part B; until then a due reminder shows on Home. Agents must not offer outside scheduled tasks for Cave reminders.
+- **Reminders:** a reminder whose `repeat` isn't `none` repeats on completion. `update` with `done: true` moves `due` to the next occurrence and keeps it open, as the app's Done does. The Cave sends a due reminder's notification itself, so agents must not offer outside scheduled tasks for Cave reminders.
+- **Flows:** only through `save_flow` and `list_flows`. `create` and `update` can't reach the `flows` collection. See "Flows" below.
 - **Notes:** `add_note` only creates new files under `Inbox/` in the vault. It never changes an existing note.
+
+## Flows
+
+A flow is a trigger and up to 10 steps, stored as one definition (`version: 1`). Triggers: `schedule` (every day, week, month or year at a time), `item-added` (with optional conditions) and `item-changed` (a field, optionally to a value). Steps: `if` (all conditions hold, else stop), `create`, `update-trigger-item` and `notify`. Text may use `{{item.title}}`, `{{item.<field>}}`, `{{item.<field>|pct:N}}`, `{{today}}` and `{{month}}`, nothing else.
+
+**A reminder or a flow?** A reminder only notifies. Use a flow when something must also be created or changed. "Remind me every month to pay rent on the 22nd" as a reminder:
+
+```json
+{ "tool": "create", "collection": "reminders", "title": "Pay rent",
+  "fields": { "due": "2026-10-22T09:00", "repeat": "monthly" } }
+```
+
+As a flow, which also puts a task on the list:
+
+```json
+{ "tool": "save_flow", "title": "Rent reminder", "status": "on",
+  "definition": { "version": 1,
+    "trigger": { "type": "schedule", "every": "month", "day": 22, "at": "09:00" },
+    "steps": [
+      { "type": "create", "collection": "tasks", "title": "Pay rent", "fields": { "priority": "high" } },
+      { "type": "notify", "title": "Pay rent", "open": "created-item" } ] } }
+```
+
+**What needs the owner's approval, and why:**
+- A flow with a step that changes existing items (`update-trigger-item`, and every future step that reaches outside the Cave) is saved as `pending-approval`, whatever status was asked for. It runs only after the owner approves it on the Flows page, the Agents page or, if the owner turned it on, Telegram. A flow that only creates items and notifies can be saved `on` and runs at once.
+- An agent can never approve: re-saving a waiting flow as `on` keeps it waiting.
+- A flow may name only collections and fields the agent can see; one that names others is refused, and an allowlisted agent neither lists nor replaces flows outside its collections.
+- Limits per agent: 20 flows `on` and 10 saves a day.
+- Every save is in the activity log and can be undone. A flow's own writes are recorded as `flow:<id>`, can be undone from its run history, and never trigger another flow.
 
 ## 2. Configure the agent
 
@@ -133,7 +163,7 @@ Claude's apps reach custom connectors from Anthropic's cloud, so they use the ho
    - URL: `https://cave.alexjamesmx.dev/mcp`;
    - sign-in: **No sign-in**;
    - request header: name `authorization`, value `Bearer <token>`, **Required**.
-3. **Set the write tools to ask first:** `create`, `update`, `propose_delete` and `add_note`. Read tools can stay allowed.
+3. **Set the write tools to ask first:** `create`, `update`, `propose_delete`, `save_flow` and `add_note`. Read tools can stay allowed.
 
 - The connector belongs to the Claude account, so every device signed in to it has the Cave.
 - **Changing the token** (lost, leaked, rotated) means revoking `claude-apps`, minting a new one, then removing and re-adding the connector: the header value can't be edited in place.

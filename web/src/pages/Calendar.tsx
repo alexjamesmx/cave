@@ -1,13 +1,16 @@
 import { type CSSProperties, type FormEvent, useMemo, useState } from "react";
 import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../../../shared/dates.ts";
+import { FLOWS } from "../../../shared/flows/seed.ts";
 import { newId } from "../../../shared/ids.ts";
 import { zonedInstant } from "../../../shared/reminders.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone, useToday } from "../app/hooks.ts";
+import { flowPath, navigate } from "../app/router.ts";
 import {
   byDay,
   type CalendarEvent,
   type CalendarSource,
+  flowSource,
   mergeEvents,
   reminderSource,
   taskSource,
@@ -35,15 +38,20 @@ function useSources(): CalendarSource[] | undefined {
   const { db } = useCave().local;
   const reminders = useItems(db, "reminders");
   const tasks = useItems(db, "tasks");
+  const flows = useItems(db, FLOWS);
   const zone = useReminderZone();
   const now = useNow().getTime();
   const today = useToday();
   return useMemo(
     () =>
-      reminders && tasks
-        ? [reminderSource(reminders, zone, now), taskSource(tasks, zone, today)]
+      reminders && tasks && flows
+        ? [
+            reminderSource(reminders, zone, now),
+            taskSource(tasks, zone, today),
+            flowSource(flows, zone, now),
+          ]
         : undefined,
-    [reminders, tasks, zone, now, today],
+    [reminders, tasks, flows, zone, now, today],
   );
 }
 
@@ -77,7 +85,10 @@ export function Calendar() {
   }, [sources, today, zone]);
 
   const openCollection = open && collections?.find((c) => c.id === open.collection);
-  const show = (e: CalendarEvent) => setOpen({ id: e.itemId, collection: e.collection });
+  const show = (e: CalendarEvent) =>
+    e.collection === FLOWS
+      ? navigate(flowPath(e.itemId))
+      : setOpen({ id: e.itemId, collection: e.collection });
 
   return (
     <>

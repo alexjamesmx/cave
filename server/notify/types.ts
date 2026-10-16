@@ -4,7 +4,8 @@ import type { ChannelId } from "../../shared/notifications.ts";
 export interface Notification {
   /** Names the send for "already sent" and the log, e.g. `reminder:<id>:<due>`; never a title. */
   key: string;
-  kind: "reminder" | "test" | "flow";
+  /** `flow`: a flow waiting for approval; `message`: what a flow's notify step sends. */
+  kind: "reminder" | "test" | "flow" | "message";
   itemId?: string;
   title: string;
   /** Shown only at `full` detail: the due time, "Repeats monthly", the fields shown. */

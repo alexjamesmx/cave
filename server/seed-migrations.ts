@@ -20,15 +20,22 @@ export function migrateSeed(store: Store, now: number): number[] {
   const last = pending.at(-1);
   if (!last) return [];
   const stamp = formatStamp(now, 0, "seed");
-  const stamped = (id: string, kind: Doc["kind"], data: Record<string, unknown>): Doc => ({
+  const stamped = (
+    id: string,
+    kind: Doc["kind"],
+    data: Record<string, unknown>,
+    collection: string | null = null,
+  ): Doc => ({
     id,
     kind,
-    collection: null,
+    collection,
     data: structuredClone(data),
     stamps: Object.fromEntries(Object.keys(data).map((key) => [key, stamp])),
     actor: "seed",
   });
-  const docs = pending.flatMap((m) => m.docs.map((d) => stamped(d.id, d.kind, d.data)));
+  const docs = pending.flatMap((m) =>
+    m.docs.map((d) => stamped(d.id, d.kind, d.data, d.collection ?? null)),
+  );
   docs.push(stamped("settings", "setting", { seedVersion: last.version }));
   store.applyChanges(docs, "seed", now);
   return pending.map((m) => m.version);

@@ -1,10 +1,12 @@
 import { type CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
+import { FlowDefinitionSchema } from "../../shared/flows/registry.ts";
 import type { Hlc } from "../../shared/hlc.ts";
 import type { CallLog } from "../agent-calls.ts";
 import { AgentWriter, type WriteResult } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
 import type { Store } from "../store.ts";
+import { listFlows, MAX_ON_FLOWS, MAX_SAVES_PER_DAY, saveFlow } from "./flows.ts";
 import { addNote } from "./note.ts";
 import {
   getItem,
@@ -28,7 +30,7 @@ export interface McpDeps {
 const DATA_RULE =
   "Never guess an amount, category or account: ask the owner, or leave the field out.";
 const REMINDER_RULE =
-  'Reminders: one whose repeat isn\'t "none" repeats on completion; done: true moves due to the next occurrence and keeps it open. Notifications arrive with M7 Part B; never offer outside scheduled tasks for Cave reminders.';
+  'Reminders: one whose repeat isn\'t "none" repeats on completion; done: true moves due to the next occurrence and keeps it open. The Cave sends their notifications itself; never set up outside scheduled tasks for them. To also create or change items on a schedule or when items change, use save_flow.';
 const DAY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -137,6 +139,15 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       (args) => run("money_month", args, () => moneyMonth(store, agent, args.month, deps.now())),
     );
+    server.registerTool(
+      "list_flows",
+      {
+        description:
+          "List the owner's flows (automations): id, title, status (draft, on, off, pending-approval), who made it, its definition and a line per step.",
+        annotations: READ,
+      },
+      () => run("list_flows", {}, () => listFlows(store, agent)),
+    );
   }
 
   if (agent.scopes.includes("write")) {
@@ -193,6 +204,27 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       (args) =>
         run("propose_delete", args, () => fromWrite(writer().proposeDelete(args.id, args.reason))),
+    );
+    server.registerTool(
+      "save_flow",
+      {
+        description: `Create or replace a flow. It runs as soon as it is on. Flows that change existing items, or that use a sensitive step, wait for the owner's approval (status pending-approval), and only the owner can approve. Pass id to replace a flow from list_flows. Templates: {{item.title}}, {{item.<field>}}, {{item.<field>|pct:N}}, {{today}}, {{month}}. At most ${MAX_ON_FLOWS} flows on per agent and ${MAX_SAVES_PER_DAY} saves a day. A reminder only notifies; use a flow when something must also be created or changed. ${DATA_RULE}`,
+        inputSchema: z.object({
+          id: z.string().optional(),
+          title: z.string(),
+          description: z.string().optional(),
+          status: z.enum(["on", "draft", "off"]).optional(),
+          definition: FlowDefinitionSchema,
+        }),
+        annotations: { ...WRITE, destructiveHint: true },
+      },
+      (args) =>
+        run("save_flow", args, () => {
+          const result = saveFlow(store, agent, writer(), deps.calls, args, deps.now());
+          return result.ok
+            ? { ok: true, value: { id: result.id, status: result.status }, seqs: result.seqs }
+            : result;
+        }),
     );
     const vault = deps.vaultPath;
     if (vault) {
