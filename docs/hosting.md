@@ -19,7 +19,12 @@ The one-time setup of the VPS, run step by step. Each step is shown to the owner
   | `/var/lib/cave` | data only: database, backups, lock. Home of `cave` |
   | `/var/cache/cave-bun` | build caches: Bun's install and transpiler caches, Biome's cache (`XDG_CACHE_HOME`). The service itself writes no cache |
   | `/opt/bun` | Bun itself, root-owned |
-  | `/etc/cave/cave.env` | server settings and token |
+  | `/etc/cave/cave.env` | server settings and token; must set `CAVE_ENV=production` (step 13) |
+  | `/usr/local/sbin/cave-offsite` | the off-box backup script, root-owned, installed by hand from `deploy/cave-offsite` (step 14) |
+  | `/usr/local/bin/restic` | restic 0.19.1, root-owned, signature-checked (step 14) |
+  | `/etc/cave/offsite.env`, `/etc/cave/offsite.key` | the R2 keys and the restic password, `root:cave` 640 |
+  | `/var/lib/cave-offsite` | `cave-offsite`'s `status.json` (the Cave reads it) and `counts` (each daily backup's doc count) |
+  | `/var/cache/cave-offsite` | restic's cache |
 - **Templates:** in `deploy/`. Steps that copy them read them from `/opt/cave/current/deploy/`.
 
 **Rules:**
@@ -100,6 +105,8 @@ sed -i '/^CAVE_TOKEN=$/d' /etc/cave/cave.env
 printf 'CAVE_TOKEN=%s\n' "$(openssl rand -base64 48)" >> /etc/cave/cave.env
 grep -c '^CAVE_TOKEN=.\{64\}$' /etc/cave/cave.env    # expect 1, without showing the value
 ```
+
+The template sets `CAVE_ENV=production`: without it the server runs as `dev`, sends nothing, and `release.sh` refuses to switch to a new release (step 13). `grep -c '^CAVE_ENV=production$' /etc/cave/cave.env` must print 1.
 
 The owner then reads it once in hPanel's browser terminal (`grep ^CAVE_TOKEN= /etc/cave/cave.env`) and stores it in a password manager. It is also the laptop's `CAVE_REMOTE_TOKEN`, used for the public health check after `bun run deploy`.
 
@@ -258,6 +265,94 @@ systemctl restart cave
 The server refuses to start with a malformed token or webhook URL, naming the setting but never its value.
 
 **Egress.** The firewall allows outgoing traffic (step 6). The server reaches the push services (`*.push.apple.com`, `fcm.googleapis.com`, Mozilla's `*.push.services.mozilla.com`), `api.telegram.org` and `discord.com` with Bun's `fetch` and a 10-second timeout; nothing else on the server sends anything.
+
+## 13. CAVE_ENV (M6b)
+`CAVE_ENV` is `production`, `dev` or `test`; unset means `dev`, and any other value stops the server at start. Only `production` delivers anything outside the Cave: Web Push, Telegram (its long polling too) and Discord, and so every flow `notify` step. In `dev` and `test` jobs and flows still run, but each send becomes a `notification_log` row with result `outbox`, listed under `/system` → Notifications → Dev outbox, and the app shows a `DEV` or `TEST` badge. `bun test` runs as `test` (`bunfig.toml`), as does the Playwright server; `bun run dev:seed` runs as `dev`.
+
+`deploy/release.sh` fails a build unless `/etc/cave/cave.env` sets `CAVE_ENV=production` (the last `CAVE_ENV=` line counts, quotes allowed). The failure is at step `env`, before anything is built: `cave-deploy` holds the commit, Settings shows "failed at env", and the running release stays up. `cave-deploy` itself needs no reinstall.
+
+**Existing server, before the M6b PR merges** (hPanel's browser terminal, as root):
+```bash
+grep -q '^CAVE_ENV=' /etc/cave/cave.env || sed -i '1i CAVE_ENV=production' /etc/cave/cave.env
+grep -c '^CAVE_ENV=production$' /etc/cave/cave.env    # expect 1
+```
+No restart is needed: the running release ignores the setting, and the next release reads it.
+
+## 14. Off-box backups (M6b)
+Every day `cave-offsite backup` sends an encrypted copy of `/var/lib/cave/backups` to Cloudflare R2 with restic, and every week `cave-offsite check` reads 10% of the repository, restores the newest daily backup and verifies it with the app. Both run as `cave`. `/system` and Settings show the last of each; the Cave notifies once (titles only) when the last successful backup is older than 48 hours or the last check failed. Without `status.json` the Cave shows "Not set up" and stays quiet.
+
+**1. Cloudflare** (the owner, in the dashboard):
+- turn on R2 (it may ask for a payment method even on the free tier);
+- create the bucket `cave-backups`;
+- create an R2 API token with **Object Read & Write**, scoped to `cave-backups` only, and note the account id, the access key id and the secret.
+
+**2. Settings and the password** (hPanel's browser terminal, as root). Keys are read without echo; the password is generated on the VPS and shown once to go into the password manager. **Without it, the copies can't be decrypted.**
+```bash
+install -o root -g cave -m 640 /opt/cave/current/deploy/offsite.env.example /etc/cave/offsite.env
+read -r ACCOUNT && sed -i "s|<account>|$ACCOUNT|" /etc/cave/offsite.env; unset ACCOUNT
+read -rs KEY && sed -i "s|^AWS_ACCESS_KEY_ID=$|AWS_ACCESS_KEY_ID=$KEY|" /etc/cave/offsite.env; unset KEY
+read -rs SECRET && sed -i "s|^AWS_SECRET_ACCESS_KEY=$|AWS_SECRET_ACCESS_KEY=$SECRET|" /etc/cave/offsite.env; unset SECRET
+grep -c '^AWS_[A-Z_]*=.' /etc/cave/offsite.env           # expect 3 (key, secret, region)
+( umask 027; openssl rand -base64 48 > /etc/cave/offsite.key )
+chown root:cave /etc/cave/offsite.key && chmod 640 /etc/cave/offsite.key
+cat /etc/cave/offsite.key    # once, in hPanel only: into the password manager, then clear the screen
+```
+
+**3. restic 0.19.1** from the GitHub release, not apt (Ubuntu's is older). The signature on `SHA256SUMS` is checked against restic's release key (Alexander Neumann, fingerprint `CF8F 18F2 8445 7597 3F79 D4E1 91A6 868B D3F7 A907`), then the binary's hash:
+```bash
+cd "$(mktemp -d)"
+base=https://github.com/restic/restic/releases/download/v0.19.1
+for f in SHA256SUMS SHA256SUMS.asc restic_0.19.1_linux_amd64.bz2; do curl -fsSLO "$base/$f"; done
+export GNUPGHOME="$PWD/gnupg"; install -d -m 700 "$GNUPGHOME"
+gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys CF8F18F2844575973F79D4E191A6868BD3F7A907
+gpg --verify SHA256SUMS.asc SHA256SUMS        # "Good signature", with the fingerprint above
+sha256sum -c --ignore-missing SHA256SUMS       # restic_0.19.1_linux_amd64.bz2: OK
+bunzip2 restic_0.19.1_linux_amd64.bz2
+install -o root -g root -m 755 restic_0.19.1_linux_amd64 /usr/local/bin/restic
+restic version                                 # restic 0.19.1 …
+```
+The SHA-256 of `restic_0.19.1_linux_amd64.bz2` is `f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c` (checked in a cloud session on 2026-10-16, with a good signature).
+
+**4. Script, units, repository, first runs:**
+```bash
+install -o root -g root -m 755 /opt/cave/current/deploy/cave-offsite /usr/local/sbin/cave-offsite
+for u in cave-offsite.service cave-offsite.timer cave-offsite-check.service cave-offsite-check.timer; do
+  install -o root -g root -m 644 "/opt/cave/current/deploy/$u" "/etc/systemd/system/$u"
+done
+systemctl daemon-reload
+runuser -u cave -- bash -c 'set -a; . /etc/cave/offsite.env; set +a; restic init --no-cache'
+systemctl start cave-offsite.service && cave-offsite status          # backup ok
+systemctl start cave-offsite-check.service && cave-offsite status    # check ok
+systemctl enable --now cave-offsite.timer cave-offsite-check.timer
+grep -q '^CAVE_OFFSITE_STATUS=' /etc/cave/cave.env ||
+  echo 'CAVE_OFFSITE_STATUS=/var/lib/cave-offsite/status.json' >> /etc/cave/cave.env
+systemctl restart cave
+```
+Commands run by hand pass `--no-cache`: restic's cache belongs to the units. The units create `/var/lib/cave-offsite` and `/var/cache/cave-offsite` (owned by `cave`), see the rest of the system read-only, and read the backups read-only. Backups run daily at 05:15 UTC and checks on Sundays at 06:15 UTC, each with up to 10 minutes' random delay, and catch up after downtime. The server has no fixed backup time (its hourly job takes one once 24 hours have passed), so the daily run always finds a daily backup under about 25 hours old.
+
+**Known limit.** Root on the VPS can read the R2 keys and delete the copies. The laptop's pulled backups (`bun run pull-backups`, `bun run pull-data`) stay a third copy. R2 Object Lock would conflict with `forget --prune` and is out of scope.
+
+## Restoring from R2
+**On a new VPS.** Set it up through step 8 (the service stopped), install restic (step 14.3), write `/etc/cave/offsite.env` and `/etc/cave/offsite.key` again from the password manager (step 14.2), then:
+```bash
+runuser -u cave -- bash -c 'set -a; . /etc/cave/offsite.env; set +a; restic snapshots --no-cache'
+runuser -u cave -- bash -c 'set -a; . /etc/cave/offsite.env; set +a; restic restore latest --no-cache --target /var/lib/cave/restore'
+ls /var/lib/cave/restore/var/lib/cave/backups/    # pick the newest cave-YYYY-MM-DDTHHMM.db
+systemctl stop cave
+runuser -u cave -- bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run restore /var/lib/cave/restore/var/lib/cave/backups/<newest>.db'
+systemctl start cave
+rm -rf /var/lib/cave/restore
+```
+`bun run restore` verifies the file, keeps whatever it replaces and gives the database a new id; devices push back anything newer on their next sync.
+
+**From the laptop**, with nothing on the VPS: install restic, then in a shell (the secret from the R2 dashboard, the password from the password manager; neither goes into a file in the repo):
+```bash
+export RESTIC_REPOSITORY=s3:https://<account>.r2.cloudflarestorage.com/cave-backups AWS_DEFAULT_REGION=auto
+read -r AWS_ACCESS_KEY_ID; read -rs AWS_SECRET_ACCESS_KEY; read -rs RESTIC_PASSWORD
+export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY RESTIC_PASSWORD
+restic restore latest --target ./r2-restore
+```
+The newest `cave-YYYY-MM-DDTHHMM.db` under `./r2-restore/var/lib/cave/backups/` is a verified backup: `bun run verify-backup <file>` checks it, and `bun run restore <file>` (server stopped) loads it locally.
 
 ## Deploying and rolling back (after setup)
 - **Merging to `main` deploys.** `cave-deploy.timer` runs `cave-deploy auto` 2 minutes after the last run ended. When the tip of `main` is new and not held, it:
