@@ -9,7 +9,7 @@ import type { Notifier } from "../notify/notifier.ts";
 import type { Approvals } from "../notify/telegram.ts";
 import type { Notification } from "../notify/types.ts";
 import { createStore, type Store } from "../store.ts";
-import { createApprovals } from "./approvals.ts";
+import { approvalRef, createApprovals } from "./approvals.ts";
 
 const NOW = Date.parse("2026-10-15T16:00:00Z");
 let store: Store;
@@ -44,6 +44,8 @@ function write(id: string, data: Record<string, unknown>, actor = "agent:claude"
   store.applyChanges([doc], actor, NOW);
 }
 
+const ref = (id: string) => approvalRef(store.get(id) as Doc);
+
 beforeEach(() => {
   store = createStore(openDb(":memory:"));
   store.seedIfEmpty(seedDocs(), 1);
@@ -63,7 +65,7 @@ test("a flow saved as pending approval tells the owner once, with Approve and Re
     {
       key: expect.stringMatching(/^flow-approval:f1:\d+$/),
       kind: "flow",
-      itemId: "f1",
+      itemId: expect.stringMatching(/^f1\.[0-9a-f]{16}$/),
       title: "Approve flow: Archive done tasks",
       details: ["When status changes in tasks to done", "Change the trigger item: area"],
       path: "/flows/f1",
@@ -78,17 +80,38 @@ test("a flow saved as pending approval tells the owner once, with Approve and Re
 test("approve turns a pending flow on as channel:telegram; reject turns it off", () => {
   write("f1", { _title: "A", status: "pending-approval", definition: archive });
   write("f2", { _title: "B", status: "pending-approval", definition: archive });
-  expect(approvals.decide("f1", true)).toBe("Turned on: A");
+  expect(approvals.decide(ref("f1"), true)).toBe("Turned on: A");
   expect(store.get("f1")?.data.status).toBe("on");
   expect(store.changesFor("f1", 1)[0]?.actor).toBe("channel:telegram");
-  expect(approvals.decide("f2", false)).toBe("Rejected: B (off)");
+  expect(approvals.decide(ref("f2"), false)).toBe("Rejected: B (off)");
   expect(store.get("f2")?.data.status).toBe("off");
 });
 
 test("only a flow waiting for approval can be decided", () => {
   write("f1", { _title: "A", status: "draft", definition: archive }, "owner");
-  expect(approvals.decide("f1", true)).toBe("That flow isn't waiting for approval.");
+  expect(approvals.decide(ref("f1"), true)).toBe("That flow isn't waiting for approval.");
   expect(approvals.decide("nope", true)).toBe("That flow is gone.");
   expect(approvals.decide("tasks", true)).toBe("That flow is gone.");
   expect(store.get("f1")?.data.status).toBe("draft");
+});
+
+test("approve binds to the definition shown: one re-saved since needs a new approval", () => {
+  write("f1", { _title: "Archive", status: "pending-approval", definition: archive });
+  const shown = ref("f1");
+  const wider: FlowDefinition = {
+    ...archive,
+    steps: [{ type: "update-trigger-item", fields: { area: "archive", priority: "low" } }],
+  };
+  write("f1", { definition: wider });
+  expect(notified).toHaveLength(2);
+  expect(notified[1]?.details).toEqual([
+    "When status changes in tasks to done",
+    "Change the trigger item: area, priority",
+  ]);
+  expect(approvals.decide(shown, true)).toBe(
+    "“Archive” changed since this message; check it in the app or with /flows.",
+  );
+  expect(store.get("f1")?.data.status).toBe("pending-approval");
+  expect(approvals.decide(ref("f1"), true)).toBe("Turned on: Archive");
+  expect(approvals.decide(shown, false)).toBe("That flow isn't waiting for approval.");
 });

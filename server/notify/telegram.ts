@@ -41,8 +41,10 @@ type Action = "done" | "snooze60" | "tdone" | "tsnooze" | "approve" | "reject";
 const ACTIONS = new Set<string>(["done", "snooze60", "tdone", "tsnooze", "approve", "reject"]);
 
 export interface Approvals {
-  /** Approves or rejects a flow waiting for approval; returns what to tell the owner. */
-  decide(id: string, approve: boolean): string;
+  /** What a button names: the flow and the definition it was shown with. */
+  ref(flow: Doc): string;
+  /** Approves or rejects a flow waiting for approval by its `ref`; returns what to tell the owner. */
+  decide(ref: string, approve: boolean): string;
 }
 
 export interface TelegramOptions {
@@ -214,7 +216,11 @@ export function createTelegram({
       if (rest.length > 0)
         await reply(chatId, rest.map((d) => `${title(d)} · ${String(d.data.status)}`).join("\n"));
       for (const d of pending)
-        await reply(chatId, `Waiting for approval: ${title(d)}`, keyboard("flow", d.id, undefined));
+        await reply(
+          chatId,
+          `Waiting for approval: ${title(d)}`,
+          keyboard("flow", approvals?.ref(d) ?? d.id, undefined),
+        );
       return;
     }
     if (name === "/start") return reply(chatId, "This chat is already linked to the Cave.");
