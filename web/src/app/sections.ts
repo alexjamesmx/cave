@@ -33,7 +33,7 @@ export const SECTIONS: Section[] = [
     path: "/c/reminders",
   },
   { id: "flows", label: "Flows", icon: "workflow", color: "var(--violet)", path: "/flows" },
-  { id: "ai", label: "AI", icon: "sparkles", color: "var(--purple)", path: "/settings#ai" },
+  { id: "ai", label: "AI", icon: "sparkles", color: "var(--purple)", path: "/ai" },
   { id: "system", label: "System", icon: "activity", color: "var(--cyan)", path: "/system" },
   { id: "diary", label: "Diary", icon: "notebook", color: "var(--violet)", path: "/c/journal" },
   { id: "ideas", label: "Ideas", icon: "lightbulb", color: "var(--lime)", path: "/c/ideas" },

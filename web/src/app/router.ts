@@ -11,6 +11,8 @@ export type Route =
   | { name: "settings" }
   /** The money category review (M7b part 5). */
   | { name: "review" }
+  /** Everything the AIs know and use (M7b part 8). */
+  | { name: "ai" }
   /** `/system`, or one of its tabs: `/system/jobs`. */
   | { name: "system"; tab: string | undefined }
   | { name: "agents" }
@@ -28,6 +30,7 @@ export function parseRoute(pathname: string): Route {
   if (reminder) return { name: "reminder", id: decodeURIComponent(reminder[1] as string) };
   if (pathname === "/settings") return { name: "settings" };
   if (pathname === "/money/review") return { name: "review" };
+  if (pathname === "/ai") return { name: "ai" };
   const system = /^\/system(?:\/([a-z]+))?\/?$/.exec(pathname);
   if (system) return { name: "system", tab: system[1] };
   if (pathname === "/agents") return { name: "agents" };

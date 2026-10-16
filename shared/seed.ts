@@ -1,3 +1,4 @@
+import { AI, AI_COLLECTION } from "./ai.ts";
 import { mergeCategoryOptions } from "./categories.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
@@ -345,6 +346,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 5, docs: FLOW_DOCS },
   { version: 6, docs: [], update: mergeMoneyCategories },
   { version: 7, docs: [], update: repeatingTasksAndPayments },
+  // M7b part 8: the AI collection, empty until `bun run ai-sync` fills it.
+  { version: 8, docs: [{ id: AI, kind: "collection", data: AI_COLLECTION }] },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -378,6 +381,7 @@ export function seedDocs(): Doc[] {
     ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
     seeded("proposals", "collection", PROPOSALS),
     seeded(PAYMENTS, "collection", PAYMENTS_COLLECTION),
+    seeded(AI, "collection", AI_COLLECTION),
     ...FLOW_DOCS.map((d) => seeded(d.id, d.kind, d.data, d.collection ?? null)),
     seeded("settings", "setting", SETTINGS),
   ];

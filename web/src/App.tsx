@@ -1,5 +1,6 @@
 import { parseRoute, usePathname } from "./app/router.ts";
 import { Agents } from "./pages/Agents.tsx";
+import { AiPage } from "./pages/AiPage.tsx";
 import { Calendar } from "./pages/Calendar.tsx";
 import { CollectionPage } from "./pages/CollectionPage.tsx";
 import { Flows } from "./pages/Flows.tsx";
@@ -23,6 +24,7 @@ export function App() {
       {route.name === "reminder" && <ReminderLink key={route.id} id={route.id} />}
       {route.name === "settings" && <Settings />}
       {route.name === "review" && <ReviewCategories />}
+      {route.name === "ai" && <AiPage />}
       {route.name === "agents" && <Agents />}
       {route.name === "system" && <System tab={route.tab} />}
       {route.name === "not-found" && <p className="muted">Nothing here yet.</p>}

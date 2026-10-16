@@ -53,6 +53,16 @@ It never imports on its own: a note renamed in Obsidian would come back as a dup
 
 Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each with its own token. See [docs/agents.md](docs/agents.md).
 
+## Everyday use
+
+- **Unlock once per device** with the server token; without it the app shows only a lock screen. Settings → Lock this device, or Forget this device to also delete its copy.
+- **Home** is a live glance (due today and tomorrow, this month's spending and daily rate, payments in the next 7 days, habits this week, flows, sync and deploy) and an **Ask** box that opens Claude with your question; Claude reads and writes the Cave through its connector. Quick forms: Expense, Task, Reminder, Payment.
+- **On the phone**, a dock at the bottom: four sections you choose (More → Edit dock), a raised Ask, and More for everything else.
+- **Money:** add an expense or income for any day and time (Today, Yesterday); categories carry emoji and fit the direction; transfers (investments) count as neither spending nor income. Month or year, Compare to previous, filters kept in the URL, 12-month trends, top titles, fixed versus variable. **Review categories** applies `bun run money-review`'s proposals only after you approve them, with one Undo.
+- **Payments** (cards, subscriptions, bills): Paid logs the expense and moves the same payment to its next date; Undo reverses both. Find subscriptions proposes repeats from your history; nothing is added until you confirm.
+- **Tasks:** one New task button, drag between columns (press and hold on the phone). A repeating task's Done brings the same task back on its next date.
+- **AI:** every rule, skill, MCP server, plugin and memory from `bun run ai-sync`, with secrets removed; edit one and `bun run ai-sync --apply` writes it back after you confirm. Copy for another AI makes one Markdown document.
+
 ## Reminders and the calendar
 
 - **Home → Reminder:** a title and a "When" in plain English or Spanish: `tomorrow 9am`, `vie 18:00`, `in 2h`, `every month 22 9:00`, `cada mes 22 9:00`. The form shows what it will save, and won't save without a date.

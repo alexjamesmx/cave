@@ -27,6 +27,7 @@ bun run agent revoke codex
 - **Repeating tasks:** a task with `repeat` other than `none` comes back: `update` with `status: "done"` moves `due` to the next date, keeps it open (`todo`) and sets `completed`, as the app's Done does. The change log keeps every completion.
 - **Payments:** the `payments` collection holds what the owner pays on a date (subscriptions, cards, bills, loans). `mark_paid` logs the expense (title, category and account from the payment) and moves the payment to its next date; a one-off one becomes inactive. A payment with `approx: true` (a card statement) needs `amount`: ask the owner, never guess it.
 - **Money categories:** each option has a `kind` (`expense`, `income`, `transfer`); use one that fits the direction. Transfers count as neither spending nor income.
+- **The `ai` collection:** the owner's AI rules, skills, MCP servers, plugins and memory, from `bun run ai-sync`, with secrets replaced by `‹redacted›`. Agents may read them and improve them with `update` (the `_body`); the owner's `ai-sync --apply` writes an edit back to its file after confirming it, and never writes a body that holds `‹redacted›`. Never put a secret in an item.
 - **Flows:** only through `save_flow` and `list_flows`. `create` and `update` can't reach the `flows` collection. See "Flows" below.
 - **Notes:** `add_note` only creates new files under `Inbox/` in the vault. It never changes an existing note.
 

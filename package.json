@@ -17,7 +17,8 @@
     "deploy": "bun run server/ops/deploy-cli.ts",
     "pull-backups": "bun run server/ops/pull-backups-cli.ts",
     "push-keys": "bun run server/push-keys-cli.ts",
-    "money-review": "bun run server/money-review-cli.ts"
+    "money-review": "bun run server/money-review-cli.ts",
+    "ai-sync": "bun run server/ai-sync/cli.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",

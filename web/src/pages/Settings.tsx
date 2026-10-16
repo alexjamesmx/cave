@@ -204,7 +204,7 @@ function AiSettings() {
       </span>
       <span className="muted" style={{ fontSize: 13 }}>
         Available: {PROVIDERS.map((p) => p.label).join(", ")}. An API key, OpenAI-compatible models
-        and Telegram come later.
+        and Telegram come later. Rules, skills and tools are on <a href="/ai">the AI page</a>.
       </span>
     </section>
   );

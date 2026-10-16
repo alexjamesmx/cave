@@ -12,6 +12,7 @@ test("parses the app's routes", () => {
   expect(parseRoute("/flows/a/b")).toEqual({ name: "not-found" });
   expect(parseRoute("/system")).toEqual({ name: "system", tab: undefined });
   expect(parseRoute("/money/review")).toEqual({ name: "review" });
+  expect(parseRoute("/ai")).toEqual({ name: "ai" });
   expect(parseRoute("/system/jobs")).toEqual({ name: "system", tab: "jobs" });
   expect(parseRoute("/c/money")).toEqual({
     name: "collection",
