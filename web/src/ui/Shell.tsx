@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useCave } from "../app/context.ts";
 import { collectionPath, type Route } from "../app/router.ts";
 import { useCollections } from "../store/queries.ts";
+import { Dock } from "./Dock.tsx";
 import { Icon } from "./icon.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
@@ -78,6 +79,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           {children}
         </div>
       </main>
+      <Dock />
     </div>
   );
 }
