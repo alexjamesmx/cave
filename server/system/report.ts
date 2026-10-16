@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import type { AgentRegistry } from "../agents.ts";
 import { newestBackupAt } from "../backup.ts";
 import { type DeployStatus, readDeployStatus } from "../deploy-status.ts";
+import type { CaveEnv } from "../env.ts";
 import type { JobState } from "../jobs/scheduler.ts";
 import type { Notifier } from "../notify/notifier.ts";
 
@@ -18,6 +19,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * token, key, webhook URL, push endpoint, chat id or notification title.
  */
 export interface SystemReport {
+  /** Anything but `production` sends to the outbox: `notifications.log` rows with result `outbox`. */
+  env: CaveEnv;
   version: string;
   commit: string | null;
   deploy: DeployStatus | null;
@@ -50,6 +53,7 @@ export interface SystemReport {
 }
 
 export interface ReportDeps {
+  env: CaveEnv;
   db: Database;
   version: string;
   commit: string | null;
@@ -118,6 +122,7 @@ export function createSystemReport(d: ReportDeps) {
     const last = new Map(lastCalls.all().map((r) => [r.agent, r.at]));
     const made = new Map(created.all().map((r) => [r.actor.slice("agent:".length), r.n]));
     return {
+      env: d.env,
       version: d.version,
       commit: d.commit,
       deploy,

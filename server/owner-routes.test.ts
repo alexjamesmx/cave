@@ -39,6 +39,7 @@ beforeAll(() => {
     now: () => Date.UTC(2026, 9, 13, 14, 5, 12),
     agents: { registry, calls: createCallLog(db), vaultPath: undefined },
     status: {
+      env: "test",
       version: "0.1.0-dev",
       commit: "abc123",
       backupDir,
@@ -67,9 +68,10 @@ test("status and export need the owner token; agent tokens are refused", async (
   }
 });
 
-test("status reports version, doc count, db id, the newest real backup and new vault notes", async () => {
+test("status reports CAVE_ENV, version, doc count, db id, the newest real backup and new vault notes", async () => {
   const status = (await (await get("/api/status", OWNER)).json()) as Status;
   expect(status).toEqual({
+    env: "test",
     version: "0.1.0-dev",
     commit: "abc123",
     docs: store.docCount(),
@@ -121,7 +123,7 @@ test("behind the proxy: the public origin passes, its http twin and other hosts 
     now: Date.now,
     allowedHosts: ["localhost", "127.0.0.1", "[::1]", "cave.example.dev"],
     publicOrigin: PUBLIC,
-    status: { version: "x", commit: null, backupDir, newVaultNotes: () => null },
+    status: { env: "test", version: "x", commit: null, backupDir, newVaultNotes: () => null },
   });
   try {
     const get = (headers: Record<string, string>) =>

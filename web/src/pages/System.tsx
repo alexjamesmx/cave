@@ -44,6 +44,8 @@ interface SystemReport {
     summary: string;
   }[];
   flowRuns: { flowId: string; lastAt: number; result: string }[];
+  /** `CAVE_ENV`; anything but production sends to the outbox. */
+  env: string;
   notifications: {
     log: { at: number; channel: string; key: string; result: string }[];
     missed: number;
@@ -367,6 +369,31 @@ function Agents({ server }: { server: Server }) {
 function Notifications({ server }: { server: Server }) {
   if (server === "offline") return <Offline what="Notifications" />;
   if (!server) return null;
+  const outbox = server.notifications.log.filter((n) => n.result === "outbox");
+  return (
+    <>
+      {server.env !== "production" && (
+        <Panel title="Dev outbox">
+          <span className="muted">
+            CAVE_ENV={server.env}: these would have gone out in production; nothing was sent
+          </span>
+          {outbox.length === 0 && <span className="muted">Nothing in the outbox yet.</span>}
+          {outbox.map((n, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: one send can log the same key per channel
+            <Row key={`${n.key}-${n.channel}-${i}`}>
+              <span className="num muted">{when(n.at)}</span>
+              <span>{n.channel}</span>
+              <span className="num">{n.key}</span>
+            </Row>
+          ))}
+        </Panel>
+      )}
+      <NotificationLog server={server} />
+    </>
+  );
+}
+
+function NotificationLog({ server }: { server: Exclude<Server, "offline" | undefined> }) {
   return (
     <Panel title="Notification log">
       <span className="muted">

@@ -117,6 +117,7 @@ beforeAll(async () => {
     telegramToken: TELEGRAM,
     discordWebhook: DISCORD,
     production: true,
+    env: "production",
     fetch: (async () => Response.json({ ok: true, result: [] })) as unknown as typeof fetch,
     log: () => {},
   });
@@ -134,6 +135,7 @@ beforeAll(async () => {
     now: () => NOW,
     agents: { registry, calls, vaultPath: undefined },
     system: createSystemReport({
+      env: "production",
       db,
       version: "0.1.0",
       commit: SHA,

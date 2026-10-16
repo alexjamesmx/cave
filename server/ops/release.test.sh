@@ -46,7 +46,9 @@ root="$tmp/cave"
 mkdir -p "$root"
 git clone --quiet --bare "$tmp/origin" "$root/repo.git"
 
-run() { env PATH="$tmp/decoy:$PATH" CAVE_BUN_BIN="$tmp/bin" FAIL_AT="${FAIL_AT:-}" CAVE_ROOT="$root" CAVE_CACHE_DIR="$tmp/cache" bash "$script" "$@"; }
+# The server's settings, as /etc/cave/cave.env on the VPS; ENV_FILE swaps in another.
+printf 'PORT=3000\nCAVE_ENV=production\n' >"$tmp/cave.env"
+run() { env PATH="$tmp/decoy:$PATH" CAVE_BUN_BIN="$tmp/bin" FAIL_AT="${FAIL_AT:-}" CAVE_ROOT="$root" CAVE_CACHE_DIR="$tmp/cache" CAVE_ENV_FILE="${ENV_FILE:-$tmp/cave.env}" bash "$script" "$@"; }
 target() { if [ -L "$root/$1" ]; then basename "$(readlink "$root/$1")"; fi; }
 
 run build "$(sha 1)" >/dev/null
@@ -66,6 +68,19 @@ for step in install check test; do
     check "a failing $step leaves previous unchanged" "$(target previous)" "$(sha 1)"
   fi
 done
+
+# CAVE_ENV: only production is switched to; the last assignment wins; quotes are fine.
+envcase() { printf "$2" >"$tmp/env-$1"; ENV_FILE="$tmp/env-$1" run build "$(sha 3)" 2>&1; }
+for bad in missing:'PORT=3000\n' dev:'CAVE_ENV=dev\n' typo:'CAVE_ENV=prod\n' last:'CAVE_ENV=production\nCAVE_ENV=dev\n' commented:'# CAVE_ENV=production\n'; do
+  name=${bad%%:*}
+  if out=$(envcase "$name" "${bad#*:}"); then
+    bad "CAVE_ENV $name must fail the build"
+  else
+    check "CAVE_ENV $name names the env step" "$(grep -o "deploy failed at: env" <<<"$out" | head -n 1)" "deploy failed at: env"
+    check "CAVE_ENV $name leaves current unchanged" "$(target current)" "$(sha 2)"
+  fi
+done
+if ENV_FILE="$tmp/no-such-file" run build "$(sha 3)" >/dev/null 2>&1; then bad "an unreadable env file must fail the build"; else ok "an unreadable env file fails the build"; fi
 
 if run build "deadbeef" >/dev/null 2>&1; then bad "a short commit id must be refused"; else ok "a short commit id is refused"; fi
 unknown=$(printf '%040d' 0)
@@ -96,6 +111,11 @@ CAVE_KEEP_RELEASES=1 run prune >/dev/null
 [ -d "$root/releases/$(sha 5)" ] && ok "pruning never removes previous" || bad "pruning removed previous"
 [ -d "$root/releases/$(sha 6)" ] && ok "pruning keeps the newest" || bad "pruning removed the newest"
 [ -d "$root/releases/$(sha 3)" ] && bad "pruning should remove an old release" || ok "pruning removes old releases"
+
+# current is sha 2 here; a quoted production after a dev line is the one that counts.
+printf 'CAVE_ENV=dev\nCAVE_ENV="production"\n' >"$tmp/env-quoted"
+ENV_FILE="$tmp/env-quoted" run build "$(sha 6)" >/dev/null 2>&1 || bad "a quoted production, last, must pass"
+check "a quoted production, last, is switched to" "$(target current)" "$(sha 6)"
 
 if [ "$fails" -gt 0 ]; then
   echo "$fails failed" >&2

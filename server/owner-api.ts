@@ -3,6 +3,7 @@ import type { AgentCall, CallLog } from "./agent-calls.ts";
 import type { AgentRegistry } from "./agents.ts";
 import { newestBackupAt } from "./backup.ts";
 import { type DeployStatus, readDeployStatus } from "./deploy-status.ts";
+import type { CaveEnv } from "./env.ts";
 import type { Store } from "./store.ts";
 
 export const ACTIVITY_LIMIT = 50;
@@ -44,6 +45,7 @@ export function activityHandler(store: Store, calls: CallLog) {
 }
 
 export interface StatusOptions {
+  env: CaveEnv;
   version: string;
   /** The deployed git commit; `null` when the server does not run from a git checkout. */
   commit: string | null;
@@ -55,6 +57,8 @@ export interface StatusOptions {
 }
 
 export interface Status {
+  /** `CAVE_ENV`: the app shows a DEV or TEST badge for anything but `production`. */
+  env: CaveEnv;
   version: string;
   commit: string | null;
   docs: number;
@@ -70,6 +74,7 @@ export function statusHandler(store: Store, options: StatusOptions) {
   return (): Response => {
     const last = newestBackupAt(options.backupDir);
     const status: Status = {
+      env: options.env,
       version: options.version,
       commit: options.commit,
       docs: store.docCount(),

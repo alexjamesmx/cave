@@ -27,6 +27,7 @@ beforeAll(async () => {
     telegramToken: TELEGRAM,
     discordWebhook: DISCORD,
     production: true,
+    env: "production",
     fetch: (async (url: string) => {
       pushed.push(url);
       return url.includes("api.telegram.org")

@@ -1,0 +1,3 @@
+[test]
+# Every test process, and any server a test starts, runs as CAVE_ENV=test: nothing leaves.
+preload = ["./server/test-env.ts"]

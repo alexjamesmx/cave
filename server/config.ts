@@ -1,7 +1,10 @@
 import { dirname, join } from "node:path";
+import { type CaveEnv, parseCaveEnv } from "./env.ts";
 import { LOOPBACK_HOSTS } from "./request-guard.ts";
 
 export interface ServerConfig {
+  /** `production` is the only one that delivers outside the Cave (`server/env.ts`). */
+  env: CaveEnv;
   hostname: string;
   port: number;
   token: string | undefined;
@@ -130,6 +133,8 @@ export function resolveConfig(
   env: Env,
   { production = false }: { production?: boolean } = {},
 ): { ok: true; value: ServerConfig } | { ok: false; error: string } {
+  const caveEnv = parseCaveEnv(env.CAVE_ENV);
+  if (!caveEnv.ok) return caveEnv;
   const hostname = env.CAVE_HOST || "127.0.0.1";
   const token = env.CAVE_TOKEN || undefined;
   const port = Number(env.PORT || 3000);
@@ -185,6 +190,7 @@ export function resolveConfig(
   return {
     ok: true,
     value: {
+      env: caveEnv.value,
       hostname,
       port,
       token,

@@ -9,6 +9,8 @@ set -Eeuo pipefail
 
 root="${CAVE_ROOT:-/opt/cave}"
 keep="${CAVE_KEEP_RELEASES:-5}"
+# The server's settings; cave-deploy's tests point it at a temp file.
+env_file="${CAVE_ENV_FILE:-/etc/cave/cave.env}"
 # CAVE_BUN_BIN lets the tests put a fake bun first; on the VPS it is the pinned Bun.
 export PATH="${CAVE_BUN_BIN:-/opt/bun/bin}:$PATH"
 # Every cache stays out of the data directory, which holds only data: Bun's install cache,
@@ -20,6 +22,18 @@ export XDG_CACHE_HOME="$cache/xdg"
 
 step=""
 trap 'echo "deploy failed at: $step" >&2' ERR
+
+# Only CAVE_ENV=production delivers notifications. A release that would come up as dev would
+# run the live Cave silently, so it is never switched to; the last assignment wins, as in
+# systemd's EnvironmentFile.
+require_production() {
+  local value
+  value=$(sed -n 's/^[[:space:]]*CAVE_ENV=//p' "$env_file" | tail -n 1 | tr -d "\"' \r")
+  if [ "$value" != production ]; then
+    echo "$env_file must set CAVE_ENV=production (it has: ${value:-nothing}); not switching" >&2
+    return 1
+  fi
+}
 
 target_of() { if [ -L "$root/$1" ]; then basename "$(readlink "$root/$1")"; fi; }
 
@@ -44,6 +58,8 @@ build() {
   local sha="$1" rel="$root/releases/$1" current
   step=args
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "not a full commit id: $sha" >&2; return 2; }
+  step=env
+  require_production
   step=fetch
   git -C "$root/repo.git" fetch --quiet origin '+refs/heads/main:refs/heads/main'
   step=verify

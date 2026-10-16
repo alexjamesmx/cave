@@ -26,6 +26,7 @@ if (!config.ok) {
   process.exit(1);
 }
 const {
+  env,
   hostname,
   port,
   token,
@@ -84,6 +85,7 @@ const notifications = createNotificationSystem({
   telegramToken,
   discordWebhook,
   production,
+  env,
 });
 if (!push) console.log("Web Push is off: no VAPID keys (bun run push-keys)");
 
@@ -119,6 +121,7 @@ const server = serveCave({
   allowedHosts,
   ...(publicOrigin ? { publicOrigin } : {}),
   status: {
+    env,
     version,
     commit,
     backupDir,
@@ -128,6 +131,7 @@ const server = serveCave({
   notifications: notifications.routes,
   flows: flowRoutes(notifications.flows),
   system: createSystemReport({
+    env,
     db,
     version,
     commit,
@@ -144,5 +148,7 @@ const server = serveCave({
   development: !production,
 });
 console.log(`Cave server listening on ${server.url}${production ? "" : " (development)"}`);
+if (env !== "production")
+  console.log(`CAVE_ENV=${env}: nothing leaves the Cave; notifications go to the outbox (/system)`);
 
 scheduler.start();
