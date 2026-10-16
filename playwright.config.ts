@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
 import webpush from "web-push";
+import { browserUse } from "./e2e/browser.ts";
 
 const PORT = 3210;
 
@@ -26,8 +27,7 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    // An installed browser channel, so no Playwright browser download is needed.
-    channel: process.env.CAVE_E2E_CHANNEL ?? "msedge",
+    ...browserUse(),
   },
   webServer: {
     // The owner's settings must never reach the throwaway database, whether they come from
@@ -49,6 +49,7 @@ export default defineConfig({
       CAVE_VAPID_SUBJECT: "mailto:e2e@example.test",
       CAVE_TELEGRAM_BOT_TOKEN: "",
       CAVE_DISCORD_WEBHOOK_URL: "",
+      CAVE_ENV: "test",
     },
   },
 });

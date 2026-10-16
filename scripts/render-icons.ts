@@ -3,6 +3,7 @@
 // The PNGs are committed; the app never renders icons at run time.
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
+import { chooseBrowser } from "../e2e/browser.ts";
 
 const dir = join(import.meta.dir, "..", "web", "icons");
 const svg = await Bun.file(join(dir, "icon.svg")).text();
@@ -13,7 +14,7 @@ const outputs = [
   { file: "icon-maskable-512.png", size: 512 },
 ];
 
-const browser = await chromium.launch({ channel: process.env.CAVE_E2E_CHANNEL ?? "msedge" });
+const browser = await chromium.launch(chooseBrowser());
 try {
   for (const { file, size } of outputs) {
     const page = await browser.newPage({ viewport: { width: size, height: size } });
