@@ -12,7 +12,7 @@ test("an entry added offline syncs after reconnect and shows on a second device"
   await expect(syncBadge(page)).toHaveText("SYNCED");
 
   await laptop.setOffline(true);
-  await addMoney(page, { amount: 205, title: "e2e tacos", category: "food" });
+  await addMoney(page, { amount: 205, title: "e2e tacos", category: "Food" });
   await expect(
     page.getByRole("status").filter({ hasText: "Saved · Expense · e2e tacos" }),
   ).toBeVisible();

@@ -7,6 +7,7 @@ import { exportHandler } from "./export.ts";
 import type { FlowRoutes } from "./flows/api.ts";
 import { createHistoryHandler } from "./history.ts";
 import { createMcpRoute } from "./mcp/route.ts";
+import type { MoneyReviewRoutes } from "./money-review.ts";
 import type { NotificationRoutes } from "./notify/api.ts";
 import { activityHandler, agentsHandler, type StatusOptions, statusHandler } from "./owner-api.ts";
 import { guardRequest, LOOPBACK_HOSTS } from "./request-guard.ts";
@@ -43,6 +44,8 @@ export interface AppOptions {
   notifications?: NotificationRoutes;
   /** Test runs and run history; absent means they are not served. */
   flows?: FlowRoutes;
+  /** The category review's routes; absent means they are not served. */
+  moneyReview?: MoneyReviewRoutes;
   /** `/api/system`; absent means it is not served. */
   system?: SystemReportFn;
   /** Told of each device that syncs; the system view lists them. */
@@ -69,6 +72,7 @@ export function serveCave({
   notifications,
   flows,
   system,
+  moneyReview,
   onSync,
   development,
 }: AppOptions) {
@@ -132,6 +136,15 @@ export function serveCave({
       "/api/notifications/test": { POST: notify((r) => (req) => r.channelTest(req)) },
       "/api/telegram/link": { POST: notify((r) => () => r.telegramLink()) },
       "/api/telegram/unlink": { POST: notify((r) => () => r.telegramUnlink()) },
+      "/api/money-review": moneyReview
+        ? { GET: owner(() => moneyReview.get()), POST: owner((req) => moneyReview.submit(req)) }
+        : guarded(missing),
+      "/api/money-review/decide": {
+        POST: moneyReview ? owner((req) => moneyReview.decide(req)) : guarded(missing),
+      },
+      "/api/money-review/undo": {
+        POST: moneyReview ? owner((req) => moneyReview.undo(req)) : guarded(missing),
+      },
       "/api/system": { GET: system ? owner(() => Response.json(system())) : guarded(missing) },
       "/api/flows/:id/test": { POST: flows ? owner((req) => flows.test(req)) : guarded(missing) },
       "/api/flows/:id/runs": { GET: flows ? owner((req) => flows.runs(req)) : guarded(missing) },

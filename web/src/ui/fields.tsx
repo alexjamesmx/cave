@@ -1,3 +1,4 @@
+import { optionText } from "../../../shared/categories.ts";
 import { shortDay } from "../../../shared/dates.ts";
 import { isSafeUrl } from "../../../shared/fields.ts";
 import type { Field } from "../../../shared/schema.ts";
@@ -11,8 +12,8 @@ export function OptionChip({ field, value }: { field: Field; value: unknown }) {
   const color = option?.color ?? "var(--muted)";
   return (
     <span className="chip" style={{ background: `${color}1f`, color }}>
-      {option && <Icon name={option.icon} size={13} />}
-      {value}
+      {option && !option.emoji && <Icon name={option.icon} size={13} />}
+      {option ? optionText(option) : value}
     </span>
   );
 }
@@ -74,7 +75,7 @@ export function FieldInput({ field, value, onChange, id }: InputProps) {
           <option value="">—</option>
           {field.options?.map((o) => (
             <option key={o.value} value={o.value}>
-              {o.value}
+              {optionText(o)}
             </option>
           ))}
           {text && !field.options?.some((o) => o.value === text) && (

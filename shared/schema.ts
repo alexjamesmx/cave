@@ -25,10 +25,18 @@ export const VIEW_TYPES = [
 ] as const;
 export type ViewType = (typeof VIEW_TYPES)[number];
 
+/** What a money category is for; transfers count as neither spending nor income. */
+export type OptionKind = "expense" | "income" | "transfer";
+
 export interface SelectOption {
+  /** What items store; fixed once created. */
   value: string;
   icon: string;
   color: string;
+  /** What the app shows instead of `value`; the owner can rename it freely. */
+  label?: string;
+  emoji?: string;
+  kind?: OptionKind;
 }
 
 export interface Field {

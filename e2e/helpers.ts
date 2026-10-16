@@ -34,18 +34,26 @@ export function offOriginRequests(context: BrowserContext, baseURL: string): str
   return seen;
 }
 
-/** Home → Expense (or Income): the quick form, saved. */
+/** Home → Expense (or Income): the money form, saved. `category` is its shown name. */
 export async function addMoney(
   page: Page,
-  entry: { amount: number; title: string; category?: string; income?: boolean },
+  entry: {
+    amount: number;
+    title: string;
+    category?: string;
+    income?: boolean;
+    yesterday?: boolean;
+  },
 ) {
   if (new URL(page.url()).pathname !== "/") await page.goto("/");
   await page.getByRole("button", { name: "Expense" }).first().click();
   const form = page.getByRole("form", { name: /Expense|Income/ });
-  if (entry.income) await form.getByRole("button", { name: "Income" }).click();
+  if (entry.income) await form.getByRole("button", { name: "Income", exact: true }).click();
   await form.getByLabel("Amount").fill(String(entry.amount));
   await form.getByLabel("Title").fill(entry.title);
-  if (entry.category) await form.getByLabel("Category").selectOption(entry.category);
+  if (entry.category)
+    await form.getByRole("button", { name: new RegExp(`${entry.category}$`) }).click();
+  if (entry.yesterday) await form.getByRole("button", { name: "Yesterday" }).click();
   await form.getByRole("button", { name: "Save" }).click();
 }
 

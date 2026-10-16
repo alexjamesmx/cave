@@ -1,8 +1,10 @@
 import { type FormEvent, useState } from "react";
+import { optionText } from "../../../shared/categories.ts";
 import {
   EDITABLE_FIELD_TYPES,
   type Field,
   type FieldType,
+  type OptionKind,
   type SelectOption,
 } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
@@ -162,8 +164,15 @@ function Options({
   onChange(next: SelectOption[]): void;
 }) {
   const [value, setValue] = useState("");
-  const set = (i: number, patch: Partial<SelectOption>) =>
-    onChange(options.map((o, j) => (i === j ? { ...o, ...patch } : o)));
+  const set = (i: number, patch: { [K in keyof SelectOption]?: SelectOption[K] | undefined }) =>
+    onChange(
+      options.map((o, j) => {
+        if (i !== j) return o;
+        const next = { ...o, ...patch } as Record<string, unknown>;
+        for (const key of Object.keys(next)) if (next[key] === undefined) delete next[key];
+        return next as unknown as SelectOption;
+      }),
+    );
 
   return (
     <div style={{ display: "grid", gap: 6, paddingLeft: 8 }}>
@@ -175,10 +184,47 @@ function Options({
           <span
             className="chip"
             style={{ background: `${o.color}1f`, color: o.color, minWidth: 96 }}
+            title={o.value}
           >
-            <Icon name={o.icon} size={13} />
-            {o.value}
+            {!o.emoji && <Icon name={o.icon} size={13} />}
+            {optionText(o)}
           </span>
+          <input
+            key={`emoji-${o.emoji ?? ""}`}
+            className="input"
+            aria-label={`Emoji for ${o.value}`}
+            defaultValue={o.emoji ?? ""}
+            style={{ width: 56 }}
+            onBlur={(e) => {
+              const emoji = e.target.value.trim();
+              if (emoji !== (o.emoji ?? "")) set(i, emoji ? { emoji } : { emoji: undefined });
+            }}
+          />
+          <input
+            key={`label-${o.label ?? ""}`}
+            className="input"
+            aria-label={`Name for ${o.value}`}
+            defaultValue={o.label ?? ""}
+            placeholder={o.value}
+            style={{ flex: "1 1 120px", minWidth: 0 }}
+            onBlur={(e) => {
+              const label = e.target.value.trim();
+              if (label !== (o.label ?? "")) set(i, label ? { label } : { label: undefined });
+            }}
+          />
+          <select
+            className="input"
+            aria-label={`Kind for ${o.value}`}
+            value={o.kind ?? ""}
+            onChange={(e) =>
+              set(i, e.target.value ? { kind: e.target.value as OptionKind } : { kind: undefined })
+            }
+          >
+            <option value="">No kind</option>
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+            <option value="transfer">Transfer</option>
+          </select>
           <input
             key={o.icon}
             className="input"

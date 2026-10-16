@@ -5,6 +5,7 @@ import { DOCK_SIZE, dockOf, SECTIONS, type Section, sectionOf } from "../app/sec
 import { useDoc } from "../store/queries.ts";
 import { AskBox } from "./AskBox.tsx";
 import { Icon } from "./icon.tsx";
+import { MoneyForm } from "./MoneyForm.tsx";
 
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 type Sheet = "more" | "ask" | "edit" | undefined;
@@ -61,6 +62,7 @@ export function Dock() {
       {sheet === "ask" && (
         <SheetPanel title="Ask" onClose={() => setSheet(undefined)}>
           <AskBox autoFocus onAsked={() => setSheet(undefined)} />
+          <AskSheetExpense onSaved={() => setSheet(undefined)} />
         </SheetPanel>
       )}
       {sheet === "more" && (
@@ -173,4 +175,16 @@ function EditDock({ current, onSave }: { current: string[]; onSave(ids: string[]
       </button>
     </>
   );
+}
+
+/** An expense from anywhere: the money form, one tap from the dock. */
+function AskSheetExpense({ onSaved }: { onSaved(): void }) {
+  const [open, setOpen] = useState(false);
+  if (!open)
+    return (
+      <button type="button" className="btn" onClick={() => setOpen(true)}>
+        <Icon name="wallet" size={15} /> Expense
+      </button>
+    );
+  return <MoneyForm onSaved={onSaved} />;
 }

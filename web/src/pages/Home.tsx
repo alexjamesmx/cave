@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import type { Status } from "../../../server/owner-api.ts";
+import { transferCategories } from "../../../shared/categories.ts";
 import { monthName, monthOf } from "../../../shared/dates.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
 import { monthSummary } from "../../../shared/money.ts";
@@ -18,7 +19,8 @@ import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
 import { AskBox } from "../ui/AskBox.tsx";
 import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
-import { ExpenseForm, type QuickKind, ReminderForm, TaskForm } from "../ui/QuickForms.tsx";
+import { MoneyForm } from "../ui/MoneyForm.tsx";
+import { type QuickKind, ReminderForm, TaskForm } from "../ui/QuickForms.tsx";
 
 const CLOSED = new Set(["done", "dropped"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -76,9 +78,7 @@ export function Home() {
               </button>
             ))}
           </fieldset>
-          {collections && quick === "expense" && (
-            <ExpenseForm collections={collections} onDone={done} />
-          )}
+          {quick === "expense" && <MoneyForm onSaved={(_id, message) => done(message)} />}
           {collections && quick === "task" && <TaskForm collections={collections} onDone={done} />}
           {collections && quick === "reminder" && (
             <ReminderForm collections={collections} onDone={done} />
@@ -134,7 +134,10 @@ function Glance() {
     return (id: string) => map.get(id) ?? [];
   }, [items]);
 
-  const money = monthSummary(of("money"), monthOf(today), today);
+  const categories = collections
+    ?.find((c) => c.id === "money")
+    ?.data.fields.find((f) => f.id === "category");
+  const money = monthSummary(of("money"), monthOf(today), today, transferCategories(categories));
   const openTasks = of("tasks").filter((d) => !CLOSED.has(String(d.data.status))).length;
   const habits = (collections?.find((c) => c.id === "journal")?.data.fields ?? [])
     .filter((f) => f.type === "checkbox" && f.archived !== true)

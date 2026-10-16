@@ -8,7 +8,7 @@ test("after one online visit the app opens offline with its data", async ({ brow
 
   await page.goto("/");
   await expect(syncBadge(page)).toHaveText("SYNCED");
-  await addMoney(page, { amount: 317, title: "shell check", category: "food" });
+  await addMoney(page, { amount: 317, title: "shell check", category: "Food" });
   await expect(
     page.getByRole("status").filter({ hasText: "Saved · Expense · shell check" }),
   ).toBeVisible();

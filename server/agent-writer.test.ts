@@ -44,7 +44,7 @@ test("creates an item as agent:<name> with _created set by the writer", () => {
 });
 
 test("refuses a category that is not an option, never guessing one", () => {
-  const result = writer().create("money", { title: "Gift", fields: { category: "gifts" } });
+  const result = writer().create("money", { title: "Gift", fields: { category: "pets" } });
   expect(result).toMatchObject({ ok: false });
   expect(!result.ok && result.error).toContain("field category: must be one of");
 });

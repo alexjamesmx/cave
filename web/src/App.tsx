@@ -5,6 +5,7 @@ import { CollectionPage } from "./pages/CollectionPage.tsx";
 import { Flows } from "./pages/Flows.tsx";
 import { Home } from "./pages/Home.tsx";
 import { ReminderLink } from "./pages/ReminderLink.tsx";
+import { ReviewCategories } from "./pages/ReviewCategories.tsx";
 import { Settings } from "./pages/Settings.tsx";
 import { System } from "./pages/System.tsx";
 import { Shell } from "./ui/Shell.tsx";
@@ -21,6 +22,7 @@ export function App() {
       {route.name === "flows" && <Flows id={route.id} />}
       {route.name === "reminder" && <ReminderLink key={route.id} id={route.id} />}
       {route.name === "settings" && <Settings />}
+      {route.name === "review" && <ReviewCategories />}
       {route.name === "agents" && <Agents />}
       {route.name === "system" && <System tab={route.tab} />}
       {route.name === "not-found" && <p className="muted">Nothing here yet.</p>}

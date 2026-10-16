@@ -133,7 +133,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       "money_month",
       {
         description:
-          "Income, spending, net, burn rate and spending by category for one month (YYYY-MM), counted the same way as the app's money dashboard, including entries it could not count.",
+          "Income, spending, net, burn rate and spending by category for one month (YYYY-MM), counted the same way as the app's money dashboard, including entries it could not count. Transfers between own accounts (investments) are reported apart, never as spending or income.",
         inputSchema: z.object({ month: z.string().regex(/^\d{4}-\d{2}$/, "YYYY-MM") }),
         annotations: READ,
       },

@@ -16,7 +16,7 @@ const VAULT: Record<string, string> = {
   "Money/Ledger/2026/2026-10-01 Tacos.md":
     "---\ndate: 2026-10-01T13:05:00\namount: 250\ndirection: expense\ncategory: food\nbucket: x\naccount: bank\n---\n",
   "Money/Ledger/2026/2026-10-02 Gift.md":
-    "---\ndate: 2026-10-02\namount: 900\ndirection: expense\ncategory: gifts\n---\n",
+    "---\ndate: 2026-10-02\namount: 900\ndirection: expense\ncategory: pets\n---\n",
   "Money/Ledger/2025/2025-08-02 Odd.md":
     "---\ndate: 2025-08-02\namount: 12\ndirection: sideways\ncategory:\n---\n",
   "Money/Ledger/.trash/2026-01-01 Gone.md": "---\namount: 1\n---\n",
@@ -33,7 +33,7 @@ const VAULT: Record<string, string> = {
   "Projects/LeetCode.md": "---\nstatus: active\narea: learning\n---\n",
   "System/categories.json": JSON.stringify([
     { name: "food", icon: "🍔" },
-    { name: "gifts", icon: "🎁" },
+    { name: "pets", icon: "🐶" },
   ]),
   "System/money.md": "---\namount: 5\n---\n",
   ".obsidian/workspace.md": "---\na: 1\n---\n",
@@ -108,10 +108,10 @@ test("a note whose YAML does not parse is reported, not imported", async () => {
 
 test("category names from categories.json the seed lacks become options, emoji ignored", async () => {
   const report = await importVault({ root, store, now: NOW });
-  expect(report.categoriesAdded).toEqual(["gifts"]);
+  expect(report.categoriesAdded).toEqual(["pets"]);
   const category = fieldsOf(store.get("money")).find((f) => f.id === "category");
-  expect(category?.options?.at(-1)).toEqual({ value: "gifts", icon: "tag", color: "#8C93A0" });
-  expect(store.get(importId("Money/Ledger/2026/2026-10-02 Gift.md"))?.data.category).toBe("gifts");
+  expect(category?.options?.at(-1)).toEqual({ value: "pets", icon: "tag", color: "#8C93A0" });
+  expect(store.get(importId("Money/Ledger/2026/2026-10-02 Gift.md"))?.data.category).toBe("pets");
 });
 
 test("keys that are not fields are kept and listed", async () => {

@@ -33,9 +33,13 @@ export function migrateSeed(store: Store, now: number): number[] {
     stamps: Object.fromEntries(Object.keys(data).map((key) => [key, stamp])),
     actor: "seed",
   });
-  const docs = pending.flatMap((m) =>
-    m.docs.map((d) => stamped(d.id, d.kind, d.data, d.collection ?? null)),
-  );
+  // An `update` reads the database as the earlier migrations in this run left it.
+  const docs: Doc[] = [];
+  for (const m of pending) {
+    const read = (id: string) => docs.findLast((d) => d.id === id) ?? store.get(id);
+    for (const d of [...m.docs, ...(m.update?.(read) ?? [])])
+      docs.push(stamped(d.id, d.kind, d.data, d.collection ?? null));
+  }
   docs.push(stamped("settings", "setting", { seedVersion: last.version }));
   store.applyChanges(docs, "seed", now);
   return pending.map((m) => m.version);

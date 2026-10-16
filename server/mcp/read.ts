@@ -1,3 +1,4 @@
+import { transferCategories } from "../../shared/categories.ts";
 import { dayOf, localDate } from "../../shared/dates.ts";
 import { activeFields, fieldsOf } from "../../shared/fields.ts";
 import { monthSummary, undatedEntries } from "../../shared/money.ts";
@@ -137,7 +138,8 @@ export function moneyMonth(store: Store, agent: Agent, month: string, now: numbe
   const timeZone = store.get("settings")?.data.timezone;
   const today = localDate(new Date(now), typeof timeZone === "string" ? timeZone : undefined);
   const entries = store.itemsOf("money");
-  const s = monthSummary(entries, month, today);
+  const categories = fieldsOf(store.get("money")).find((f) => f.id === "category");
+  const s = monthSummary(entries, month, today, transferCategories(categories));
   const brief = (e: (typeof s.expenses)[number]) => ({
     id: e.doc.id,
     title: text(e.doc.data._title),
@@ -159,6 +161,8 @@ export function moneyMonth(store: Store, agent: Agent, month: string, now: numbe
       largestExpenses: s.expenses.slice(0, 10).map(brief),
       incomplete: s.incomplete.length,
       undated: undatedEntries(entries).length,
+      transferred: s.transferred,
+      transferCount: s.transfers.length,
     },
   };
 }

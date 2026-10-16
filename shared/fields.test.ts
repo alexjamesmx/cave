@@ -47,8 +47,8 @@ describe("validateFields", () => {
   });
 
   test("select values must be one of the options", () => {
-    expect(keysOf(money, { category: "groceries" })).toEqual(["category"]);
-    expect(validateFields(money, { category: "groceries" })[0]?.error).toContain("food");
+    expect(keysOf(money, { category: "pets" })).toEqual(["category"]);
+    expect(validateFields(money, { category: "pets" })[0]?.error).toContain("food");
   });
 
   test("numbers and money must be finite numbers", () => {

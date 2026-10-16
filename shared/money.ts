@@ -27,6 +27,12 @@ export interface MonthSummary {
   incomes: MoneyEntry[];
   /** Dated in this month but missing an amount or direction: shown, never summed by guess. */
   incomplete: Doc[];
+  /**
+   * Money moved between the owner's own accounts (a category of kind `transfer`, such as
+   * an investment): counted here, never as spending or income, so nothing vanishes.
+   */
+  transfers: MoneyEntry[];
+  transferred: number;
 }
 
 function toEntry(doc: Doc): MoneyEntry | Doc {
@@ -42,7 +48,12 @@ const isEntry = (x: MoneyEntry | Doc): x is MoneyEntry => "day" in x;
 /** Ledger docs without a usable date, which no month can include. */
 export const undatedEntries = (docs: Doc[]) => docs.filter((d) => dayOf(d.data.date) === undefined);
 
-export function monthSummary(docs: Doc[], month: string, today: string): MonthSummary {
+export function monthSummary(
+  docs: Doc[],
+  month: string,
+  today: string,
+  transferCategories: ReadonlySet<string> = new Set(),
+): MonthSummary {
   const inMonth = docs.filter((d) => {
     const day = dayOf(d.data.date);
     return day !== undefined && monthOf(day) === month;
@@ -50,8 +61,10 @@ export function monthSummary(docs: Doc[], month: string, today: string): MonthSu
   const mapped = inMonth.map(toEntry);
   const entries = mapped.filter(isEntry);
   const incomplete = mapped.filter((x): x is Doc => !isEntry(x));
-  const expenses = entries.filter((e) => e.direction === "expense");
-  const incomes = entries.filter((e) => e.direction === "income");
+  const isTransfer = (e: MoneyEntry) => e.category !== null && transferCategories.has(e.category);
+  const transfers = entries.filter(isTransfer);
+  const expenses = entries.filter((e) => e.direction === "expense" && !isTransfer(e));
+  const incomes = entries.filter((e) => e.direction === "income" && !isTransfer(e));
   const sum = (list: MoneyEntry[]) => list.reduce((total, e) => total + e.amount, 0);
 
   const length = daysInMonth(month);
@@ -88,5 +101,7 @@ export function monthSummary(docs: Doc[], month: string, today: string): MonthSu
     expenses: expenses.sort(byAmount),
     incomes: incomes.sort(byAmount),
     incomplete,
+    transfers: transfers.sort(byAmount),
+    transferred: sum(transfers),
   };
 }

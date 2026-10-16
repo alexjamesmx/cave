@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { CATEGORY_SET } from "./categories.ts";
 import { parseDefinition } from "./flows/registry.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
@@ -110,13 +111,14 @@ test("fields and views use known types with unique ids", () => {
   }
 });
 
-test("money categories match the plan, each with icon and colour", () => {
+test("money categories are the M7b set, each with icon, colour, emoji and kind", () => {
   const fields = byId.get("money")?.data.fields as {
     id: string;
-    options?: { value: string; icon: string; color: string }[];
+    options?: { value: string; icon: string; color: string; emoji?: string; kind?: string }[];
   }[];
   const category = fields.find((f) => f.id === "category");
-  expect(category?.options?.map((o) => o.value)).toEqual([
+  // The pre-M7b values first, in their old order, then the rest of the set.
+  expect(category?.options?.slice(0, 9).map((o) => o.value)).toEqual([
     "food",
     "home",
     "transport",
@@ -127,7 +129,12 @@ test("money categories match the plan, each with icon and colour", () => {
     "income",
     "transfer",
   ]);
-  expect(category?.options?.every((o) => o.icon && /^#[0-9A-F]{6}$/.test(o.color))).toBe(true);
+  expect(category?.options?.map((o) => o.value).sort()).toEqual(
+    CATEGORY_SET.map((o) => o.value).sort(),
+  );
+  expect(
+    category?.options?.every((o) => o.icon && /^#[0-9A-F]{6}$/.test(o.color) && o.emoji && o.kind),
+  ).toBe(true);
 });
 
 test("journal has one checkbox per habit", () => {

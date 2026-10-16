@@ -1,3 +1,4 @@
+import { mergeCategoryOptions } from "./categories.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
@@ -54,6 +55,19 @@ const HABITS: [string, string, string][] = [
   ["learning", "Learning", "graduation-cap"],
 ];
 
+// The categories money had before M7b; the set in `categories.ts` is merged onto them.
+const LEGACY_CATEGORIES: SelectOption[] = [
+  opt("food", "utensils", C.orange),
+  opt("home", "house", C.violet),
+  opt("transport", "car", C.cyan),
+  opt("health", "heart-pulse", C.expense),
+  opt("fun", "sparkles", C.purple),
+  opt("other", "ellipsis", C.grey),
+  opt("investment", "trending-up", C.gold),
+  opt("income", "coins", C.income),
+  opt("transfer", "arrow-left-right", C.lime),
+];
+
 const COLLECTIONS: Record<string, CollectionData> = {
   money: {
     name: "Money",
@@ -67,17 +81,7 @@ const COLLECTIONS: Record<string, CollectionData> = {
         opt("income", "arrow-down-left", C.income),
         opt("expense", "arrow-up-right", C.expense),
       ]),
-      field("category", "Category", "select", [
-        opt("food", "utensils", C.orange),
-        opt("home", "house", C.violet),
-        opt("transport", "car", C.cyan),
-        opt("health", "heart-pulse", C.expense),
-        opt("fun", "sparkles", C.purple),
-        opt("other", "ellipsis", C.grey),
-        opt("investment", "trending-up", C.gold),
-        opt("income", "coins", C.income),
-        opt("transfer", "arrow-left-right", C.lime),
-      ]),
+      field("category", "Category", "select", mergeCategoryOptions(LEGACY_CATEGORIES)),
       field("detail", "Detail", "text"),
       field("account", "Account", "text"),
     ],
@@ -269,6 +273,30 @@ const PROPOSALS: CollectionData = {
 export interface SeedMigration {
   version: number;
   docs: { id: string; kind: Kind; collection?: string; data: Record<string, unknown> }[];
+  /**
+   * Docs computed from what the database holds now, for changes that must merge with the
+   * owner's edits (a field's options) rather than replace them.
+   */
+  update?: (get: (id: string) => Doc | undefined) => SeedMigration["docs"];
+}
+
+/** M7b part 5: the money categories gain emoji, labels and kinds, and the new set is added. */
+function mergeMoneyCategories(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
+  const money = get("money");
+  if (money?.kind !== "collection" || money.data._deleted === true) return [];
+  const fields = (money.data as unknown as CollectionData).fields;
+  if (!Array.isArray(fields) || !fields.some((f) => f.id === "category")) return [];
+  return [
+    {
+      id: "money",
+      kind: "collection",
+      data: {
+        fields: fields.map((f) =>
+          f.id === "category" ? { ...f, options: mergeCategoryOptions(f.options ?? []) } : f,
+        ),
+      },
+    },
+  ];
 }
 
 // Flows (M7 Part C): the collection and two drafts, as one migration so they arrive together.
@@ -292,6 +320,7 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 3, docs: [{ id: "settings", kind: "setting", data: REMINDER_DEFAULTS }] },
   { version: 4, docs: [{ id: "settings", kind: "setting", data: NOTIFICATION_DEFAULTS }] },
   { version: 5, docs: FLOW_DOCS },
+  { version: 6, docs: [], update: mergeMoneyCategories },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

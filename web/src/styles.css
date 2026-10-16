@@ -1212,3 +1212,30 @@ textarea.input {
   flex: 1 1 180px;
   min-width: 0;
 }
+
+/* The money form's category grid (M7b part 5). */
+.category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.category-grid legend {
+  width: 100%;
+}
+
+.category-pick {
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--control-border);
+  background: var(--control);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.category-pick[aria-pressed="true"] {
+  border-color: var(--lime);
+  background: rgba(182, 255, 59, 0.12);
+  color: var(--text-strong);
+}
