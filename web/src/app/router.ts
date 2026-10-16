@@ -56,13 +56,24 @@ function subscribe(listener: () => void) {
   };
 }
 
+/** Goes to `path`, which may carry a query string. */
 export function navigate(path: string): void {
-  if (path === location.pathname) return;
+  if (path === location.pathname + location.search) return;
   history.pushState(null, "", path);
   window.dispatchEvent(new Event(NAVIGATE));
 }
 
 export const usePathname = () => useSyncExternalStore(subscribe, () => location.pathname);
+
+/** The query string (`?a=1`), for state a view keeps in the URL so it can be bookmarked. */
+export const useSearch = () => useSyncExternalStore(subscribe, () => location.search);
+
+/** Replaces the query string without a new history entry (filters change as you type). */
+export function setSearch(search: string): void {
+  if (search === location.search) return;
+  history.replaceState(null, "", location.pathname + search);
+  window.dispatchEvent(new Event(NAVIGATE));
+}
 
 // Single-letter shortcuts, ignored while typing or with a modifier held.
 const SHORTCUTS: Record<string, string> = { c: "/calendar" };
@@ -103,6 +114,6 @@ export function interceptLinks(root: Document): void {
     const url = new URL(link.href);
     if (url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
     event.preventDefault();
-    navigate(url.pathname);
+    navigate(url.pathname + url.search);
   });
 }
