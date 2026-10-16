@@ -33,3 +33,28 @@ export function offOriginRequests(context: BrowserContext, baseURL: string): str
   });
   return seen;
 }
+
+/** Home → Expense (or Income): the quick form, saved. */
+export async function addMoney(
+  page: Page,
+  entry: { amount: number; title: string; category?: string; income?: boolean },
+) {
+  if (new URL(page.url()).pathname !== "/") await page.goto("/");
+  await page.getByRole("button", { name: "Expense" }).first().click();
+  const form = page.getByRole("form", { name: /Expense|Income/ });
+  if (entry.income) await form.getByRole("button", { name: "Income" }).click();
+  await form.getByLabel("Amount").fill(String(entry.amount));
+  await form.getByLabel("Title").fill(entry.title);
+  if (entry.category) await form.getByLabel("Category").selectOption(entry.category);
+  await form.getByRole("button", { name: "Save" }).click();
+}
+
+/** Home → Reminder: title and plain-language "When"; returns the form for its preview. */
+export async function fillReminder(page: Page, title: string, when: string) {
+  if (new URL(page.url()).pathname !== "/") await page.goto("/");
+  const form = page.getByRole("form", { name: "Reminder" });
+  if ((await form.count()) === 0) await page.getByRole("button", { name: "Reminder" }).click();
+  await form.getByLabel("Title").fill(title);
+  await form.getByLabel("When").fill(when);
+  return form;
+}

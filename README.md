@@ -55,7 +55,8 @@ Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each w
 
 ## Reminders and the calendar
 
-- **`remind <text> <when>`** in the command bar, in English or Spanish: `remind pay rent tomorrow 9am`, `remind llamar a mamá vie 18:00`, `remind stretch in 2h`, `remind renta every month 22 9:00`. The bar shows what it will save before Enter, and refuses an entry without a date.
+- **Home → Reminder:** a title and a "When" in plain English or Spanish: `tomorrow 9am`, `vie 18:00`, `in 2h`, `every month 22 9:00`, `cada mes 22 9:00`. The form shows what it will save, and won't save without a date.
+- **Home → Ask:** ask or tell the Cave anything. It opens Claude with the question (also copied), and Claude reads and writes the Cave through its connector. Expense and Task are quick forms next to it.
 - **Done and Snooze** on every reminder (the drawer, the table, the agenda, the Due card). A repeating reminder moves to its next occurrence and stays open; the 31st becomes the 30th in shorter months and returns to the 31st. Undo puts the previous values back.
 - **`/calendar`** (or `C`): a month grid with repeats shown ahead, and a 14-day agenda with anything overdue on top. Click a day to add a reminder.
 - **The Due card** on Home: overdue, today and tomorrow.

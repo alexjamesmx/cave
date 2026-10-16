@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, ownerContext } from "./helpers.ts";
+import { fillReminder, offOriginRequests, ownerContext } from "./helpers.ts";
 
 // Thursday 2026-10-15, 10:00 in Mexico City, the seeded timezone. Timers keep running.
 const NOW = new Date("2026-10-15T16:00:00Z");
 
-test("remind from the command bar, see it in the calendar and the Due card; Done moves a monthly one and Undo restores it", async ({
+test("a reminder from Home's form, seen in in the calendar and the Due card; Done moves a monthly one and Undo restores it", async ({
   browser,
   baseURL,
 }) => {
@@ -14,25 +14,24 @@ test("remind from the command bar, see it in the calendar and the Due card; Done
   await page.clock.setFixedTime(NOW);
   await page.goto("/");
 
-  const bar = page.getByLabel("Capture or jump");
-  await bar.fill("remind test tomorrow 9am");
-  await expect(page.getByText("Reminder · Test · Fri Oct 16, 09:00")).toBeVisible();
-  await bar.press("Enter");
+  // A "When" that isn't a date shows a hint and can't be saved.
+  let form = await fillReminder(page, "Call mom", "soon");
+  await expect(form.getByText("Add when")).toBeVisible();
+  await expect(form.getByRole("button", { name: "Save" })).toBeDisabled();
+
+  form = await fillReminder(page, "Test", "tomorrow 9am");
+  await expect(form.getByText("Reminder · Test · Fri Oct 16, 09:00")).toBeVisible();
+  await form.getByRole("button", { name: "Save" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "Saved · Reminder · Test" }),
   ).toBeVisible();
-
-  // A date-less entry is refused with a hint, and nothing is saved.
-  await bar.fill("remind call mom");
-  await bar.press("Enter");
-  await expect(page.getByRole("status").filter({ hasText: "Add when" })).toBeVisible();
 
   const due = page.getByRole("region", { name: "Due" });
   await expect(due.getByText("Tomorrow")).toBeVisible();
   await expect(due.getByRole("link", { name: "Test" })).toBeVisible();
 
   // C opens the calendar when no field has focus.
-  await bar.blur();
+  await page.locator("body").focus();
   await page.keyboard.press("c");
   await expect(page).toHaveURL(/\/calendar$/);
   await expect(page.getByRole("heading", { name: "October 2026" })).toBeVisible();
@@ -42,9 +41,9 @@ test("remind from the command bar, see it in the calendar and the Due card; Done
 
   // A monthly reminder: Done moves it a month and leaves it open; Undo puts it back.
   await page.goto("/");
-  await bar.fill("remind rent every month 15 9:00");
-  await expect(page.getByText("Reminder · Rent · Sun Nov 15, 09:00 · monthly")).toBeVisible();
-  await bar.press("Enter");
+  form = await fillReminder(page, "Rent", "every month 15 9:00");
+  await expect(form.getByText("Reminder · Rent · Sun Nov 15, 09:00 · monthly")).toBeVisible();
+  await form.getByRole("button", { name: "Save" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "Saved · Reminder · Rent" }),
   ).toBeVisible();

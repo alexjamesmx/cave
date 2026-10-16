@@ -1,7 +1,7 @@
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, test } from "@playwright/test";
-import { ownerContext } from "./helpers.ts";
+import { fillReminder, ownerContext } from "./helpers.ts";
 
 // A local stand-in for a push service: it records what the Cave server sends it.
 function pushService() {
@@ -71,9 +71,8 @@ test("a reminder due in a minute reaches the device's push endpoint, encrypted a
     await expect(page.getByText("E2E · Browser")).toBeVisible();
 
     await page.goto("/");
-    const bar = page.getByLabel("Capture or jump");
-    await bar.fill("remind push check in 1 min");
-    await bar.press("Enter");
+    const form = await fillReminder(page, "Push check", "in 1 min");
+    await form.getByRole("button", { name: "Save" }).click();
     await expect(
       page.getByRole("status").filter({ hasText: "Saved · Reminder · Push check" }),
     ).toBeVisible();

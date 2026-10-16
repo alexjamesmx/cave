@@ -16,7 +16,10 @@ async function dragTo(page: Page, card: Locator, target: Locator, where: "top" |
 }
 
 const column = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
-const titles = (col: Locator) => col.locator("[data-card] .board-title").allTextContents();
+// Other specs share the database, so only this spec's cards are compared.
+const OWN = new Set(["Write report", "Call the bank", LONG]);
+const titles = async (col: Locator) =>
+  (await col.locator("[data-card] .board-title").allTextContents()).filter((t) => OWN.has(t));
 
 test("one New task button, drag and drop between and within columns, arrow keys, and a board that never overlaps", async ({
   browser,

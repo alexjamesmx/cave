@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, ownerContext } from "./helpers.ts";
+import { fillReminder, offOriginRequests, ownerContext } from "./helpers.ts";
 
 test("/system renders each tab with a flow, a reminder and a job run", async ({
   browser,
@@ -11,9 +11,8 @@ test("/system renders each tab with a flow, a reminder and a job run", async ({
 
   // A reminder for the schedule, and the seeded rent flow turned on for a flow slot.
   await page.goto("/");
-  const bar = page.getByLabel("Capture or jump");
-  await bar.fill("remind system check tomorrow 9am");
-  await bar.press("Enter");
+  const form = await fillReminder(page, "system check", "tomorrow 9am");
+  await form.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Saved · Reminder" })).toBeVisible();
   await page.goto("/flows/flow-rent");
   await page.getByRole("button", { name: "Turn on" }).click();

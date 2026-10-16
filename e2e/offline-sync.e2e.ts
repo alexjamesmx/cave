@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
+import { addMoney, offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
 
 test("an entry added offline syncs after reconnect and shows on a second device", async ({
   browser,
@@ -12,9 +12,10 @@ test("an entry added offline syncs after reconnect and shows on a second device"
   await expect(syncBadge(page)).toHaveText("SYNCED");
 
   await laptop.setOffline(true);
-  await page.getByLabel("Capture or jump").fill("205 e2e tacos #food");
-  await page.getByLabel("Capture or jump").press("Enter");
-  await expect(page.getByText("Logged −$205 e2e tacos · food")).toBeVisible();
+  await addMoney(page, { amount: 205, title: "e2e tacos", category: "food" });
+  await expect(
+    page.getByRole("status").filter({ hasText: "Saved · Expense · e2e tacos" }),
+  ).toBeVisible();
   // The write is local; the debounced sync fails and the badge says so.
   await expect(syncBadge(page)).toHaveText("OFFLINE · SAVED HERE");
 

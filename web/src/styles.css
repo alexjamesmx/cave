@@ -647,40 +647,6 @@ textarea.input {
   letter-spacing: -0.035em;
 }
 
-.command {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 8px;
-  border-color: rgba(182, 255, 59, 0.4);
-  box-shadow:
-    0 0 0 1px rgba(182, 255, 59, 0.08),
-    0 24px 70px -24px rgba(182, 255, 59, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.command input {
-  flex: 1;
-  min-width: 0;
-  height: 52px;
-  border: 0;
-  background: transparent;
-  color: var(--text-strong);
-  font-size: 19px;
-  outline: none;
-}
-
-.slash {
-  font-family: var(--font-num);
-  font-size: 12px;
-  padding: 4px 9px;
-  border-radius: 8px;
-  background: #0e1116;
-  border: 1px solid var(--border);
-  color: #c3c8d0;
-  cursor: pointer;
-}
-
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1214,4 +1180,35 @@ textarea.input {
   .more-item[aria-pressed="true"] {
     border-color: var(--lime);
   }
+}
+
+/* Home's quick actions and forms (M7b part 4). */
+.quick-actions {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.quick-form {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-field {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 180px;
+  min-width: 0;
 }

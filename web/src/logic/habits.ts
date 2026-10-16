@@ -41,3 +41,15 @@ export function doneInLast(byDay: Map<string, Doc>, habit: string, today: string
   }
   return done;
 }
+
+/** This week so far (Monday to today): habit check-offs done out of those possible. */
+export function habitsThisWeek(byDay: Map<string, Doc>, habits: string[], today: string) {
+  const weekday = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
+  let day = today;
+  let done = 0;
+  for (let i = 0; i <= weekday; i++) {
+    done += habitsDone(byDay.get(day), habits).length;
+    day = previousDay(day);
+  }
+  return { done, possible: habits.length * (weekday + 1) };
+}

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, ownerContext } from "./helpers.ts";
+import { addMoney, offOriginRequests, ownerContext } from "./helpers.ts";
 
 test("a copy of Salary → save with a 100 threshold creates the task for an income of 200; Undo removes it", async ({
   browser,
@@ -30,11 +30,11 @@ test("a copy of Salary → save with a 100 threshold creates the task for an inc
   await expect(page.getByText("ON", { exact: true })).toBeVisible();
   const flowUrl = page.url();
 
-  const bar = page.getByLabel("Capture or jump");
   await page.goto("/");
-  await bar.fill("+200 bonus");
-  await bar.press("Enter");
-  await expect(page.getByRole("status").filter({ hasText: "Logged +$200 bonus" })).toBeVisible();
+  await addMoney(page, { amount: 200, title: "bonus", income: true });
+  await expect(
+    page.getByRole("status").filter({ hasText: "Saved · Income · bonus" }),
+  ).toBeVisible();
 
   // The server runs the flow when the income syncs; a reload pulls the task it wrote.
   await expect(async () => {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
+import { addMoney, offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
 
 test("after one online visit the app opens offline with its data", async ({ browser, baseURL }) => {
   const context = await ownerContext(browser);
@@ -8,9 +8,10 @@ test("after one online visit the app opens offline with its data", async ({ brow
 
   await page.goto("/");
   await expect(syncBadge(page)).toHaveText("SYNCED");
-  await page.getByLabel("Capture or jump").fill("317 shell check #food");
-  await page.getByLabel("Capture or jump").press("Enter");
-  await expect(page.getByText("Logged −$317 shell check · food")).toBeVisible();
+  await addMoney(page, { amount: 317, title: "shell check", category: "food" });
+  await expect(
+    page.getByRole("status").filter({ hasText: "Saved · Expense · shell check" }),
+  ).toBeVisible();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   // The page warms the shell cache once the worker is ready; wait until "/" is in it.
   await page.waitForFunction(async () =>

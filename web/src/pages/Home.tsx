@@ -1,52 +1,45 @@
-import { type FormEvent, type ReactNode, useMemo, useState } from "react";
-import { dayOf, monthName, monthOf } from "../../../shared/dates.ts";
-import { FieldValueError } from "../../../shared/fields.ts";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import type { Status } from "../../../server/owner-api.ts";
+import { monthName, monthOf } from "../../../shared/dates.ts";
+import { FLOWS } from "../../../shared/flows/seed.ts";
 import { monthSummary } from "../../../shared/money.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { runCommand } from "../app/commands.ts";
 import { useCave } from "../app/context.ts";
-import { useNow, useReminderZone, useTimeZone, useToday } from "../app/hooks.ts";
-import { collectionPath, navigate } from "../app/router.ts";
-import { type CommandContext, parseCommand } from "../logic/command.ts";
+import { useTimeZone, useToday } from "../app/hooks.ts";
+import { ownerGet } from "../app/owner-api.ts";
+import { collectionPath } from "../app/router.ts";
+import { useSignal } from "../app/signal.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
 import { greeting } from "../logic/greeting.ts";
-import { entriesByDay, habitsDone } from "../logic/habits.ts";
+import { entriesByDay, habitsThisWeek } from "../logic/habits.ts";
 import { wealthSummary } from "../logic/wealth.ts";
-import { useLive } from "../store/live.ts";
-import { type CollectionDoc, useCollections, useDoc } from "../store/queries.ts";
+import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
+import { AskBox } from "../ui/AskBox.tsx";
 import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { ExpenseForm, type QuickKind, ReminderForm, TaskForm } from "../ui/QuickForms.tsx";
 
-const EXAMPLES = ["todo call the bank", "remind stretch in 2h", "gym", "> money"];
 const CLOSED = new Set(["done", "dropped"]);
+const DAY_MS = 24 * 60 * 60 * 1000;
+const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
+  { kind: "expense", label: "Expense", icon: "wallet" },
+  { kind: "task", label: "Task", icon: "square-check" },
+  { kind: "reminder", label: "Reminder", icon: "bell" },
+];
 
+const when = (ms: number | null | undefined) =>
+  ms ? new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
+
+/** Home: ask or tell the Cave anything, a few quick forms, and everything at a glance. */
 export function Home() {
   const { local } = useCave();
   const stored = useCollections(local.db);
   const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
-  const today = useToday();
   const timeZone = useTimeZone();
   const settings = useDoc(local.db, "settings");
-  const items = useLive(
-    async () =>
-      (await local.db.docs.where("kind").equals("item").toArray()).filter(
-        (d) => d.data._deleted !== true,
-      ),
-    [local.db],
-  );
-  const byCollection = useMemo(() => {
-    const map = new Map<string, Doc[]>();
-    for (const doc of items ?? []) {
-      const key = doc.collection as string;
-      const list = map.get(key);
-      if (list) list.push(doc);
-      else map.set(key, [doc]);
-    }
-    return map;
-  }, [items]);
-  const of = (id: string) => byCollection.get(id) ?? [];
-  const find = (id: string) => collections?.find((c) => c.id === id);
+  const [quick, setQuick] = useState<QuickKind>();
+  const [saved, setSaved] = useState<string>();
 
   const date = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
@@ -55,21 +48,10 @@ export function Home() {
     year: "numeric",
     timeZone,
   }).format(new Date());
-
-  const money = monthSummary(of("money"), monthOf(today), today);
-  const openTasks = of("tasks").filter((d) => !CLOSED.has(String(d.data.status))).length;
-  const habits = (find("journal")?.data.fields ?? []).filter((f) => f.type === "checkbox");
-  const doneToday = habitsDone(
-    entriesByDay(of("journal")).get(today),
-    habits.map((h) => h.id),
-  );
-  const wealth = wealthSummary(of("wealth"));
-  const leetcode = of("leetcode");
-  const solved = leetcode.filter((d) => d.data.status === "solved").length;
-  const dueReminders = of("reminders").filter((d) => {
-    const day = dayOf(d.data.due);
-    return d.data.done !== true && day !== undefined && day <= today;
-  }).length;
+  const done = (message: string) => {
+    setSaved(message);
+    setQuick(undefined);
+  };
 
   return (
     <>
@@ -78,63 +60,156 @@ export function Home() {
           {greeting(new Date(), timeZone, settings?.data.ownerName)} · {date}
         </span>
         <h1>What's the move?</h1>
-        {collections && <CommandBar collections={collections} />}
+        <div style={{ width: "100%", maxWidth: 760, display: "grid", gap: 10 }}>
+          <AskBox />
+          <fieldset className="quick-actions">
+            <legend className="sr">Quick actions</legend>
+            {QUICK.map((q) => (
+              <button
+                key={q.kind}
+                type="button"
+                className={`btn${quick === q.kind ? " primary" : ""}`}
+                aria-expanded={quick === q.kind}
+                onClick={() => setQuick(quick === q.kind ? undefined : q.kind)}
+              >
+                <Icon name={q.icon} size={15} /> {q.label}
+              </button>
+            ))}
+          </fieldset>
+          {collections && quick === "expense" && (
+            <ExpenseForm collections={collections} onDone={done} />
+          )}
+          {collections && quick === "task" && <TaskForm collections={collections} onDone={done} />}
+          {collections && quick === "reminder" && (
+            <ReminderForm collections={collections} onDone={done} />
+          )}
+          <p role="status" className="muted" style={{ margin: 0, minHeight: 20 }}>
+            {saved}
+          </p>
+        </div>
       </section>
       {collections && <DueCard collections={collections} />}
-      <section className="tiles" aria-label="Today">
-        <Tile
-          href={collectionPath("money")}
-          icon="wallet"
-          color="var(--income)"
-          label={`Spent · ${monthName(monthOf(today))}`}
-        >
-          <span className="num big">−{formatMoney(money.spent)}</span>
-          <span className="num muted">
-            {money.spentCount} entries
-            {money.incomplete.length > 0 && ` · ${money.incomplete.length} need an amount`}
-          </span>
-        </Tile>
-        <Tile
-          href={collectionPath("tasks")}
-          icon="square-check"
-          color="var(--lime)"
-          label="Open tasks"
-        >
-          <span className="num big">{openTasks}</span>
-          <span className="num muted">{of("tasks").length - openTasks} closed</span>
-        </Tile>
-        <Tile
-          href={collectionPath("journal")}
-          icon="notebook"
-          color="var(--violet)"
-          label="Habits today"
-        >
-          <span className="num big">
-            {doneToday.length}/{habits.length}
-          </span>
-          <span className="muted">{doneToday.join(", ") || "none yet"}</span>
-        </Tile>
-        <Tile href={collectionPath("wealth")} icon="landmark" color="var(--cyan)" label="Net worth">
-          <span className="num big">{formatMoney(wealth.net)}</span>
-          <span className="num muted">{of("wealth").length} accounts</span>
-        </Tile>
-        <Tile href={collectionPath("leetcode")} icon="code" color="var(--orange)" label="LeetCode">
-          <span className="num big">
-            {solved}/{leetcode.length}
-          </span>
-          <span className="muted">solved</span>
-        </Tile>
-        <Tile
-          href={collectionPath("reminders")}
-          icon="bell"
-          color="var(--expense)"
-          label="Reminders due"
-        >
-          <span className="num big">{dueReminders}</span>
-          <span className="muted">today or earlier</span>
-        </Tile>
-      </section>
+      {collections && <Glance />}
     </>
+  );
+}
+
+/** Live: every number re-reads as data syncs in. */
+function Glance() {
+  const cave = useCave();
+  const { local } = cave;
+  const collections = useCollections(local.db);
+  const items = useAllItems(local.db);
+  const today = useToday();
+  const status = useSignal(cave.status);
+  const [server, setServer] = useState<
+    { deploy: Status["deploy"]; flowRuns: number } | "offline"
+  >();
+
+  useEffect(() => {
+    let live = true;
+    void Promise.all([
+      ownerGet<Status>("/api/status"),
+      ownerGet<{ flowRuns: { lastAt: number }[] }>("/api/system"),
+    ]).then(([s, system]) => {
+      if (!live) return;
+      if (!s || !system) return setServer("offline");
+      setServer({
+        deploy: s.deploy,
+        flowRuns: system.flowRuns.filter((r) => r.lastAt > Date.now() - DAY_MS).length,
+      });
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const of = useMemo(() => {
+    const map = new Map<string, Doc[]>();
+    for (const doc of items ?? []) {
+      const list = map.get(doc.collection as string);
+      if (list) list.push(doc);
+      else map.set(doc.collection as string, [doc]);
+    }
+    return (id: string) => map.get(id) ?? [];
+  }, [items]);
+
+  const money = monthSummary(of("money"), monthOf(today), today);
+  const openTasks = of("tasks").filter((d) => !CLOSED.has(String(d.data.status))).length;
+  const habits = (collections?.find((c) => c.id === "journal")?.data.fields ?? [])
+    .filter((f) => f.type === "checkbox" && f.archived !== true)
+    .map((f) => f.id);
+  const week = habitsThisWeek(entriesByDay(of("journal")), habits, today);
+  const waiting = of(FLOWS).filter((f) => f.data.status === "pending-approval").length;
+  const wealth = wealthSummary(of("wealth"));
+  const leetcode = of("leetcode");
+  const solved = leetcode.filter((d) => d.data.status === "solved").length;
+
+  return (
+    <section className="tiles" aria-label="Glance">
+      <Tile
+        href={collectionPath("money")}
+        icon="wallet"
+        color="var(--income)"
+        label={`Spent · ${monthName(monthOf(today))}`}
+      >
+        <span className="num big">−{formatMoney(money.spent)}</span>
+        <span className="num muted">
+          {money.burnPerDay === undefined ? "—" : `${formatMoney(money.burnPerDay)} a day`} ·{" "}
+          {money.spentCount} entries
+          {money.incomplete.length > 0 && ` · ${money.incomplete.length} need an amount`}
+        </span>
+      </Tile>
+      <Tile
+        href={collectionPath("journal")}
+        icon="notebook"
+        color="var(--violet)"
+        label="Habits this week"
+      >
+        <span className="num big">
+          {week.done}/{week.possible}
+        </span>
+        <span className="muted">check-offs since Monday</span>
+      </Tile>
+      <Tile href="/flows" icon="workflow" color="var(--violet)" label="Flows">
+        <span className="num big">{waiting}</span>
+        <span className="muted">
+          waiting for approval ·{" "}
+          {typeof server === "object" ? `${server.flowRuns} ran in 24 h` : "runs need the server"}
+        </span>
+      </Tile>
+      <Tile
+        href={collectionPath("tasks")}
+        icon="square-check"
+        color="var(--lime)"
+        label="Open tasks"
+      >
+        <span className="num big">{openTasks}</span>
+        <span className="num muted">{of("tasks").length - openTasks} closed</span>
+      </Tile>
+      <Tile href={collectionPath("wealth")} icon="landmark" color="var(--cyan)" label="Net worth">
+        <span className="num big">{formatMoney(wealth.net)}</span>
+        <span className="num muted">{of("wealth").length} accounts</span>
+      </Tile>
+      <Tile href={collectionPath("leetcode")} icon="code" color="var(--orange)" label="LeetCode">
+        <span className="num big">
+          {solved}/{leetcode.length}
+        </span>
+        <span className="muted">solved</span>
+      </Tile>
+      <Tile href="/system" icon="activity" color="var(--cyan)" label="Sync and deploy">
+        <span className="num">synced {when(status.lastSyncedAt ?? null)}</span>
+        <span className="num muted">
+          {typeof server === "object"
+            ? server.deploy
+              ? `deploy ${server.deploy.result} · ${when(Date.parse(server.deploy.at))}`
+              : "no deploy recorded"
+            : server === "offline"
+              ? "deploy: offline"
+              : "…"}
+        </span>
+      </Tile>
+    </section>
   );
 }
 
@@ -159,102 +234,5 @@ function Tile({
       </span>
       {children}
     </a>
-  );
-}
-
-function CommandBar({ collections }: { collections: CollectionDoc[] }) {
-  const { local } = useCave();
-  const timeZone = useTimeZone();
-  const [input, setInput] = useState("");
-  const [result, setResult] = useState<{ ok: boolean; message: string }>();
-
-  const zone = useReminderZone();
-  const minute = useNow();
-  const base = useMemo(() => {
-    const fields = (id: string) => collections.find((c) => c.id === id)?.data.fields ?? [];
-    return {
-      categories:
-        fields("money")
-          .find((f) => f.id === "category")
-          ?.options?.map((o) => o.value) ?? [],
-      habits: fields("journal")
-        .filter((f) => f.type === "checkbox")
-        .map(({ id, name }) => ({ id, name })),
-      targets: [
-        ...collections
-          .filter((c) => !c.data.hidden)
-          .map((c) => ({ id: c.id, name: c.data.name, path: collectionPath(c.id) })),
-        { id: "calendar", name: "Calendar", path: "/calendar" },
-        { id: "agents", name: "Agents", path: "/agents" },
-        { id: "settings", name: "Settings", path: "/settings" },
-      ],
-    };
-  }, [collections]);
-  const ctx = (now: Date): CommandContext => ({
-    ...base,
-    when: { now, timeZone: zone.timeZone, reminderTime: zone.defaultTime },
-  });
-  // A `remind` entry shows what it will save before Enter.
-  const pending = /^remind\b/i.test(input.trim()) ? parseCommand(input, ctx(minute)) : undefined;
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      const now = new Date();
-      const outcome = await runCommand(parseCommand(input, ctx(now)), {
-        local,
-        timeZone,
-        now,
-      });
-      if (outcome.path) navigate(outcome.path);
-      setResult(outcome);
-      if (outcome.ok) setInput("");
-    } catch (error) {
-      if (!(error instanceof FieldValueError)) throw error;
-      setResult({ ok: false, message: error.message });
-    }
-  };
-
-  return (
-    <div style={{ width: "100%", maxWidth: 760, display: "grid", gap: 10 }}>
-      <form className="panel command" onSubmit={submit}>
-        <span className="ico" style={{ background: "var(--lime)", color: "var(--on-lime)" }}>
-          <Icon name="zap" size={18} strokeWidth={2.2} />
-        </span>
-        <label htmlFor="command" className="sr">
-          Capture or jump
-        </label>
-        <input
-          id="command"
-          autoComplete="off"
-          placeholder="Capture or jump…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-      </form>
-      {pending && (
-        <p className="muted" aria-live="polite" style={{ margin: 0 }}>
-          {pending.kind === "reminder"
-            ? pending.preview
-            : pending.kind === "reject"
-              ? pending.hint
-              : ""}
-        </p>
-      )}
-      <p
-        role="status"
-        className={result?.ok === false ? "error" : "muted"}
-        style={{ margin: 0, minHeight: 20 }}
-      >
-        {result?.message}
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
-        {EXAMPLES.map((example) => (
-          <button key={example} type="button" className="slash" onClick={() => setInput(example)}>
-            {example}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
