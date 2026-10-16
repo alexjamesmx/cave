@@ -86,6 +86,36 @@ test("ai-sync shows the repo's and the laptop's rules and skills with no secret,
     expect(copied).toContain("# My AI setup");
     expect(copied).toContain("## AGENTS.md (rule · any)");
     expect(copied).not.toContain(SECRET);
+
+    // Improve with Claude opens Claude with the chosen items' ids and the rules.
+    await context.route("https://claude.ai/**", (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: "<title>Claude</title>" }),
+    );
+    const improve = context.waitForEvent("page");
+    await page.getByRole("button", { name: "Improve with Claude (2)" }).click();
+    const prompt = new URL((await improve).url()).searchParams.get("q") ?? "";
+    expect(prompt).toContain("cave connector");
+    expect(prompt).toMatch(/- AGENTS\.md \(id ai-[0-9a-f]+\)/);
+    expect(prompt).toContain("never delete anything");
+    const update = context.waitForEvent("page");
+    await page.getByRole("button", { name: "Update with Claude" }).click();
+    expect(new URL((await update).url()).searchParams.get("q")).toContain(
+      'query the collection "ai"',
+    );
+
+    // Search, filters, sort and order live in the URL.
+    const list2 = page.getByRole("region", { name: "AI items" });
+    await page.getByLabel("Search").fill("run bun");
+    await expect(list2.getByRole("button")).toHaveText(["AGENTS.md"]);
+    await page.getByLabel("Search").fill("");
+    await page.getByLabel("Scope", { exact: true }).selectOption("user");
+    await page.getByLabel("Sort by").selectOption("title");
+    await page.getByRole("button", { name: "Order: normal" }).click();
+    await expect(page).toHaveURL(/scope=user.*sort=title.*order=desc/);
+    await page.reload();
+    await expect(list2.getByRole("button")).toHaveText(["e2e-notes", ".claude/CLAUDE.md"]);
+    await page.getByRole("button", { name: "Clear" }).click();
+    await expect(page).toHaveURL(/\/ai$/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

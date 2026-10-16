@@ -61,7 +61,7 @@ Claude Code, Codex and OpenCode connect through the MCP server at `/mcp`, each w
 - **Money:** add an expense or income for any day and time (Today, Yesterday); categories carry emoji and fit the direction; transfers (investments) count as neither spending nor income. Month or year, Compare to previous, filters kept in the URL, 12-month trends, top titles, fixed versus variable. **Review categories** applies `bun run money-review`'s proposals only after you approve them, with one Undo.
 - **Payments** (cards, subscriptions, bills): Paid logs the expense and moves the same payment to its next date; Undo reverses both. Find subscriptions proposes repeats from your history; nothing is added until you confirm.
 - **Tasks:** one New task button, drag between columns (press and hold on the phone). A repeating task's Done brings the same task back on its next date.
-- **AI:** every rule, skill, MCP server, plugin and memory from `bun run ai-sync`, with secrets removed; edit one and `bun run ai-sync --apply` writes it back after you confirm. Copy for another AI makes one Markdown document.
+- **AI:** every rule, skill, MCP server, plugin and memory from `bun run ai-sync`, with secrets removed; edit one and `bun run ai-sync --apply` writes it back after you confirm. **Update with Claude** opens Claude to add what is missing and improve what is there (through the cave connector, never deleting or writing a secret); **Improve with Claude** does it for the items you tick. Search, filter (kind, surface, scope, status), sort (kind, title, last changed, source) and reverse; the view is kept in the link. Copy for another AI makes one Markdown document.
 
 ## Reminders and the calendar
 
