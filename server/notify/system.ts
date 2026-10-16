@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { notificationSettings } from "../../shared/notifications.ts";
 import { zoneOf } from "../../shared/reminders.ts";
 import type { VapidKeys } from "../config.ts";
-import { createApprovals } from "../flows/approvals.ts";
+import { approvalRef, createApprovals } from "../flows/approvals.ts";
 import { createFlowEngine } from "../flows/engine.ts";
 import type { Job } from "../jobs/scheduler.ts";
 import type { Store } from "../store.ts";
@@ -69,7 +69,10 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     state,
     store: o.store,
     writer: telegramWriter,
-    approvals: { decide: (id, approve) => approvals?.decide(id, approve) ?? "Not ready yet." },
+    approvals: {
+      ref: approvalRef,
+      decide: (ref, approve) => approvals?.decide(ref, approve) ?? "Not ready yet.",
+    },
     zone,
     settings,
     now: o.now,
