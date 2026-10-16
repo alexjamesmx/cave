@@ -189,6 +189,14 @@ test("Claude Code settings: setup's template is the committed file, which turns 
           // biome-ignore lint/suspicious/noTemplateCurlyInString: a Claude Code path placeholder
           args: ["-C", "${CLAUDE_PROJECT_DIR}", "config", "core.hooksPath", ".githooks"],
         },
+        // After the commit hook: brings the branch up to date and lists other devices' wip.
+        {
+          type: "command",
+          command: "bun",
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: a Claude Code path placeholder
+          args: ["run", "--silent", "--cwd", "${CLAUDE_PROJECT_DIR}", "sync"],
+          timeout: 30,
+        },
       ],
     },
   ]);

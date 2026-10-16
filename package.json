@@ -18,6 +18,8 @@
     "export": "bun run server/export-cli.ts",
     "deploy": "bun run server/ops/deploy-cli.ts",
     "pull-backups": "bun run server/ops/pull-backups-cli.ts",
+    "sync": "bun run server/ops/sync-cli.ts",
+    "wip": "bun run server/ops/wip-cli.ts",
     "push-keys": "bun run server/push-keys-cli.ts",
     "money-review": "bun run server/money-review-cli.ts",
     "ai-sync": "bun run server/ai-sync/cli.ts"

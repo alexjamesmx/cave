@@ -21,6 +21,12 @@
             "type": "command",
             "command": "git",
             "args": ["-C", "${CLAUDE_PROJECT_DIR}", "config", "core.hooksPath", ".githooks"]
+          },
+          {
+            "type": "command",
+            "command": "bun",
+            "args": ["run", "--silent", "--cwd", "${CLAUDE_PROJECT_DIR}", "sync"],
+            "timeout": 30
           }
         ]
       }
