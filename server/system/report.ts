@@ -5,6 +5,7 @@ import { type DeployStatus, readDeployStatus } from "../deploy-status.ts";
 import type { CaveEnv } from "../env.ts";
 import type { JobState } from "../jobs/scheduler.ts";
 import type { Notifier } from "../notify/notifier.ts";
+import { type OffsiteStatus, readOffsiteStatus } from "../offsite-status.ts";
 
 export const DEVICE_DAYS = 30;
 export const AGENT_DAYS = 7;
@@ -27,6 +28,8 @@ export interface SystemReport {
   /** The deploy timer's next check, approximate; `null` off the VPS. */
   deployNextAt: number | null;
   lastBackupAt: number | null;
+  /** `cave-offsite`'s last backup and check; `null` when not set up. */
+  offsite: OffsiteStatus | null;
   integrations: { id: string; label: string; ready: boolean; summary: string }[];
   jobs: JobState[];
   jobRuns: {
@@ -59,6 +62,7 @@ export interface ReportDeps {
   commit: string | null;
   backupDir: string;
   deployStatusPath: string | undefined;
+  offsiteStatusPath?: string | undefined;
   jobs: () => JobState[];
   notifier: Notifier;
   agents: AgentRegistry;
@@ -128,6 +132,7 @@ export function createSystemReport(d: ReportDeps) {
       deploy,
       deployNextAt: deployAt === undefined ? null : Math.max(deployAt + DEPLOY_EVERY_MS, now),
       lastBackupAt: backup ?? null,
+      offsite: readOffsiteStatus(d.offsiteStatusPath),
       integrations: d.notifier.statuses().map((s) => ({
         id: s.id,
         label: s.label,

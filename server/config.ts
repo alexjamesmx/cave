@@ -22,6 +22,8 @@ export interface ServerConfig {
   allowedHosts: string[];
   /** `status.json` written by `cave-deploy`; unset means `/api/status` reports no deploy. */
   deployStatusPath: string | undefined;
+  /** `status.json` written by `cave-offsite`; unset or missing means off-box backups are not set up. */
+  offsiteStatusPath: string | undefined;
   /** Web Push (VAPID) keys; all three or none, and none means push is off. */
   push: VapidKeys | undefined;
   /** The Telegram bot's token; never logged or sent to a client. */
@@ -200,6 +202,7 @@ export function resolveConfig(
       publicOrigin,
       allowedHosts: allowedHosts(hostname, env.CAVE_ALLOWED_HOSTS, publicOrigin),
       deployStatusPath: env.CAVE_DEPLOY_STATUS || undefined,
+      offsiteStatusPath: env.CAVE_OFFSITE_STATUS || undefined,
       push: push.value,
       telegramToken,
       discordWebhook,

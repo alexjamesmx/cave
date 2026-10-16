@@ -79,6 +79,7 @@ test("status reports CAVE_ENV, version, doc count, db id, the newest real backup
     lastBackupAt: "2026-10-13T14:05:00.000Z",
     newVaultNotes: 3,
     deploy: null,
+    offsite: null,
   });
 });
 

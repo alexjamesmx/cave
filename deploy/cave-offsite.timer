@@ -1,0 +1,14 @@
+# /etc/systemd/system/cave-offsite.timer on the VPS. The server backs up once every 24 hours
+# whenever its hourly check finds the last one older (no fixed window), so a daily run always
+# finds a daily backup under about 25 hours old; the Cave alerts after 48 hours without one.
+[Unit]
+Description=Daily off-box backup of the Cave's backups
+
+[Timer]
+OnCalendar=*-*-* 05:15:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+Unit=cave-offsite.service
+
+[Install]
+WantedBy=timers.target

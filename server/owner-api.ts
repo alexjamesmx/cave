@@ -4,6 +4,7 @@ import type { AgentRegistry } from "./agents.ts";
 import { newestBackupAt } from "./backup.ts";
 import { type DeployStatus, readDeployStatus } from "./deploy-status.ts";
 import type { CaveEnv } from "./env.ts";
+import { type OffsiteStatus, readOffsiteStatus } from "./offsite-status.ts";
 import type { Store } from "./store.ts";
 
 export const ACTIVITY_LIMIT = 50;
@@ -54,6 +55,8 @@ export interface StatusOptions {
   newVaultNotes: () => number | null;
   /** `status.json` written by `cave-deploy`, read on every request; unset on a laptop. */
   deployStatusPath?: string;
+  /** `status.json` written by `cave-offsite`, read on every request; unset off the VPS. */
+  offsiteStatusPath?: string;
 }
 
 export interface Status {
@@ -67,6 +70,8 @@ export interface Status {
   newVaultNotes: number | null;
   /** The last deploy on the VPS; `null` without one or when its file is unreadable. */
   deploy: DeployStatus | null;
+  /** The off-box backup and its weekly check; `null` when not set up. */
+  offsite: OffsiteStatus | null;
 }
 
 /** `GET /api/status`: what Settings shows about the server. */
@@ -82,6 +87,7 @@ export function statusHandler(store: Store, options: StatusOptions) {
       lastBackupAt: last === undefined ? null : new Date(last).toISOString(),
       newVaultNotes: options.newVaultNotes(),
       deploy: readDeployStatus(options.deployStatusPath),
+      offsite: readOffsiteStatus(options.offsiteStatusPath),
     };
     return Response.json(status);
   };

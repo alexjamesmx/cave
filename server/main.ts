@@ -10,6 +10,7 @@ import { openDb } from "./db.ts";
 import { flowRoutes } from "./flows/api.ts";
 import { formatReport, importIfEmpty, importVault, newNotes } from "./import/importer.ts";
 import { createBackupJob } from "./jobs/backup-job.ts";
+import { createOffsiteJob } from "./jobs/offsite-job.ts";
 import { createScheduler } from "./jobs/scheduler.ts";
 import { acquireLock, lockPathOf, releaseLock } from "./lock.ts";
 import { createMoneyReview, moneyReviewRoutes } from "./money-review.ts";
@@ -36,6 +37,7 @@ const {
   publicOrigin,
   backupDir,
   deployStatusPath,
+  offsiteStatusPath,
   push,
   telegramToken,
   discordWebhook,
@@ -100,7 +102,15 @@ const registry = createAgentRegistry(db);
 const calls = createCallLog(db);
 // One loop for every server job; the backup check moved here from its own timer.
 const scheduler = createScheduler({
-  jobs: [...notifications.jobs, createBackupJob(db, backupDir)],
+  jobs: [
+    ...notifications.jobs,
+    createBackupJob(db, backupDir),
+    createOffsiteJob({
+      statusPath: offsiteStatusPath,
+      notifier: notifications.notifier,
+      sent: notifications.sent,
+    }),
+  ],
   db,
   now: Date.now,
 });
@@ -127,6 +137,7 @@ const server = serveCave({
     backupDir,
     newVaultNotes: () => newVaultNotes,
     ...(deployStatusPath ? { deployStatusPath } : {}),
+    ...(offsiteStatusPath ? { offsiteStatusPath } : {}),
   },
   notifications: notifications.routes,
   flows: flowRoutes(notifications.flows),
@@ -137,6 +148,7 @@ const server = serveCave({
     commit,
     backupDir,
     deployStatusPath,
+    offsiteStatusPath,
     jobs: () => scheduler.status(),
     notifier: notifications.notifier,
     agents: registry,

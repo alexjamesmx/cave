@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# /usr/local/sbin/cave-offsite on the VPS, run as cave by cave-offsite.service and
+# cave-offsite-check.service. An encrypted copy of the Cave's backups in Cloudflare R2 (restic).
+#   backup  verify the newest daily backup and record its doc count, back up the backups
+#           folder, then apply retention (30 daily, 24 monthly snapshots)
+#   check   read 10% of the repository's data, restore the newest daily backup from the latest
+#           snapshot and verify it with the app: ok only if it is intact and holds at least the
+#           docs recorded when it was backed up
+#   status  print the status file
+# Each run writes status.json (atomically): the Cave shows it and alerts when it goes stale.
+# Errors are fixed phrases: no tool output, key or repository URL ever reaches the file.
+set -Eeuo pipefail
+
+source_dir="${CAVE_OFFSITE_SOURCE:-/var/lib/cave/backups}"
+state="${CAVE_OFFSITE_STATE:-/var/lib/cave-offsite}"
+root="${CAVE_ROOT:-/opt/cave}"
+bun_bin="${CAVE_BUN_BIN:-/opt/bun/bin}"
+export RESTIC_CACHE_DIR="${RESTIC_CACHE_DIR:-/var/cache/cave-offsite}"
+# The app's CLI writes no transpiler cache: the file system is read-only here.
+export BUN_RUNTIME_TRANSPILER_CACHE_PATH=0
+daily_re='^cave-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{4}\.db$'
+counts="$state/counts"
+
+now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+
+# The doc count of a backup file, as the running release verifies it (bun run verify-backup);
+# the file is run directly, so no bun on PATH is needed. Fails if it does not verify.
+docs_of() {
+  "$bun_bin/bun" "$root/current/server/verify-backup-cli.ts" "$1" 2>/dev/null |
+    sed -n 's/.*: integrity ok, \([0-9][0-9]*\) docs$/\1/p' | grep .
+}
+
+latest_snapshot() {
+  restic snapshots latest --json 2>/dev/null | grep -o '"short_id":"[0-9a-f]*"' | tail -n 1 | cut -d'"' -f4
+}
+
+# A field of a JSON line this script wrote, or nothing (also before the first run).
+field() { sed -n "s/.*\"$2\":\"\{0,1\}\([^\",}]*\)\"\{0,1\}[,}].*/\1/p" "$1" 2>/dev/null || true; }
+
+assemble() {
+  local tmp
+  tmp=$(mktemp "$state/.status.XXXXXX")
+  printf '{"backup":%s,"check":%s}\n' \
+    "$(cat "$state/backup.json" 2>/dev/null || echo null)" \
+    "$(cat "$state/check.json" 2>/dev/null || echo null)" >"$tmp"
+  chmod 644 "$tmp"
+  mv -f "$tmp" "$state/status.json"
+}
+
+# record <backup|check> <true|false> <snapshot> <docs> <file> <error>
+record() {
+  local part="$1" ok="$2" snapshot="$3" docs="${4:-null}" file="$5" error="$6" last tmp
+  last=$(field "$state/backup.json" lastOkAt)
+  if [ "$part" = backup ] && [ "$ok" = true ]; then last=$(now); fi
+  tmp=$(mktemp "$state/.part.XXXXXX")
+  {
+    printf '{"at":"%s","ok":%s,"snapshot":"%s","docs":%s,"file":"%s","error":"%s"' \
+      "$(now)" "$ok" "$snapshot" "$docs" "$file" "$error"
+    if [ "$part" = backup ] && [ -n "$last" ]; then printf ',"lastOkAt":"%s"' "$last"; fi
+    printf '}\n'
+  } >"$tmp"
+  mv -f "$tmp" "$state/$part.json"
+  assemble
+}
+
+fail() {
+  record "$1" false "${3:-}" "${4:-}" "${5:-}" "$2"
+  echo "cave-offsite $1: $2" >&2
+  exit 1
+}
+
+newest_daily() {
+  find "$source_dir" -maxdepth 1 -type f -name 'cave-*.db' -printf '%f\n' 2>/dev/null |
+    grep -E "$daily_re" | sort | tail -n 1
+}
+
+backup() {
+  local file docs snapshot tmp
+  mkdir -p "$state"
+  file=$(newest_daily)
+  [ -n "$file" ] || fail backup "no daily backup to copy"
+  docs=$(docs_of "$source_dir/$file") || fail backup "the newest daily backup does not verify" "" "" "$file"
+  tmp=$(mktemp "$state/.counts.XXXXXX")
+  { grep -v "^$file " "$counts" 2>/dev/null || true; echo "$file $docs"; } | tail -n 400 >"$tmp"
+  mv -f "$tmp" "$counts"
+  restic backup "$source_dir" --exclude '*.failed' --exclude '*.part' --tag cave --quiet ||
+    fail backup "restic backup failed" "" "$docs" "$file"
+  snapshot=$(latest_snapshot)
+  restic forget --tag cave --keep-daily 30 --keep-monthly 24 --prune --quiet >/dev/null ||
+    fail backup "restic forget failed" "$snapshot" "$docs" "$file"
+  record backup true "$snapshot" "$docs" "$file" ""
+  echo "== backed up $file ($docs docs) as snapshot $snapshot"
+}
+
+check() {
+  local snapshot name restored docs recorded
+  mkdir -p "$state"
+  restic check --read-data-subset=10% --quiet >/dev/null 2>&1 || fail check "restic check failed"
+  snapshot=$(latest_snapshot)
+  [ -n "$snapshot" ] || fail check "no snapshot"
+  name=$(restic ls latest 2>/dev/null | while read -r path; do
+    case "$path" in "$source_dir"/*) path=${path#"$source_dir"/} ;; *) continue ;; esac
+    if [[ "$path" =~ $daily_re ]]; then echo "$path"; fi
+  done | sort | tail -n 1)
+  [ -n "$name" ] || fail check "no daily backup in the latest snapshot" "$snapshot"
+  # Global: the EXIT trap runs after this function has returned.
+  restore_dir=$(mktemp -d)
+  trap 'rm -rf "$restore_dir"' EXIT
+  restic restore latest --target "$restore_dir" --include "$source_dir/$name" --quiet >/dev/null 2>&1 ||
+    fail check "restore failed" "$snapshot" "" "$name"
+  restored="$restore_dir$source_dir/$name"
+  docs=$(docs_of "$restored") || fail check "the restored copy does not verify" "$snapshot" "" "$name"
+  recorded=$(awk -v f="$name" '$1 == f { n = $2 } END { print n }' "$counts" 2>/dev/null)
+  [ -n "$recorded" ] || fail check "no doc count recorded for this file" "$snapshot" "$docs" "$name"
+  [ "$docs" -ge "$recorded" ] ||
+    fail check "the restored copy has fewer docs than recorded" "$snapshot" "$docs" "$name"
+  record check true "$snapshot" "$docs" "$name" ""
+  echo "== checked $name from snapshot $snapshot: integrity ok, $docs docs (recorded $recorded)"
+}
+
+case "${1:-}" in
+  backup) backup ;;
+  check) check ;;
+  status) cat "$state/status.json" 2>/dev/null || echo "no off-box run recorded yet" ;;
+  *) echo "usage: cave-offsite backup | check | status" >&2; exit 2 ;;
+esac

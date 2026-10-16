@@ -1,0 +1,22 @@
+# /etc/systemd/system/cave-offsite-check.service on the VPS. Started weekly by cave-offsite-check.timer.
+[Unit]
+Description=Cave off-box backup check: restore and verify
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=cave
+Group=cave
+EnvironmentFile=/etc/cave/offsite.env
+ExecStart=/usr/local/sbin/cave-offsite check
+# Restores into its private /tmp, writes only its status and restic's cache.
+StateDirectory=cave-offsite
+CacheDirectory=cave-offsite
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/var/lib/cave/backups
+ReadWritePaths=/var/lib/cave-offsite /var/cache/cave-offsite
+UMask=0077
