@@ -19,7 +19,9 @@ src="$tmp/backups"
 mkdir -p "$src/pre-deploy" "$tmp/cave" "$tmp/state"
 ln -s "$here" "$tmp/cave/current"
 openssl rand -base64 48 >"$tmp/offsite.key"
-export RESTIC_REPOSITORY="$tmp/repo" RESTIC_PASSWORD_FILE="$tmp/offsite.key"
+# Every restic call, the script's and this file's, keeps its cache in the temp folder: on the
+# VPS this harness runs inside each release's bun test, once restic is installed.
+export RESTIC_REPOSITORY="$tmp/repo" RESTIC_PASSWORD_FILE="$tmp/offsite.key" RESTIC_CACHE_DIR="$tmp/cache"
 restic init --quiet >/dev/null
 
 # A backup as the server writes it: a SQLite file whose docs table holds $2 rows.
@@ -34,7 +36,7 @@ make_db() {
 
 run() {
   env CAVE_OFFSITE_SOURCE="$src" CAVE_OFFSITE_STATE="$tmp/state" CAVE_ROOT="$tmp/cave" \
-    CAVE_BUN_BIN="$(dirname "$(command -v bun)")" RESTIC_CACHE_DIR="$tmp/cache" \
+    CAVE_BUN_BIN="$(dirname "$(command -v bun)")" \
     bash "$script" "$@"
 }
 status() { cat "$tmp/state/status.json"; }
