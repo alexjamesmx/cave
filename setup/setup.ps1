@@ -1,5 +1,11 @@
+param([switch]$RemoveRemoteControl)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
+
+if ($RemoveRemoteControl) {
+  & (Join-Path $PSScriptRoot 'remote-control-task.ps1') -Remove
+  return
+}
 
 function Test-Command($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
 
@@ -78,6 +84,9 @@ foreach ($source in $projectFiles.Keys) {
 Write-Host "`n== Repository" -ForegroundColor Cyan
 if (-not (Test-Path (Join-Path $root '.git'))) { git -C $root init -b main }
 git -C $root config core.hooksPath .githooks
+
+Write-Host "`n== Remote Control (the phone's Code tab reaches this laptop)" -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot 'remote-control-task.ps1')
 
 Write-Host "`nDone. Next:" -ForegroundColor Green
 Write-Host "  cd `"$root`""

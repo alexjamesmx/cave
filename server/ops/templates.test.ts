@@ -304,3 +304,25 @@ test("the cloud setup script pins Bun from npm and never installs dependencies",
   expect(script).not.toMatch(/^[^#]*bun install/m);
   expect(script).not.toMatch(/^[^#]*bun\.sh/m);
 });
+
+test("Remote Control: one same-dir session in the default permission mode, restarted, run at logon", () => {
+  const setup = (name: string) => readFileSync(join(import.meta.dir, "../../setup", name), "utf8");
+  const loop = setup("remote-control.ps1");
+  expect(loop).toContain("remote-control --name $name --spawn same-dir --capacity 1");
+  expect(loop).toContain('$name = "cave $([char]0x00B7) laptop"');
+  expect(loop).toContain("Start-Sleep -Seconds 30");
+  expect(loop).not.toMatch(/permission-mode|bypass|dangerously/i);
+  const task = setup("remote-control-task.ps1");
+  expect(task).toContain("$taskName = 'Cave Remote Control'");
+  expect(task).toContain("-AtLogOn -User $user");
+  expect(task).toContain("-RunLevel Limited");
+  expect(task).toContain("-WindowStyle Hidden");
+  // The power setting is only suggested; the owner decides.
+  expect(task).not.toMatch(/^\s*powercfg/m);
+  const main = setup("setup.ps1");
+  expect(main).toContain("param([switch]$RemoveRemoteControl)");
+  expect(main).toContain("remote-control-task.ps1') -Remove");
+  // PowerShell 5.1 reads a file without a BOM as ANSI; the scripts stay ASCII.
+  for (const text of [loop, task, main])
+    expect([...text].every((c) => (c.codePointAt(0) ?? 0) < 128)).toBe(true);
+});
