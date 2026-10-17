@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
-import { unresolved } from "../../../shared/fields.ts";
 import { EDITABLE_FIELD_TYPES, type Field, type FieldType } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
+import { editFields } from "../app/lists.ts";
 import { addField, archiveField, restoreField } from "../logic/field-edits.ts";
 import type { CollectionDoc } from "../store/queries.ts";
 import { Icon } from "./icon.tsx";
@@ -23,14 +23,11 @@ export function FieldEditor({
   const { fields } = collection.data;
   const [error, setError] = useState<string>();
 
-  // Views get shared lists filled in; what is saved is the fields as stored.
-  const saveFields = (next: Field[]) =>
-    local.write(
-      { id: collection.id, kind: "collection", collection: null },
-      { fields: unresolved(next) },
-    );
+  // Every change applies to the fields as stored now, one at a time (see `editFields`).
+  const saveFields = (change: (stored: Field[]) => Field[]) =>
+    editFields(local, collection.id, change);
   const update = (id: string, change: (f: Field) => Field) =>
-    saveFields(fields.map((f) => (f.id === id ? change(f) : f)));
+    saveFields((stored) => stored.map((f) => (f.id === id ? change(f) : f)));
 
   const add = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,7 +36,10 @@ export function FieldEditor({
     const result = addField(fields, name, String(form.get("type")) as FieldType);
     if ("error" in result) return setError(result.error);
     setError(undefined);
-    void saveFields(result.fields);
+    void saveFields((stored) => {
+      const added = addField(stored, name, String(form.get("type")) as FieldType);
+      return "error" in added ? stored : added.fields;
+    });
     e.currentTarget.reset();
   };
   const archived = fields.filter((f) => f.archived);
@@ -81,7 +81,7 @@ export function FieldEditor({
                       `Remove “${field.name}”? Values stay on the items and it can be restored.`,
                     )
                   ) {
-                    void saveFields(archiveField(fields, field.id));
+                    void saveFields((stored) => archiveField(stored, field.id));
                   }
                 }}
               >
@@ -99,7 +99,9 @@ export function FieldEditor({
                 name={field.name}
                 options={field.options ?? []}
                 kinds={collection.id === "money" && field.id === "category"}
-                onChange={(options) => update(field.id, (f) => ({ ...f, options }))}
+                onChange={(change) =>
+                  update(field.id, (f) => ({ ...f, options: change(f.options ?? []) }))
+                }
               />
             )}
           </section>
@@ -115,7 +117,7 @@ export function FieldEditor({
               <button
                 type="button"
                 className="btn"
-                onClick={() => void saveFields(restoreField(fields, field.id))}
+                onClick={() => void saveFields((stored) => restoreField(stored, field.id))}
               >
                 Restore
               </button>

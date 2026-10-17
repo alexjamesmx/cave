@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { localDateTime } from "../../shared/dates.ts";
+import { formatStamp } from "../../shared/hlc.ts";
 import { seedDocs } from "../../shared/seed.ts";
 import type { Change } from "../../shared/types.ts";
 import { undoPatch } from "../../shared/undo.ts";
@@ -41,6 +42,7 @@ beforeAll(() => {
   mint("claude", ["read", "write"]);
   mint("reader", ["read"]);
   mint("money-only", ["read", "write"], ["money"]);
+  mint("other", ["read", "write"]);
   mint("gone", ["read"]);
   registry.revoke("gone", Date.now());
   server = serveCave({
@@ -143,7 +145,13 @@ test("agent tokens are refused by the owner API", async () => {
   const agents = (await (await fetch(new URL("/api/agents", server.url))).json()) as {
     agents: Record<string, unknown>[];
   };
-  expect(agents.agents.map((a) => a.name)).toEqual(["claude", "gone", "money-only", "reader"]);
+  expect(agents.agents.map((a) => a.name)).toEqual([
+    "claude",
+    "gone",
+    "money-only",
+    "other",
+    "reader",
+  ]);
   expect(JSON.stringify(agents)).not.toContain("hash");
 });
 
@@ -168,6 +176,9 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "propose_delete",
     "mark_paid",
     "save_flow",
+    "start_run",
+    "log_step",
+    "finish_run",
     "add_note",
   ]);
   expect(await names("reader")).toEqual([
@@ -190,6 +201,9 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     ["propose_delete", false],
     ["mark_paid", false],
     ["save_flow", true],
+    ["start_run", false],
+    ["log_step", false],
+    ["finish_run", false],
     ["add_note", false],
   ]);
 });
@@ -274,6 +288,108 @@ test("an agent edits a project's map through update, with the app's checks", asy
     fields: { map: { ...map, edges: [{ id: "e1", from: project, to: "nowhere" }] } },
   });
   expect(textOf(dangling)).toContain("joins a node the map doesn't place");
+});
+
+test("runs: start, steps and finish; only the agent that started a run can touch it", async () => {
+  const client = await connect("claude");
+  const created = await call(client, "create", {
+    collection: "projects",
+    title: "Run host",
+    fields: { status: "active" },
+  });
+  const project = (created.structuredContent as { id: string }).id;
+  const started = await call(client, "start_run", { project, title: "Build part 4" });
+  expect(started.isError).toBeUndefined();
+  const id = (started.structuredContent as { id: string }).id;
+  expect(store.get(id)?.data).toMatchObject({
+    project,
+    agent: "claude",
+    status: "running",
+    steps: [],
+  });
+
+  expect(
+    (await call(client, "log_step", { run: id, title: "Tests written", status: "done" })).isError,
+  ).toBeUndefined();
+  await call(client, "log_step", {
+    run: id,
+    title: "Waiting for review",
+    status: "waiting",
+    detail: "PR #20",
+  });
+  expect(store.get(id)?.data.status).toBe("waiting");
+  expect(
+    (store.get(id)?.data.steps as { title: string }[] | undefined)?.map((s) => s.title),
+  ).toEqual(["Tests written", "Waiting for review"]);
+
+  // Another agent, and generic writes, can't reach it.
+  const other = await connect("other");
+  expect(textOf(await call(other, "log_step", { run: id, title: "x", status: "done" }))).toBe(
+    `run ${id} not found`,
+  );
+  expect(textOf(await call(client, "update", { id, fields: { status: "done" } }))).toBe(
+    `item ${id} not found`,
+  );
+  expect(textOf(await call(client, "create", { collection: "runs", title: "x" }))).toBe(
+    "collection runs not found",
+  );
+  expect(textOf(await call(client, "start_run", { project: "nope", title: "x" }))).toBe(
+    "project nope not found",
+  );
+  expect(
+    textOf(await call(await connect("money-only"), "start_run", { project, title: "x" })),
+  ).toBe(`project ${project} not found`);
+  expect(
+    textOf(await call(client, "log_step", { run: id, title: "<b>x</b>", status: "done" })),
+  ).toContain("plain text");
+
+  const finished = await call(client, "finish_run", {
+    run: id,
+    status: "done",
+    summary: "Shipped.",
+  });
+  expect(finished.isError).toBeUndefined();
+  expect(store.get(id)?.data).toMatchObject({ status: "done", _body: "Shipped." });
+  expect(textOf(await call(client, "log_step", { run: id, title: "late", status: "done" }))).toBe(
+    `run ${id} is finished`,
+  );
+});
+
+test("a run keeps at most 200 steps", async () => {
+  const client = await connect("claude");
+  const created = await call(client, "create", {
+    collection: "projects",
+    title: "Long run",
+    fields: { status: "active" },
+  });
+  const project = (created.structuredContent as { id: string }).id;
+  const id = (
+    (await call(client, "start_run", { project, title: "Many" })).structuredContent as {
+      id: string;
+    }
+  ).id;
+  const doc = store.get(id);
+  if (!doc) throw new Error("no run");
+  const steps = Array.from({ length: 200 }, (_, i) => ({
+    title: `s${i}`,
+    status: "done",
+    at: new Date(0).toISOString(),
+  }));
+  store.applyChanges(
+    [
+      {
+        ...doc,
+        data: { steps },
+        stamps: { steps: formatStamp(Date.now(), 9999, "test") },
+        actor: "test",
+      },
+    ],
+    "test",
+    Date.now(),
+  );
+  expect(
+    textOf(await call(client, "log_step", { run: id, title: "one more", status: "done" })),
+  ).toContain("200 steps already");
 });
 
 test("the allowlist hides collections everywhere", async () => {

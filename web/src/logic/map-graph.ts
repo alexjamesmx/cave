@@ -13,8 +13,23 @@ export type CardData = {
 };
 export type NoteData = { text: string };
 export type GroupData = { title: string };
+export type RunData = { title: string; status: string; step?: string };
 
-export type MapNode = Node<CardData, "card"> | Node<NoteData, "note"> | Node<GroupData, "frame">;
+/** An active run, as the map draws it beside its part. */
+export interface MapRun {
+  id: string;
+  title: string;
+  status: string;
+  part?: string;
+  /** The newest step's title. */
+  step?: string;
+}
+
+export type MapNode =
+  | Node<CardData, "card">
+  | Node<NoteData, "note">
+  | Node<GroupData, "frame">
+  | Node<RunData, "run">;
 
 const status = (d: Doc) => (typeof d.data.status === "string" ? d.data.status : undefined);
 
@@ -28,6 +43,7 @@ export function buildGraph(
   tasks: Doc[],
   others: Doc[],
   map: ProjectMap,
+  runs: MapRun[] = [],
 ): { nodes: MapNode[]; edges: Edge[] } {
   // Parts keep their order (then title) down a column.
   const order = (d: Doc) => (typeof d.data.order === "number" ? d.data.order : 1e9);
@@ -82,6 +98,31 @@ export function buildGraph(
     className: "map-edge-depends",
     label: "depends on",
   }));
+  // Runs aren't stored on the map: each glows to the right of its part while it is active.
+  const beside = new Map<string, number>();
+  const runNodes: MapNode[] = runs.map((r) => {
+    const anchor = (r.part ? at[r.part] : undefined) ?? { x: -280, y: 0 };
+    const n = beside.get(r.part ?? "") ?? 0;
+    beside.set(r.part ?? "", n + 1);
+    return {
+      id: `run-${r.id}`,
+      type: "run",
+      position: { x: anchor.x + 260, y: anchor.y + n * 90 },
+      draggable: false,
+      deletable: false,
+      data: { title: r.title, status: r.status, ...(r.step ? { step: r.step } : {}) },
+    };
+  });
+  const runEdges: Edge[] = runs
+    .filter((r) => r.part && partIds.has(r.part))
+    .map((r) => ({
+      id: `run-edge-${r.id}`,
+      source: r.part as string,
+      target: `run-${r.id}`,
+      animated: true,
+      className: "map-edge-run",
+      deletable: false,
+    }));
   return {
     nodes: [
       ...groups,
@@ -89,8 +130,9 @@ export function buildGraph(
       ...tasks.map((d) => card(d, "task")),
       ...others.map((d) => card(d, "item")),
       ...notes,
+      ...runNodes,
     ],
-    edges: [...contains, ...depends],
+    edges: [...contains, ...depends, ...runEdges],
   };
 }
 

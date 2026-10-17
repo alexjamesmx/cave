@@ -148,6 +148,7 @@ export function serveCave({
       "/api/system": { GET: system ? owner(() => Response.json(system())) : guarded(missing) },
       "/api/flows/:id/test": { POST: flows ? owner((req) => flows.test(req)) : guarded(missing) },
       "/api/flows/:id/runs": { GET: flows ? owner((req) => flows.runs(req)) : guarded(missing) },
+      "/api/flow-runs": { GET: flows ? owner(() => flows.recent()) : guarded(missing) },
       "/api/*": guarded(missing),
       ...staticRoutes,
       "/sw.js": serviceWorker ?? notFound,

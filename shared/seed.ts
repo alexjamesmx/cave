@@ -21,6 +21,7 @@ import {
   withProjectFields,
 } from "./projects-seed.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
+import { RUNS, RUNS_COLLECTION, runsMigration } from "./runs.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
 import type { Doc, Kind } from "./types.ts";
 
@@ -377,6 +378,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 11, docs: [], update: paymentLinkMigration },
   // M8 part 3: a project's whiteboard, kept in its `map` key.
   { version: 12, docs: [], update: mapMigration },
+  // M8 part 4: runs, the trace of AI work.
+  { version: 13, docs: [], update: runsMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -421,6 +424,7 @@ export function seedDocs(): Doc[] {
     seeded(PAYMENTS, "collection", withProjects(PAYMENTS, PAYMENTS_COLLECTION)),
     seeded(AI, "collection", AI_COLLECTION),
     seeded(PARTS, "collection", PARTS_COLLECTION),
+    seeded(RUNS, "collection", RUNS_COLLECTION),
     // LeetCode is a project from the start, so its old link always has somewhere to go.
     seeded(LEETCODE_PROJECT, "item", LEETCODE_PROJECT_DATA, "projects"),
     ...FLOW_DOCS.map((d) =>

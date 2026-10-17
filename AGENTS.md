@@ -59,6 +59,7 @@ Two agents share this repo: an architect (Claude in the desktop app: specs, desi
 - `docs/log/<milestone>.md`: written by the builder when a milestone is done: what changed (files), commands run with their real output (check, tests, import counts), deviations from the plan, open questions.
 - `docs/review/<milestone>.md`: written by the architect. The builder addresses every item, then appends what changed to the log.
 - `docs/decisions.md`: append-only record of decisions. Read it before proposing an alternative to something already decided.
+- **Logging work in the Cave** (from M8 part 4): when the `cave` MCP connector is connected, Claude Code logs its work on the Cave project (`proj-cave`, `get_project` lists its parts). It calls `start_run` per part it builds, on that milestone's part, then a `log_step` per meaningful action: tests written, tests passing, a commit, a push, a deploy. It ends with `finish_run` and the result. The Cave project's Activity tab then shows the Cave being built. When the connector isn't connected, skip it and say so once.
 - **How work ships** (from M7): small changes are committed on `main` and pushed, with no prompt (the owner removed the `ask` rule on `git push` on 2026-10-17), and the push deploys within minutes. A branch and a PR only for changes that are dangerous or hard to undo: a schema migration; auth, the request guard, tokens or secrets; anything under `deploy/` or the server's privileges; deleting or rewriting real data; a new runtime dependency. The owner can always ask for a PR.
 
 ## Git

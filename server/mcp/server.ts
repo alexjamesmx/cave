@@ -3,6 +3,7 @@ import * as z from "zod/v4";
 import { localDateTime } from "../../shared/dates.ts";
 import { FlowDefinitionSchema } from "../../shared/flows/registry.ts";
 import type { Hlc } from "../../shared/hlc.ts";
+import { STEP_LIMITS, STEP_STATUSES } from "../../shared/runs.ts";
 import type { CallLog } from "../agent-calls.ts";
 import { AgentWriter, type WriteResult } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
@@ -18,6 +19,7 @@ import {
   query,
   type ToolOutcome,
 } from "./read.ts";
+import { finishRun, logStep, startRun } from "./runs.ts";
 
 export interface McpDeps {
   store: Store;
@@ -275,6 +277,48 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
             ? { ok: true, value: { id: result.id, status: result.status }, seqs: result.seqs }
             : result;
         }),
+    );
+    const runDeps = { store, agent, writer, now: deps.now, timeZone };
+    server.registerTool(
+      "start_run",
+      {
+        description: `Start a run: the trace of work you are doing on one of the owner's projects (from query projects or get_project), optionally on one of its parts. Returns the run id. Log a step per meaningful action with log_step and end with finish_run; the owner watches it live in the project's Activity. Titles and details are shown as plain text. ${DATA_RULE}`,
+        inputSchema: z.object({
+          project: z.string(),
+          title: z.string(),
+          part: z.string().optional(),
+        }),
+        annotations: WRITE,
+      },
+      (args) => run("start_run", args, () => fromWrite(startRun(runDeps, args))),
+    );
+    server.registerTool(
+      "log_step",
+      {
+        description: `Add a step to a run you started: a short title, its status (running, done, failed, waiting, skipped) and an optional detail. At most ${STEP_LIMITS.steps} steps per run; a finished run takes no more.`,
+        inputSchema: z.object({
+          run: z.string(),
+          title: z.string().min(1).max(STEP_LIMITS.title),
+          status: z.enum(STEP_STATUSES),
+          detail: z.string().max(STEP_LIMITS.detail).optional(),
+        }),
+        annotations: WRITE,
+      },
+      (args) => run("log_step", args, () => fromWrite(logStep(runDeps, args))),
+    );
+    server.registerTool(
+      "finish_run",
+      {
+        description:
+          "Finish a run you started: done, failed or cancelled, with a one-paragraph summary of what happened.",
+        inputSchema: z.object({
+          run: z.string(),
+          status: z.enum(["done", "failed", "cancelled"]),
+          summary: z.string(),
+        }),
+        annotations: WRITE,
+      },
+      (args) => run("finish_run", args, () => fromWrite(finishRun(runDeps, args))),
     );
     const vault = deps.vaultPath;
     if (vault) {

@@ -436,6 +436,50 @@ const OTHER: SampleDoc[] = [
  * so this month, Payments and the calendar always have content. No randomness: the same day
  * gives the same records. Parents come before what refers to them.
  */
+/** One finished and one running agent run on the kitchen project, so Activity has both. */
+function runs(today: string): SampleDoc[] {
+  const at = (time: string) => `${today}T${time}:00`;
+  const utc = (time: string) => `${today}T${time}:00.000Z`;
+  return [
+    {
+      id: "s-run-plan",
+      collection: "runs",
+      data: {
+        _title: "Plan the shelves",
+        _body: "Measured the wall and listed the parts to buy.",
+        project: PROJECT,
+        part: "s-part-plan",
+        agent: "claude",
+        status: "done",
+        started_at: at("09:00"),
+        finished_at: at("09:20"),
+        steps: [
+          { title: "Read the project", status: "done", at: utc("15:00") },
+          {
+            title: "Listed the parts",
+            status: "done",
+            detail: "4 brackets, 2 boards",
+            at: utc("15:10"),
+          },
+        ],
+      },
+    },
+    {
+      id: "s-run-build",
+      collection: "runs",
+      data: {
+        _title: "Pick the paint",
+        project: PROJECT,
+        part: "s-part-build",
+        agent: "claude",
+        status: "running",
+        started_at: at("10:00"),
+        steps: [{ title: "Compare three colours", status: "running", at: utc("16:00") }],
+      },
+    },
+  ];
+}
+
 export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
   return [
     ...projects(today),
@@ -447,6 +491,7 @@ export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
     ...wealth(today),
     ...leetcode(today),
     ...reminders(today),
+    ...runs(today),
     ...OTHER,
   ].map((d) => ({ ...d, data: { _created: createdAt, ...d.data } }));
 }

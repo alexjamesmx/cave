@@ -13,12 +13,14 @@ import {
 } from "../../../shared/projects.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { currentProvider } from "../ai/providers.ts";
+import { useActivity } from "../app/activity.ts";
 import { useCave } from "../app/context.ts";
 import { useWriteError } from "../app/project-actions.ts";
 import { projectPath, setSearch, useSearch } from "../app/router.ts";
 import { formatMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
 import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
+import { ActivityList } from "../ui/Activity.tsx";
 import { BarRow, Stat } from "../ui/charts.tsx";
 import { DocDrawer } from "../ui/DocDrawer.tsx";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
@@ -65,10 +67,16 @@ export function ProjectPage({ rest }: { rest: string[] }) {
       {tab === "overview" && <Overview project={project} />}
       {tab === "map" && <ProjectMap project={project} />}
       {tab === "board" && <CollectionView key="board" id="tasks" viewId="board" project={id} />}
-      {tab === "activity" && <p className="muted">Project activity arrives in M8 part 4.</p>}
+      {tab === "activity" && <ProjectActivity project={project.id} />}
       {tab === "items" && <Items project={project} />}
     </>
   );
+}
+
+/** The project's runs, live: what agents did on it, step by step. */
+function ProjectActivity({ project }: { project: string }) {
+  const { entries } = useActivity(project);
+  return <ActivityList entries={entries} label="Project runs" />;
 }
 
 function PinToggle({ project }: { project: Doc }) {

@@ -51,7 +51,10 @@ test("a project's map: drag a part, add a note, and both survive a reload", asyn
 
   await page.reload();
   await expect(card(page, "Plan")).toBeVisible();
-  expect(await translate(page, "Plan")).toEqual(after);
+  // Stored positions are whole pixels; a drag can end between two.
+  const reloaded = await translate(page, "Plan");
+  expect(Math.abs((reloaded?.x ?? 0) - (after?.x ?? 0))).toBeLessThanOrEqual(1);
+  expect(Math.abs((reloaded?.y ?? 0) - (after?.y ?? 0))).toBeLessThanOrEqual(1);
   await expect(canvas.getByLabel("Sticky note")).toHaveValue("Ship it");
 
   // Double-click opens the part's drawer.

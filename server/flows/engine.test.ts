@@ -100,6 +100,11 @@ test("an item trigger runs once per change, writes as the flow, and checks its c
   const created = tasks()[0] as Doc;
   expect(store.changesFor(created.id, 1)[0]?.actor).toBe("flow:f-salary");
   expect(engine.runs("f-salary").map((r) => r.result)).toEqual(["stopped", "ok"]);
+  // Activity reads every flow's runs at once, newest first, with their steps.
+  const recent = engine.recent(10);
+  expect(recent.map((r) => r.flowId)).toEqual(["f-salary", "f-salary"]);
+  expect(recent[0]?.startedAt).toBeGreaterThanOrEqual(recent[1]?.startedAt ?? 0);
+  expect(recent.some((r) => r.steps.length > 0)).toBe(true);
 
   // Editing the income later is not "added" again.
   write("pay", "money", { amount: 30000 });

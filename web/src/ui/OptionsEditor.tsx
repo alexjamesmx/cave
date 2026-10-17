@@ -27,18 +27,20 @@ export function OptionsEditor({
   options: SelectOption[];
   /** Whether options have a kind (money categories). */
   kinds?: boolean;
-  onChange(next: SelectOption[]): void;
+  /** Gets a change to apply to the options as stored now, so quick edits never undo each other. */
+  onChange(update: (current: SelectOption[]) => SelectOption[]): void;
 }) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
-  const [dragging, setDragging] = useState<number>();
+  const [dragging, setDragging] = useState<string>();
   const live = options.filter((o) => !o.archived);
   const archived = options.filter((o) => o.archived);
-  const indexOf = (value: string) => options.findIndex((o) => o.value === value);
+  const at = (list: SelectOption[], value: string) => list.findIndex((o) => o.value === value);
+  const moveTo = (from: string, to: string) =>
+    onChange((cur) => moveOption(cur, at(cur, from), at(cur, to)));
   const move = (value: string, by: number) => {
-    const visible = live.findIndex((o) => o.value === value);
-    const target = live[visible + by];
-    if (target) onChange(moveOption(options, indexOf(value), indexOf(target.value)));
+    const target = live[live.findIndex((o) => o.value === value) + by];
+    if (target) moveTo(value, target.value);
   };
 
   return (
@@ -48,10 +50,10 @@ export function OptionsEditor({
           <li
             key={o.value}
             draggable
-            onDragStart={() => setDragging(indexOf(o.value))}
+            onDragStart={() => setDragging(o.value)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => {
-              if (dragging !== undefined) onChange(moveOption(options, dragging, indexOf(o.value)));
+              if (dragging !== undefined) moveTo(dragging, o.value);
               setDragging(undefined);
             }}
             className="option-row"
@@ -76,7 +78,8 @@ export function OptionsEditor({
               style={{ width: 56 }}
               onBlur={(e) => {
                 const emoji = e.target.value.trim();
-                if (emoji !== (o.emoji ?? "")) onChange(patchOption(options, o.value, { emoji }));
+                if (emoji !== (o.emoji ?? ""))
+                  onChange((cur) => patchOption(cur, o.value, { emoji }));
               }}
             />
             <input
@@ -88,7 +91,8 @@ export function OptionsEditor({
               style={{ flex: "1 1 120px", minWidth: 0 }}
               onBlur={(e) => {
                 const label = e.target.value.trim();
-                if (label !== (o.label ?? "")) onChange(patchOption(options, o.value, { label }));
+                if (label !== (o.label ?? ""))
+                  onChange((cur) => patchOption(cur, o.value, { label }));
               }}
             />
             {kinds && (
@@ -98,8 +102,8 @@ export function OptionsEditor({
                 value={o.kind ?? ""}
                 style={{ width: "auto" }}
                 onChange={(e) =>
-                  onChange(
-                    patchOption(options, o.value, {
+                  onChange((cur) =>
+                    patchOption(cur, o.value, {
                       kind: (e.target.value || undefined) as OptionKind | undefined,
                     }),
                   )
@@ -114,7 +118,7 @@ export function OptionsEditor({
             <ColorPicker
               value={o.color}
               label={`Colour for ${o.value}`}
-              onChange={(color) => onChange(patchOption(options, o.value, { color }))}
+              onChange={(color) => onChange((cur) => patchOption(cur, o.value, { color }))}
             />
             <button
               type="button"
@@ -138,7 +142,7 @@ export function OptionsEditor({
               type="button"
               className="btn"
               aria-label={`Archive ${o.value}`}
-              onClick={() => onChange(setArchived(options, o.value, true))}
+              onClick={() => onChange((cur) => setArchived(cur, o.value, true))}
             >
               <Icon name="archive" size={13} />
             </button>
@@ -153,7 +157,10 @@ export function OptionsEditor({
           if ("error" in result) return setError(result.error);
           setError(undefined);
           setDraft("");
-          onChange(result.options);
+          onChange((cur) => {
+            const added = addOption(cur, draft);
+            return "error" in added ? cur : added.options;
+          });
         }}
       >
         <input
@@ -185,7 +192,7 @@ export function OptionsEditor({
                 <button
                   type="button"
                   className="btn"
-                  onClick={() => onChange(setArchived(options, o.value, false))}
+                  onClick={() => onChange((cur) => setArchived(cur, o.value, false))}
                 >
                   Restore {o.value}
                 </button>

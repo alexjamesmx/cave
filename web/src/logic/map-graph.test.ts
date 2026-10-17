@@ -47,3 +47,25 @@ test("moving a note or frame changes its own place; an item's goes into position
   expect(moved(map, "p1", { x: 1, y: 2 }).positions).toEqual({ p1: { x: 1, y: 2 } });
   expect(localId("n", new Set(["n1", "n2"]))).toBe("n3");
 });
+
+test("an active run glows beside its part, joined by an animated edge; runs aren't stored", () => {
+  const parts = [item("p1", "parts", { _title: "Build", status: "active" })];
+  const { nodes, edges } = buildGraph(
+    parts,
+    [],
+    [],
+    { ...EMPTY_MAP, positions: { p1: { x: 100, y: 50 } } },
+    [{ id: "r1", title: "Tests", status: "running", part: "p1", step: "writing" }],
+  );
+  expect(nodes.find((n) => n.id === "run-r1")).toMatchObject({
+    type: "run",
+    position: { x: 360, y: 50 },
+    draggable: false,
+    data: { title: "Tests", status: "running", step: "writing" },
+  });
+  expect(edges.find((e) => e.id === "run-edge-r1")).toMatchObject({
+    source: "p1",
+    target: "run-r1",
+    animated: true,
+  });
+});

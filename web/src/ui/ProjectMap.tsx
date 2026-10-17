@@ -15,7 +15,9 @@ import {
   pruneMap,
 } from "../../../shared/project-map.ts";
 import { linkedTo, PARTS, templatesOf } from "../../../shared/projects.ts";
+import { isActiveRun } from "../../../shared/runs.ts";
 import type { Doc } from "../../../shared/types.ts";
+import { useActivity } from "../app/activity.ts";
 import { useCave } from "../app/context.ts";
 import {
   buildGraph,
@@ -25,6 +27,7 @@ import {
   type MapNode,
   moved,
   type NoteData,
+  type RunData,
 } from "../logic/map-graph.ts";
 import { useAllItems, useDoc } from "../store/queries.ts";
 import { DocDrawer } from "./DocDrawer.tsx";
@@ -121,8 +124,26 @@ function GroupNode({ id, data, selected }: NodeProps<Extract<MapNode, { type: "f
   );
 }
 
+/** An active run beside its part, glowing; its newest step says what it is doing. */
+function RunNode({ data }: NodeProps<Extract<MapNode, { type: "run" }>>) {
+  const d = data as RunData;
+  return (
+    <div className="map-run" data-status={d.status}>
+      <Handle
+        type="target"
+        position={Position.Left}
+        isConnectable={false}
+        className="map-handle-hidden"
+      />
+      <span className="k">run · {d.status}</span>
+      <strong>{d.title}</strong>
+      {d.step && <span className="muted">{d.step}</span>}
+    </div>
+  );
+}
+
 // "frame", not "group": React Flow styles its own group type.
-const NODE_TYPES = { card: CardNode, note: NoteNode, frame: GroupNode };
+const NODE_TYPES = { card: CardNode, note: NoteNode, frame: GroupNode, run: RunNode };
 
 /** Desktop with a mouse edits the map; a phone views it (pan, zoom, tap to open). */
 function useEditable(): boolean {
@@ -166,9 +187,21 @@ export function ProjectMap({ project }: { project: Doc }) {
     const shown = shownKey ? shownKey.split(",") : [];
     return { parts: of(PARTS), tasks: of("tasks"), others: shown.flatMap(of) };
   }, [all, project.id, shownKey]);
+  const { entries } = useActivity(project.id);
+  const active = useMemo(
+    () =>
+      entries.filter(isActiveRun).map((e) => ({
+        id: e.id,
+        title: e.title,
+        status: e.status,
+        ...(e.part ? { part: e.part } : {}),
+        ...(e.steps.at(-1) ? { step: e.steps.at(-1)?.title as string } : {}),
+      })),
+    [entries],
+  );
   const graph = useMemo(
-    () => buildGraph(linked.parts, linked.tasks, linked.others, layout),
-    [linked, layout],
+    () => buildGraph(linked.parts, linked.tasks, linked.others, layout, active),
+    [linked, layout, active],
   );
   const [nodes, setNodes, onNodesChange] = useNodesState<MapNode>(graph.nodes);
   useEffect(() => setNodes(graph.nodes), [graph, setNodes]);

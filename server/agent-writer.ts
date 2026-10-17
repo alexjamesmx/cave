@@ -11,6 +11,7 @@ import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
 import { PAYMENTS, paidPatch } from "../shared/payments.ts";
 import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
+import { RUNS } from "../shared/runs.ts";
 import type { CollectionData } from "../shared/schema.ts";
 import { completeTask } from "../shared/tasks.ts";
 import type { Doc } from "../shared/types.ts";
@@ -149,6 +150,25 @@ export class AgentWriter {
       id: newId(now),
       kind: "item",
       collection: FLOWS,
+      data: { _created: new Date(now).toISOString(), ...data },
+    });
+  }
+
+  /**
+   * The runs collection is hidden from every other write; the run tools check that the
+   * agent owns the run and that it is open, then write here. Refs are checked as on any write.
+   */
+  writeRun(current: Doc | undefined, data: Record<string, unknown>): WriteResult {
+    const errors = validateFields(activeFields(fieldsOf(this.store.get(RUNS))), data, {
+      refTarget: (id) => this.store.get(id),
+    });
+    if (errors.length > 0) return fail(formatFieldErrors(errors));
+    if (current) return this.apply(current, { ...current, data });
+    const now = this.now();
+    return this.apply(undefined, {
+      id: newId(now),
+      kind: "item",
+      collection: RUNS,
       data: { _created: new Date(now).toISOString(), ...data },
     });
   }

@@ -1549,3 +1549,111 @@ a.btn {
   opacity: 0;
   pointer-events: none;
 }
+
+/* Runs (M8 part 4): a list of runs, each opening its steps as a vertical pipeline. */
+.run-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.run-row {
+  list-style: none;
+  padding: 0;
+}
+
+.run-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 14px;
+}
+
+.run-pill {
+  font-size: 11px;
+  text-transform: lowercase;
+}
+
+.run-pipeline {
+  margin: 0;
+  padding: 4px 14px 14px 28px;
+  display: grid;
+  gap: 10px;
+}
+
+.run-step {
+  display: grid;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+}
+
+.run-step.current {
+  animation: run-pulse 1.6s ease-in-out infinite;
+}
+
+.run-detail {
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@keyframes run-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .run-step.current {
+    animation: none;
+  }
+}
+
+.run-head {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-run {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  background: #0d1a1f;
+  color: var(--text);
+  font-size: 13px;
+  box-shadow: 0 0 18px rgba(61, 224, 255, 0.35);
+  animation: run-glow 2s ease-in-out infinite;
+}
+
+.map-run[data-status="waiting"] {
+  border-color: var(--gold);
+  box-shadow: 0 0 18px rgba(245, 196, 81, 0.35);
+}
+
+.map-edge-run .react-flow__edge-path {
+  stroke: var(--cyan);
+}
+
+@keyframes run-glow {
+  50% {
+    box-shadow: 0 0 6px rgba(61, 224, 255, 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-run {
+    animation: none;
+  }
+}

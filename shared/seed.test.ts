@@ -33,6 +33,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       "projects",
       "proposals",
       "reminders",
+      "runs",
       "tasks",
       "wealth",
     ].sort(),
@@ -43,7 +44,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       .filter((c) => c.data.hidden)
       .map((c) => c.id)
       .sort(),
-  ).toEqual(["flows", "proposals"]);
+  ).toEqual(["flows", "proposals", "runs"]);
   expect(byId.get("settings")).toMatchObject({
     kind: "setting",
     collection: null,
@@ -61,7 +62,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     ["flow-salary", "draft"],
   ]);
   for (const d of drafts) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(17);
+  expect(docs).toHaveLength(18);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {

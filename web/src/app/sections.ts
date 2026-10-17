@@ -183,7 +183,7 @@ export const SECTIONS: Section[] = [
 ];
 
 /** Collections with no section: reached only from Settings → Data. */
-export const DATA_ONLY = ["proposals"];
+export const DATA_ONLY = ["proposals", "runs"];
 
 export const sectionById = (id: string) => SECTIONS.find((s) => s.id === id);
 

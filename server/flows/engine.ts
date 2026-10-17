@@ -69,6 +69,10 @@ export function createFlowEngine({
   >(
     "SELECT key, started_at, result, log FROM flow_runs WHERE flow_id = ? ORDER BY started_at DESC LIMIT 20",
   );
+  const listRecent = db.query<
+    { key: string; flow_id: string; started_at: number; result: string; log: string },
+    [number]
+  >("SELECT key, flow_id, started_at, result, log FROM flow_runs ORDER BY started_at DESC LIMIT ?");
 
   const definitionOf = (doc: Doc): FlowDefinition | undefined => {
     const parsed = parseDefinition(doc.data.definition);
@@ -320,6 +324,16 @@ export function createFlowEngine({
         if (!item) return { error: `no item in ${t.collection} matches yet` };
       }
       return execute(flow, def, item, `dry:${flowId}`, true);
+    },
+    /** The newest runs of every flow, for Activity. */
+    recent(limit: number): (FlowRun & { flowId: string })[] {
+      return listRecent.all(limit).map((r) => ({
+        key: r.key,
+        flowId: r.flow_id,
+        startedAt: r.started_at,
+        result: r.result as RunLog["result"],
+        steps: JSON.parse(r.log) as StepLog[],
+      }));
     },
     runs(flowId: string): FlowRun[] {
       return listRuns.all(flowId).map((r) => ({

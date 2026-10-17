@@ -1,6 +1,7 @@
-import { activeFields, unresolved } from "../../../shared/fields.ts";
+import { activeFields } from "../../../shared/fields.ts";
 import type { SelectOption } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
+import { editFields } from "../app/lists.ts";
 import { SECTIONS } from "../app/sections.ts";
 import { type CollectionDoc, useCollections } from "../store/queries.ts";
 import { OptionsEditor } from "../ui/OptionsEditor.tsx";
@@ -15,14 +16,13 @@ export function SettingsLists() {
   if (!collections) return null;
   const byId = new Map(collections.map((c) => [c.id, c]));
 
-  const save = (collection: CollectionDoc, field: string, options: SelectOption[]) =>
-    local.write(
-      { id: collection.id, kind: "collection", collection: null },
-      {
-        fields: unresolved(
-          collection.data.fields.map((f) => (f.id === field ? { ...f, options } : f)),
-        ),
-      },
+  const save = (
+    collection: CollectionDoc,
+    field: string,
+    update: (options: SelectOption[]) => SelectOption[],
+  ) =>
+    editFields(local, collection.id, (fields) =>
+      fields.map((f) => (f.id === field ? { ...f, options: update(f.options ?? []) } : f)),
     );
 
   return (
@@ -70,7 +70,7 @@ export function SettingsLists() {
                       name={field.name}
                       options={field.options ?? []}
                       kinds={collection.id === "money" && field.id === "category"}
-                      onChange={(options) => void save(collection, field.id, options)}
+                      onChange={(update) => void save(collection, field.id, update)}
                     />
                   )}
                 </div>
