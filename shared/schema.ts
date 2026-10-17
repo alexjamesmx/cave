@@ -71,8 +71,8 @@ export interface FieldConfig {
    * this is set. The `settings` doc's `timezone` says which local time.
    */
   withTime?: boolean;
-  /** For `json` fields: the schema the value must pass. Only `flow` exists. */
-  schema?: "flow";
+  /** For `json` fields: the schema the value must pass: a flow, or a project's map. */
+  schema?: "flow" | "map";
   /** For `ref` fields: the collection the target lives in. */
   collection?: string;
   /** For `select` fields: take the options from this field; the field's own are ignored. */

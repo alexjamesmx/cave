@@ -22,6 +22,7 @@ import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
 import { BarRow, Stat } from "../ui/charts.tsx";
 import { DocDrawer } from "../ui/DocDrawer.tsx";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
+import { ProjectMap } from "../ui/ProjectMap.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 import { CollectionView } from "./CollectionPage.tsx";
 
@@ -62,7 +63,7 @@ export function ProjectPage({ rest }: { rest: string[] }) {
         ))}
       </nav>
       {tab === "overview" && <Overview project={project} />}
-      {tab === "map" && <p className="muted">The project map arrives in M8 part 3.</p>}
+      {tab === "map" && <ProjectMap project={project} />}
       {tab === "board" && <CollectionView key="board" id="tasks" viewId="board" project={id} />}
       {tab === "activity" && <p className="muted">Project activity arrives in M8 part 4.</p>}
       {tab === "items" && <Items project={project} />}

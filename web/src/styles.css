@@ -1450,3 +1450,102 @@ a.btn {
 .swatch-button[aria-pressed="true"] {
   border-color: var(--lime);
 }
+
+/* The project Map and the AI Overview (React Flow), in the Cave's colours. */
+.map-canvas {
+  height: min(70vh, 720px);
+  min-height: 360px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.map-canvas .react-flow {
+  --xy-background-color: transparent;
+  --xy-node-border-radius: 12px;
+  --xy-edge-stroke: var(--muted);
+  --xy-minimap-background-color: #0b0d11;
+  --xy-controls-button-background-color: var(--control);
+  --xy-controls-button-color: var(--text);
+}
+
+.map-card {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #11141a;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.map-card-part {
+  border-color: var(--purple);
+}
+
+.map-card[data-status="done"] {
+  opacity: 0.7;
+}
+
+.map-card[data-status="active"] {
+  border-color: var(--lime);
+}
+
+.map-status {
+  justify-self: start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #1a1f27;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.map-note {
+  width: 200px;
+  min-height: 90px;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #f5c451;
+  color: #1a1400;
+  font: inherit;
+  font-size: 13px;
+  white-space: pre-wrap;
+  resize: none;
+}
+
+.map-group {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: rgba(139, 124, 255, 0.05);
+}
+
+.map-group-title {
+  margin: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.map-edge-depends .react-flow__edge-path {
+  stroke: var(--purple);
+  stroke-width: 2;
+}
+
+.map-edge-contains .react-flow__edge-path {
+  stroke-dasharray: 4 4;
+}
+
+.map-handle-hidden {
+  opacity: 0;
+  pointer-events: none;
+}

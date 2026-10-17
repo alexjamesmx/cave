@@ -12,6 +12,7 @@ import {
   paymentLinkMigration,
   TASK_FIELDS,
 } from "./payments.ts";
+import { mapMigration } from "./project-map.ts";
 import { DEFAULT_TEMPLATES, PARTS, PARTS_COLLECTION } from "./projects.ts";
 import {
   LEETCODE_PROJECT,
@@ -374,6 +375,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 10, docs: [], update: listsMigration },
   // M7c part 6: money's `payment` ref, so subscription charges link to their payment.
   { version: 11, docs: [], update: paymentLinkMigration },
+  // M8 part 3: a project's whiteboard, kept in its `map` key.
+  { version: 12, docs: [], update: mapMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
