@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { shortDay } from "../../../shared/dates.ts";
 import { newId } from "../../../shared/ids.ts";
-import { useSaver, useToday } from "../app/hooks.ts";
+import { useFollowing, useSaver, useToday } from "../app/hooks.ts";
 import { entriesByDay, previousDay } from "../logic/habits.ts";
 import { Icon } from "../ui/icon.tsx";
 import type { ViewProps } from "./types.ts";
@@ -15,7 +15,7 @@ const nextDay = (day: string) => {
 /** The journal's diary page: one entry per day, habits as toggles, text saved on blur. */
 export function WriteView({ collection, items }: ViewProps) {
   const today = useToday();
-  const [day, setDay] = useState(today);
+  const [day, setDay] = useFollowing(today);
   const saver = useSaver(collection.id);
   const entry = useMemo(() => entriesByDay(items).get(day), [items, day]);
   const habits = collection.data.fields.filter((f) => f.type === "checkbox");

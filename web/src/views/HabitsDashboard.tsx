@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../../../shared/dates.ts";
-import { useToday } from "../app/hooks.ts";
+import { useFollowing, useToday } from "../app/hooks.ts";
 import { doneInLast, entriesByDay, habitsDone, streak } from "../logic/habits.ts";
 import { BarRow } from "../ui/charts.tsx";
 import { Icon } from "../ui/icon.tsx";
@@ -10,7 +10,7 @@ const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function HabitsDashboard({ collection, view, items }: ViewProps) {
   const today = useToday();
-  const [month, setMonth] = useState(() => monthOf(today));
+  const [month, setMonth] = useFollowing(monthOf(today));
   const byDay = useMemo(() => entriesByDay(items), [items]);
   const habits = collection.data.fields.filter((f) => f.type === "checkbox");
   const ids = habits.map((h) => h.id);

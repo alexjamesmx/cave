@@ -3,7 +3,9 @@ import { localDate } from "../../../shared/dates.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
 import { type Zone, zoneOf } from "../../../shared/reminders.ts";
+import { pick, shown } from "../logic/follow.ts";
 import { useDoc } from "../store/queries.ts";
+import { watchClock } from "./clock.ts";
 import { useCave } from "./context.ts";
 
 export function useTimeZone(): string | undefined {
@@ -12,14 +14,20 @@ export function useTimeZone(): string | undefined {
   return typeof tz === "string" ? tz : undefined;
 }
 
-/** The current time, re-read every minute so "overdue" and midnight roll over on their own. */
+/**
+ * The current time, re-read every minute and whenever the page comes back, so "overdue" and
+ * midnight roll over on their own, also after the phone resumes the app.
+ */
 export function useNow(): Date {
   const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
+  useEffect(() => watchClock({ window, document }, () => setNow(new Date())), []);
   return now;
+}
+
+/** A value that follows `current` (today, this month) until the owner picks another. */
+export function useFollowing(current: string): [string, (value: string) => void] {
+  const [picked, setPicked] = useState<string>();
+  return [shown(picked, current), (value) => setPicked(pick(value, current))];
 }
 
 /** Today's local date in the settings timezone. */

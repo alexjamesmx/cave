@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { dayOf, monthGrid, monthName, monthOf, shiftMonth } from "../../../shared/dates.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { useToday } from "../app/hooks.ts";
+import { useFollowing, useToday } from "../app/hooks.ts";
 import { titleOf } from "../logic/views.ts";
 import { Icon } from "../ui/icon.tsx";
 import type { ViewProps } from "./types.ts";
@@ -10,7 +10,7 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function CalendarView({ collection, view, items, open }: ViewProps) {
   const today = useToday();
-  const [month, setMonth] = useState(() => monthOf(today));
+  const [month, setMonth] = useFollowing(monthOf(today));
   const fieldId = String(view.config.dateField ?? "");
   const field = collection.data.fields.find((f) => f.id === fieldId && f.type === "date");
 

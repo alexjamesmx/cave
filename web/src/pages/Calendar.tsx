@@ -5,7 +5,7 @@ import { newId } from "../../../shared/ids.ts";
 import { PAYMENTS } from "../../../shared/payments.ts";
 import { zonedInstant } from "../../../shared/reminders.ts";
 import { useCave } from "../app/context.ts";
-import { useNow, useReminderZone, useToday } from "../app/hooks.ts";
+import { useFollowing, useNow, useReminderZone, useToday } from "../app/hooks.ts";
 import { flowPath, navigate } from "../app/router.ts";
 import {
   byDay,
@@ -65,7 +65,7 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
   const sources = useSources();
   const today = useToday();
   const zone = useReminderZone();
-  const [month, setMonth] = useState(() => monthOf(today));
+  const [month, setMonth] = useFollowing(monthOf(today));
   const [open, setOpen] = useState<{ id: string; collection: string }>();
   const [adding, setAdding] = useState<string>();
 
