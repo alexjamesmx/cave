@@ -151,6 +151,7 @@ CAVE_DB_PATH=data/dev.db
 **Fresh dev copy of real data** (whenever you want one):
 ```powershell
 bun run pull-backups                                  # newest verified VPS backups into data/vps-backups
+bun run pull-data                                     # the same, then the newest daily into data/dev.db (old one: data/dev.db.prev)
 bun run restore data/vps-backups/<newest>.db          # into data/dev.db (stop the local server first)
 ```
 
