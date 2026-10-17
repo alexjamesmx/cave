@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { applyFilter, defaultSort, readFilter, titleOf } from "../logic/views.ts";
 import { FieldValue } from "../ui/fields.tsx";
 import { ReminderActions } from "../ui/ReminderActions.tsx";
+import { rowOpen } from "../ui/row-open.ts";
 import { NewItem } from "./NewItem.tsx";
 import type { ViewProps } from "./types.ts";
 
@@ -31,7 +32,7 @@ export function TableView({ collection, view, items, open, preset }: ViewProps) 
         </thead>
         <tbody>
           {rows.slice(0, shown).map((doc) => (
-            <tr key={doc.id}>
+            <tr key={doc.id} {...rowOpen(() => open(doc.id))}>
               <td>
                 <button type="button" className="link" onClick={() => open(doc.id)}>
                   {titleOf(doc)}

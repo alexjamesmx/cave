@@ -13,6 +13,7 @@ import { OptionChip } from "../ui/fields.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { MoneyForm } from "../ui/MoneyForm.tsx";
 import { PaymentForm } from "../ui/PaymentForm.tsx";
+import { rowOpen } from "../ui/row-open.ts";
 import type { ViewProps } from "./types.ts";
 
 const WINDOW_DAYS = 30;
@@ -154,7 +155,10 @@ export function PaymentsView({ collection, items, open }: ViewProps) {
           const amount = doc.data.amount;
           return (
             <div key={p.id} style={{ display: "grid", gap: 8 }}>
-              <div className={`system-row${p.overdue ? " overdue" : ""}`}>
+              <div
+                className={`system-row${p.overdue ? " overdue" : ""}`}
+                {...rowOpen(() => open(p.id))}
+              >
                 <span className="num" style={{ color: p.overdue ? "var(--expense)" : undefined }}>
                   {localDateTime(new Date(p.at), zone.timeZone).replace("T", " ")}
                 </span>

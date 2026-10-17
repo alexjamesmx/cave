@@ -6,7 +6,6 @@ import { completeTask } from "../../../shared/tasks.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone, useToday } from "../app/hooks.ts";
-import { collectionPath } from "../app/router.ts";
 import {
   type CalendarEvent,
   mergeEvents,
@@ -15,8 +14,10 @@ import {
   taskSource,
 } from "../logic/calendar.ts";
 import { type CollectionDoc, useItems } from "../store/queries.ts";
+import { DocDrawer } from "./DocDrawer.tsx";
 import { Icon } from "./icon.tsx";
 import { ReminderActions } from "./ReminderActions.tsx";
+import { rowOpen } from "./row-open.ts";
 
 const nextDay = (day: string) => {
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
@@ -54,6 +55,7 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
   const doc = (e: CalendarEvent) =>
     (e.collection === "reminders" ? reminders : tasks)?.find((d) => d.id === e.itemId);
   const color = (id: string) => collections.find((c) => c.id === id)?.data.color;
+  const [open, setOpen] = useState<CalendarEvent>();
 
   return (
     <section className="panel due-card" aria-label="Due">
@@ -76,15 +78,19 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
               {list.map((e) => {
                 const item = doc(e);
                 return (
-                  <li key={e.key} className={`agenda-row${e.overdue ? " overdue" : ""}`}>
+                  <li
+                    key={e.key}
+                    className={`agenda-row${e.overdue ? " overdue" : ""}`}
+                    {...rowOpen(() => setOpen(e))}
+                  >
                     <span className="mark" style={{ background: color(e.collection) }} />
                     <span className="num muted agenda-time">
                       {e.day === today || e.day === tomorrow ? (e.time ?? "") : e.day.slice(5)}
                       {e.day !== today && e.day !== tomorrow && e.time ? ` ${e.time}` : ""}
                     </span>
-                    <a href={collectionPath(e.collection)} className="link">
+                    <button type="button" className="link" onClick={() => setOpen(e)}>
                       {e.title}
-                    </a>
+                    </button>
                     {item && e.collection === "reminders" && <ReminderActions doc={item} />}
                     {item && e.collection === "tasks" && (
                       <TaskActions doc={item} zone={zone} tomorrow={tomorrow} />
@@ -95,6 +101,13 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
             </ul>
           </div>
         ))}
+      {open && (
+        <DocDrawer
+          id={open.itemId}
+          collection={open.collection}
+          onClose={() => setOpen(undefined)}
+        />
+      )}
     </section>
   );
 }

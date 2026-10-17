@@ -1392,3 +1392,13 @@ a.btn {
   color: var(--bg);
   pointer-events: none;
 }
+
+/* A row that opens its item when clicked anywhere (rowOpen). */
+[data-row] {
+  cursor: pointer;
+}
+
+[data-row]:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: -2px;
+}

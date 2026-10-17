@@ -20,7 +20,9 @@ import { formatMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
 import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
 import { BarRow, Stat } from "../ui/charts.tsx";
+import { DocDrawer } from "../ui/DocDrawer.tsx";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
+import { rowOpen } from "../ui/row-open.ts";
 import { CollectionView } from "./CollectionPage.tsx";
 
 const TABS = [
@@ -96,6 +98,8 @@ function Overview({ project }: { project: Doc }) {
   const collections = useCollections(db);
   const settings = useDoc(db, "settings");
   const template = templatesOf(settings?.data)[String(project.data.template ?? "generic")];
+  const [drawer, setDrawer] = useState<Doc>();
+  const show = (doc: Doc) => setDrawer(doc);
   const byCollection = useMemo(() => {
     const map = new Map<string, Doc[]>();
     for (const d of all ?? []) {
@@ -152,7 +156,7 @@ function Overview({ project }: { project: Doc }) {
           ))}
       </div>
       <div className="split">
-        <Parts project={project.id} tree={partsTree(parts)} parts={parts} />
+        <Parts project={project.id} tree={partsTree(parts)} parts={parts} onOpen={show} />
         <section className="panel" style={{ padding: 16, display: "grid", gap: 8 }}>
           <span className="k">Next due</span>
           {o.upcoming.length === 0 && <span className="muted">Nothing with a due date.</span>}
@@ -183,7 +187,11 @@ function Overview({ project }: { project: Doc }) {
             ))}
             <ul aria-label="Open tasks" style={{ margin: 0, padding: 0, display: "grid", gap: 4 }}>
               {open.slice(0, 8).map((t) => (
-                <li key={t.id} style={{ listStyle: "none", display: "flex", gap: 8 }}>
+                <li
+                  key={t.id}
+                  style={{ listStyle: "none", display: "flex", gap: 8 }}
+                  {...rowOpen(() => show(t))}
+                >
                   <span style={{ flex: 1 }}>{titleOf(t)}</span>
                   {partOf(t) && <span className="muted">{titleOf(partOf(t) as Doc)}</span>}
                 </li>
@@ -201,18 +209,37 @@ function Overview({ project }: { project: Doc }) {
               <span className="muted">No flows linked to this project.</span>
             )}
             {o.flows.map((f) => (
-              <span key={f.id}>{titleOf(f)}</span>
+              <span key={f.id} {...rowOpen(() => show(f))}>
+                {titleOf(f)}
+              </span>
             ))}
           </section>
         )}
       </div>
       <AddTask project={project.id} parts={parts} />
       <AskProject project={project} />
+      {drawer && (
+        <DocDrawer
+          id={drawer.id}
+          collection={drawer.collection ?? ""}
+          onClose={() => setDrawer(undefined)}
+        />
+      )}
     </div>
   );
 }
 
-function Parts({ project, tree, parts }: { project: string; tree: PartNode[]; parts: Doc[] }) {
+function Parts({
+  project,
+  tree,
+  parts,
+  onOpen,
+}: {
+  project: string;
+  tree: PartNode[];
+  parts: Doc[];
+  onOpen(doc: Doc): void;
+}) {
   const { db } = useCave().local;
   const collections = useCollections(db);
   const status = fieldsOf(collections?.find((c) => c.id === PARTS)).find((f) => f.id === "status");
@@ -242,7 +269,10 @@ function Parts({ project, tree, parts }: { project: string; tree: PartNode[]; pa
 
   const row = (node: PartNode, depth: number): ReactNode => (
     <li key={node.doc.id} style={{ listStyle: "none" }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", paddingLeft: depth * 16 }}>
+      <div
+        style={{ display: "flex", gap: 8, alignItems: "center", paddingLeft: depth * 16 }}
+        {...rowOpen(() => onOpen(node.doc))}
+      >
         <span style={{ flex: 1 }}>{titleOf(node.doc)}</span>
         {status && <OptionChip field={status} value={node.doc.data.status} />}
       </div>

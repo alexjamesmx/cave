@@ -22,6 +22,7 @@ import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { ReminderActions } from "../ui/ReminderActions.tsx";
+import { rowOpen } from "../ui/row-open.ts";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const AGENDA_DAYS = 14;
@@ -198,6 +199,7 @@ function Agenda({
       <li
         key={e.key}
         className={`agenda-row${e.done ? " done" : ""}${e.overdue ? " overdue" : ""}`}
+        {...rowOpen(() => open(e))}
       >
         <span className="mark" style={{ background: color(e.collection) }} />
         <span className="num muted agenda-time">{e.time ?? "all day"}</span>

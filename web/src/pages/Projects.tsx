@@ -22,6 +22,7 @@ import { useAllItems, useCollections, useDoc, useItems } from "../store/queries.
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { rowOpen } from "../ui/row-open.ts";
 
 function TemplatePicker({ value, onChange }: { value: string; onChange(v: string): void }) {
   const settings = useDoc(useCave().local.db, "settings");
@@ -293,7 +294,11 @@ function IdeaRow({
     });
 
   return (
-    <li className="panel" style={{ listStyle: "none", padding: 12, display: "grid", gap: 8 }}>
+    <li
+      className="panel"
+      style={{ listStyle: "none", padding: 12, display: "grid", gap: 8 }}
+      {...rowOpen(onOpen)}
+    >
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <button
           type="button"
