@@ -12,6 +12,7 @@ import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { Flows } from "./Flows.tsx";
 import { Home } from "./Home.tsx";
+import { SettingsLists } from "./Lists.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { ReviewCategories } from "./ReviewCategories.tsx";
@@ -38,6 +39,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "ai-setup": () => <AiPage />,
   "ai-activity": () => <AiActivity />,
   "settings-general": () => <SettingsGeneral />,
+  "settings-lists": () => <SettingsLists />,
   "settings-notifications": () => <SettingsNotifications />,
   "settings-devices": () => <SettingsDevices />,
   "settings-data": (rest) => <SettingsData rest={rest} />,

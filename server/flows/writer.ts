@@ -1,4 +1,9 @@
-import { activeFields, fieldsOf, formatFieldErrors, validateFields } from "../../shared/fields.ts";
+import {
+  activeFields,
+  formatFieldErrors,
+  resolvedFieldsOf,
+  validateFields,
+} from "../../shared/fields.ts";
 import { Hlc } from "../../shared/hlc.ts";
 import { newId } from "../../shared/ids.ts";
 import type { Doc } from "../../shared/types.ts";
@@ -18,7 +23,7 @@ export function createFlowWriter(store: Store, flowId: string, now: () => number
     const target = store.get(collection);
     if (target?.kind !== "collection" || target.data._deleted === true)
       return `collection ${collection} not found`;
-    const errors = validateFields(activeFields(fieldsOf(target)), data, {
+    const errors = validateFields(activeFields(resolvedFieldsOf(target, store.get)), data, {
       refTarget: (id) => store.get(id),
     });
     return errors.length > 0 ? formatFieldErrors(errors) : undefined;

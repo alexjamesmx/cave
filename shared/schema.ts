@@ -40,6 +40,19 @@ export interface SelectOption {
   label?: string;
   emoji?: string;
   kind?: OptionKind;
+  /**
+   * Retired by the owner: not offered and refused for a new value, still shown (greyed) on
+   * items that have it, and still accepted by sync. Restoring it clears the flag.
+   */
+  archived?: boolean;
+}
+
+/** A select that shows another field's options instead of keeping a copy (M7c). */
+export interface OptionsFrom {
+  collection: string;
+  field: string;
+  /** Only options of these kinds (payments offer money's expense categories). */
+  kinds?: OptionKind[];
 }
 
 export interface Field {
@@ -62,6 +75,8 @@ export interface FieldConfig {
   schema?: "flow";
   /** For `ref` fields: the collection the target lives in. */
   collection?: string;
+  /** For `select` fields: take the options from this field; the field's own are ignored. */
+  optionsFrom?: OptionsFrom;
 }
 
 /** Field types the owner can add from the field editor; `json` only comes from the seed. */

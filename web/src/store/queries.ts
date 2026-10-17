@@ -1,3 +1,4 @@
+import { resolveFields } from "../../../shared/fields.ts";
 import type { CollectionData } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
 import type { LocalDb } from "./db.ts";
@@ -7,10 +8,20 @@ export type CollectionDoc = Doc & { data: CollectionData };
 
 const live = (doc: Doc) => doc.data._deleted !== true;
 
+/**
+ * Every live collection, in order. Shared lists are filled in (`optionsFrom`), so every view
+ * and form shows the same choices the write path checks.
+ */
 export function useCollections(db: LocalDb): CollectionDoc[] | undefined {
   return useLive(async () => {
     const docs = await db.docs.where("kind").equals("collection").toArray();
-    return (docs.filter(live) as CollectionDoc[]).sort((a, b) => a.data.order - b.data.order);
+    const byId = new Map(docs.map((d) => [d.id, d]));
+    return (docs.filter(live) as CollectionDoc[])
+      .map((c) => ({
+        ...c,
+        data: { ...c.data, fields: resolveFields(c.data.fields ?? [], (id) => byId.get(id)) },
+      }))
+      .sort((a, b) => a.data.order - b.data.order);
   }, [db]);
 }
 

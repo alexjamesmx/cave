@@ -1,4 +1,4 @@
-import { CATEGORY_SET } from "./categories.ts";
+import { PAYMENT_ACCOUNT, PAYMENT_CATEGORY } from "./lists.ts";
 import { advance, dueInstant, type ReminderLike, type Zone } from "./recurrence.ts";
 import type { CollectionData, Field } from "./schema.ts";
 
@@ -39,13 +39,8 @@ export const PAYMENTS_COLLECTION: CollectionData = {
     ]),
     { id: "amount", name: "Amount", type: "money" },
     { id: "approx", name: "Amount varies", type: "checkbox" },
-    {
-      id: "category",
-      name: "Category",
-      type: "select",
-      options: CATEGORY_SET.filter((o) => o.kind === "expense"),
-    },
-    { id: "account", name: "Account", type: "text" },
+    PAYMENT_CATEGORY,
+    PAYMENT_ACCOUNT,
     { id: "due", name: "Due", type: "date", config: { withTime: true } },
     REPEAT_FIELD,
     { id: "notify_days", name: "Notify days before", type: "number" },

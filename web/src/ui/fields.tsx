@@ -1,7 +1,7 @@
 import { optionText } from "../../../shared/categories.ts";
 import { shortDay } from "../../../shared/dates.ts";
-import { isSafeUrl } from "../../../shared/fields.ts";
-import type { Field } from "../../../shared/schema.ts";
+import { isSafeUrl, offeredOptions } from "../../../shared/fields.ts";
+import type { Field, SelectOption } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { formatMoney } from "../logic/format.ts";
@@ -14,8 +14,13 @@ export function OptionChip({ field, value }: { field: Field; value: unknown }) {
   if (typeof value !== "string" || !value) return <span className="muted">—</span>;
   const option = field.options?.find((o) => o.value === value);
   const color = option?.color ?? "var(--muted)";
+  const archived = option?.archived === true;
   return (
-    <span className="chip" style={{ background: `${color}1f`, color }}>
+    <span
+      className="chip"
+      style={{ background: `${color}1f`, color, ...(archived ? { opacity: 0.55 } : {}) }}
+      {...(archived ? { title: "Archived option" } : {})}
+    >
       {option && !option.emoji && <Icon name={option.icon} size={13} />}
       {option ? optionText(option) : value}
     </span>
@@ -126,11 +131,16 @@ export function FieldInput({ field, value, onChange, id }: InputProps) {
       return (
         <select {...common} value={text} onChange={(e) => onChange(e.target.value || null)}>
           <option value="">—</option>
-          {field.options?.map((o) => (
+          {offeredOptions(field).map((o) => (
             <option key={o.value} value={o.value}>
               {optionText(o)}
             </option>
           ))}
+          {text && field.options?.some((o) => o.value === text && o.archived === true) && (
+            <option value={text}>
+              {optionText(field.options.find((o) => o.value === text) as SelectOption)} (archived)
+            </option>
+          )}
           {text && !field.options?.some((o) => o.value === text) && (
             <option value={text}>{text} (not an option)</option>
           )}

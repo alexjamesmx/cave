@@ -5,7 +5,9 @@ import { newId } from "../../../shared/ids.ts";
 import { PAYMENT_KINDS, PAYMENTS } from "../../../shared/payments.ts";
 import { REPEATS } from "../../../shared/recurrence.ts";
 import { useCave } from "../app/context.ts";
+import { ensureAccount } from "../app/lists.ts";
 import { useCollections } from "../store/queries.ts";
+import { AccountPicker } from "./AccountPicker.tsx";
 
 function Labelled({ label, children }: { label: string; children(id: string): ReactNode }) {
   const id = useId();
@@ -40,6 +42,7 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
     e.preventDefault();
     if (!title.trim() || !due) return;
     try {
+      if (account.trim()) await ensureAccount(local, account.trim());
       await local.write(
         { id: newId(), kind: "item", collection: PAYMENTS },
         {
@@ -162,11 +165,11 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
         </Labelled>
         <Labelled label="Account">
           {(id) => (
-            <input
+            <AccountPicker
               id={id}
-              className="input"
+              collections={collections}
               value={account}
-              onChange={(e) => setAccount(e.target.value)}
+              onChange={setAccount}
             />
           )}
         </Labelled>

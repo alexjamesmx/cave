@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fieldsOf } from "../../../shared/fields.ts";
 import type { Change } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useSaver } from "../app/hooks.ts";
@@ -6,7 +7,7 @@ import { ownerGet } from "../app/owner-api.ts";
 import { titleOf } from "../logic/views.ts";
 import { useLive } from "../store/live.ts";
 import { type CollectionDoc, useDoc } from "../store/queries.ts";
-import { FieldInput } from "./fields.tsx";
+import { FieldInput, FieldValue } from "./fields.tsx";
 import { Icon } from "./icon.tsx";
 import { ReminderActions } from "./ReminderActions.tsx";
 
@@ -22,6 +23,8 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
   const doc = useDoc(db, id);
   const refusal = useLive(() => db.rejected.get(id), [db, id]);
   const saver = useSaver(collection.id);
+  // Archived fields aren't edited, but a value an item still holds is shown read-only.
+  const stored = useDoc(db, collection.id);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -90,6 +93,18 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
             </dd>
           </div>
         ))}
+        {fieldsOf(stored)
+          .filter(
+            (f) => f.archived === true && doc.data[f.id] !== undefined && doc.data[f.id] !== "",
+          )
+          .map((field) => (
+            <div key={field.id} style={{ display: "contents" }}>
+              <dt className="muted">Old {field.name.toLowerCase()}</dt>
+              <dd>
+                <FieldValue field={field} value={doc.data[field.id]} />
+              </dd>
+            </div>
+          ))}
       </dl>
       <label className="k" htmlFor="item-body">
         Notes · Markdown

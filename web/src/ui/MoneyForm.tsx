@@ -1,11 +1,13 @@
-import { type FormEvent, type ReactNode, useId, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { categoriesFor, optionText } from "../../../shared/categories.ts";
 import { localDateTime } from "../../../shared/dates.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
 import { useCave } from "../app/context.ts";
 import { useTimeZone } from "../app/hooks.ts";
-import { useCollections, useItems } from "../store/queries.ts";
+import { ensureAccount } from "../app/lists.ts";
+import { useCollections } from "../store/queries.ts";
+import { AccountPicker } from "./AccountPicker.tsx";
 
 type Direction = "expense" | "income";
 
@@ -14,7 +16,6 @@ export interface MoneyPrefill {
   amount?: number;
   category?: string;
   account?: string;
-  detail?: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -47,28 +48,17 @@ export function MoneyForm({
   const { local } = useCave();
   const timeZone = useTimeZone();
   const collections = useCollections(local.db);
-  const entries = useItems(local.db, "money");
   const options =
     collections?.find((c) => c.id === "money")?.data.fields.find((f) => f.id === "category")
       ?.options ?? [];
-  const accounts = useMemo(
-    () =>
-      [...new Set((entries ?? []).map((d) => d.data.account).filter((a) => typeof a === "string"))]
-        .map(String)
-        .filter(Boolean)
-        .sort(),
-    [entries],
-  );
   const [direction, setDirection] = useState<Direction>("expense");
   const [amount, setAmount] = useState(prefill.amount === undefined ? "" : String(prefill.amount));
   const [title, setTitle] = useState(prefill.title ?? "");
   const [category, setCategory] = useState(prefill.category ?? "");
   const [account, setAccount] = useState(prefill.account ?? "");
-  const [detail, setDetail] = useState(prefill.detail ?? "");
   const [date, setDate] = useState(() => localDateTime(new Date(), timeZone));
   const [error, setError] = useState<string>();
   const shown = categoriesFor(options, direction);
-  const listId = useId();
 
   const pickDirection = (next: Direction) => {
     setDirection(next);
@@ -82,6 +72,7 @@ export function MoneyForm({
     if (!(value > 0) || !date) return;
     const id = newId();
     try {
+      if (account.trim()) await ensureAccount(local, account.trim());
       await local.write(
         { id, kind: "item", collection: "money" },
         {
@@ -91,7 +82,6 @@ export function MoneyForm({
           date,
           ...(category ? { category } : {}),
           ...(account.trim() ? { account: account.trim() } : {}),
-          ...(detail.trim() ? { detail: detail.trim() } : {}),
         },
       );
     } catch (err) {
@@ -176,29 +166,11 @@ export function MoneyForm({
       <div className="quick-row">
         <Labelled label="Account">
           {(id) => (
-            <>
-              <input
-                id={id}
-                className="input"
-                list={listId}
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-              />
-              <datalist id={listId}>
-                {accounts.map((a) => (
-                  <option key={a} value={a} />
-                ))}
-              </datalist>
-            </>
-          )}
-        </Labelled>
-        <Labelled label="Detail">
-          {(id) => (
-            <input
+            <AccountPicker
               id={id}
-              className="input"
-              value={detail}
-              onChange={(e) => setDetail(e.target.value)}
+              collections={collections}
+              value={account}
+              onChange={setAccount}
             />
           )}
         </Labelled>

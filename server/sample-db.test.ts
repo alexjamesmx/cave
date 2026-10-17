@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir, uptime } from "node:os";
 import { join } from "node:path";
-import { fieldsOf, validateFields } from "../shared/fields.ts";
+import { resolvedFieldsOf, validateFields } from "../shared/fields.ts";
 import { seedDocs } from "../shared/seed.ts";
 import { openDb } from "./db.ts";
 import { lockPathOf } from "./lock.ts";
@@ -58,7 +58,8 @@ describe("seedDatabase", () => {
     const { docs } = seeded();
     const byId = new Map(docs.map((d) => [d.id, d]));
     for (const doc of docs.filter((d) => d.kind === "item")) {
-      const errors = validateFields(fieldsOf(byId.get(doc.collection ?? "")), doc.data, {
+      const fields = resolvedFieldsOf(byId.get(doc.collection ?? ""), (id) => byId.get(id));
+      const errors = validateFields(fields, doc.data, {
         refTarget: (id) => byId.get(id),
       });
       expect({ id: doc.id, errors }).toEqual({ id: doc.id, errors: [] });

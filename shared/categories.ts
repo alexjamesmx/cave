@@ -84,7 +84,11 @@ export const optionText = (o: Pick<SelectOption, "value" | "label" | "emoji">) =
  * way), and options with no kind (the owner's own, until given one).
  */
 export const categoriesFor = (options: readonly SelectOption[], direction: "expense" | "income") =>
-  options.filter((o) => o.kind === undefined || o.kind === direction || o.kind === "transfer");
+  options.filter(
+    (o) =>
+      o.archived !== true &&
+      (o.kind === undefined || o.kind === direction || o.kind === "transfer"),
+  );
 
 /** Category values that move money between the owner's own accounts. */
 export function transferCategories(field: Field | undefined): Set<string> {

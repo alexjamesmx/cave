@@ -1,6 +1,6 @@
 import { transferCategories } from "../../shared/categories.ts";
 import { dayOf, localDate } from "../../shared/dates.ts";
-import { activeFields, fieldsOf } from "../../shared/fields.ts";
+import { activeFields, fieldsOf, offeredOptions, resolvedFieldsOf } from "../../shared/fields.ts";
 import { monthSummary, undatedEntries } from "../../shared/money.ts";
 import type { CollectionData, Field } from "../../shared/schema.ts";
 import type { Doc } from "../../shared/types.ts";
@@ -24,7 +24,11 @@ const text = (v: unknown) => (typeof v === "string" ? v : "");
 function visibleCollection(store: Store, agent: Agent, id: string) {
   const doc = visibleCollectionDoc(store, agent, id);
   if (!doc) return undefined;
-  return { doc, data: doc.data as CollectionData, fields: activeFields(fieldsOf(doc)) };
+  return {
+    doc,
+    data: doc.data as CollectionData,
+    fields: activeFields(resolvedFieldsOf(doc, store.get)),
+  };
 }
 
 const fieldValues = (doc: Doc, fields: Field[]) =>
@@ -36,7 +40,7 @@ const describeField = (f: Field) => ({
   id: f.id,
   name: f.name,
   type: f.type,
-  ...(f.options ? { options: f.options.map((o) => o.value) } : {}),
+  ...(f.options ? { options: offeredOptions(f).map((o) => o.value) } : {}),
   ...(f.config?.withTime ? { withTime: true } : {}),
 });
 

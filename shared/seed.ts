@@ -3,6 +3,7 @@ import { mergeCategoryOptions } from "./categories.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
+import { listsMigration, MONEY_ACCOUNT } from "./lists.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { PAYMENTS, PAYMENTS_COLLECTION, TASK_FIELDS } from "./payments.ts";
 import { DEFAULT_TEMPLATES, PARTS, PARTS_COLLECTION } from "./projects.ts";
@@ -91,8 +92,9 @@ const COLLECTIONS: Record<string, CollectionData> = {
         opt("expense", "arrow-up-right", C.expense),
       ]),
       field("category", "Category", "select", mergeCategoryOptions(LEGACY_CATEGORIES)),
-      field("detail", "Detail", "text"),
-      field("account", "Account", "text"),
+      // Archived by M7c: old values stay and show read-only in the drawer.
+      { ...field("detail", "Detail", "text"), archived: true },
+      MONEY_ACCOUNT,
     ],
     views: [
       view("dashboard", "Dashboard", "money"),
@@ -361,6 +363,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 8, docs: [{ id: AI, kind: "collection", data: AI_COLLECTION }] },
   // M8 part 2: project refs, parts, templates, and the LeetCode and Cave projects.
   { version: 9, docs: [], update: projectsMigration },
+  // M7c part 3: accounts as a select, payments share money's lists, detail archived.
+  { version: 10, docs: [], update: listsMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

@@ -40,10 +40,12 @@ describe("validateFields", () => {
       amount: 250,
       direction: "expense",
       category: "food",
+      // Archived since M7c: old values stay, nothing checks them.
       detail: "Tacos",
-      account: "bank",
     };
     expect(validateFields(money, entry)).toEqual([]);
+    // Accounts are a list now; a fresh seed has none until the owner adds one.
+    expect(keysOf(money, { account: "bank" })).toEqual(["account"]);
   });
 
   test("select values must be one of the options", () => {
@@ -67,7 +69,7 @@ describe("validateFields", () => {
   });
 
   test("text and checkbox fields check their JS type", () => {
-    expect(keysOf(money, { detail: 3 })).toEqual(["detail"]);
+    expect(keysOf(tasks, { area: 3 })).toEqual(["area"]);
     const journal = fieldsOf(seedDocs().find((d) => d.id === "journal"));
     expect(keysOf(journal, { gym: "yes" })).toEqual(["gym"]);
     expect(keysOf(journal, { gym: true })).toEqual([]);

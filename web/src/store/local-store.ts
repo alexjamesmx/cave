@@ -1,6 +1,7 @@
 import {
   FieldValueError,
   fieldsOf,
+  resolveFields,
   type ValidateOptions,
   validateFields,
 } from "../../../shared/fields.ts";
@@ -85,7 +86,15 @@ export class LocalStore {
     const doc = await db.transaction("rw", db.docs, db.outbox, db.meta, async () => {
       await this.loadSharedClock();
       if (target.kind === "item" && target.collection) {
-        const fields = fieldsOf(await db.docs.get(target.collection));
+        const own = fieldsOf(await db.docs.get(target.collection));
+        // Shared lists (`optionsFrom`) are checked against their source on this device.
+        const sources = new Map<string, Doc>();
+        for (const f of own) {
+          const from = f.config?.optionsFrom?.collection;
+          const found = from ? await db.docs.get(from) : undefined;
+          if (from && found) sources.set(from, found);
+        }
+        const fields = resolveFields(own, (id) => sources.get(id));
         // Refs are checked against this device's copy: the targets are read up front.
         const targets = new Map<string, Doc>();
         for (const f of fields) {

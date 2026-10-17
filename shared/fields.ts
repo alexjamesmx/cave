@@ -1,5 +1,5 @@
 import { parseDefinition } from "./flows/registry.ts";
-import type { Field } from "./schema.ts";
+import type { Field, SelectOption } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
 export interface FieldError {
@@ -59,10 +59,16 @@ function check(field: Field, value: unknown): string | undefined {
       return typeof value === "string" && /^[A-Za-z0-9_.:-]{1,64}$/.test(value)
         ? undefined
         : "must be an item id";
-    case "select":
-      return field.options?.some((o) => o.value === value)
+    case "select": {
+      const option = field.options?.find((o) => o.value === value);
+      if (option?.archived === true)
+        return `${String(value)} is archived; restore it in Settings → Lists to use it`;
+      return option
         ? undefined
-        : `must be one of: ${(field.options ?? []).map((o) => o.value).join(", ")}`;
+        : `must be one of: ${offeredOptions(field)
+            .map((o) => o.value)
+            .join(", ")}`;
+    }
   }
 }
 
@@ -120,6 +126,44 @@ export function validateFields(
 /** Fields the owner has not removed; views, the drawer and the command bar show only these. */
 export const activeFields = (fields: readonly Field[]): Field[] =>
   fields.filter((f) => f.archived !== true);
+
+/** The options a select offers for a new value: archived ones are left out. */
+export const offeredOptions = (field: Pick<Field, "options">): SelectOption[] =>
+  (field.options ?? []).filter((o) => o.archived !== true);
+
+/**
+ * Fields with `config.optionsFrom` take that field's options (filtered by kind), so one list
+ * is kept once and every device and the server see the same choices. `get` returns a
+ * collection doc by id; a missing source leaves no options.
+ */
+export function resolveFields(
+  fields: readonly Field[],
+  get: (id: string) => Doc | undefined,
+): Field[] {
+  return fields.map((f) => {
+    const from = f.type === "select" ? f.config?.optionsFrom : undefined;
+    if (!from) return f;
+    const source = fieldsOf(get(from.collection)).find((s) => s.id === from.field);
+    const options = (source?.options ?? []).filter(
+      (o) => !from.kinds || (o.kind !== undefined && from.kinds.includes(o.kind)),
+    );
+    return { ...f, options };
+  });
+}
+
+/** Fields as stored: a shared list's resolved options are dropped before a save. */
+export const unresolved = (fields: readonly Field[]): Field[] =>
+  fields.map((f) => {
+    if (!f.config?.optionsFrom || f.options === undefined) return f;
+    const { options: _, ...own } = f;
+    return own;
+  });
+
+/** A collection's fields with shared lists filled in. */
+export const resolvedFieldsOf = (
+  collection: Doc | undefined,
+  get: (id: string) => Doc | undefined,
+) => resolveFields(fieldsOf(collection), get);
 
 /** A collection doc's field list; collection docs are not shape-checked, so stay defensive. */
 export function fieldsOf(collection: Doc | undefined): Field[] {

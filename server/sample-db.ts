@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { localDate } from "../shared/dates.ts";
-import { fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
+import { fieldsOf, formatFieldErrors, resolvedFieldsOf, validateFields } from "../shared/fields.ts";
 import { Hlc } from "../shared/hlc.ts";
+import { distinctValues, withAccounts } from "../shared/lists.ts";
 import { zonedInstant } from "../shared/recurrence.ts";
 import { seedDocs } from "../shared/seed.ts";
 import type { Doc } from "../shared/types.ts";
@@ -57,7 +58,7 @@ function assertValid(store: Store, docs: Doc[]): void {
   const pending = new Map(docs.map((d) => [d.id, d]));
   const target = (id: string) => pending.get(id) ?? store.get(id);
   for (const doc of docs) {
-    const fields = fieldsOf(store.get(doc.collection ?? ""));
+    const fields = resolvedFieldsOf(store.get(doc.collection ?? ""), store.get);
     const errors = validateFields(fields, doc.data, { refTarget: target });
     if (errors.length > 0) throw new Error(`sample ${doc.id}: ${formatFieldErrors(errors)}`);
   }
@@ -110,6 +111,27 @@ export function seedDatabase(
           actor: SAMPLE_ACTOR,
         };
       });
+      // The samples' accounts join the accounts list first, as "New account" would.
+      const accounts = distinctValues(
+        docs.filter((d) => d.collection === "money" || d.collection === "payments"),
+        "account",
+      );
+      const fields = withAccounts(fieldsOf(store.get("money")), accounts);
+      const stamp = clock.next();
+      store.applyChanges(
+        [
+          {
+            id: "money",
+            kind: "collection",
+            collection: null,
+            data: { fields },
+            stamps: { fields: stamp },
+            actor: SAMPLE_ACTOR,
+          },
+        ],
+        SAMPLE_ACTOR,
+        at,
+      );
       assertValid(store, docs);
       store.applyChanges(docs, SAMPLE_ACTOR, at);
       return { ok: true, path: target, docs: store.docCount(), today };

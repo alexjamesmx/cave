@@ -1402,3 +1402,51 @@ a.btn {
   outline: 2px solid var(--lime);
   outline-offset: -2px;
 }
+
+/* Settings → Lists and the field editor: one option per row, wrapping on a phone. */
+.option-row {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.option-grip {
+  color: var(--muted);
+  cursor: grab;
+}
+
+.swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
+.swatch-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 200px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+}
+
+.swatch-button {
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.swatch-button[aria-pressed="true"] {
+  border-color: var(--lime);
+}

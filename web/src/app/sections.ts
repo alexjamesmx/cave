@@ -30,6 +30,7 @@ export type PageId =
   | "ai-setup"
   | "ai-activity"
   | "settings-general"
+  | "settings-lists"
   | "settings-notifications"
   | "settings-devices"
   | "settings-data"
@@ -154,6 +155,7 @@ export const SECTIONS: Section[] = [
     path: "/settings",
     tabs: [
       page("general", "General", "settings-general"),
+      page("lists", "Lists", "settings-lists"),
       page("notifications", "Notifications", "settings-notifications"),
       page("devices", "Devices", "settings-devices"),
       page("data", "Data", "settings-data"),

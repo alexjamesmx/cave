@@ -1,28 +1,11 @@
 import { type FormEvent, useState } from "react";
-import { optionText } from "../../../shared/categories.ts";
-import {
-  EDITABLE_FIELD_TYPES,
-  type Field,
-  type FieldType,
-  type OptionKind,
-  type SelectOption,
-} from "../../../shared/schema.ts";
+import { unresolved } from "../../../shared/fields.ts";
+import { EDITABLE_FIELD_TYPES, type Field, type FieldType } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
 import { addField, archiveField, restoreField } from "../logic/field-edits.ts";
 import type { CollectionDoc } from "../store/queries.ts";
-import { hasIcon, Icon } from "./icon.tsx";
-
-const COLORS = [
-  "#B6FF3B",
-  "#2EE6A6",
-  "#FF5C7A",
-  "#3DE0FF",
-  "#8B7CFF",
-  "#F5C451",
-  "#FF9F43",
-  "#C77DFF",
-  "#8C93A0",
-];
+import { Icon } from "./icon.tsx";
+import { OptionsEditor } from "./OptionsEditor.tsx";
 
 /**
  * Edits a collection's fields. Field ids and option values are fixed once created: items
@@ -40,8 +23,12 @@ export function FieldEditor({
   const { fields } = collection.data;
   const [error, setError] = useState<string>();
 
+  // Views get shared lists filled in; what is saved is the fields as stored.
   const saveFields = (next: Field[]) =>
-    local.write({ id: collection.id, kind: "collection", collection: null }, { fields: next });
+    local.write(
+      { id: collection.id, kind: "collection", collection: null },
+      { fields: unresolved(next) },
+    );
   const update = (id: string, change: (f: Field) => Field) =>
     saveFields(fields.map((f) => (f.id === id ? change(f) : f)));
 
@@ -101,9 +88,17 @@ export function FieldEditor({
                 <Icon name="trash" size={14} />
               </button>
             </div>
-            {field.type === "select" && (
-              <Options
+            {field.type === "select" && field.config?.optionsFrom && (
+              <span className="muted" style={{ fontSize: 13 }}>
+                Shares the {field.config.optionsFrom.field} list of{" "}
+                {field.config.optionsFrom.collection}; edit it in Settings → Lists.
+              </span>
+            )}
+            {field.type === "select" && !field.config?.optionsFrom && (
+              <OptionsEditor
+                name={field.name}
                 options={field.options ?? []}
+                kinds={collection.id === "money" && field.id === "category"}
                 onChange={(options) => update(field.id, (f) => ({ ...f, options }))}
               />
             )}
@@ -153,133 +148,5 @@ export function FieldEditor({
         </p>
       )}
     </aside>
-  );
-}
-
-function Options({
-  options,
-  onChange,
-}: {
-  options: SelectOption[];
-  onChange(next: SelectOption[]): void;
-}) {
-  const [value, setValue] = useState("");
-  const set = (i: number, patch: { [K in keyof SelectOption]?: SelectOption[K] | undefined }) =>
-    onChange(
-      options.map((o, j) => {
-        if (i !== j) return o;
-        const next = { ...o, ...patch } as Record<string, unknown>;
-        for (const key of Object.keys(next)) if (next[key] === undefined) delete next[key];
-        return next as unknown as SelectOption;
-      }),
-    );
-
-  return (
-    <div style={{ display: "grid", gap: 6, paddingLeft: 8 }}>
-      {options.map((o, i) => (
-        <div
-          key={o.value}
-          style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}
-        >
-          <span
-            className="chip"
-            style={{ background: `${o.color}1f`, color: o.color, minWidth: 96 }}
-            title={o.value}
-          >
-            {!o.emoji && <Icon name={o.icon} size={13} />}
-            {optionText(o)}
-          </span>
-          <input
-            key={`emoji-${o.emoji ?? ""}`}
-            className="input"
-            aria-label={`Emoji for ${o.value}`}
-            defaultValue={o.emoji ?? ""}
-            style={{ width: 56 }}
-            onBlur={(e) => {
-              const emoji = e.target.value.trim();
-              if (emoji !== (o.emoji ?? "")) set(i, emoji ? { emoji } : { emoji: undefined });
-            }}
-          />
-          <input
-            key={`label-${o.label ?? ""}`}
-            className="input"
-            aria-label={`Name for ${o.value}`}
-            defaultValue={o.label ?? ""}
-            placeholder={o.value}
-            style={{ flex: "1 1 120px", minWidth: 0 }}
-            onBlur={(e) => {
-              const label = e.target.value.trim();
-              if (label !== (o.label ?? "")) set(i, label ? { label } : { label: undefined });
-            }}
-          />
-          <select
-            className="input"
-            aria-label={`Kind for ${o.value}`}
-            value={o.kind ?? ""}
-            onChange={(e) =>
-              set(i, e.target.value ? { kind: e.target.value as OptionKind } : { kind: undefined })
-            }
-          >
-            <option value="">No kind</option>
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-            <option value="transfer">Transfer</option>
-          </select>
-          <input
-            key={o.icon}
-            className="input"
-            aria-label={`Icon for ${o.value}`}
-            defaultValue={o.icon}
-            style={{ flex: "1 1 90px", minWidth: 0 }}
-            onBlur={(e) => {
-              const icon = e.target.value.trim();
-              if (icon !== o.icon && hasIcon(icon)) set(i, { icon });
-            }}
-          />
-          <select
-            className="input"
-            aria-label={`Colour for ${o.value}`}
-            value={o.color}
-            onChange={(e) => set(i, { color: e.target.value })}
-            style={{ color: o.color }}
-          >
-            {[...new Set([o.color, ...COLORS])].map((c) => (
-              <option key={c} value={c} style={{ color: c }}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="btn"
-            aria-label={`Remove option ${o.value}`}
-            onClick={() => onChange(options.filter((_, j) => j !== i))}
-          >
-            <Icon name="x" size={13} />
-          </button>
-        </div>
-      ))}
-      <form
-        style={{ display: "flex", gap: 6 }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          const v = value.trim();
-          if (!v || options.some((o) => o.value === v)) return;
-          onChange([...options, { value: v, icon: "tag", color: "#8C93A0" }]);
-          setValue("");
-        }}
-      >
-        <input
-          className="input"
-          aria-label="New option"
-          placeholder="New option"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-        />
-        <button type="submit" className="btn">
-          Add
-        </button>
-      </form>
-    </div>
   );
 }

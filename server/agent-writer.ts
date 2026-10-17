@@ -1,5 +1,11 @@
 import { localDateTime } from "../shared/dates.ts";
-import { activeFields, fieldsOf, formatFieldErrors, validateFields } from "../shared/fields.ts";
+import {
+  activeFields,
+  fieldsOf,
+  formatFieldErrors,
+  resolvedFieldsOf,
+  validateFields,
+} from "../shared/fields.ts";
 import { FLOWS } from "../shared/flows/seed.ts";
 import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
@@ -228,7 +234,7 @@ export class AgentWriter {
     collection: Doc | undefined,
     patch: AgentPatch,
   ): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
-    const all = fieldsOf(collection);
+    const all = resolvedFieldsOf(collection, (id) => this.store.get(id));
     const active = activeFields(all);
     const data: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(patch.fields ?? {})) {
