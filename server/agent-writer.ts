@@ -3,6 +3,7 @@ import {
   activeFields,
   fieldsOf,
   formatFieldErrors,
+  isSafeUrl,
   resolvedFieldsOf,
   validateFields,
 } from "../shared/fields.ts";
@@ -10,6 +11,7 @@ import { FLOWS } from "../shared/flows/seed.ts";
 import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
 import { PAYMENTS, paidPatch } from "../shared/payments.ts";
+import { RADAR, RADAR_PER_DAY, sameUrl } from "../shared/radar.ts";
 import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
 import { RUNS } from "../shared/runs.ts";
 import type { CollectionData } from "../shared/schema.ts";
@@ -77,6 +79,16 @@ export class AgentWriter {
     const data = this.toData(target, patch);
     if (!data.ok) return data;
     const now = this.now();
+    if (collection === RADAR) {
+      const refused = this.radarRefusal(data.value, now);
+      if (refused) return refused;
+      data.value = {
+        status: "new",
+        found_at: this.localNow(now),
+        ...data.value,
+        _addedBy: this.agent.name,
+      };
+    }
     const id = newId(now);
     return this.apply(undefined, {
       id,
@@ -84,6 +96,30 @@ export class AgentWriter {
       collection,
       data: { _created: new Date(now).toISOString(), ...data.value },
     });
+  }
+
+  /**
+   * The radar's rules: a safe address and a reason; one finding per address (the answer
+   * names the one already there); at most RADAR_PER_DAY a day from each agent.
+   */
+  private radarRefusal(
+    data: Record<string, unknown>,
+    now: number,
+  ): { ok: false; error: string } | undefined {
+    if (!isSafeUrl(data.url) || !/^https?:/i.test(data.url))
+      return fail("url is required: an http or https address");
+    if (typeof data.why !== "string" || !data.why.trim())
+      return fail("why is required: one line on why it matters");
+    const items = this.store.itemsOf(RADAR);
+    const key = sameUrl(data.url);
+    const existing = items.find((d) => sameUrl(d.data.url) === key);
+    if (existing) return fail(`already on the radar as ${existing.id}`);
+    const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+    const today = items.filter(
+      (d) => d.data._addedBy === this.agent.name && String(d.data._created ?? "") > dayAgo,
+    ).length;
+    if (today >= RADAR_PER_DAY) return fail(`limit reached: ${RADAR_PER_DAY} radar items a day`);
+    return undefined;
   }
 
   update(id: string, patch: AgentPatch): WriteResult {
@@ -221,6 +257,15 @@ export class AgentWriter {
     const moved = this.apply(payment.value, { ...payment.value, data: next });
     if (!moved.ok) return moved;
     return { ok: true, id, seqs: [...created.seqs, ...moved.seqs], expense: created.id, next };
+  }
+
+  /** The owner's wall-clock time, as date fields store it. */
+  private localNow(now: number): string {
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return localDateTime(
+      new Date(now),
+      zoneOf(this.store.get("settings")?.data, fallback).timeZone,
+    );
   }
 
   /** `status: "done"` on a repeating task moves it to its next date and keeps it open. */

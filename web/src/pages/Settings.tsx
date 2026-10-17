@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Status } from "../../../server/owner-api.ts";
+import { formatInterests, interestsOf, parseInterests } from "../../../shared/radar.ts";
 import { currentProvider, PROVIDERS } from "../ai/providers.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone, useTimeZone } from "../app/hooks.ts";
@@ -21,6 +22,7 @@ export function SettingsGeneral() {
     <>
       <OwnerName />
       <ReminderTime />
+      <RadarInterests />
       <AiSettings />
     </>
   );
@@ -124,6 +126,35 @@ function ReminderTime() {
       </label>
       <span className="muted" style={{ fontSize: 13 }}>
         For reminders with a date and no time, in {zone.timeZone}.
+      </span>
+    </section>
+  );
+}
+
+/** The radar's interests: the For you tab shows new findings that match one. */
+function RadarInterests() {
+  const { local } = useCave();
+  const settings = useDoc(local.db, "settings");
+  const text = formatInterests(interestsOf(settings?.data));
+  return (
+    <section className="panel" style={{ padding: 18, display: "grid", gap: 6, maxWidth: 560 }}>
+      <label style={{ display: "grid", gap: 6 }}>
+        <span className="k">Radar interests</span>
+        <textarea
+          key={text}
+          className="input"
+          rows={6}
+          defaultValue={text}
+          onBlur={(e) => {
+            const next = parseInterests(e.target.value);
+            if (formatInterests(next) !== text)
+              void local.write(SETTINGS, { radarInterests: next });
+          }}
+        />
+      </label>
+      <span className="muted" style={{ fontSize: 13 }}>
+        One per line, as Name: keyword, keyword. A finding matches when an agent tags it with the
+        name or a keyword is a whole word of its title or domain.
       </span>
     </section>
   );

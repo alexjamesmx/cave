@@ -33,6 +33,8 @@ const DATA_RULE =
   "Never guess an amount, category or account: ask the owner, or leave the field out.";
 const REMINDER_RULE =
   'Reminders: one whose repeat isn\'t "none" repeats on completion; done: true moves due to the next occurrence and keeps it open. The Cave sends their notifications itself; never set up outside scheduled tasks for them. To also create or change items on a schedule or when items change, use save_flow.';
+const RADAR_RULE =
+  "Radar: findings for the owner go in collection radar with fields url (http or https, required), why (one line on why it matters, required), source (your label, e.g. Hacker News) and interests (comma-separated names from settings.radarInterests); the summary goes in body. One item per address: a duplicate is refused with the existing id. At most 50 a day.";
 const DAY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -166,7 +168,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
     server.registerTool(
       "create",
       {
-        description: `Create an item in a collection with a title, field values and a Markdown body. ${DATA_RULE} ${REMINDER_RULE}`,
+        description: `Create an item in a collection with a title, field values and a Markdown body. ${DATA_RULE} ${REMINDER_RULE} ${RADAR_RULE}`,
         inputSchema: z.object({
           collection: z.string(),
           title: z.string(),
