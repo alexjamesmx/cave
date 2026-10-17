@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("Settings → Lists: rename, emoji, colour, reorder, archive and restore; payments share money's lists", async ({
   browser,

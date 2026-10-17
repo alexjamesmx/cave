@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { offOriginRequests, ownerContext } from "./helpers.ts";
+import { offOriginRequests, ownerContext, pushed } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("Home: no command grammar, the Ask box opens Claude, quick forms save, and the glance updates live", async ({
   browser,
@@ -49,7 +49,7 @@ test("Home: no command grammar, the Ask box opens Claude, quick forms save, and 
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/c/tasks/table");
   await page.getByRole("button", { name: "Home check task" }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
   await expect(page.getByRole("button", { name: "Home check task" })).toHaveCount(0);
 
   // Opening Claude is the one request meant to leave (answered locally above).

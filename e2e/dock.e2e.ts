@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 const PHONE = { width: 390, height: 844 };
 

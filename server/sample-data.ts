@@ -436,6 +436,43 @@ const OTHER: SampleDoc[] = [
  * so this month, Payments and the calendar always have content. No randomness: the same day
  * gives the same records. Parents come before what refers to them.
  */
+/** Notes in a few folders, linked with wikilinks, one on the kitchen project. */
+const NOTES: SampleDoc[] = [
+  {
+    id: "s-note-shelves",
+    collection: "notes",
+    data: {
+      _title: "Shelf measurements",
+      _body:
+        "Wall: 180 cm. Two boards, four brackets.\n\nSee [[Kitchen paint]] for colours.\n\n- [x] Measure\n- [ ] Buy brackets",
+      folder: "Projects/Kitchen",
+      source: "owner",
+      project: PROJECT,
+    },
+  },
+  {
+    id: "s-note-paint",
+    collection: "notes",
+    data: {
+      _title: "Kitchen paint",
+      _body: "Warm white for the walls; the accent wall in sage.",
+      folder: "Projects/Kitchen",
+      source: "owner",
+      project: PROJECT,
+    },
+  },
+  {
+    id: "s-note-inbox",
+    collection: "notes",
+    data: {
+      _title: "Ideas for the weekend",
+      _body: "Revisar la acción del plan y llamar a mamá.",
+      folder: "Inbox",
+      source: "owner",
+    },
+  },
+];
+
 /** One finished and one running agent run on the kitchen project, so Activity has both. */
 function runs(today: string): SampleDoc[] {
   const at = (time: string) => `${today}T${time}:00`;
@@ -492,6 +529,7 @@ export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
     ...leetcode(today),
     ...reminders(today),
     ...runs(today),
+    ...NOTES,
     ...OTHER,
   ].map((d) => ({ ...d, data: { _created: createdAt, ...d.data } }));
 }

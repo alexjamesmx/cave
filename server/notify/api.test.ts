@@ -26,7 +26,6 @@ beforeAll(async () => {
     push: vapid,
     telegramToken: TELEGRAM,
     discordWebhook: DISCORD,
-    production: true,
     env: "production",
     fetch: (async (url: string) => {
       pushed.push(url);

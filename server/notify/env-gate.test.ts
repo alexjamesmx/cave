@@ -52,7 +52,6 @@ function setup(env: CaveEnv) {
     push: vapid,
     telegramToken: TELEGRAM,
     discordWebhook: DISCORD,
-    production: env === "production",
     env,
     fetch: (async (url: string) => {
       requests.push(new URL(url).host);

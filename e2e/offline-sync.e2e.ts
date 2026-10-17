@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { addMoney, offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("an entry added offline syncs after reconnect and shows on a second device", async ({
   browser,

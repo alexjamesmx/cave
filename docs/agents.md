@@ -14,7 +14,7 @@ bun run agent revoke codex
 - The token (`cave_…`) is printed once. Only its SHA-256 is stored, so it can't be shown again. A lost token means revoking the agent and adding a new one.
 - Scopes:
   - `read`: `list_collections`, `query`, `get`, `money_month`, `get_project`, `list_flows`.
-  - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `start_run`, `log_step`, `finish_run`, and `add_note` (only when `VAULT_PATH` is set).
+  - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `start_run`, `log_step`, `finish_run`, and `add_note`.
 - `--collections` limits what the agent can see. Other collections don't appear in its lists, and anything in them answers "not found".
 - Keep the token in an environment variable, `CAVE_AGENT_TOKEN` below. Never put it in a committed file.
 
@@ -32,7 +32,7 @@ bun run agent revoke codex
 - **A project's map:** `update` its `map` field with the whole value: `{ version: 1, positions: { <item id>: { x, y } }, notes: [{ id, text, x, y }], groups: [{ id, title, x, y, w, h }], edges: [{ id, from, to }] }`. Note, group and edge ids are short (`n1`, `g1`, `e1`). Text is plain text; anything that looks like HTML is refused. An edge must join two nodes the map places, and limits are 500 nodes, 500 edges and 200 KB. Read the current value first and change only what you mean to, since the whole value is replaced.
 - **Runs (showing your work):** on a project the owner asked you to work on, call `start_run(project, title, part?)` and keep the returned id. Then call `log_step(run, title, status, detail?)` per meaningful action (status running, done, failed, waiting or skipped), and end with `finish_run(run, done | failed | cancelled, summary)`. The owner watches it live in the project's Activity tab, in AI → Activity, and on the project's Map while it runs. You can only touch runs you started; `create` and `update` can't reach the `runs` collection. A run holds at most 200 steps, and titles and details are plain text (anything that looks like HTML is refused).
 - **Flows:** only through `save_flow` and `list_flows`. `create` and `update` can't reach the `flows` collection. See "Flows" below.
-- **Notes:** `add_note` only creates new files under `Inbox/` in the vault. It never changes an existing note.
+- **Notes:** `add_note(title, body)` creates a note in the Cave's Notes, in the Inbox folder, marked as written by an agent. It never changes an existing note, and nothing writes to the Obsidian vault any more. Link another note with `[[Title]]` or `[[Title|label]]`. Bodies are Markdown, shown with no raw HTML and no remote images. Other agents read notes with `query` on `notes`.
 
 ## Flows
 

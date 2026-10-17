@@ -1,28 +1,5 @@
-import { spawnSync } from "node:child_process";
-import { join } from "node:path";
-import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import { expect, test } from "@playwright/test";
-import { ownerContext } from "./helpers.ts";
-
-/** A write-scope agent on the e2e server's database, as `bun run agent add` makes one. */
-function mintAgent(name: string): string {
-  const out = spawnSync(
-    "bun",
-    ["run", "server/agent-cli.ts", "add", name, "--scopes", "read,write"],
-    {
-      env: {
-        ...process.env,
-        CAVE_DB_PATH: join(process.env.CAVE_E2E_DIR as string, "cave.db"),
-        CAVE_TOKEN: "",
-        CAVE_HOST: "",
-      },
-      encoding: "utf8",
-    },
-  );
-  const token = out.stdout.trim().split("\n").at(-1) ?? "";
-  if (!token.startsWith("cave_")) throw new Error(`no agent token: ${out.stderr}`);
-  return token;
-}
+import { mcpClient, ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("a run an agent starts shows in the project's Activity, on its Map and in AI → Activity, updating live", async ({
   browser,
@@ -38,15 +15,7 @@ test("a run an agent starts shows in the project's Activity, on its Map and in A
   await expect(page).toHaveURL(/\/projects\/[0-9A-Z]{26}$/);
   const project = new URL(page.url()).pathname.split("/")[2] as string;
 
-  const client = new Client(
-    { name: "cave-e2e", version: "1.0.0" },
-    { versionNegotiation: { mode: { pin: "2026-07-28" } } },
-  );
-  await client.connect(
-    new StreamableHTTPClientTransport(new URL("/mcp", baseURL), {
-      requestInit: { headers: { authorization: `Bearer ${mintAgent(`runs-e2e-${Date.now()}`)}` } },
-    }),
-  );
+  const client = await mcpClient(baseURL as string, "runs-e2e");
   const call = async (name: string, args: Record<string, unknown>) =>
     (await client.callTool({ name, arguments: args })) as {
       structuredContent?: { id: string };

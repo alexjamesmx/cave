@@ -22,6 +22,10 @@ export interface ImportReport {
   /** Frontmatter keys kept in `data` that are not fields, per collection. */
   extraKeys: Record<string, string[]>;
   categoriesAdded: string[];
+  /** Free notes whose frontmatter had keys beyond created and tags, moved into the body. */
+  notesWithExtraKeys: string[];
+  /** Free notes with nothing in them, not imported. */
+  emptyNotes: number;
   problems: string[];
 }
 
@@ -37,8 +41,28 @@ interface Options {
 
 /** Add-only import from the vault into `store`. Reads the vault, never writes to it. */
 export async function importVault({ root, store, now, dryRun }: Options): Promise<ImportReport> {
-  const stamp = formatStamp(now, 0, IMPORT_ACTOR);
-  const timeZone = store.get("settings")?.data.timezone;
+  const { report, docs } = await planImport({ root, get: store.get, stampAt: now });
+  if (!dryRun) store.applyChanges(docs, IMPORT_ACTOR, now);
+  return report;
+}
+
+/**
+ * What an import would add, planned against `get`: the local store, or the ids pulled from
+ * the hosted server (`bun run import --remote`). Nothing that exists is ever in `docs`.
+ * `stampAt` is the stamps' time; the remote import uses 0, as the seed does, so any later
+ * edit wins.
+ */
+export async function planImport({
+  root,
+  get,
+  stampAt,
+}: {
+  root: string;
+  get: (id: string) => Doc | undefined;
+  stampAt: number;
+}): Promise<{ report: ImportReport; docs: Doc[] }> {
+  const stamp = formatStamp(stampAt, 0, IMPORT_ACTOR);
+  const timeZone = get("settings")?.data.timezone;
   if (typeof timeZone !== "string") throw new Error("settings doc has no timezone; seed first");
 
   const report: ImportReport = {
@@ -48,12 +72,14 @@ export async function importVault({ root, store, now, dryRun }: Options): Promis
     ledgerDocs: 0,
     extraKeys: {},
     categoriesAdded: [],
+    notesWithExtraKeys: [],
+    emptyNotes: 0,
     problems: [],
   };
   const docs: Doc[] = [];
   const extras = new Map<string, Set<string>>();
 
-  const money = withCategories(store.get("money"), await readCategoryNames(root), report);
+  const money = withCategories(get("money"), await readCategoryNames(root), report);
   if (money)
     docs.push({ ...money, data: { fields: money.data.fields }, stamps: { fields: stamp } });
 
@@ -70,8 +96,13 @@ export async function importVault({ root, store, now, dryRun }: Options): Promis
     }
     const { data } = mapped;
     for (const problem of mapped.problems) report.problems.push(`${path}: ${problem}`);
+    if (source === "notes" && data._body === undefined) {
+      report.emptyNotes++;
+      continue;
+    }
+    if (mapped.extraKeys) report.notesWithExtraKeys.push(path);
 
-    const fields = fieldsOf(collection === "money" && money ? money : store.get(collection));
+    const fields = fieldsOf(collection === "money" && money ? money : get(collection));
     for (const key of Object.keys(data)) {
       if (!isDataKey(key)) {
         report.problems.push(`${path}: key "${key}" cannot be stored; left out`);
@@ -88,7 +119,7 @@ export async function importVault({ root, store, now, dryRun }: Options): Promis
 
     if (source === "ledger") report.ledgerDocs++;
     const id = importId(path);
-    if (store.get(id)) {
+    if (get(id)) {
       report.skipped++;
       continue;
     }
@@ -97,9 +128,8 @@ export async function importVault({ root, store, now, dryRun }: Options): Promis
     report.added[collection] = (report.added[collection] ?? 0) + 1;
   }
 
-  if (!dryRun) store.applyChanges(docs, IMPORT_ACTOR, now);
   for (const [collection, keys] of extras) report.extraKeys[collection] = [...keys].sort();
-  return report;
+  return { report, docs };
 }
 
 // Adds category names from the vault that the money collection lacks. Their emoji icons are
@@ -141,6 +171,8 @@ export function formatReport(report: ImportReport): string {
     `Ledger files ${report.ledgerFiles}, ledger docs ${report.ledgerDocs}: ${match}`,
     `Kept keys that are not fields: ${extras.length > 0 ? extras.join("; ") : "none"}`,
     `Categories added: ${report.categoriesAdded.join(", ") || "none"}`,
+    `Empty notes, not imported: ${report.emptyNotes}`,
+    `Notes whose extra frontmatter went into the body: ${report.notesWithExtraKeys.join(", ") || "none"}`,
     `Problems: ${report.problems.length}`,
     ...report.problems.map((p) => `  ${p}`),
   ].join("\n");

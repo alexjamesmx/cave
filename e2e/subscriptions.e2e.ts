@@ -1,5 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, type Page, test } from "./test.ts";
 
 async function spend(page: Page, title: string, amount: number, when: string) {
   await page.goto("/money/transactions");

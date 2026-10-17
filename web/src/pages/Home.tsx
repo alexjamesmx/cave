@@ -4,25 +4,29 @@ import { transferCategories } from "../../../shared/categories.ts";
 import { monthName, monthOf } from "../../../shared/dates.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
 import { monthSummary } from "../../../shared/money.ts";
+import { NOTES } from "../../../shared/notes.ts";
 import { PAYMENTS, upcomingPayments } from "../../../shared/payments.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone, useTimeZone, useToday } from "../app/hooks.ts";
 import { ownerGet } from "../app/owner-api.ts";
-import { collectionPath } from "../app/router.ts";
+import { collectionPath, isTyping } from "../app/router.ts";
 import { useSignal } from "../app/signal.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
 import { greeting } from "../logic/greeting.ts";
 import { entriesByDay, habitsThisWeek } from "../logic/habits.ts";
+import { lastStamp, recentNotes } from "../logic/notes.ts";
+import { titleOf } from "../logic/views.ts";
 import { wealthSummary } from "../logic/wealth.ts";
-import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
+import { useAllItems, useCollections, useDoc, useItems } from "../store/queries.ts";
 import { AskBox } from "../ui/AskBox.tsx";
 import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { MoneyForm } from "../ui/MoneyForm.tsx";
 import { PaymentForm } from "../ui/PaymentForm.tsx";
 import { type QuickKind, ReminderForm, TaskForm } from "../ui/QuickForms.tsx";
+import { NoteForm } from "./Notes.tsx";
 
 const CLOSED = new Set(["done", "dropped"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,6 +35,7 @@ const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
   { kind: "task", label: "Task", icon: "square-check" },
   { kind: "reminder", label: "Reminder", icon: "bell" },
   { kind: "payment", label: "Payment", icon: "calendar-clock" },
+  { kind: "note", label: "Note", icon: "notebook-pen" },
 ];
 
 const when = (ms: number | null | undefined) =>
@@ -45,6 +50,17 @@ export function Home() {
   const settings = useDoc(local.db, "settings");
   const [quick, setQuick] = useState<QuickKind>();
   const [saved, setSaved] = useState<string>();
+  // N opens the quick note, as C opens the calendar; never while typing or with a modifier.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "n" || e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target))
+        return;
+      e.preventDefault();
+      setQuick("note");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   const date = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
@@ -84,6 +100,7 @@ export function Home() {
           {quick === "expense" && <MoneyForm onSaved={(_id, message) => done(message)} />}
           {collections && quick === "task" && <TaskForm collections={collections} onDone={done} />}
           {quick === "payment" && <PaymentForm onSaved={done} />}
+          {quick === "note" && <NoteForm onDone={done} />}
           {collections && quick === "reminder" && (
             <ReminderForm collections={collections} onDone={done} />
           )}
@@ -94,7 +111,29 @@ export function Home() {
       </section>
       {collections && <DueCard collections={collections} />}
       {collections && <Glance />}
+      <RecentNotes />
     </>
+  );
+}
+
+/** The five notes changed most recently, on any device. */
+function RecentNotes() {
+  const notes = useItems(useCave().local.db, NOTES);
+  const recent = recentNotes(notes ?? [], lastStamp);
+  if (recent.length === 0) return null;
+  return (
+    <section
+      className="panel"
+      aria-label="Recent notes"
+      style={{ padding: 16, display: "grid", gap: 6 }}
+    >
+      <span className="k">Recent notes</span>
+      {recent.map((n) => (
+        <a key={n.id} className="link" href={`/projects/notes/${encodeURIComponent(n.id)}`}>
+          {titleOf(n)}
+        </a>
+      ))}
+    </section>
   );
 }
 

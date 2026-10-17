@@ -4,6 +4,7 @@ import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { listsMigration, MONEY_ACCOUNT } from "./lists.ts";
+import { NOTES, NOTES_COLLECTION, notesMigration } from "./notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import {
   MONEY_PAYMENT_REF,
@@ -380,6 +381,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 12, docs: [], update: mapMigration },
   // M8 part 4: runs, the trace of AI work.
   { version: 13, docs: [], update: runsMigration },
+  // M9 part A: notes live in the Cave.
+  { version: 14, docs: [], update: notesMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -425,6 +428,7 @@ export function seedDocs(): Doc[] {
     seeded(AI, "collection", AI_COLLECTION),
     seeded(PARTS, "collection", PARTS_COLLECTION),
     seeded(RUNS, "collection", RUNS_COLLECTION),
+    seeded(NOTES, "collection", NOTES_COLLECTION),
     // LeetCode is a project from the start, so its old link always has somewhere to go.
     seeded(LEETCODE_PROJECT, "item", LEETCODE_PROJECT_DATA, "projects"),
     ...FLOW_DOCS.map((d) =>

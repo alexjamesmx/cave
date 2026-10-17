@@ -11,6 +11,8 @@ export interface MapContext {
 export interface Mapped {
   data: Record<string, unknown>;
   problems: string[];
+  /** For notes: frontmatter keys moved into the body. */
+  extraKeys?: string[];
 }
 
 const baseName = (path: string) => (path.split("/").at(-1) ?? path).replace(/\.md$/i, "");
@@ -23,6 +25,7 @@ const DROPPED = new Set(["bucket", "created"]);
 /** Turns one vault note into item data. Empty frontmatter values are left out, not guessed. */
 export function mapNote(source: SourceId, note: Note, ctx: MapContext): Mapped {
   const problems: string[] = [];
+  if (source === "notes") return mapFreeNote(note, ctx, problems);
   const data: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(note.frontmatter)) {
     if (value === null || value === "" || DROPPED.has(key)) continue;
@@ -51,6 +54,35 @@ export function mapNote(source: SourceId, note: Note, ctx: MapContext): Mapped {
   if (body.trim()) data._body = body.trim();
   data._created = createdUtc(note.frontmatter.created, ctx, problems);
   return { data, problems };
+}
+
+// Notes keep only what Obsidian adds on its own as metadata; anything else is the owner's.
+const NOTE_META = new Set(["created", "tags"]);
+
+/**
+ * A free note: its title is the file name, its folder the file's directory, and any
+ * frontmatter beyond `created` and `tags` goes on top of the body as a short list.
+ */
+function mapFreeNote(note: Note, ctx: MapContext, problems: string[]): Mapped {
+  const extra = Object.entries(note.frontmatter).filter(
+    ([key, value]) => !NOTE_META.has(key) && value !== null && value !== "",
+  );
+  const block = extra.map(
+    ([key, value]) => `- ${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`,
+  );
+  const body = [block.join("\n"), note.body.trim()].filter(Boolean).join("\n\n");
+  const dir = ctx.path.split("/").slice(0, -1).join("/");
+  return {
+    data: {
+      _title: baseName(ctx.path),
+      ...(body ? { _body: body } : {}),
+      folder: dir,
+      source: "import",
+      _created: createdUtc(note.frontmatter.created, ctx, problems),
+    },
+    problems,
+    ...(extra.length > 0 ? { extraKeys: extra.map(([key]) => key) } : {}),
+  };
 }
 
 function createdUtc(created: unknown, ctx: MapContext, problems: string[]): string {

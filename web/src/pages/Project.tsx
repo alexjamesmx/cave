@@ -27,12 +27,14 @@ import { FieldValue, OptionChip } from "../ui/fields.tsx";
 import { ProjectMap } from "../ui/ProjectMap.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 import { CollectionView } from "./CollectionPage.tsx";
+import { NotesPage } from "./Notes.tsx";
 
 const TABS = [
   ["overview", "Overview"],
   ["map", "Map"],
   ["board", "Board"],
   ["activity", "Activity"],
+  ["notes", "Notes"],
   ["items", "Items"],
 ] as const;
 
@@ -68,6 +70,7 @@ export function ProjectPage({ rest }: { rest: string[] }) {
       {tab === "map" && <ProjectMap project={project} />}
       {tab === "board" && <CollectionView key="board" id="tasks" viewId="board" project={id} />}
       {tab === "activity" && <ProjectActivity project={project.id} />}
+      {tab === "notes" && <NotesPage project={project.id} />}
       {tab === "items" && <Items project={project} />}
     </>
   );

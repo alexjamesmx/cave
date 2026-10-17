@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("AI → Overview draws the setup in four columns, with counts, and a node opens where it lives", async ({
   browser,

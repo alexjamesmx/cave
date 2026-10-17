@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("a value the server refuses shows as not synced, with the reason", async ({
   browser,

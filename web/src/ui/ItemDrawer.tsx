@@ -10,6 +10,7 @@ import { useLive } from "../store/live.ts";
 import { type CollectionDoc, useDoc, useItems } from "../store/queries.ts";
 import { FieldInput, FieldValue } from "./fields.tsx";
 import { Icon } from "./icon.tsx";
+import { MarkdownField } from "./MarkdownField.tsx";
 import { ReminderActions } from "./ReminderActions.tsx";
 
 interface Props {
@@ -131,18 +132,12 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
             </div>
           ))}
       </dl>
-      <label className="k" htmlFor="item-body">
-        Notes · Markdown
-      </label>
-      <textarea
-        key={`body-${body}`}
+      <MarkdownField
         id="item-body"
-        className="input"
+        label="Notes · Markdown"
+        body={body}
         rows={8}
-        defaultValue={body}
-        onBlur={(e) => {
-          if (e.target.value !== body) save("_body", e.target.value);
-        }}
+        onSave={(text) => save("_body", text)}
       />
       <History id={id} />
     </aside>

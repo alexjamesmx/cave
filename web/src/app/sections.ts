@@ -26,6 +26,7 @@ export type PageId =
   | "money-transactions"
   | "projects-all"
   | "projects-ideas"
+  | "notes"
   | "project"
   | "agents"
   | "flows"
@@ -132,10 +133,11 @@ export const SECTIONS: Section[] = [
     tabs: [
       page("all", "All", "projects-all"),
       page("ideas", "Ideas", "projects-ideas"),
+      page("notes", "Notes", "notes"),
       // One project's page, at `/projects/<id>/<tab>`; pinned ones also show as tabs.
       page("project", "Project", "project", true),
     ],
-    owns: ["projects", "ideas", "leetcode", "parts"],
+    owns: ["projects", "ideas", "notes", "leetcode", "parts"],
   },
   {
     id: "life",

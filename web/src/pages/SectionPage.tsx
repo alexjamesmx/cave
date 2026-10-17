@@ -13,6 +13,7 @@ import { CollectionView } from "./CollectionPage.tsx";
 import { Flows } from "./Flows.tsx";
 import { Home } from "./Home.tsx";
 import { SettingsLists } from "./Lists.tsx";
+import { NotesPage } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { ReviewCategories } from "./ReviewCategories.tsx";
@@ -34,6 +35,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "money-transactions": () => <Transactions />,
   "projects-all": () => <ProjectsAll />,
   "projects-ideas": () => <IdeasPage />,
+  notes: (rest) => <NotesPage {...(rest[0] ? { noteId: rest[0] } : {})} />,
   project: (rest) => <ProjectPage rest={rest} />,
   agents: () => <Agents />,
   flows: (rest) => <Flows id={rest[0]} />,

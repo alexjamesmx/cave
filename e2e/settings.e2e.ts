@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { offOriginRequests, ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("the owner's name reaches the greeting; Settings shows the server and downloads an export", async ({
   browser,

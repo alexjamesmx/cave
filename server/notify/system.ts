@@ -27,7 +27,6 @@ export interface NotificationSystemOptions {
   push: VapidKeys | undefined;
   telegramToken: string | undefined;
   discordWebhook: string | undefined;
-  production: boolean;
   /** Only `production` lets anything leave the Cave. */
   env: CaveEnv;
   fetch?: typeof fetch;
@@ -114,7 +113,8 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     publicKey: o.push?.publicKey,
     telegram,
     now: o.now,
-    allowLoopbackHttp: !o.production,
+    // A loopback http: endpoint (the e2e test's own) only where nothing is ever delivered.
+    allowLoopbackHttp: !deliver,
   });
   return { notifier, sent, routes, jobs, telegram, flows };
 }

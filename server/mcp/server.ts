@@ -24,8 +24,6 @@ import { finishRun, logStep, startRun } from "./runs.ts";
 export interface McpDeps {
   store: Store;
   calls: CallLog;
-  /** The Obsidian vault; `add_note` is offered only when it is set. */
-  vaultPath: string | undefined;
   now: () => number;
   /** One clock per agent for the life of the process. */
   clocks: Map<string, Hlc>;
@@ -320,22 +318,19 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       (args) => run("finish_run", args, () => fromWrite(finishRun(runDeps, args))),
     );
-    const vault = deps.vaultPath;
-    if (vault) {
-      server.registerTool(
-        "add_note",
-        {
-          description:
-            "Save a new Markdown note in the owner's Obsidian Inbox. Existing notes are never changed.",
-          inputSchema: z.object({ title: z.string(), body: z.string() }),
-          annotations: WRITE,
-        },
-        (args) =>
-          run("add_note", { title: args.title, bodyLength: args.body.length }, () =>
-            addNote(vault, agent, args, deps.now(), timeZone()),
-          ),
-      );
-    }
+    server.registerTool(
+      "add_note",
+      {
+        description:
+          "Save a new Markdown note in the owner's Notes Inbox, marked as written by you. Use [[Title]] to link another note. It never changes an existing note.",
+        inputSchema: z.object({ title: z.string(), body: z.string() }),
+        annotations: WRITE,
+      },
+      (args) =>
+        run("add_note", { title: args.title, bodyLength: args.body.length }, () =>
+          fromWrite(addNote(writer(), args)),
+        ),
+    );
   }
   return server;
 }

@@ -23,7 +23,7 @@ beforeAll(() => {
     store,
     token: undefined,
     now: Date.now,
-    agents: { registry, calls: createCallLog(db), vaultPath: undefined },
+    agents: { registry, calls: createCallLog(db) },
     status: {
       env: "test",
       version: "test",

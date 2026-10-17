@@ -1,7 +1,7 @@
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
-import { expect, test } from "@playwright/test";
 import { fillReminder, ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 // A local stand-in for a push service: under CAVE_ENV=test it must receive nothing.
 function pushService() {

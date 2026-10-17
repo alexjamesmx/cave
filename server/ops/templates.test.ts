@@ -20,6 +20,7 @@ test("Caddy sends the required security headers and proxies to the loopback port
     'X-Content-Type-Options "nosniff"',
     'Referrer-Policy "no-referrer"',
     'X-Frame-Options "DENY"',
+    `Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"`,
   ]) {
     expect(caddy).toContain(header);
   }

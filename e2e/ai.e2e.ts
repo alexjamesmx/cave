@@ -2,8 +2,8 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { expect, test } from "@playwright/test";
 import { E2E_TOKEN, ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 const CLI = resolve("server/ai-sync/cli.ts");
 // Assembled at run time so no token-shaped literal sits in the source.

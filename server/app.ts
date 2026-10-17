@@ -19,7 +19,6 @@ import type { SystemReportFn } from "./system/report.ts";
 export interface AgentOptions {
   registry: AgentRegistry;
   calls: CallLog;
-  vaultPath: string | undefined;
 }
 
 export interface AppOptions {
@@ -101,7 +100,7 @@ export function serveCave({
     ? guarded(
         createMcpRoute({
           agents: agents.registry,
-          deps: { store, calls: agents.calls, vaultPath: agents.vaultPath, now, clocks },
+          deps: { store, calls: agents.calls, now, clocks },
         }),
       )
     : guarded(missing);

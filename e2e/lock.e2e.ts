@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { E2E_TOKEN, offOriginRequests } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("without a token only the lock screen renders; a wrong token is refused, the right one unlocks, and a later 401 locks again", async ({
   browser,

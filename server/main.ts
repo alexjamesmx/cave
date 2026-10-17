@@ -86,7 +86,6 @@ const notifications = createNotificationSystem({
   push,
   telegramToken,
   discordWebhook,
-  production,
   env,
 });
 if (!push) console.log("Web Push is off: no VAPID keys (bun run push-keys)");
@@ -126,7 +125,6 @@ const server = serveCave({
   agents: {
     registry,
     calls,
-    vaultPath,
   },
   allowedHosts,
   ...(publicOrigin ? { publicOrigin } : {}),

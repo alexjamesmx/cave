@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("the sidebar shows each of the eight sections once; a tab survives a reload; old links land in place", async ({
   browser,

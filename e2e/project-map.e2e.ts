@@ -1,5 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, type Page, test } from "./test.ts";
 
 /** A card by its exact title ("Plan" would also match the "planned" status of others). */
 const card = (page: Page, title: string) =>

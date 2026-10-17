@@ -1,7 +1,14 @@
 import { stat } from "node:fs/promises";
 import { join } from "node:path";
 
-export type SourceId = "ledger" | "tasks" | "journal" | "wealth" | "leetcode" | "projects";
+export type SourceId =
+  | "ledger"
+  | "tasks"
+  | "journal"
+  | "wealth"
+  | "leetcode"
+  | "projects"
+  | "notes";
 
 interface Source {
   id: SourceId;
@@ -20,10 +27,14 @@ const SOURCES: Source[] = [
   { id: "projects", collection: "projects", pattern: "Projects/*.md" },
 ];
 
+// Every other Markdown file becomes a note (M9), except Obsidian's templates.
+const NOTES_PATTERN = "**/*.md";
+const NOT_NOTES = ["System/templates/"];
+
 export const CATEGORIES_PATH = "System/categories.json";
 
 export const collectionOf = (source: SourceId) =>
-  SOURCES.find((s) => s.id === source)?.collection as string;
+  source === "notes" ? "notes" : (SOURCES.find((s) => s.id === source)?.collection as string);
 
 export interface VaultNote {
   source: SourceId;
@@ -44,6 +55,16 @@ export async function listNotes(root: string): Promise<VaultNote[]> {
       if (source.id === "journal" && !isYearFolder(path)) continue;
       notes.push({ source: source.id, path });
     }
+  }
+  const mapped = new Set(notes.map((n) => n.path));
+  for await (const raw of new Bun.Glob(NOTES_PATTERN).scan({
+    cwd: root,
+    onlyFiles: true,
+    dot: false,
+  })) {
+    const path = raw.replaceAll("\\", "/");
+    if (isHidden(path) || mapped.has(path) || NOT_NOTES.some((p) => path.startsWith(p))) continue;
+    notes.push({ source: "notes", path });
   }
   return notes.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
