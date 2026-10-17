@@ -6,6 +6,7 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { IDBKeyRange, indexedDB } from "fake-indexeddb";
 import { localDateTime } from "../../shared/dates.ts";
 import { formatStamp } from "../../shared/hlc.ts";
+import { CAVE_TOOLS } from "../../shared/mcp-tools.ts";
 import { seedDocs } from "../../shared/seed.ts";
 import type { Change } from "../../shared/types.ts";
 import { undoPatch } from "../../shared/undo.ts";
@@ -181,6 +182,11 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "finish_run",
     "add_note",
   ]);
+  // The AI Overview draws the tools from the shared list; it must match what is registered.
+  expect(await names("claude")).toEqual(CAVE_TOOLS.map((t) => t.name));
+  expect(await names("reader")).toEqual(
+    CAVE_TOOLS.filter((t) => t.scope === "read").map((t) => t.name),
+  );
   expect(await names("reader")).toEqual([
     "list_collections",
     "query",

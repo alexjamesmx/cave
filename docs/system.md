@@ -42,6 +42,8 @@ flowchart LR
 | Claude Code cloud sessions | Anthropic VM | change the code from the phone or browser; push branches and open PRs, never merge; no production access |
 | Laptop repo | `C:\Users\sgale\projects\jarvis` | where code is written and tested; `bun run deploy` deploys now |
 
+**The app's structure** (M8): eight sections (Home, Money, Calendar, Tasks, Projects, Life, AI, Settings), each with tabs, all from one registry (`web/src/app/sections.ts`) that the sidebar, the phone dock and the router read. Every collection belongs to one section or is reached only from Settings → Data. A project has its own page: Overview, Map (React Flow), Board, Activity (agents' runs) and Items.
+
 **Who gets in.** Every `/api` request needs the server token, and `/mcp` needs an agent token. Before any token check, the request guard refuses unknown hosts, foreign origins and non-JSON posts. The firewall lets in only 22, 80 and 443, and SSH takes keys only.
 
 ## 2. How a record moves (sync)

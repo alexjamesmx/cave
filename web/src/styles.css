@@ -1657,3 +1657,15 @@ a.btn {
     animation: none;
   }
 }
+
+.map-heading {
+  white-space: nowrap;
+}
+
+.map-card[data-status="failing"] {
+  border-color: var(--expense);
+}
+
+.map-card[data-status="disabled"] {
+  opacity: 0.6;
+}
