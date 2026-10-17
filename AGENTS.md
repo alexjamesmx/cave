@@ -59,14 +59,14 @@ Two agents share this repo: an architect (Claude in the desktop app: specs, desi
 - `docs/log/<milestone>.md`: written by the builder when a milestone is done: what changed (files), commands run with their real output (check, tests, import counts), deviations from the plan, open questions.
 - `docs/review/<milestone>.md`: written by the architect. The builder addresses every item, then appends what changed to the log.
 - `docs/decisions.md`: append-only record of decisions. Read it before proposing an alternative to something already decided.
-- **How work ships** (from M7): small changes are committed on `main` and pushed. The push asks the owner (the `ask` rule on `git push`), and it deploys within minutes. A branch and a PR only for changes that are dangerous or hard to undo: a schema migration; auth, the request guard, tokens or secrets; anything under `deploy/` or the server's privileges; deleting or rewriting real data; a new runtime dependency. The owner can always ask for a PR.
+- **How work ships** (from M7): small changes are committed on `main` and pushed, with no prompt (the owner removed the `ask` rule on `git push` on 2026-10-17), and the push deploys within minutes. A branch and a PR only for changes that are dangerous or hard to undo: a schema migration; auth, the request guard, tokens or secrets; anything under `deploy/` or the server's privileges; deleting or rewriting real data; a new runtime dependency. The owner can always ask for a PR.
 
 ## Git
 
 - Commit messages are exactly one line: no body, no trailers, no `Co-Authored-By`, no "Generated with". `.githooks/commit-msg` refuses anything else; `git config core.hooksPath .githooks` turns it on (`setup/setup.ps1` does it).
 - Pull request descriptions carry no attribution footer. `.claude/settings.json` sets `attribution` to empty strings for Claude Code.
 - Merge pull requests with `gh pr merge --merge --subject "<one line>" --body ""` (the owner, or a local session the owner told to; never a cloud session).
-- Every `git push` asks the owner first (`.claude/settings.json`, `ask`); that prompt is the gate for anything that reaches `main`.
+- `git push` has no prompt: `.claude/settings.json` has no `ask` rules, only `deny` rules on reading `.env*` and `data/`. The gates for what reaches `main` are the VPS's `check` and `test` and the health check with rollback, so run `bun run check` and `bun test` before every push.
 - Never rewrite pushed history.
 
 ## Cloud sessions
@@ -75,7 +75,7 @@ Claude Code cloud sessions (claude.ai/code, the Code tab in the Claude app) run 
 
 - A cloud session has no production access, by design: no tokens, no SSH, no `data/`. Never ask for any, and never add any to the environment.
 - Run `bun install --frozen-lockfile`, `bun run check` and `bun test`. `bun run e2e` runs here on the preinstalled Chromium; run it when a change touches the UI. CI doesn't run it.
-- The shipping rule in "Collaboration" applies. A cloud session may push to `main` only after the owner approves that push; otherwise it pushes a branch and opens a PR. It never merges: the owner merges.
+- The shipping rule in "Collaboration" applies. A cloud session may push to `main` only after the owner says so in the conversation (no settings prompt enforces it); otherwise it pushes a branch and opens a PR. It never merges: the owner merges.
 - Merging to `main` deploys within minutes. A PR description says what changes for the running app, and calls out any migration on its own line.
 - Migrations on real data still need the owner's explicit approval in the PR conversation before merging.
 - Use `gh api` (REST) or the built-in GitHub tools for GitHub operations: the session proxy rejects GraphQL, so `gh pr` and `gh issue` fail.

@@ -269,15 +269,25 @@ function bashRuleMatches(rule: string, command: string): boolean {
   return new RegExp(`^${source}$`).test(command);
 }
 
-test("every push asks the owner, main included, and none is refused outright", () => {
+test("no push is refused or asked; .env and data/ stay unreadable", () => {
   const settings = JSON.parse(
     readFileSync(join(import.meta.dir, "../../.claude/settings.json"), "utf8"),
   );
   const denied = (command: string) =>
     (settings.permissions.deny as string[]).some((rule) => bashRuleMatches(rule, command));
   const asked = (command: string) =>
-    (settings.permissions.ask as string[]).some((rule) => bashRuleMatches(rule, command));
-  // Small changes ship straight to main; the push prompt is the gate (M7 shipping rule).
+    ((settings.permissions.ask ?? []) as string[]).some((rule) => bashRuleMatches(rule, command));
+  // The owner removed the push prompt (2026-10-17): Claude Code pushes to main without asking.
+  for (const command of ["git reset --hard HEAD~1", "git rebase main"])
+    expect({ command, asked: asked(command) }).toEqual({ command, asked: false });
+  expect(settings.permissions.deny).toEqual(
+    expect.arrayContaining([
+      "Read(/.env)",
+      "Read(/.env.production)",
+      "Read(/data/**)",
+      "Edit(/data/**)",
+    ]),
+  );
   for (const command of [
     "git push",
     "git push origin main",
@@ -292,7 +302,7 @@ test("every push asks the owner, main included, and none is refused outright", (
     expect({ command, denied: denied(command), asked: asked(command) }).toEqual({
       command,
       denied: false,
-      asked: true,
+      asked: false,
     });
   }
 });

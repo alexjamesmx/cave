@@ -1,8 +1,8 @@
 # Keeps the laptop reachable from the Claude app's Code tab, as the session named in $name. Started at logon by the
 # "Cave Remote Control" task (setup\remote-control-task.ps1). same-dir and capacity 1 give the
-# phone this real checkout (.env, data\, MCP config) with one session at a time; the default
-# permission mode stays, so pushes still ask. remote-control exits after about 10 minutes
-# offline, so the loop starts it again.
+# phone this real checkout (.env, data\, MCP config) with one session at a time. No permission flag is
+# passed here; the project's deny rules on .env and data\ still apply. remote-control exits after
+# about 10 minutes offline, so the loop starts it again.
 $ErrorActionPreference = 'Continue'
 $root = Split-Path $PSScriptRoot -Parent
 $name = "cave $([char]0x00B7) laptop"

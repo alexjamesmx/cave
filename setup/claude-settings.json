@@ -9,8 +9,7 @@
       "Read(/.env.production)",
       "Read(/data/**)",
       "Edit(/data/**)"
-    ],
-    "ask": ["Bash(git push *)", "Bash(git reset --hard *)", "Bash(git rebase *)"]
+    ]
   },
   "hooks": {
     "SessionStart": [
