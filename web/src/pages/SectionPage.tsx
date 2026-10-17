@@ -23,6 +23,7 @@ import {
   SettingsNotifications,
 } from "./Settings.tsx";
 import { System } from "./System.tsx";
+import { Transactions } from "./Transactions.tsx";
 
 /** Each page tab's component; \`rest\` is the path after the tab (a flow id, a collection). */
 const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
@@ -30,6 +31,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-month": () => <Calendar mode="month" />,
   "calendar-agenda": () => <Calendar mode="agenda" />,
   review: () => <ReviewCategories />,
+  "money-transactions": () => <Transactions />,
   "projects-all": () => <ProjectsAll />,
   "projects-ideas": () => <IdeasPage />,
   project: (rest) => <ProjectPage rest={rest} />,
@@ -98,6 +100,11 @@ export function SectionPage({
             </a>
           ))}
         </nav>
+      )}
+      {tab.description && (
+        <p className="muted tab-description" style={{ margin: 0 }}>
+          {tab.description}
+        </p>
       )}
       {content}
     </>

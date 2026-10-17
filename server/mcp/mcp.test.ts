@@ -366,6 +366,16 @@ test("an agent write reaches a device with actor agent:<name> and shows in histo
   expect(found.items.map((i) => i.id)).toContain(id);
   const month = (await call(client, "money_month", { month: "2026-10" })).structuredContent;
   expect(month).toMatchObject({ spent: 87.5, spentCount: 1, incomplete: 0, undated: 0 });
+
+  // A transaction without a date is in no month: reported apart, with its amount.
+  const undated = await call(client, "create", {
+    collection: "money",
+    title: "Cash somewhere",
+    fields: { amount: 300, direction: "expense" },
+  });
+  expect(undated.isError).toBeUndefined();
+  const after = (await call(client, "money_month", { month: "2026-10" })).structuredContent;
+  expect(after).toMatchObject({ spent: 87.5, undated: 1, undatedAmount: 300 });
 });
 
 test("propose_delete, then the owner approves on a device", async () => {

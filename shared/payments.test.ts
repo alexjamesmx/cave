@@ -1,5 +1,11 @@
 import { expect, test } from "bun:test";
-import { expenseFrom, paidPatch, upcomingPayments } from "./payments.ts";
+import {
+  expenseFrom,
+  groupPayments,
+  missingForPayment,
+  paidPatch,
+  upcomingPayments,
+} from "./payments.ts";
 import type { Zone } from "./recurrence.ts";
 import { completeTask } from "./tasks.ts";
 
@@ -68,4 +74,52 @@ test("upcoming payments: overdue first, then by date, inactive ones out", () => 
     ["soon", false],
     ["later", false],
   ]);
+});
+
+test("payments group as Overdue, This week, Later, Needs date and Inactive, each by due date", () => {
+  const p = (id: string, data: Record<string, unknown>) => ({ id, data, stamps: {} });
+  const groups = groupPayments(
+    [
+      p("later", { due: "2026-11-02", active: true }),
+      p("iphone", { due: "2026-08-02", active: true }),
+      p("week2", { due: "2026-10-20T09:00", active: true }),
+      p("week1", { due: "2026-10-16", active: true }),
+      p("nodate", { active: true }),
+      p("off", { due: "2026-10-16", active: false }),
+      p("gone", { due: "2026-10-16", _deleted: true }),
+    ],
+    NOW,
+    MX,
+  );
+  expect({
+    overdue: groups.overdue.map((x) => x.id),
+    week: groups.week.map((x) => x.id),
+    later: groups.later.map((x) => x.id),
+    needsDate: groups.needsDate,
+    inactive: groups.inactive,
+  }).toEqual({
+    overdue: ["iphone"],
+    week: ["week1", "week2"],
+    later: ["later"],
+    needsDate: ["nodate"],
+    inactive: ["off"],
+  });
+});
+
+test("a subscription needs amount, due, repeat and account; other kinds keep needing a due date", () => {
+  const base = {
+    kind: "subscription",
+    amount: "199",
+    due: "2026-11-01",
+    repeat: "monthly",
+    account: "Nu",
+  };
+  expect(missingForPayment(base)).toEqual([]);
+  expect(missingForPayment({ ...base, amount: "", repeat: "none", account: " " })).toEqual([
+    "amount",
+    "repeat",
+    "account",
+  ]);
+  expect(missingForPayment({ ...base, kind: "bill", amount: "", account: "" })).toEqual([]);
+  expect(missingForPayment({ ...base, kind: "card", due: "" })).toEqual(["due date"]);
 });

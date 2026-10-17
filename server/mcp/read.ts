@@ -1,7 +1,7 @@
 import { transferCategories } from "../../shared/categories.ts";
 import { dayOf, localDate } from "../../shared/dates.ts";
 import { activeFields, fieldsOf, offeredOptions, resolvedFieldsOf } from "../../shared/fields.ts";
-import { monthSummary, undatedEntries } from "../../shared/money.ts";
+import { monthSummary, undatedSummary } from "../../shared/money.ts";
 import type { CollectionData, Field } from "../../shared/schema.ts";
 import type { Doc } from "../../shared/types.ts";
 import { visibleCollectionDoc } from "../agent-writer.ts";
@@ -144,6 +144,7 @@ export function moneyMonth(store: Store, agent: Agent, month: string, now: numbe
   const entries = store.itemsOf("money");
   const categories = fieldsOf(store.get("money")).find((f) => f.id === "category");
   const s = monthSummary(entries, month, today, transferCategories(categories));
+  const undated = undatedSummary(entries);
   const brief = (e: (typeof s.expenses)[number]) => ({
     id: e.doc.id,
     title: text(e.doc.data._title),
@@ -164,7 +165,9 @@ export function moneyMonth(store: Store, agent: Agent, month: string, now: numbe
       byCategory: s.byCategory,
       largestExpenses: s.expenses.slice(0, 10).map(brief),
       incomplete: s.incomplete.length,
-      undated: undatedEntries(entries).length,
+      // Undated transactions belong to no month: reported apart, never counted by guess.
+      undated: undated.count,
+      undatedAmount: undated.amount,
       transferred: s.transferred,
       transferCount: s.transfers.length,
     },

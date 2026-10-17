@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { monthSummary, undatedEntries } from "./money.ts";
+import { monthSummary, undatedEntries, undatedSummary } from "./money.ts";
 import type { Doc } from "./types.ts";
 
 let n = 0;
@@ -52,4 +52,23 @@ test("spending per day and per category, untagged as null", () => {
 
 test("entries without a date are found, so they can be shown", () => {
   expect(undatedEntries(ledger)).toHaveLength(1);
+});
+
+test("undated transactions are counted apart: how many, and the amount no total includes", () => {
+  const d = (data: Record<string, unknown>) => ({
+    id: "x",
+    kind: "item" as const,
+    collection: "money",
+    data,
+    stamps: {},
+    actor: "user:t",
+  });
+  expect(
+    undatedSummary([
+      d({ amount: 1000, direction: "expense" }),
+      d({ amount: 240, direction: "income", date: "" }),
+      d({ direction: "expense" }),
+      d({ amount: 50, direction: "expense", date: "2026-10-01" }),
+    ]),
+  ).toEqual({ count: 3, amount: 1240 });
 });

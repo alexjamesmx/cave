@@ -5,7 +5,8 @@
  */
 
 /** A tab shows one view of a collection, or one page. */
-export type Tab =
+/** A tab shows one view of a collection, or one page; `description` is one line for someone new. */
+export type Tab = (
   | {
       id: string;
       label: string;
@@ -14,13 +15,15 @@ export type Tab =
       view?: string;
       hidden?: boolean;
     }
-  | { id: string; label: string; kind: "page"; page: PageId; hidden?: boolean };
+  | { id: string; label: string; kind: "page"; page: PageId; hidden?: boolean }
+) & { description?: string };
 
 export type PageId =
   | "home"
   | "calendar-month"
   | "calendar-agenda"
   | "review"
+  | "money-transactions"
   | "projects-all"
   | "projects-ideas"
   | "project"
@@ -72,10 +75,24 @@ export const SECTIONS: Section[] = [
     color: "var(--income)",
     path: "/money",
     tabs: [
-      view("overview", "Overview", "money", "dashboard"),
-      view("transactions", "Transactions", "money", "table"),
-      view("payments", "Payments", "payments", "upcoming"),
-      view("wealth", "Wealth", "wealth"),
+      {
+        ...view("overview", "Overview", "money", "dashboard"),
+        description: "Where your money went this month.",
+      },
+      {
+        ...page("transactions", "Transactions", "money-transactions"),
+        description: "Money that moved. Every expense, income and transfer.",
+      },
+      {
+        ...view("payments", "Payments", "payments", "upcoming"),
+        description:
+          "What's coming due. Marking one paid logs the transaction and moves it to its next date.",
+      },
+      {
+        ...view("net-worth", "Net worth", "wealth"),
+        description: "What you own minus what you owe.",
+      },
+      // Not a tab: Transactions links to it when the review has work.
       page("review", "Review categories", "review", true),
     ],
     owns: ["money", "payments", "wealth"],

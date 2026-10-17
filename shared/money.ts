@@ -105,3 +105,18 @@ export function monthSummary(
     transferred: sum(transfers),
   };
 }
+
+/**
+ * Undated transactions, which no month or year counts: how many, and the sum of their
+ * amounts, so totals can say what they leave out. A date is never filled in for them.
+ */
+export function undatedSummary(docs: Doc[]): { count: number; amount: number } {
+  const undated = undatedEntries(docs);
+  const amount = undated.reduce(
+    (sum, d) =>
+      sum +
+      (typeof d.data.amount === "number" && Number.isFinite(d.data.amount) ? d.data.amount : 0),
+    0,
+  );
+  return { count: undated.length, amount };
+}

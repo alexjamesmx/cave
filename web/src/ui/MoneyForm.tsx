@@ -69,7 +69,7 @@ export function MoneyForm({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const value = Number(amount);
-    if (!(value > 0) || !date) return;
+    if (!(value > 0)) return;
     const id = newId();
     try {
       if (account.trim()) await ensureAccount(local, account.trim());
@@ -79,7 +79,8 @@ export function MoneyForm({
           _title: title.trim(),
           amount: value,
           direction,
-          date,
+          // No date stays no date: it shows under Undated and no total counts it.
+          ...(date ? { date } : {}),
           ...(category ? { category } : {}),
           ...(account.trim() ? { account: account.trim() } : {}),
         },
@@ -182,7 +183,6 @@ export function MoneyForm({
               id={id}
               className="input"
               type="datetime-local"
-              required
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -202,7 +202,15 @@ export function MoneyForm({
         >
           Yesterday
         </button>
+        <button type="button" className="btn" aria-pressed={!date} onClick={() => setDate("")}>
+          No date
+        </button>
       </div>
+      {!date && (
+        <span className="muted" style={{ fontSize: 13 }}>
+          Saved without a date: it shows under Undated in Transactions and no total counts it.
+        </span>
+      )}
       {error && (
         <p role="alert" className="error" style={{ margin: 0 }}>
           {error}

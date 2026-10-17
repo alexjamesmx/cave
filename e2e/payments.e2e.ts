@@ -37,7 +37,7 @@ test("a card payment marked paid logs the expense and moves to next month; Undo 
   await expect(page.getByRole("region", { name: "Due" })).toHaveCount(1);
 
   await page.goto("/c/payments");
-  const list = page.getByRole("region", { name: "Next 30 days" });
+  const list = page.getByRole("region", { name: "Payments by due date" });
   const row = list.locator(".system-row", { hasText: "Nu card e2e" });
   await expect(row).toContainText(due.slice(0, 10));
   await expect(row).toContainText("≈ $3,000");
@@ -54,7 +54,8 @@ test("a card payment marked paid logs the expense and moves to next month; Undo 
 
   // Paid, then Undo: the payment is back on its date and the expense is gone.
   await pay("1");
-  await expect(row).toHaveCount(0);
+  // Every payment stays listed; this one now sits under Later, on next month's date.
+  await expect(row).toContainText(nextMonth);
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Undone · Nu card e2e" })).toBeVisible();
   await expect(row).toContainText(due.slice(0, 10));

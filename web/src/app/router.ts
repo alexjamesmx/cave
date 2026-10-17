@@ -24,6 +24,8 @@ export function redirectOf(pathname: string): string | undefined {
   if (first === "flows") return second ? enc("ai", "flows", second) : "/ai/flows";
   if (first === "ai" && p.length === 1) return "/ai/setup";
   if (first === "system") return second ? enc("settings", "system", second) : "/settings/system";
+  // Wealth is Net worth since M7c.
+  if (first === "money" && second === "wealth") return "/money/net-worth";
   if (first !== "c" || !second) return undefined;
   const collection = second;
   const view = third;
@@ -35,6 +37,7 @@ export function redirectOf(pathname: string): string | undefined {
     ? tabs.find((t) => t.kind === "view" && t.view === view)
     : (tabs.find((t) => t.kind === "view" && t.view === undefined) ?? tabs[0]);
   if (owner && tab) return tabPath(owner, tab);
+  if (collection === "money" && view === "table") return "/money/transactions";
   if (collection === "projects") return "/projects";
   if (collection === "ideas") return "/projects/ideas";
   if (collection === "flows") return "/ai/flows";

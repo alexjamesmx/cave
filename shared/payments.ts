@@ -105,3 +105,55 @@ export function expenseFrom(p: ReminderLike): {
     ...(typeof d.account === "string" ? { account: d.account } : {}),
   };
 }
+
+export interface PaymentGroups {
+  overdue: UpcomingPayment[];
+  week: UpcomingPayment[];
+  later: UpcomingPayment[];
+  /** Active, with no due date: shown as "Needs date" and never notified. */
+  needsDate: string[];
+  inactive: string[];
+}
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Every payment, by when it is next due; each group sorted by that date. */
+export function groupPayments(
+  docs: (ReminderLike & { id: string })[],
+  now: number,
+  zone: Zone,
+): PaymentGroups {
+  const live = docs.filter((d) => d.data._deleted !== true);
+  const dated = upcomingPayments(live, now, Number.POSITIVE_INFINITY, zone).sort(
+    (a, b) => a.at - b.at,
+  );
+  return {
+    overdue: dated.filter((p) => p.overdue),
+    week: dated.filter((p) => !p.overdue && p.at < now + WEEK_MS),
+    later: dated.filter((p) => p.at >= now + WEEK_MS),
+    needsDate: live
+      .filter((d) => isActive(d) && dueInstant(d.data.due, zone) === undefined)
+      .map((d) => d.id),
+    inactive: live.filter((d) => !isActive(d)).map((d) => d.id),
+  };
+}
+
+/**
+ * What the payment form still needs before it saves. A subscription needs its amount, due
+ * date, a repeat and the account it is charged to; other kinds need a due date, as before.
+ */
+export function missingForPayment(p: {
+  kind: string;
+  amount: string;
+  due: string;
+  repeat: string;
+  account: string;
+}): string[] {
+  if (p.kind !== "subscription") return p.due ? [] : ["due date"];
+  return [
+    ...(Number(p.amount) > 0 ? [] : ["amount"]),
+    ...(p.due ? [] : ["due date"]),
+    ...(p.repeat && p.repeat !== "none" ? [] : ["repeat"]),
+    ...(p.account.trim() ? [] : ["account"]),
+  ];
+}

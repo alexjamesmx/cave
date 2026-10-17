@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { optionText, transferCategories } from "../../../shared/categories.ts";
 import { monthName, shiftMonth, shortDay } from "../../../shared/dates.ts";
-import { undatedEntries } from "../../../shared/money.ts";
+import { undatedSummary } from "../../../shared/money.ts";
 import {
   currentPeriod,
   filterEntries,
@@ -18,7 +18,7 @@ import {
 import { PAYMENTS } from "../../../shared/payments.ts";
 import { useCave } from "../app/context.ts";
 import { useToday } from "../app/hooks.ts";
-import { collectionPath, setSearch, useSearch } from "../app/router.ts";
+import { setSearch, useSearch } from "../app/router.ts";
 import { formatMoney, percent, signedMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
 import { useItems } from "../store/queries.ts";
@@ -68,7 +68,7 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
     () => lastTwelve(filtered, endMonth, today, transfers, trendCategory),
     [filtered, endMonth, today, transfers, trendCategory],
   );
-  const undated = useMemo(() => undatedEntries(items).length, [items]);
+  const undated = useMemo(() => undatedSummary(items), [items]);
   const labelOf = (value: string | null) => {
     if (value === null) return "? untagged";
     const o = category?.options?.find((x) => x.value === value);
@@ -148,12 +148,13 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
         accounts={accounts}
       />
 
-      {(s.incomplete > 0 || undated > 0) && (
+      {(s.incomplete > 0 || undated.count > 0) && (
         <p role="status" className="panel banner" style={{ margin: 0 }}>
           {s.incomplete > 0 &&
             `${s.incomplete} entr${s.incomplete === 1 ? "y has" : "ies have"} no amount or direction and ${s.incomplete === 1 ? "is" : "are"} not in these totals. `}
-          {undated > 0 && `${undated} entr${undated === 1 ? "y has" : "ies have"} no date. `}
-          <a href={collectionPath(collection.id, "table")}>Open the table</a>
+          {undated.count > 0 &&
+            `${undated.count} undated, ${formatMoney(undated.amount)} not counted. `}
+          <a href="/money/transactions">Open Transactions</a>
         </p>
       )}
 

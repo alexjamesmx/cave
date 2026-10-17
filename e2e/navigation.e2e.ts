@@ -29,7 +29,7 @@ test("the sidebar shows each of the eight sections once; a tab survives a reload
     "aria-current",
     "page",
   );
-  await expect(page.getByRole("region", { name: "Next 30 days" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Payments by due date" })).toBeVisible();
 
   for (const [from, to] of [
     ["/c/journal", /\/life\/diary$/],

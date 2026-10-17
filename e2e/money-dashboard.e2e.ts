@@ -9,6 +9,10 @@ test("year view with its month table, compare, and filters kept in the URL", asy
   await page.goto("/");
   await addMoney(page, { amount: 333, title: "Dashboard gula", category: "Gula" });
   await expect(page.getByRole("form", { name: "Expense" })).toHaveCount(0);
+  // The savings rate needs income this year; the spec brings its own instead of relying on
+  // whichever spec ran before it.
+  await addMoney(page, { amount: 1000, title: "Dashboard salary", income: true });
+  await expect(page.getByRole("form", { name: /Income/ })).toHaveCount(0);
 
   await page.goto("/c/money");
   await page.getByRole("button", { name: "Year", exact: true }).click();

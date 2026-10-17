@@ -2,7 +2,7 @@ import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { optionText } from "../../../shared/categories.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
-import { PAYMENT_KINDS, PAYMENTS } from "../../../shared/payments.ts";
+import { missingForPayment, PAYMENT_KINDS, PAYMENTS } from "../../../shared/payments.ts";
 import { REPEATS } from "../../../shared/recurrence.ts";
 import { useCave } from "../app/context.ts";
 import { ensureAccount } from "../app/lists.ts";
@@ -37,10 +37,11 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
   const [due, setDue] = useState("");
   const [repeat, setRepeat] = useState("monthly");
   const [error, setError] = useState<string>();
+  const missing = missingForPayment({ kind, amount, due, repeat, account });
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !due) return;
+    if (!title.trim() || missing.length > 0) return;
     try {
       if (account.trim()) await ensureAccount(local, account.trim());
       await local.write(
@@ -179,7 +180,12 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
           {error}
         </p>
       )}
-      <button type="submit" className="btn primary" disabled={!title.trim() || !due}>
+      {title.trim() && missing.length > 0 && (
+        <span className="muted" style={{ fontSize: 13 }}>
+          {kind === "subscription" ? "A subscription needs" : "Still needs"}: {missing.join(", ")}.
+        </span>
+      )}
+      <button type="submit" className="btn primary" disabled={!title.trim() || missing.length > 0}>
         Save
       </button>
     </form>
