@@ -46,7 +46,11 @@ export function FieldValue({ field, value }: { field: Field; value: unknown }) {
       return <span className="num">{`${shortDay(text)}${time}`}</span>;
     }
     case "json":
-      return <span className="muted">Flow definition</span>;
+      return (
+        <span className="muted">
+          {field.config?.schema === "map" ? "Map layout" : "Flow definition"}
+        </span>
+      );
     case "ref":
       return <RefValue id={String(value)} />;
     case "url":
@@ -149,7 +153,11 @@ export function FieldInput({ field, value, onChange, id }: InputProps) {
     case "ref":
       return <RefInput field={field} value={value} onChange={onChange} {...(id ? { id } : {})} />;
     case "json":
-      return (
+      return field.config?.schema === "map" ? (
+        <span id={id} className="muted">
+          Edit on the project's Map tab
+        </span>
+      ) : (
         <a id={id} href="/ai/flows" className="link">
           Edit on the Flows page
         </a>

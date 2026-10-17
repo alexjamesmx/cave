@@ -247,6 +247,35 @@ test("get_project: parts as a tree, open tasks and linked items; refs are checke
   );
 });
 
+test("an agent edits a project's map through update, with the app's checks", async () => {
+  const client = await connect("claude");
+  const created = await call(client, "create", {
+    collection: "projects",
+    title: "Mapped",
+    fields: { status: "active" },
+  });
+  const project = (created.structuredContent as { id: string }).id;
+  const map = {
+    version: 1,
+    positions: { [project]: { x: 0, y: 0 } },
+    notes: [{ id: "n1", text: "Plan first", x: 10, y: 10 }],
+    groups: [],
+    edges: [{ id: "e1", from: project, to: "n1" }],
+  };
+  const ok = await call(client, "update", { id: project, fields: { map } });
+  expect(ok.isError).toBeUndefined();
+  const html = await call(client, "update", {
+    id: project,
+    fields: { map: { ...map, notes: [{ id: "n1", text: "<script>x</script>", x: 0, y: 0 }] } },
+  });
+  expect(textOf(html)).toContain("must be plain text, not HTML");
+  const dangling = await call(client, "update", {
+    id: project,
+    fields: { map: { ...map, edges: [{ id: "e1", from: project, to: "nowhere" }] } },
+  });
+  expect(textOf(dangling)).toContain("joins a node the map doesn't place");
+});
+
 test("the allowlist hides collections everywhere", async () => {
   const client = await connect("money-only");
   const listed = (await call(client, "list_collections")).structuredContent as {

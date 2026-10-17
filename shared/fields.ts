@@ -1,4 +1,5 @@
 import { parseDefinition } from "./flows/registry.ts";
+import { parseMap } from "./project-map.ts";
 import type { Field, SelectOption } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
@@ -51,6 +52,10 @@ function check(field: Field, value: unknown): string | undefined {
       return withTime ? "must be YYYY-MM-DD or YYYY-MM-DDTHH:mm[:ss]" : "must be YYYY-MM-DD";
     }
     case "json": {
+      if (field.config?.schema === "map") {
+        const map = parseMap(value);
+        return map.ok ? undefined : `is not a valid map: ${map.error}`;
+      }
       if (field.config?.schema !== "flow") return "has no known schema";
       const parsed = parseDefinition(value);
       return parsed.ok ? undefined : `is not a valid flow: ${parsed.error}`;

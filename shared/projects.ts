@@ -1,3 +1,4 @@
+import { MAP_FIELD } from "./project-map.ts";
 import type { CollectionData, Field, SelectOption } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
@@ -142,7 +143,7 @@ export const PARTS_COLLECTION: CollectionData = {
   views: [{ id: "table", name: "Table", type: "table", config: {} }],
 };
 
-/** What projects gain; `map` arrives with the Map (part 3). */
+/** What projects gain (M8 parts 2 and 3). */
 export const PROJECT_FIELDS: Field[] = [
   { id: "goal", name: "Goal", type: "text" },
   {
@@ -152,6 +153,7 @@ export const PROJECT_FIELDS: Field[] = [
     options: Object.keys(DEFAULT_TEMPLATES).map((t) => opt(t, "layout-template", "#C77DFF")),
   },
   { id: "pinned", name: "Pinned", type: "checkbox" },
+  MAP_FIELD,
 ];
 
 /** Collections that gain a `project` ref (notes join in M9). */
