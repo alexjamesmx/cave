@@ -72,7 +72,7 @@ export function OptionsEditor({
               className="input"
               aria-label={`Emoji for ${o.value}`}
               defaultValue={o.emoji ?? ""}
-              placeholder="🙂"
+              placeholder="Emoji"
               style={{ width: 56 }}
               onBlur={(e) => {
                 const emoji = e.target.value.trim();

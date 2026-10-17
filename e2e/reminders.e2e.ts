@@ -28,7 +28,7 @@ test("a reminder from Home's form, seen in in the calendar and the Due card; Don
 
   const due = page.getByRole("region", { name: "Due" });
   await expect(due.getByText("Tomorrow")).toBeVisible();
-  await expect(due.getByRole("link", { name: "Test" })).toBeVisible();
+  await expect(due.getByRole("button", { name: "Test", exact: true })).toBeVisible();
 
   // C opens the calendar when no field has focus.
   await page.locator("body").focus();

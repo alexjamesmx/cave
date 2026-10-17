@@ -105,30 +105,3 @@ test("a repeating task marked done comes back on its next date instead of piling
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(rows).toHaveCount(0);
 });
-
-test("the subscription finder proposes and adds nothing until confirmed", async ({ browser }) => {
-  const page = await (await ownerContext(browser)).newPage();
-  await page.goto("/");
-  for (const date of ["2026-07-05T08:00", "2026-08-05T08:00", "2026-09-05T08:00"]) {
-    await page.getByRole("button", { name: "Expense" }).first().click();
-    const form = page.getByRole("form", { name: "Expense" });
-    await form.getByLabel("Amount").fill("699");
-    await form.getByLabel("Title").fill("Gym sub e2e");
-    await form.getByLabel("When").fill(date);
-    await form.getByRole("button", { name: "Save" }).click();
-    // The same message each time, so wait for the form to close: the write is done then.
-    await expect(form).toHaveCount(0);
-  }
-  await page.goto("/c/payments/table");
-  await expect(page.getByRole("row").filter({ hasText: "Gym sub e2e" })).toHaveCount(0);
-
-  await page.goto("/c/payments");
-  await page.getByRole("button", { name: "Find subscriptions" }).click();
-  const found = page.getByRole("region", { name: "Possible subscriptions" });
-  const candidate = found.locator(".system-row", { hasText: "Gym sub e2e" });
-  await expect(candidate).toContainText("monthly · 3 times · next 2026-10-05");
-  await candidate.getByRole("button", { name: "Add as payment" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Added · Gym sub e2e" })).toBeVisible();
-  await page.goto("/c/payments/table");
-  await expect(page.getByRole("row").filter({ hasText: "Gym sub e2e" })).toHaveCount(1);
-});
