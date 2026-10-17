@@ -4,9 +4,10 @@ import type { Change } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useSaver } from "../app/hooks.ts";
 import { ownerGet } from "../app/owner-api.ts";
+import { formatMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
 import { useLive } from "../store/live.ts";
-import { type CollectionDoc, useDoc } from "../store/queries.ts";
+import { type CollectionDoc, useDoc, useItems } from "../store/queries.ts";
 import { FieldInput, FieldValue } from "./fields.tsx";
 import { Icon } from "./icon.tsx";
 import { ReminderActions } from "./ReminderActions.tsx";
@@ -15,6 +16,29 @@ interface Props {
   collection: CollectionDoc;
   id: string;
   onClose(): void;
+}
+
+/** A payment's history: the transactions linked to it, newest first. */
+function PaymentHistory({ id }: { id: string }) {
+  const money = useItems(useCave().local.db, "money");
+  const linked = (money ?? [])
+    .filter((d) => d.data.payment === id)
+    .sort((a, b) => String(b.data.date ?? "").localeCompare(String(a.data.date ?? "")));
+  return (
+    <section aria-label="History" style={{ display: "grid", gap: 4 }}>
+      <span className="k">History · {linked.length}</span>
+      {linked.length === 0 && <span className="muted">No linked transactions yet.</span>}
+      {linked.slice(0, 24).map((d) => (
+        <div key={d.id} style={{ display: "flex", gap: 8 }}>
+          <span className="num muted">{String(d.data.date ?? "undated").slice(0, 10)}</span>
+          <span style={{ flex: 1 }}>{titleOf(d)}</span>
+          <span className="num">
+            {typeof d.data.amount === "number" ? formatMoney(d.data.amount) : "—"}
+          </span>
+        </div>
+      ))}
+    </section>
+  );
 }
 
 /** Title, fields and Markdown body of one item, each saved when it loses focus. */
@@ -77,6 +101,7 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
         </p>
       )}
       {collection.id === "reminders" && <ReminderActions doc={doc} />}
+      {collection.id === "payments" && <PaymentHistory id={id} />}
       <dl className="field-grid">
         {collection.data.fields.map((field) => (
           <div key={field.id} style={{ display: "contents" }}>

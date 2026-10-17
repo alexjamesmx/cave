@@ -98,7 +98,7 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
           <Icon name="plus" size={15} /> New entry
         </button>
         <a className="btn" href="/money/review">
-          <Icon name="list-checks" size={15} /> Review categories
+          <Icon name="list-checks" size={15} /> Review
         </a>
       </div>
       {adding && <MoneyForm onSaved={() => setAdding(false)} />}

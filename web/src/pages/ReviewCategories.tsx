@@ -8,6 +8,7 @@ import { ownerGet, ownerPost } from "../app/owner-api.ts";
 import { collectionPath } from "../app/router.ts";
 import { formatMoney } from "../logic/format.ts";
 import { useCollections, useItems } from "../store/queries.ts";
+import { SubscriptionReview } from "../ui/SubscriptionReview.tsx";
 
 interface Batch {
   id: string;
@@ -133,14 +134,15 @@ export function ReviewCategories() {
   return (
     <>
       <header style={{ display: "grid", gap: 6 }}>
-        <h2 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>Review categories</h2>
+        <h2 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>Review</h2>
         <p className="muted" style={{ margin: 0 }}>
-          Proposals from <span className="num">bun run money-review</span>. Nothing changes until
-          you approve it; each approval has one Undo.{" "}
+          Subscriptions found in your history, and category proposals from{" "}
+          <span className="num">bun run money-review</span>. Nothing changes until you approve it.{" "}
           <a href={collectionPath("money")}>Back to Money</a>
         </p>
       </header>
-      {review === "offline" && <p className="muted">The review needs the server.</p>}
+      <SubscriptionReview />
+      {review === "offline" && <p className="muted">The category review needs the server.</p>}
       <p role="status" className="muted" style={{ margin: 0, minHeight: 20 }}>
         {message}
       </p>

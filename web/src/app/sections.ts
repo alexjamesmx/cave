@@ -93,7 +93,7 @@ export const SECTIONS: Section[] = [
         description: "What you own minus what you owe.",
       },
       // Not a tab: Transactions links to it when the review has work.
-      page("review", "Review categories", "review", true),
+      page("review", "Review", "review", true),
     ],
     owns: ["money", "payments", "wealth"],
   },

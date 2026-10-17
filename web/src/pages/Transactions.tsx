@@ -3,6 +3,7 @@ import { kindOf, optionText } from "../../../shared/categories.ts";
 import { dayOf } from "../../../shared/dates.ts";
 import { undatedSummary } from "../../../shared/money.ts";
 import type { Field } from "../../../shared/schema.ts";
+import { dismissedOf, subscriptionProposals } from "../../../shared/subscription-finder.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { ownerGet } from "../app/owner-api.ts";
@@ -10,7 +11,7 @@ import { setSearch, useSearch } from "../app/router.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
-import { useCollections, useItems } from "../store/queries.ts";
+import { useCollections, useDoc, useItems } from "../store/queries.ts";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { MoneyForm } from "../ui/MoneyForm.tsx";
@@ -77,6 +78,8 @@ export function Transactions() {
   const { db } = useCave().local;
   const collections = useCollections(db);
   const items = useItems(db, "money");
+  const payments = useItems(db, "payments");
+  const settings = useDoc(db, "settings");
   const search = useSearch();
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string>();
@@ -110,6 +113,17 @@ export function Transactions() {
       .sort((a, b) => String(b.data.date ?? "").localeCompare(String(a.data.date ?? "")));
   }, [items, text, categoryFilter, accountFilter]);
 
+  const subscriptions = useMemo(
+    () =>
+      items && payments
+        ? subscriptionProposals(items, payments, dismissedOf(settings?.data)).reduce(
+            (n, p) => n + p.charges.length,
+            0,
+          )
+        : 0,
+    [items, payments, settings],
+  );
+  const pending = (toReview ?? 0) + subscriptions;
   const stored = collections?.find((c) => c.id === "money");
   if (!stored || !items) return null;
   const collection = withActiveFields(stored);
@@ -144,10 +158,10 @@ export function Transactions() {
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      {toReview !== undefined && toReview > 0 && (
+      {pending > 0 && (
         <p className="panel banner" style={{ margin: 0 }}>
           <span>
-            {toReview} transaction{toReview === 1 ? "" : "s"} to review
+            {pending} transaction{pending === 1 ? "" : "s"} to review
           </span>
           <a className="btn" href="/money/review">
             Review

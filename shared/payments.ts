@@ -157,3 +157,22 @@ export function missingForPayment(p: {
     ...(p.account.trim() ? [] : ["account"]),
   ];
 }
+
+/** A transaction's subscription: past charges stay money, linked to their payment (M7c). */
+export const MONEY_PAYMENT_REF: Field = {
+  id: "payment",
+  name: "Payment",
+  type: "ref",
+  config: { collection: PAYMENTS },
+};
+
+/** Seed migration 11: money gains the `payment` ref when it hasn't one. Items are untouched. */
+export function paymentLinkMigration(
+  get: (id: string) => { kind: string; data: Record<string, unknown> } | undefined,
+): { id: string; kind: "collection"; data: Record<string, unknown> }[] {
+  const money = get("money");
+  const fields = money?.kind === "collection" ? money.data.fields : undefined;
+  if (!Array.isArray(fields) || money?.data._deleted === true) return [];
+  if ((fields as Field[]).some((f) => f.id === MONEY_PAYMENT_REF.id)) return [];
+  return [{ id: "money", kind: "collection", data: { fields: [...fields, MONEY_PAYMENT_REF] } }];
+}
