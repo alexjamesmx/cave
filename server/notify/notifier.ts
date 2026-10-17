@@ -32,8 +32,16 @@ export interface NotifierOptions {
   now: () => number;
   /** The app's https origin, for links in messages. */
   origin: string;
+  /**
+   * `false` outside `CAVE_ENV=production`: nothing reaches a channel; each send it would have
+   * made is a `notification_log` row with result `outbox`, which `/system` lists.
+   */
+  deliver?: boolean;
   log?: (line: string) => void;
 }
+
+/** The result a send gets instead of going out when the server doesn't deliver. */
+export const OUTBOX = "outbox";
 
 export interface Notifier {
   /** Every registered channel and what it needs, for Settings → Integrations. */
@@ -48,6 +56,7 @@ export function createNotifier({
   db,
   now,
   origin,
+  deliver = true,
   log = console.log,
 }: NotifierOptions): Notifier {
   const byId = new Map(channels.map((c) => [c.id, c]));
@@ -55,7 +64,17 @@ export function createNotifier({
     "INSERT INTO notification_log (key, channel, sent_at, result) VALUES (?, ?, ?, ?)",
   );
   return {
-    statuses: () => channels.map((c) => ({ id: c.id, label: c.label, status: c.status() })),
+    statuses: () =>
+      channels.map((c) => {
+        const status = c.status();
+        return {
+          id: c.id,
+          label: c.label,
+          status: deliver
+            ? status
+            : { ready: status.ready, summary: `outbox only, not production · ${status.summary}` },
+        };
+      }),
     async notify(n, only, target) {
       const config = settings();
       const total: SendResult = { delivered: 0, failed: 0 };
@@ -64,7 +83,11 @@ export function createNotifier({
         if (!channel) continue;
         const status = channel.status();
         let result: string;
-        if (!status.ready) {
+        if (!deliver) {
+          // Counted as delivered so callers behave as in production: a reminder sent once.
+          total.delivered += 1;
+          result = OUTBOX;
+        } else if (!status.ready) {
           result = `skipped: ${status.summary}`;
         } else {
           try {

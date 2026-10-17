@@ -72,7 +72,7 @@ esac
 exit 0
 FAKE
 chmod +x "$tmp/fakes/"* "$tmp/bin/bun"
-printf 'PORT=3000\nCAVE_TOKEN=%s\nBACKUP_DIR=%s\n' "$TOKEN" "$tmp/backups" >"$tmp/cave.env"
+printf 'CAVE_ENV=production\nPORT=3000\nCAVE_TOKEN=%s\nBACKUP_DIR=%s\n' "$TOKEN" "$tmp/backups" >"$tmp/cave.env"
 
 # Origin: every commit carries the release script, as main does.
 git init --quiet -b main "$tmp/origin"
@@ -159,6 +159,20 @@ check "a failed backup restarts nothing" "$(count 'systemctl')" "0"
 check "a failed backup leaves current" "$(target current)" "$sha2"
 check "a failed backup is recorded" "$(field result)/$(field step)" "failed/backup"
 grep -q "disk full" "$tmp/b.out" && ok "a failed backup shows the CLI's error" || bad "a failed backup shows the CLI's error"
+
+# A server env file without CAVE_ENV=production: the release would run the live Cave as dev.
+shaenv=$(commit)
+fresh
+cp "$tmp/cave.env" "$tmp/cave.env.good"
+sed -i '/^CAVE_ENV=/d' "$tmp/cave.env"
+if run auto >"$tmp/e.out" 2>&1; then bad "a release without CAVE_ENV=production must fail"; else ok "a release without CAVE_ENV=production fails"; fi
+check "it holds the commit" "$(held)" "$shaenv"
+check "it builds nothing" "$(count 'bun install')" "0"
+check "it restarts nothing, so the live release stays up" "$(count 'systemctl')" "0"
+check "it leaves current" "$(target current)" "$sha2"
+check "it is recorded at the env step" "$(field result)/$(field step)" "failed/env"
+grep -q "must set CAVE_ENV=production" "$tmp/e.out" && ok "it says why" || bad "it says why"
+mv "$tmp/cave.env.good" "$tmp/cave.env"
 
 sha3=$(commit)
 fresh

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Route } from "../app/router.ts";
 import { SECTIONS } from "../app/sections.ts";
 import { Dock } from "./Dock.tsx";
+import { EnvBadge } from "./EnvBadge.tsx";
 import { Icon } from "./icon.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
@@ -50,6 +51,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </div>
       </main>
       <Dock />
+      <EnvBadge />
     </div>
   );
 }

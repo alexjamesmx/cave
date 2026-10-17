@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { notificationSettings } from "../../shared/notifications.ts";
 import { zoneOf } from "../../shared/reminders.ts";
 import type { VapidKeys } from "../config.ts";
+import { type CaveEnv, delivers } from "../env.ts";
 import { approvalRef, createApprovals } from "../flows/approvals.ts";
 import { createFlowEngine } from "../flows/engine.ts";
 import type { Job } from "../jobs/scheduler.ts";
@@ -26,6 +27,8 @@ export interface NotificationSystemOptions {
   telegramToken: string | undefined;
   discordWebhook: string | undefined;
   production: boolean;
+  /** Only `production` lets anything leave the Cave. */
+  env: CaveEnv;
   fetch?: typeof fetch;
   log?: (line: string) => void;
 }
@@ -37,7 +40,17 @@ export interface NotificationSystemOptions {
  */
 export function createNotificationSystem(o: NotificationSystemOptions) {
   const log = o.log ?? console.log;
-  const fetchFn = o.fetch ?? fetch;
+  const deliver = delivers(o.env);
+  // Outside production the notifier never calls a channel and Telegram gets no API. Any other
+  // way a channel might reach the network fails here instead of delivering.
+  const fetchFn: typeof fetch = deliver
+    ? (o.fetch ?? fetch)
+    : Object.assign(
+        async () => {
+          throw new Error(`CAVE_ENV=${o.env}: nothing leaves the Cave`);
+        },
+        { preconnect: () => {} },
+      );
   const settingsDoc = () => o.store.get("settings")?.data;
   const settings = () => notificationSettings(settingsDoc());
   const zone = () => zoneOf(settingsDoc(), Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -63,9 +76,10 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
   // Telegram asks for approvals before the notifier exists; it only calls them on a tap.
   let approvals: Approvals | undefined;
   const telegram = createTelegram({
-    api: o.telegramToken
-      ? createTelegramApi({ token: o.telegramToken, now: o.now, fetch: fetchFn })
-      : undefined,
+    api:
+      o.telegramToken && deliver
+        ? createTelegramApi({ token: o.telegramToken, now: o.now, fetch: fetchFn })
+        : undefined,
     state,
     store: o.store,
     writer: telegramWriter,
@@ -84,6 +98,7 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     db: o.db,
     now: o.now,
     origin: o.origin,
+    deliver,
     log,
   });
   approvals = createApprovals({ store: o.store, notifier, writer: telegramWriter, log });

@@ -7,6 +7,7 @@ import { forgetDevice, lockDevice } from "../app/lock.ts";
 import { ownerDownload, ownerGet } from "../app/owner-api.ts";
 import { ownerOf } from "../app/sections.ts";
 import { deployLine } from "../logic/deploy-line.ts";
+import { offsiteLines } from "../logic/offsite-line.ts";
 import { useCollections, useDoc } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
 import { DeviceNotifications, NotificationChannels } from "../ui/NotificationSettings.tsx";
@@ -181,6 +182,10 @@ function ServerStatus() {
           <dd style={{ margin: 0 }}>
             {status.lastBackupAt ? when(status.lastBackupAt) : "None yet"}
           </dd>
+          <dt className="muted">Off-box backup</dt>
+          <dd style={{ margin: 0 }}>{offsiteLines(status.offsite, when).backup}</dd>
+          <dt className="muted">Off-box check</dt>
+          <dd style={{ margin: 0 }}>{offsiteLines(status.offsite, when).check}</dd>
           <dt className="muted">Database id</dt>
           <dd className="num" style={{ margin: 0, overflowWrap: "anywhere" }}>
             {status.dbId}

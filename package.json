@@ -15,6 +15,7 @@
     "agent": "bun run server/agent-cli.ts",
     "backup": "bun run server/backup-cli.ts",
     "restore": "bun run server/restore-cli.ts",
+    "verify-backup": "bun run server/verify-backup-cli.ts",
     "export": "bun run server/export-cli.ts",
     "deploy": "bun run server/ops/deploy-cli.ts",
     "pull-backups": "bun run server/ops/pull-backups-cli.ts",

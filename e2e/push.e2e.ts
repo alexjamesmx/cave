@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { expect, test } from "@playwright/test";
 import { fillReminder, ownerContext } from "./helpers.ts";
 
-// A local stand-in for a push service: it records what the Cave server sends it.
+// A local stand-in for a push service: under CAVE_ENV=test it must receive nothing.
 function pushService() {
   const received: { headers: IncomingHttpHeaders; bytes: number }[] = [];
   const server = createServer((req, res) => {
@@ -24,7 +24,7 @@ function pushService() {
   );
 }
 
-test("a reminder due in a minute reaches the device's push endpoint, encrypted and signed", async ({
+test("CAVE_ENV=test: a reminder due in a minute lands in the outbox and never reaches the push endpoint", async ({
   browser,
 }) => {
   // The sweep runs every 30 seconds, so delivery can take up to a minute and a half.
@@ -77,17 +77,36 @@ test("a reminder due in a minute reaches the device's push endpoint, encrypted a
       page.getByRole("status").filter({ hasText: "Saved · Reminder · Push check" }),
     ).toBeVisible();
 
+    // The outbox row is written where a send would happen: same sweep, same key.
+    const outbox = () =>
+      page.evaluate(async () => {
+        const res = await fetch("/api/system", {
+          headers: { authorization: `Bearer ${localStorage.getItem("cave.token")}` },
+        });
+        const report = (await res.json()) as {
+          env: string;
+          notifications: { log: { channel: string; key: string; result: string }[] };
+        };
+        return { env: report.env, rows: report.notifications.log };
+      });
     await expect
-      .poll(() => service.received.length, { timeout: 120_000, intervals: [2_000] })
+      .poll(
+        async () =>
+          (await outbox()).rows.filter(
+            (r) =>
+              r.channel === "webpush" && r.result === "outbox" && r.key.startsWith("reminder:"),
+          ).length,
+        { timeout: 120_000, intervals: [2_000] },
+      )
       .toBe(1);
-    const [request] = service.received;
-    expect(request?.headers.authorization).toMatch(/^vapid t=[\w-]+\.[\w-]+\.[\w-]+, k=[\w-]+$/);
-    expect(request?.headers["content-encoding"]).toBe("aes128gcm");
-    expect(request?.headers.ttl).toBe("21600");
-    expect(request?.bytes).toBeGreaterThan(86);
-    // One reminder, one notification: the next sweeps send nothing more.
+    expect((await outbox()).env).toBe("test");
+    // One reminder, one outbox row, and nothing ever reached the push service.
     await page.waitForTimeout(35_000);
-    expect(service.received).toHaveLength(1);
+    expect(service.received).toHaveLength(0);
+
+    await page.goto("/settings/system/notifications");
+    await expect(page.getByText("TEST", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Dev outbox" })).toContainText("webpush");
   } finally {
     service.close();
   }

@@ -1,0 +1,13 @@
+# /etc/systemd/system/cave-offsite-check.timer on the VPS: the weekly restore test, after
+# Sunday's backup.
+[Unit]
+Description=Weekly check of the off-box backups
+
+[Timer]
+OnCalendar=Sun *-*-* 06:15:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+Unit=cave-offsite-check.service
+
+[Install]
+WantedBy=timers.target

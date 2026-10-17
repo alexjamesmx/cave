@@ -3,6 +3,8 @@ import type { AgentCall, CallLog } from "./agent-calls.ts";
 import type { AgentRegistry } from "./agents.ts";
 import { newestBackupAt } from "./backup.ts";
 import { type DeployStatus, readDeployStatus } from "./deploy-status.ts";
+import type { CaveEnv } from "./env.ts";
+import { type OffsiteStatus, readOffsiteStatus } from "./offsite-status.ts";
 import type { Store } from "./store.ts";
 
 export const ACTIVITY_LIMIT = 50;
@@ -44,6 +46,7 @@ export function activityHandler(store: Store, calls: CallLog) {
 }
 
 export interface StatusOptions {
+  env: CaveEnv;
   version: string;
   /** The deployed git commit; `null` when the server does not run from a git checkout. */
   commit: string | null;
@@ -52,9 +55,13 @@ export interface StatusOptions {
   newVaultNotes: () => number | null;
   /** `status.json` written by `cave-deploy`, read on every request; unset on a laptop. */
   deployStatusPath?: string;
+  /** `status.json` written by `cave-offsite`, read on every request; unset off the VPS. */
+  offsiteStatusPath?: string;
 }
 
 export interface Status {
+  /** `CAVE_ENV`: the app shows a DEV or TEST badge for anything but `production`. */
+  env: CaveEnv;
   version: string;
   commit: string | null;
   docs: number;
@@ -63,6 +70,8 @@ export interface Status {
   newVaultNotes: number | null;
   /** The last deploy on the VPS; `null` without one or when its file is unreadable. */
   deploy: DeployStatus | null;
+  /** The off-box backup and its weekly check; `null` when not set up. */
+  offsite: OffsiteStatus | null;
 }
 
 /** `GET /api/status`: what Settings shows about the server. */
@@ -70,6 +79,7 @@ export function statusHandler(store: Store, options: StatusOptions) {
   return (): Response => {
     const last = newestBackupAt(options.backupDir);
     const status: Status = {
+      env: options.env,
       version: options.version,
       commit: options.commit,
       docs: store.docCount(),
@@ -77,6 +87,7 @@ export function statusHandler(store: Store, options: StatusOptions) {
       lastBackupAt: last === undefined ? null : new Date(last).toISOString(),
       newVaultNotes: options.newVaultNotes(),
       deploy: readDeployStatus(options.deployStatusPath),
+      offsite: readOffsiteStatus(options.offsiteStatusPath),
     };
     return Response.json(status);
   };

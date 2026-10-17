@@ -97,6 +97,21 @@ beforeAll(async () => {
     "INSERT INTO flow_runs (key, flow_id, started_at, result, log) VALUES ('k1', 'flow-rent', ?, 'ok', '[]'), ('k2', 'flow-rent', ?, 'stopped', '[]')",
     [NOW - 9000, NOW - 3000],
   );
+  const offsitePath = join(dir, "offsite.json");
+  writeFileSync(
+    offsitePath,
+    JSON.stringify({
+      backup: {
+        at: new Date(NOW - 7_200_000).toISOString(),
+        ok: true,
+        snapshot: "01ebed8a",
+        docs: 3,
+        file: "cave-2026-10-16T0300.db",
+        error: "",
+      },
+      check: null,
+    }),
+  );
   const statusPath = join(dir, "status.json");
   writeFileSync(
     statusPath,
@@ -117,6 +132,7 @@ beforeAll(async () => {
     telegramToken: TELEGRAM,
     discordWebhook: DISCORD,
     production: true,
+    env: "production",
     fetch: (async () => Response.json({ ok: true, result: [] })) as unknown as typeof fetch,
     log: () => {},
   });
@@ -134,11 +150,13 @@ beforeAll(async () => {
     now: () => NOW,
     agents: { registry, calls, vaultPath: undefined },
     system: createSystemReport({
+      env: "production",
       db,
       version: "0.1.0",
       commit: SHA,
       backupDir: dir,
       deployStatusPath: statusPath,
+      offsiteStatusPath: offsitePath,
       jobs: () => scheduler.status(),
       notifier: system.notifier,
       agents: registry,
@@ -163,6 +181,8 @@ test("the report has jobs, runs, deploy, devices, agents, flows and the notifica
   expect(report.commit).toBe(SHA);
   expect(report.deploy?.result).toBe("deployed");
   expect(report.deployNextAt).toBe(NOW - 30_000 + 2 * 60_000);
+  expect(report.env).toBe("production");
+  expect(report.offsite).toMatchObject({ backup: { ok: true, snapshot: "01ebed8a" }, check: null });
   expect(report.jobs.map((j) => j.id)).toEqual(["reminders", "flows", "telegram"]);
   expect(report.jobs.every((j) => j.lastRun === NOW)).toBe(true);
   expect(report.jobRuns[0]).toMatchObject({ job: "reminders", summary: "1 sent, 0 missed" });

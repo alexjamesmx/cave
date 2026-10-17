@@ -126,7 +126,11 @@ flowchart LR
   VB -- "bun run pull-backups<br/>(scp, verify, keep)" --> LB[("Laptop<br/>data/vps-backups")]
   LB -- "bun run restore" --> DEV[("Local dev copy<br/>data/dev.db")]
   VB -- "bun run restore (on the VPS)" --> S
+  VB -- "cave-offsite backup, daily<br/>restic, encrypted" --> R2[("Cloudflare R2<br/>30 daily + 24 monthly snapshots")]
+  R2 -- "cave-offsite check, weekly<br/>restore and verify" --> VB
 ```
+
+**Three copies.** The VPS's own backups, the encrypted copy in R2 (`/usr/local/sbin/cave-offsite`, from `deploy/cave-offsite`; `docs/hosting.md` step 14), and the laptop's pulled backups. `/system` and Settings show the last off-box backup and check, and the Cave notifies once when the copy is over 48 hours old or a check failed.
 
 **Restore recovers a broken server; it doesn't undo edits.** After a restore, devices push back anything newer than the backup. To reverse a change, use undo on the Agents page or the item's history.
 
@@ -134,7 +138,10 @@ flowchart LR
 
 The local server and production never share data:
 - the local app runs at `http://127.0.0.1:3000`, a different origin, so its IndexedDB is separate;
-- the local database is a separate file.
+- the local database is a separate file;
+- it runs as `CAVE_ENV=dev` unless told otherwise, so a copy of real data sends no push, Telegram or Discord message: sends go to the Dev outbox in `/system`, and a `DEV` badge shows. Only the VPS sets `CAVE_ENV=production`.
+
+**Fake data instead** (and the only data a cloud session ever has): `bun run dev:seed` seeds `data/seed.db` and serves it, with the token `seed`.
 
 **One-time setup on the laptop.** Add to `.env`:
 ```

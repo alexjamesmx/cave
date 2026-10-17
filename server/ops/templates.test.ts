@@ -173,6 +173,56 @@ test("the deploy units run the installed wrapper as root every 2 minutes after t
   }
 });
 
+test("the off-box units run cave-offsite as cave, hardened, reading only the backups", () => {
+  for (const [name, command] of [
+    ["cave-offsite.service", "backup"],
+    ["cave-offsite-check.service", "check"],
+  ] as const) {
+    const unit = template(name);
+    for (const line of [
+      "Type=oneshot",
+      "User=cave",
+      "EnvironmentFile=/etc/cave/offsite.env",
+      `ExecStart=/usr/local/sbin/cave-offsite ${command}`,
+      "NoNewPrivileges=true",
+      "PrivateTmp=true",
+      "ProtectSystem=strict",
+      "ProtectHome=true",
+      "ReadOnlyPaths=/var/lib/cave/backups",
+      "ReadWritePaths=/var/lib/cave-offsite /var/cache/cave-offsite",
+    ])
+      expect(unit).toContain(line);
+  }
+  expect(template("cave-offsite.timer")).toContain("Unit=cave-offsite.service");
+  expect(template("cave-offsite-check.timer")).toContain("Unit=cave-offsite-check.service");
+  for (const timer of ["cave-offsite.timer", "cave-offsite-check.timer"])
+    expect(template(timer)).toContain("Persistent=true");
+});
+
+test("the off-box env template holds no secret and points restic at R2 with region auto", () => {
+  const env = template("offsite.env.example");
+  for (const line of [
+    "RESTIC_REPOSITORY=s3:https://<account>.r2.cloudflarestorage.com/cave-backups",
+    "AWS_ACCESS_KEY_ID=\n",
+    "AWS_SECRET_ACCESS_KEY=\n",
+    "AWS_DEFAULT_REGION=auto",
+    "RESTIC_PASSWORD_FILE=/etc/cave/offsite.key",
+  ])
+    expect(env).toContain(line);
+  const script = template("cave-offsite");
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: a shell default, not a JS template
+  expect(script).toContain('source_dir="${CAVE_OFFSITE_SOURCE:-/var/lib/cave/backups}"');
+  expect(script).toContain("--exclude '*.failed' --exclude '*.part' --tag cave");
+  expect(script).toContain("--keep-daily 30 --keep-monthly 24 --prune");
+  expect(script).toContain("--read-data-subset=10%");
+});
+
+test("the server env template sets CAVE_ENV=production and the off-box status file", () => {
+  const env = template("cave.env.example");
+  expect(env).toMatch(/^CAVE_ENV=production$/m);
+  expect(env).toMatch(/^CAVE_OFFSITE_STATUS=\/var\/lib\/cave-offsite\/status\.json$/m);
+});
+
 test("Claude Code settings: setup's template is the committed file, which turns the commit hook on", () => {
   const read = (path: string) => readFileSync(join(import.meta.dir, "../..", path), "utf8");
   const committed = read(".claude/settings.json");

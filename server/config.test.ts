@@ -8,6 +8,7 @@ describe("resolveConfig", () => {
     expect(resolveConfig({})).toEqual({
       ok: true,
       value: {
+        env: "dev",
         hostname: "127.0.0.1",
         port: 3000,
         token: undefined,
@@ -17,11 +18,25 @@ describe("resolveConfig", () => {
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
         deployStatusPath: undefined,
+        offsiteStatusPath: undefined,
         push: undefined,
         telegramToken: undefined,
         discordWebhook: undefined,
       },
     });
+  });
+
+  test("CAVE_ENV is production, dev or test; unset is dev; anything else refuses to start", () => {
+    for (const env of ["production", "dev", "test"] as const) {
+      const result = resolveConfig({ CAVE_ENV: env });
+      expect(result.ok && result.value.env).toBe(env);
+    }
+    expect(resolveConfig({ CAVE_ENV: "" }).ok && resolveConfig({}).ok).toBe(true);
+    for (const bad of ["prod", "Production", "development", " production"]) {
+      const result = resolveConfig({ CAVE_ENV: bad });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toContain("CAVE_ENV must be production, dev or test");
+    }
   });
 
   test("loopback hosts need no token", () => {
@@ -48,6 +63,7 @@ describe("resolveConfig", () => {
     expect(result).toEqual({
       ok: true,
       value: {
+        env: "dev",
         hostname: "0.0.0.0",
         port: 8080,
         token: "t",
@@ -57,6 +73,7 @@ describe("resolveConfig", () => {
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
         deployStatusPath: undefined,
+        offsiteStatusPath: undefined,
         push: undefined,
         telegramToken: undefined,
         discordWebhook: undefined,

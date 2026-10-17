@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import type { OffsiteStatus } from "../../../server/offsite-status.ts";
 import { parseDefinition } from "../../../shared/flows/registry.ts";
 import { nextSlot } from "../../../shared/flows/schedule.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
@@ -7,6 +8,7 @@ import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone } from "../app/hooks.ts";
 import { ownerGet } from "../app/owner-api.ts";
 import { collectionPath, flowPath } from "../app/router.ts";
+import { offsiteLines } from "../logic/offsite-line.ts";
 import {
   collectionStats,
   flowEntries,
@@ -26,6 +28,7 @@ interface SystemReport {
   deploy: { sha: string; result: string; step?: string; at: string; running: string } | null;
   deployNextAt: number | null;
   lastBackupAt: number | null;
+  offsite: OffsiteStatus | null;
   integrations: { id: string; label: string; ready: boolean; summary: string }[];
   jobs: {
     id: string;
@@ -44,6 +47,8 @@ interface SystemReport {
     summary: string;
   }[];
   flowRuns: { flowId: string; lastAt: number; result: string }[];
+  /** `CAVE_ENV`; anything but production sends to the outbox. */
+  env: string;
   notifications: {
     log: { at: number; channel: string; key: string; result: string }[];
     missed: number;
@@ -72,6 +77,7 @@ type Tab = (typeof TABS)[number][0];
 
 const when = (ms: number | null | undefined) =>
   ms ? new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
+const isoWhen = (iso: string) => when(Date.parse(iso));
 const short = (sha: string | null | undefined) => (sha ? sha.slice(0, 7) : "—");
 
 export function System({ tab }: { tab: string | undefined }) {
@@ -177,6 +183,14 @@ function Overview({ server }: { server: Server }) {
             <Row>
               <span>Last backup</span>
               <span className="num">{when(server.lastBackupAt)}</span>
+            </Row>
+            <Row>
+              <span>Off-box backup</span>
+              <span className="num">{offsiteLines(server.offsite, isoWhen).backup}</span>
+            </Row>
+            <Row>
+              <span>Off-box check</span>
+              <span className="num">{offsiteLines(server.offsite, isoWhen).check}</span>
             </Row>
           </>
         )}
@@ -367,6 +381,31 @@ function Agents({ server }: { server: Server }) {
 function Notifications({ server }: { server: Server }) {
   if (server === "offline") return <Offline what="Notifications" />;
   if (!server) return null;
+  const outbox = server.notifications.log.filter((n) => n.result === "outbox");
+  return (
+    <>
+      {server.env !== "production" && (
+        <Panel title="Dev outbox">
+          <span className="muted">
+            CAVE_ENV={server.env}: these would have gone out in production; nothing was sent
+          </span>
+          {outbox.length === 0 && <span className="muted">Nothing in the outbox yet.</span>}
+          {outbox.map((n, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: one send can log the same key per channel
+            <Row key={`${n.key}-${n.channel}-${i}`}>
+              <span className="num muted">{when(n.at)}</span>
+              <span>{n.channel}</span>
+              <span className="num">{n.key}</span>
+            </Row>
+          ))}
+        </Panel>
+      )}
+      <NotificationLog server={server} />
+    </>
+  );
+}
+
+function NotificationLog({ server }: { server: Exclude<Server, "offline" | undefined> }) {
   return (
     <Panel title="Notification log">
       <span className="muted">

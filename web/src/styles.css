@@ -1373,3 +1373,22 @@ a.btn {
 .project-card:hover {
   border-color: var(--lime);
 }
+
+/* CAVE_ENV other than production (M6b): always visible, never in the way. */
+.env-badge {
+  position: fixed;
+  /* Centred: the phone's top bar has the brand on the left and the sync badge on the right. */
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: var(--gold);
+  color: var(--bg);
+  pointer-events: none;
+}

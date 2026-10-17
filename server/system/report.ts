@@ -2,8 +2,10 @@ import type { Database } from "bun:sqlite";
 import type { AgentRegistry } from "../agents.ts";
 import { newestBackupAt } from "../backup.ts";
 import { type DeployStatus, readDeployStatus } from "../deploy-status.ts";
+import type { CaveEnv } from "../env.ts";
 import type { JobState } from "../jobs/scheduler.ts";
 import type { Notifier } from "../notify/notifier.ts";
+import { type OffsiteStatus, readOffsiteStatus } from "../offsite-status.ts";
 
 export const DEVICE_DAYS = 30;
 export const AGENT_DAYS = 7;
@@ -18,12 +20,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * token, key, webhook URL, push endpoint, chat id or notification title.
  */
 export interface SystemReport {
+  /** Anything but `production` sends to the outbox: `notifications.log` rows with result `outbox`. */
+  env: CaveEnv;
   version: string;
   commit: string | null;
   deploy: DeployStatus | null;
   /** The deploy timer's next check, approximate; `null` off the VPS. */
   deployNextAt: number | null;
   lastBackupAt: number | null;
+  /** `cave-offsite`'s last backup and check; `null` when not set up. */
+  offsite: OffsiteStatus | null;
   integrations: { id: string; label: string; ready: boolean; summary: string }[];
   jobs: JobState[];
   jobRuns: {
@@ -50,11 +56,13 @@ export interface SystemReport {
 }
 
 export interface ReportDeps {
+  env: CaveEnv;
   db: Database;
   version: string;
   commit: string | null;
   backupDir: string;
   deployStatusPath: string | undefined;
+  offsiteStatusPath?: string | undefined;
   jobs: () => JobState[];
   notifier: Notifier;
   agents: AgentRegistry;
@@ -118,11 +126,13 @@ export function createSystemReport(d: ReportDeps) {
     const last = new Map(lastCalls.all().map((r) => [r.agent, r.at]));
     const made = new Map(created.all().map((r) => [r.actor.slice("agent:".length), r.n]));
     return {
+      env: d.env,
       version: d.version,
       commit: d.commit,
       deploy,
       deployNextAt: deployAt === undefined ? null : Math.max(deployAt + DEPLOY_EVERY_MS, now),
       lastBackupAt: backup ?? null,
+      offsite: readOffsiteStatus(d.offsiteStatusPath),
       integrations: d.notifier.statuses().map((s) => ({
         id: s.id,
         label: s.label,
