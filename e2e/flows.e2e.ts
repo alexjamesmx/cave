@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { addMoney, offOriginRequests, ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("a copy of Salary → save with a 100 threshold creates the task for an income of 200; Undo removes it", async ({
   browser,

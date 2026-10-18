@@ -37,6 +37,11 @@ const VAULT: Record<string, string> = {
   ]),
   "System/money.md": "---\namount: 5\n---\n",
   ".obsidian/workspace.md": "---\na: 1\n---\n",
+  ".backup/old/Note.md": "Kept by Obsidian Sync",
+  "System/templates/Daily.md": "Template",
+  "Home.md": "---\ncreated: 2026-01-02T08:00\ntags: [home]\n---\nWelcome. See [[Plan]].",
+  "Notes/Ideas/Plan.md": "---\nmood: calm\nlinks: 3\n---\nThe plan.",
+  "Notes/Empty.md": "---\ntags: []\n---\n",
   "✅ ToDos/Items/Old.md": "---\nstatus: todo\n---\n",
   "Tasks/Bad yaml.md": "---\nstatus: [todo\n---\n",
 };
@@ -77,6 +82,8 @@ test("imports each source into its collection and skips everything else", async 
     journal: 1,
     leetcode: 1,
     projects: 1,
+    // Every other Markdown file, outside dot folders, templates and empty ones.
+    notes: 6,
   });
   expect(report.ledgerFiles).toBe(3);
   expect(report.ledgerDocs).toBe(3);
@@ -89,6 +96,33 @@ test("imports each source into its collection and skips everything else", async 
   expect(tacos?.data).not.toHaveProperty("bucket");
   expect(store.get(importId("Tasks/Pay rent.md"))?.data._created).toBe("2026-10-01T15:30:00.000Z");
   expect(store.get(importId("Projects/LeetCode/0001 Two Sum.md"))?.data.status).toBe("queued");
+});
+
+test("free notes: title from the file, folder from its directory, extra frontmatter kept in the body", async () => {
+  const report = await importVault({ root, store, now: NOW });
+  const notes = store
+    .itemsOf("notes")
+    .map((n) => [n.data.folder, n.data._title])
+    .sort();
+  expect(notes).toEqual([
+    ["", "Home"],
+    ["Journal/Templates", "Day"],
+    ["Money/Wealth/Archive", "Old"],
+    ["Notes/Ideas", "Plan"],
+    ["System", "money"],
+    ["\u2705 ToDos/Items", "Old"],
+  ]);
+  expect(store.get(importId("Home.md"))?.data).toMatchObject({
+    _body: "Welcome. See [[Plan]].",
+    source: "import",
+    _created: "2026-01-02T14:00:00.000Z",
+  });
+  expect(store.get(importId("Notes/Ideas/Plan.md"))?.data._body).toBe(
+    "- mood: calm\n- links: 3\n\nThe plan.",
+  );
+  expect(report.notesWithExtraKeys).toContain("Notes/Ideas/Plan.md");
+  expect(report.notesWithExtraKeys).not.toContain("Home.md");
+  expect(report.emptyNotes).toBe(1);
 });
 
 test("an invalid value is left out and reported; the rest of the note is kept", async () => {
@@ -134,7 +168,7 @@ test("add-only: a second run adds nothing and keeps owner edits", async () => {
 
   const again = await importVault({ root, store, now: NOW + 2 });
   expect(again.added).toEqual({});
-  expect(again.skipped).toBe(9);
+  expect(again.skipped).toBe(15);
   expect(store.get(id)?.data.status).toBe("done");
   expect(store.changeLog()).toHaveLength(logLength);
 });

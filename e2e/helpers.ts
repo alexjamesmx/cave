@@ -1,4 +1,8 @@
+import { spawnSync } from "node:child_process";
+import { join } from "node:path";
+import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import type { Browser, BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
+import { violations } from "./test.ts";
 
 /** The e2e server's token, set by `playwright.config.ts`. */
 export const E2E_TOKEN = process.env.CAVE_E2E_TOKEN as string;
@@ -9,6 +13,11 @@ export async function ownerContext(
   options: BrowserContextOptions = {},
 ): Promise<BrowserContext> {
   const context = await browser.newContext(options);
+  // The browser reports a CSP violation on the console; the guard in test.ts fails the spec.
+  context.on("console", (message) => {
+    if (message.type() === "error" && /Content Security Policy/i.test(message.text()))
+      violations.push(message.text());
+  });
   await context.addInitScript((token) => {
     if (!localStorage.getItem("cave.token")) localStorage.setItem("cave.token", token);
   }, E2E_TOKEN);
@@ -65,4 +74,53 @@ export async function fillReminder(page: Page, title: string, when: string) {
   await form.getByLabel("Title").fill(title);
   await form.getByLabel("When").fill(when);
   return form;
+}
+
+/**
+ * Runs `action` (a Delete) and waits until the delete has reached the server, so the next
+ * spec, on another device, never sees an item this one cleaned up.
+ */
+export async function pushed(page: Page, action: () => Promise<unknown>): Promise<void> {
+  const sent = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/sync") &&
+      r.request().method() === "POST" &&
+      (r.request().postData() ?? "").includes('"_deleted":true'),
+  );
+  await action();
+  await sent;
+}
+
+/** A write-scope agent on the e2e server's database, as `bun run agent add` makes one. */
+export function mintAgent(name: string): string {
+  const out = spawnSync(
+    "bun",
+    ["run", "server/agent-cli.ts", "add", name, "--scopes", "read,write"],
+    {
+      env: {
+        ...process.env,
+        CAVE_DB_PATH: join(process.env.CAVE_E2E_DIR as string, "cave.db"),
+        CAVE_TOKEN: "",
+        CAVE_HOST: "",
+      },
+      encoding: "utf8",
+    },
+  );
+  const token = out.stdout.trim().split("\n").at(-1) ?? "";
+  if (!token.startsWith("cave_")) throw new Error(`no agent token: ${out.stderr}`);
+  return token;
+}
+
+/** An MCP client for a fresh write-scope agent, connected to the e2e server. */
+export async function mcpClient(baseURL: string, name: string) {
+  const client = new Client(
+    { name: "cave-e2e", version: "1.0.0" },
+    { versionNegotiation: { mode: { pin: "2026-07-28" } } },
+  );
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL("/mcp", baseURL), {
+      requestInit: { headers: { authorization: `Bearer ${mintAgent(`${name}-${Date.now()}`)}` } },
+    }),
+  );
+  return client;
 }

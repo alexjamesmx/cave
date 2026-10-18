@@ -24,8 +24,6 @@ import { finishRun, logStep, startRun } from "./runs.ts";
 export interface McpDeps {
   store: Store;
   calls: CallLog;
-  /** The Obsidian vault; `add_note` is offered only when it is set. */
-  vaultPath: string | undefined;
   now: () => number;
   /** One clock per agent for the life of the process. */
   clocks: Map<string, Hlc>;
@@ -35,6 +33,8 @@ const DATA_RULE =
   "Never guess an amount, category or account: ask the owner, or leave the field out.";
 const REMINDER_RULE =
   'Reminders: one whose repeat isn\'t "none" repeats on completion; done: true moves due to the next occurrence and keeps it open. The Cave sends their notifications itself; never set up outside scheduled tasks for them. To also create or change items on a schedule or when items change, use save_flow.';
+const RADAR_RULE =
+  "Radar: findings for the owner go in collection radar with fields url (http or https, required), why (one line on why it matters, required), source (your label, e.g. Hacker News) and interests (comma-separated names from settings.radarInterests); the summary goes in body. One item per address: a duplicate is refused with the existing id. At most 50 a day.";
 const DAY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -168,7 +168,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
     server.registerTool(
       "create",
       {
-        description: `Create an item in a collection with a title, field values and a Markdown body. ${DATA_RULE} ${REMINDER_RULE}`,
+        description: `Create an item in a collection with a title, field values and a Markdown body. ${DATA_RULE} ${REMINDER_RULE} ${RADAR_RULE}`,
         inputSchema: z.object({
           collection: z.string(),
           title: z.string(),
@@ -320,22 +320,19 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       (args) => run("finish_run", args, () => fromWrite(finishRun(runDeps, args))),
     );
-    const vault = deps.vaultPath;
-    if (vault) {
-      server.registerTool(
-        "add_note",
-        {
-          description:
-            "Save a new Markdown note in the owner's Obsidian Inbox. Existing notes are never changed.",
-          inputSchema: z.object({ title: z.string(), body: z.string() }),
-          annotations: WRITE,
-        },
-        (args) =>
-          run("add_note", { title: args.title, bodyLength: args.body.length }, () =>
-            addNote(vault, agent, args, deps.now(), timeZone()),
-          ),
-      );
-    }
+    server.registerTool(
+      "add_note",
+      {
+        description:
+          "Save a new Markdown note in the owner's Notes Inbox, marked as written by you. Use [[Title]] to link another note. It never changes an existing note.",
+        inputSchema: z.object({ title: z.string(), body: z.string() }),
+        annotations: WRITE,
+      },
+      (args) =>
+        run("add_note", { title: args.title, bodyLength: args.body.length }, () =>
+          fromWrite(addNote(writer(), args)),
+        ),
+    );
   }
   return server;
 }

@@ -4,6 +4,7 @@ import { formatStamp } from "../shared/hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
 import { DEFAULT_TEMPLATES } from "../shared/projects.ts";
 import { CAVE_PROJECT, LEETCODE_PROJECT, projectsMigration } from "../shared/projects-seed.ts";
+import { DEFAULT_INTERESTS } from "../shared/radar.ts";
 import type { Field } from "../shared/schema.ts";
 import { SEED_VERSION, seedDocs } from "../shared/seed.ts";
 import type { Doc } from "../shared/types.ts";
@@ -20,7 +21,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
   expect(store.get("proposals")).toBeUndefined();
   expect(seedVersionOf(store)).toBe(1);
 
-  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   expect(store.get("flows")?.data).toMatchObject({ name: "Flows", hidden: true });
   expect(store.get("flow-rent")).toMatchObject({ collection: "flows", actor: "seed" });
   const proposals = store.get("proposals");
@@ -31,6 +32,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
     reminderTime: "09:00",
     notifications: DEFAULT_NOTIFICATIONS,
     projectTemplates: DEFAULT_TEMPLATES,
+    radarInterests: DEFAULT_INTERESTS,
     seedVersion: SEED_VERSION,
   });
   // The migration and the version bump are one change batch with one actor and time.

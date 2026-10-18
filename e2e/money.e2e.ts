@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { expect, type Page, test } from "@playwright/test";
 import { addMoney, E2E_TOKEN, ownerContext, syncBadge } from "./helpers.ts";
+import { expect, type Page, test } from "./test.ts";
 
 /** `bun run money-review --local` against the e2e server, as the owner runs it on the laptop. */
 function runReview(baseURL: string): string {

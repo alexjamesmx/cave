@@ -1,5 +1,5 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
-import { addMoney, ownerContext } from "./helpers.ts";
+import { addMoney, ownerContext, pushed } from "./helpers.ts";
+import { expect, type Locator, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
 const localAt = (page: Page, days: number) =>
@@ -91,10 +91,12 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
   ] as const) {
     await page.goto(path);
     await page.getByRole("button", { name, exact: true }).first().click();
-    await page
-      .getByRole("complementary", { name: drawer })
-      .getByRole("button", { name: "Delete" })
-      .click();
+    await pushed(page, () =>
+      page
+        .getByRole("complementary", { name: drawer })
+        .getByRole("button", { name: "Delete" })
+        .click(),
+    );
     await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
   }
 });

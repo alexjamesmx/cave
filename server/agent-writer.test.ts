@@ -1,4 +1,5 @@
 import { beforeEach, expect, test } from "bun:test";
+import { localDateTime } from "../shared/dates.ts";
 import { formatStamp, type Hlc } from "../shared/hlc.ts";
 import type { Field } from "../shared/schema.ts";
 import { seedDocs } from "../shared/seed.ts";
@@ -237,4 +238,54 @@ test("status done on a repeating task brings it back on its next date, still ope
   if (!once.ok) throw new Error(once.error);
   w.update(once.id, { fields: { status: "done" } });
   expect(store.get(once.id)?.data.status).toBe("done");
+});
+
+const finding = (url: string, why = "New model release") => ({
+  title: "Claude 5.5 is out",
+  fields: { url, why, source: "anthropic.com" },
+});
+
+test("a radar finding needs an http address and a reason, and starts new", () => {
+  expect(writer().create("radar", { title: "No url", fields: { why: "x" } })).toEqual({
+    ok: false,
+    error: "url is required: an http or https address",
+  });
+  const mail = writer().create("radar", finding("mailto:a@b.c"));
+  expect(mail.ok).toBe(false);
+  expect(writer().create("radar", finding("https://a.dev/x", " ")).ok).toBe(false);
+  const result = writer().create("radar", finding("https://a.dev/x"));
+  if (!result.ok) throw new Error(result.error);
+  expect(store.get(result.id)?.data).toMatchObject({
+    status: "new",
+    found_at: localDateTime(new Date(NOW), "America/Mexico_City"),
+    _addedBy: "claude-code",
+  });
+});
+
+test("the same address twice is refused with the id already there", () => {
+  const first = writer().create("radar", finding("https://www.A.dev/post/"));
+  if (!first.ok) throw new Error(first.error);
+  expect(writer().create("radar", finding("https://www.a.dev/post#top"))).toEqual({
+    ok: false,
+    error: `already on the radar as ${first.id}`,
+  });
+});
+
+test("an agent adds at most 50 findings a day; another agent and the next day are unaffected", () => {
+  let now = NOW;
+  const clock = () => now;
+  for (let i = 0; i < 50; i++) {
+    now = NOW + i;
+    const r = writer(agent, clock).create("radar", finding(`https://a.dev/${i}`));
+    if (!r.ok) throw new Error(r.error);
+  }
+  now = NOW + 100;
+  expect(writer(agent, clock).create("radar", finding("https://a.dev/51"))).toEqual({
+    ok: false,
+    error: "limit reached: 50 radar items a day",
+  });
+  const other = { ...agent, name: "codex" };
+  expect(writer(other, clock).create("radar", finding("https://a.dev/52")).ok).toBe(true);
+  now = NOW + 24 * 60 * 60 * 1000 + 50;
+  expect(writer(agent, clock).create("radar", finding("https://a.dev/53")).ok).toBe(true);
 });

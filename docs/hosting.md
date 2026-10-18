@@ -266,6 +266,16 @@ The server refuses to start with a malformed token or webhook URL, naming the se
 
 **Egress.** The firewall allows outgoing traffic (step 6). The server reaches the push services (`*.push.apple.com`, `fcm.googleapis.com`, Mozilla's `*.push.services.mozilla.com`), `api.telegram.org` and `discord.com` with Bun's `fetch` and a 10-second timeout; nothing else on the server sends anything.
 
+## 12b. The Content-Security-Policy (M9)
+Caddy sends a strict `Content-Security-Policy` with every response (`deploy/Caddyfile`): only this origin's scripts, styles, images, fonts and connections, no eval, no inline script, no plugins, no framing. The timer deploys the app, not Caddy's configuration, so **after the PR that adds it merges**, install it once in hPanel's terminal (step 5's two commands, then a reload):
+```bash
+install -m 644 /opt/cave/current/deploy/Caddyfile /etc/caddy/Caddyfile
+caddy validate --config /etc/caddy/Caddyfile
+systemctl reload caddy
+curl -sI https://cave.alexjamesmx.dev/ | grep -i content-security-policy
+```
+The last line should print the policy. If the app misbehaves, the browser console names the blocked resource; `docs/log/m9.md` records what was measured.
+
 ## 13. CAVE_ENV (M6b)
 `CAVE_ENV` is `production`, `dev` or `test`; unset means `dev`, and any other value stops the server at start. Only `production` delivers anything outside the Cave: Web Push, Telegram (its long polling too) and Discord, and so every flow `notify` step. In `dev` and `test` jobs and flows still run, but each send becomes a `notification_log` row with result `outbox`, listed under `/system` → Notifications → Dev outbox, and the app shows a `DEV` or `TEST` badge. `bun test` runs as `test` (`bunfig.toml`), as does the Playwright server; `bun run dev:seed` runs as `dev`.
 

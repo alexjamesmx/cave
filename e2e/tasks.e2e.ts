@@ -1,5 +1,5 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
 import { offOriginRequests, ownerContext } from "./helpers.ts";
+import { expect, type Locator, type Page, test } from "./test.ts";
 
 const LONG = "Renew the passport, book the appointment and gather every document they ask for";
 

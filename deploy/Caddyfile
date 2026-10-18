@@ -12,6 +12,9 @@ cave.alexjamesmx.dev {
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "no-referrer"
 		X-Frame-Options "DENY"
+		# Strict CSP (M9): only this origin's scripts, styles, images, fonts and connections; no
+		# eval, no inline script, no plugins, no framing. The e2e proxy reads it from this line.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 	}
 
 	# Keeps the original Host; the server checks Origin against CAVE_PUBLIC_ORIGIN.

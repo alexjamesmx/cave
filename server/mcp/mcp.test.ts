@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect, test } from "bun:test";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
@@ -55,7 +55,6 @@ beforeAll(() => {
     agents: {
       registry,
       calls,
-      vaultPath: vault,
     },
   });
 });
@@ -584,24 +583,25 @@ test("undo restores an agent's edit unless the key changed since", async () => {
   expect(store.get(id)?.data).toMatchObject({ status: "todo", area: "home" });
 });
 
-test("add_note writes under Inbox/ and never overwrites", async () => {
+test("add_note creates a note in the Cave's Inbox, as the agent; the vault is never written", async () => {
   const client = await connect("claude");
-  const first = await call(client, "add_note", { title: "Ideas: v0.2?", body: "One" });
+  const first = await call(client, "add_note", { title: "Ideas: v0.2?", body: "One [[Cave]]\n" });
   const second = await call(client, "add_note", { title: "Ideas: v0.2?", body: "Two" });
-  const a = (first.structuredContent as { path: string }).path;
-  const b = (second.structuredContent as { path: string }).path;
-  expect(a).toMatch(/^Inbox\/\d{4}-\d{2}-\d{2} \d{4} Ideas v0 2\.md$/);
-  // Same minute and title: the second note gets a suffix.
-  if (a.slice(6, 21) === b.slice(6, 21)) expect(b).toBe(a.replace(".md", " 2.md"));
-  expect(b).not.toBe(a);
-  const text = readFileSync(join(vault, a), "utf8");
-  expect(text).toContain("source: agent:claude");
-  expect(text).toContain("# Ideas: v0.2?\n\nOne");
-  expect(readFileSync(join(vault, b), "utf8")).toContain("Two");
-
-  writeFileSync(join(vault, "Inbox", "keep.md"), "owner's note");
-  expect(readdirSync(join(vault, "Inbox"))).toContain("keep.md");
-  expect(readFileSync(join(vault, "Inbox", "keep.md"), "utf8")).toBe("owner's note");
+  const a = (first.structuredContent as { id: string }).id;
+  const b = (second.structuredContent as { id: string }).id;
+  expect(a).not.toBe(b);
+  expect(store.get(a)).toMatchObject({
+    collection: "notes",
+    actor: "agent:claude",
+    data: { _title: "Ideas: v0.2?", _body: "One [[Cave]]", folder: "Inbox", source: "agent" },
+  });
+  expect(readdirSync(vault)).toEqual([]);
+  expect(textOf(await call(client, "add_note", { title: " ", body: "x" }))).toBe(
+    "title is required",
+  );
+  expect(
+    textOf(await call(await connect("money-only"), "add_note", { title: "x", body: "y" })),
+  ).toBe("collection notes not found");
 });
 
 test("every call is logged, reads and refusals included", async () => {

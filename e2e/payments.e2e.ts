@@ -1,5 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
 const localAt = (page: Page, days: number) =>

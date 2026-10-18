@@ -37,7 +37,7 @@ beforeAll(() => {
     store,
     token: OWNER,
     now: () => Date.UTC(2026, 9, 13, 14, 5, 12),
-    agents: { registry, calls: createCallLog(db), vaultPath: undefined },
+    agents: { registry, calls: createCallLog(db) },
     status: {
       env: "test",
       version: "0.1.0-dev",

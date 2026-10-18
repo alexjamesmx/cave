@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 // 23:58 on Tue 2026-09-01 in Mexico City (UTC-6), the seeded timezone. A day in the past, so
 // the entry's stamps are never ahead of the server's clock.

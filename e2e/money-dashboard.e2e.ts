@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { addMoney, ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("year view with its month table, compare, and filters kept in the URL", async ({
   browser,

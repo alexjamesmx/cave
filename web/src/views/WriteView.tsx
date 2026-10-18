@@ -4,6 +4,7 @@ import { newId } from "../../../shared/ids.ts";
 import { useFollowing, useSaver, useToday } from "../app/hooks.ts";
 import { entriesByDay, previousDay } from "../logic/habits.ts";
 import { Icon } from "../ui/icon.tsx";
+import { MarkdownField } from "../ui/MarkdownField.tsx";
 import type { ViewProps } from "./types.ts";
 
 const nextDay = (day: string) => {
@@ -57,16 +58,15 @@ export function WriteView({ collection, items }: ViewProps) {
           <Icon name="chevron-right" size={15} />
         </button>
       </header>
-      <textarea
-        key={`${day}-${body}`}
-        className="input diary-text"
-        aria-label="Diary entry"
+      <MarkdownField
+        key={day}
+        id="diary-entry"
+        label="Diary entry"
+        body={body}
         rows={12}
-        defaultValue={body}
+        className="input diary-text"
         placeholder="How did today go?"
-        onBlur={(e) => {
-          if (e.target.value !== body) void save({ _body: e.target.value });
-        }}
+        onSave={(text) => void save({ _body: text })}
       />
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {habits.map((h) => {

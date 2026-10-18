@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { addMoney, offOriginRequests, ownerContext, syncBadge } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("after one online visit the app opens offline with its data", async ({ browser, baseURL }) => {
   const context = await ownerContext(browser);

@@ -28,10 +28,12 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       "leetcode",
       "ai",
       "money",
+      "notes",
       "parts",
       "payments",
       "projects",
       "proposals",
+      "radar",
       "reminders",
       "runs",
       "tasks",
@@ -62,7 +64,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     ["flow-salary", "draft"],
   ]);
   for (const d of drafts) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(18);
+  expect(docs).toHaveLength(20);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {

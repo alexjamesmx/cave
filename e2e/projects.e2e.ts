@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { ownerContext } from "./helpers.ts";
+import { ownerContext, pushed } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("an idea becomes a project; a part and a task show on its Overview and Board", async ({
   browser,
@@ -53,6 +53,6 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/tasks/list");
   await page.getByRole("button", { name: "Buy seeds" }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
   await expect(page.getByRole("button", { name: "Buy seeds" })).toHaveCount(0);
 });

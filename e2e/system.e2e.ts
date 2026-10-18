@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { fillReminder, offOriginRequests, ownerContext } from "./helpers.ts";
+import { expect, test } from "./test.ts";
 
 test("/system renders each tab with a flow, a reminder and a job run", async ({
   browser,
