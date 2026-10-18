@@ -21,6 +21,7 @@ import {
   projectsMigration,
   withProjectFields,
 } from "./projects-seed.ts";
+import { DEFAULT_INTERESTS, RADAR, RADAR_COLLECTION, radarMigration } from "./radar.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import { RUNS, RUNS_COLLECTION, runsMigration } from "./runs.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
@@ -383,6 +384,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 13, docs: [], update: runsMigration },
   // M9 part A: notes live in the Cave.
   { version: 14, docs: [], update: notesMigration },
+  // M9 part B: the radar, fed by agents, ranked by the owner's interests.
+  { version: 15, docs: [], update: radarMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -391,6 +394,7 @@ export const SEED_VERSION = Math.max(1, ...SEED_MIGRATIONS.map((m) => m.version)
 // Reminders and the daily brief resolve local date-times through this timezone.
 const SETTINGS = {
   timezone: "America/Mexico_City",
+  radarInterests: DEFAULT_INTERESTS,
   projectTemplates: DEFAULT_TEMPLATES,
   ...REMINDER_DEFAULTS,
   ...NOTIFICATION_DEFAULTS,
@@ -429,6 +433,7 @@ export function seedDocs(): Doc[] {
     seeded(PARTS, "collection", PARTS_COLLECTION),
     seeded(RUNS, "collection", RUNS_COLLECTION),
     seeded(NOTES, "collection", NOTES_COLLECTION),
+    seeded(RADAR, "collection", RADAR_COLLECTION),
     // LeetCode is a project from the start, so its old link always has somewhere to go.
     seeded(LEETCODE_PROJECT, "item", LEETCODE_PROJECT_DATA, "projects"),
     ...FLOW_DOCS.map((d) =>

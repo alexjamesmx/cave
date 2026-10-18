@@ -27,6 +27,7 @@ import { MoneyForm } from "../ui/MoneyForm.tsx";
 import { PaymentForm } from "../ui/PaymentForm.tsx";
 import { type QuickKind, ReminderForm, TaskForm } from "../ui/QuickForms.tsx";
 import { NoteForm } from "./Notes.tsx";
+import { RadarCard } from "./Radar.tsx";
 
 const CLOSED = new Set(["done", "dropped"]);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -111,6 +112,7 @@ export function Home() {
       </section>
       {collections && <DueCard collections={collections} />}
       {collections && <Glance />}
+      <RadarCard />
       <RecentNotes />
     </>
   );
