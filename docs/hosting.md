@@ -222,6 +222,7 @@ install -o root -g root -m 755 /root/cave-deploy /usr/local/sbin/cave-deploy
 install -o root -g root -m 644 /root/cave-deploy.service /root/cave-deploy.timer /etc/systemd/system/
 rm /root/cave-deploy /root/cave-deploy.service /root/cave-deploy.timer
 install -d -o root -g root -m 755 /var/lib/cave-deploy
+sed -i -e '$a\' /etc/cave/cave.env    # a final newline, so the append can't join the last line
 grep -q '^CAVE_DEPLOY_STATUS=' /etc/cave/cave.env || echo 'CAVE_DEPLOY_STATUS=/var/lib/cave-deploy/status.json' >> /etc/cave/cave.env
 systemd-analyze verify /etc/systemd/system/cave-deploy.service /etc/systemd/system/cave-deploy.timer
 systemctl daemon-reload
@@ -245,6 +246,7 @@ Web Push, Telegram and Discord are each optional: a channel without its settings
 **Web Push.** `bun run push-keys` prints three env lines (the subject is `CAVE_PUBLIC_ORIGIN`); appending them keeps the private key off the screen. It refuses when keys already exist: new keys unsubscribe every device.
 ```bash
 sed -i '/^CAVE_VAPID_[A-Z]*=$/d' /etc/cave/cave.env      # drops empty template lines, if any
+sed -i -e '$a\' /etc/cave/cave.env                         # a final newline before appending
 sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run push-keys' >> /etc/cave/cave.env
 grep -c '^CAVE_VAPID_[A-Z]*=.' /etc/cave/cave.env          # expect 3
 systemctl restart cave
@@ -252,6 +254,7 @@ systemctl restart cave
 
 **Telegram.** Create a bot with @BotFather and copy its token. `read -rs` takes it without echoing it:
 ```bash
+sed -i -e '$a\' /etc/cave/cave.env
 read -rs TG && printf 'CAVE_TELEGRAM_BOT_TOKEN=%s\n' "$TG" >> /etc/cave/cave.env; unset TG
 systemctl restart cave
 ```
@@ -259,6 +262,7 @@ Then Settings → Notifications → Telegram → **Link** shows a code; send `/s
 
 **Discord.** In a private server, a channel named `cave`: Channel settings → Integrations → Webhooks → New webhook → Copy URL. Set the channel's notifications to "All messages" on the phone.
 ```bash
+sed -i -e '$a\' /etc/cave/cave.env
 read -rs DW && printf 'CAVE_DISCORD_WEBHOOK_URL=%s\n' "$DW" >> /etc/cave/cave.env; unset DW
 systemctl restart cave
 ```
@@ -296,7 +300,7 @@ Every day `cave-offsite backup` sends an encrypted copy of `/var/lib/cave/backup
 - create the bucket `cave-backups`;
 - create an R2 API token with **Object Read & Write**, scoped to `cave-backups` only, and note the account id, the access key id and the secret.
 
-**2. Settings and the password** (hPanel's browser terminal, as root). Keys are read without echo; the password is generated on the VPS and shown once to go into the password manager. **Without it, the copies can't be decrypted.**
+**2. Settings and the password** (hPanel's browser terminal, as root). Keys are read without echo: paste each `read` line **on its own**, then its value (pasted as a block, a `read` takes the next pasted line as its input). The password is generated on the VPS and shown once to go into the password manager. **Without it, the copies can't be decrypted.**
 ```bash
 install -o root -g cave -m 640 /opt/cave/current/deploy/offsite.env.example /etc/cave/offsite.env
 read -r ACCOUNT && sed -i "s|<account>|$ACCOUNT|" /etc/cave/offsite.env; unset ACCOUNT
@@ -317,7 +321,7 @@ export GNUPGHOME="$PWD/gnupg"; install -d -m 700 "$GNUPGHOME"
 gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys CF8F18F2844575973F79D4E191A6868BD3F7A907
 gpg --verify SHA256SUMS.asc SHA256SUMS        # "Good signature", with the fingerprint above
 sha256sum -c --ignore-missing SHA256SUMS       # restic_0.19.1_linux_amd64.bz2: OK
-bunzip2 restic_0.19.1_linux_amd64.bz2
+python3 -c 'import bz2, shutil; shutil.copyfileobj(bz2.open("restic_0.19.1_linux_amd64.bz2"), open("restic_0.19.1_linux_amd64", "wb"))'   # the VPS has no bunzip2
 install -o root -g root -m 755 restic_0.19.1_linux_amd64 /usr/local/bin/restic
 restic version                                 # restic 0.19.1 …
 ```
@@ -334,6 +338,7 @@ runuser -u cave -- bash -c 'set -a; . /etc/cave/offsite.env; set +a; restic init
 systemctl start cave-offsite.service && cave-offsite status          # backup ok
 systemctl start cave-offsite-check.service && cave-offsite status    # check ok
 systemctl enable --now cave-offsite.timer cave-offsite-check.timer
+sed -i -e '$a\' /etc/cave/cave.env    # without a final newline the append joins the last line (2026-10-20: the Telegram token)
 grep -q '^CAVE_OFFSITE_STATUS=' /etc/cave/cave.env ||
   echo 'CAVE_OFFSITE_STATUS=/var/lib/cave-offsite/status.json' >> /etc/cave/cave.env
 systemctl restart cave
