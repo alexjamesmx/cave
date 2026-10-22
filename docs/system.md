@@ -40,7 +40,7 @@ flowchart LR
 | SQLite | VPS, `/var/lib/cave` | the one server-side copy of every record |
 | GitHub | cloud | the code; the VPS can only read it, and deploys the tip of `main` |
 | Claude Code cloud sessions | Anthropic VM | change the code from the phone or browser; push branches and open PRs, never merge; no production access |
-| Laptop repo | WSL Ubuntu, `~/code/jarvis` (`\\wsl.localhost\Ubuntu\home\sgale\code\jarvis` from Windows) | where code is written and tested; Remote Control and `bun run deploy` run from here |
+| Laptop repo | the laptop (Linux), `~/code/jarvis` | where code is written and tested; Remote Control and `bun run deploy` run from here |
 
 **The app's structure** (M8): eight sections (Home, Money, Calendar, Tasks, Projects, Life, AI, Settings), each with tabs, all from one registry (`web/src/app/sections.ts`) that the sidebar, the phone dock and the router read. Every collection belongs to one section or is reached only from Settings → Data. A project has its own page: Overview, Map (React Flow), Board, Activity (agents' runs) and Items.
 
@@ -150,53 +150,48 @@ The local server and production never share data:
 CAVE_DB_PATH=data/dev.db
 ```
 
-**Fresh dev copy of real data** (whenever you want one):
-```bash
-bun run pull-backups                                  # newest verified VPS backups into data/vps-backups
-bun run pull-data                                     # the same, then the newest daily into data/dev.db (old one: data/dev.db.prev)
-bun run restore data/vps-backups/<newest>.db          # into data/dev.db (stop the local server first)
-```
+**Fresh dev copy of real data:** `bun run pull-data` (stop the local server first). It pulls the newest verified VPS backups into `BACKUP_PULL_DIR` and restores the newest daily into `data/dev.db`, keeping the old one as `data/dev.db.prev`.
 
 **Daily loop:**
 ```bash
-git switch -c <branch>
 bun run dev                                           # http://127.0.0.1:3000, no token needed on loopback
 bun run check && bun test && bun run e2e              # e2e uses its own temp database
 ```
 
-**Agents against the local server.** `.mcp.json` points `cave` at production. To try MCP changes locally, add a second entry `cave-dev` with URL `http://127.0.0.1:3000/mcp` and the same `${CAVE_AGENT_TOKEN}`. A restored dev copy contains the production agent tokens' hashes, so the same token works locally, but only if the backup is newer than the token. After minting a new agent token, take a fresh backup on the VPS first (`bun run backup` as `cave`, as in `docs/hosting.md`), then pull and restore.
+**Agents against the local server.** In `.mcp.json`, `cave` is production and `cave-dev` is `http://127.0.0.1:3000/mcp`, both with `${CAVE_AGENT_TOKEN}`. A restored dev copy contains the production agent tokens' hashes, so the same token works locally, but only if the backup is newer than the token. After minting a new agent token, take a fresh backup on the VPS first (`bun run backup` as `cave`, as in `docs/hosting.md`), then pull and restore.
 
 **Rules:**
 - Never point a local server at the VPS database, and never copy `data/dev.db` up to the VPS.
-- Production changes go through PR, merge and `bun run deploy`.
+- Production changes reach the VPS only through `main` (AGENTS.md "How work ships").
 - `data/` is git-ignored and Claude Code is denied access to it. Copies of real data stay on the laptop.
 
 ## 6. Recreate from scratch
 
 ### A new development laptop
-The laptop works Linux-first: the repo, Bun, Claude Code, the e2e browser and SSH live in WSL Ubuntu (systemd on in `/etc/wsl.conf`). Windows only hosts WSL and the Remote Control task. Every command below runs in Ubuntu unless it says PowerShell.
+The laptop runs Ubuntu: today inside WSL (systemd on in `/etc/wsl.conf`), later natively. Everything below is the same on both, except the two steps marked WSL.
 
 1. **Tools:**
-   - git, `gh`, build tools: `sudo apt install git gh build-essential`.
-   - Bun 1.4.3: `curl -fsSL https://bun.com/install | bash -s bun-v1.4.3`.
-   - Claude Code: `curl -fsSL https://claude.ai/install.sh | bash`, then run `claude` once to log in.
-   - Google Chrome for `bun run e2e`, from Google's `.deb`, which also adds its apt repository so `apt upgrade` keeps it current (snap is unreliable in WSL; e2e runs headless and needs no display):
-     ```bash
-     curl -fsSLO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-     sudo apt install ./google-chrome-stable_current_amd64.deb && rm google-chrome-stable_current_amd64.deb
-     ```
-   - A Windows-native setup, without WSL, is still `setup/setup.cmd` (Git, Bun, Claude Code, the MCP keys); e2e then uses Edge.
+   ```bash
+   sudo apt install git gh build-essential
+   curl -fsSL https://bun.com/install | bash -s bun-v1.4.3
+   curl -fsSL https://claude.ai/install.sh | bash       # then run claude once to log in
+   ```
+   Google Chrome for `bun run e2e`, from Google's `.deb`, which also adds its apt repository (e2e runs headless and needs no display):
+   ```bash
+   curl -fsSLO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+   sudo apt install ./google-chrome-stable_current_amd64.deb && rm google-chrome-stable_current_amd64.deb
+   ```
 2. **Code:**
    ```bash
    gh auth login
    gh repo clone alexjamesmx/cave ~/code/jarvis
    cd ~/code/jarvis
-   git config core.hooksPath .githooks
-   bun install && bun run check && bun test && bun run e2e
+   setup/setup.sh                                      # hooks, bun install, Claude rules, Playwright MCP, plugins
+   bun run check && bun test && bun run e2e
    ```
 3. **SSH to the VPS:**
-   - Run `ssh-keygen -t ed25519`. The laptop's key has no passphrase by the owner's choice (`docs/decisions.md`, 2026-10-21); `ssh-keygen -p -f ~/.ssh/id_ed25519` adds one later. The same key can serve GitHub.
-   - Add the new public key to `/root/.ssh/authorized_keys` on the VPS: in hPanel's browser terminal, or from a machine that already gets in, for example the Windows side: `wsl cat ~/.ssh/id_ed25519.pub | ssh cave-vps "cat >> /root/.ssh/authorized_keys"` in PowerShell.
+   - Run `ssh-keygen -t ed25519`. The key has no passphrase by the owner's choice (`docs/decisions.md`, 2026-10-21); `ssh-keygen -p -f ~/.ssh/id_ed25519` adds one later. The same key can serve GitHub.
+   - Add the public key to `/root/.ssh/authorized_keys` on the VPS, in hPanel's browser terminal or from a machine that already gets in.
    - Add to `~/.ssh/config`:
      ```
      Host cave-vps
@@ -206,31 +201,18 @@ The laptop works Linux-first: the repo, Bun, Claude Code, the e2e browser and SS
        IdentitiesOnly yes
        AddKeysToAgent yes
      ```
-   - With a passphrase, let the user `ssh-agent` hold the key, so deploys ask for it once per WSL boot. Ubuntu's `ssh-agent.socket` user unit is on by default; shells started by `wsl.exe` don't see it, so add to `~/.bashrc`: `export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-$XDG_RUNTIME_DIR/openssh_agent}"` (`setup/remote-control.sh` sets the same for the phone's sessions).
-   - Run `ssh cave-vps true`. Check that the host key fingerprint matches `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` in the browser terminal.
-4. **`.env`:** copy it from `.env.example`. Set:
-   - `CAVE_DB_PATH=data/dev.db`;
-   - `CAVE_REMOTE_URL=https://cave.alexjamesmx.dev`;
-   - `CAVE_REMOTE_TOKEN` (the server token, from your password manager);
-   - `BACKUP_PULL_DIR=data/vps-backups`;
-   - `VAULT_PATH` if the vault is on this machine.
-5. **Agent token:** one per machine.
-   - In the browser terminal, run `bun run agent add claude-code-<machine> --scopes read,write` (the full command is in `docs/agents.md`).
-   - Store the token as the Windows user environment variable `CAVE_AGENT_TOKEN`, without putting it on a command line.
-   - Revoke the old machine's token with `bun run agent revoke <name>`.
-6. **Share the Windows variables with WSL.** `.mcp.json` reads `CAVE_AGENT_TOKEN`, `EXA_API_KEY`, `FIRECRAWL_API_KEY` and `GITHUB_PAT`. `WSLENV` passes Windows user variables into every process `wsl.exe` starts, so no secret goes into a WSL file. In PowerShell, then open a new Ubuntu terminal:
-   ```powershell
-   [Environment]::SetEnvironmentVariable('WSLENV', 'CAVE_AGENT_TOKEN/u:EXA_API_KEY/u:FIRECRAWL_API_KEY/u:GITHUB_PAT/u', 'User')
-   ```
-7. **Claude Code:** start `claude` in `~/code/jarvis`, check `/mcp` shows `cave` connected, then make the dev copy (section 5).
-8. **Remote Control** (the phone's Code tab reaches this checkout): `setup/remote-control-task.ps1` registers the per-user task "Cave Remote Control". At logon it runs `setup/remote-control.sh` in Ubuntu through `wsl.exe`, which stays attached and so keeps WSL running whatever `vmIdleTimeout` says. From Ubuntu, after `claude` is logged in:
-   ```bash
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w setup/remote-control-task.ps1)"
-   powershell.exe -NoProfile -Command "Start-ScheduledTask -TaskName 'Cave Remote Control'"
-   ```
-   - The log is `~/.local/state/cave/remote-control.log`; the session shows in the Claude app as "cave · laptop".
-   - The task restarts WSL 30 seconds after `wsl --shutdown`. To keep WSL down, first run `Stop-ScheduledTask -TaskName 'Cave Remote Control'` in PowerShell.
-   - `-Remove` unregisters the task.
+   - Run `ssh cave-vps true`, and check that the host key fingerprint matches `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` in the browser terminal.
+4. **`.env`:** copy it from `.env.example` and set `CAVE_DB_PATH=data/dev.db`, `CAVE_REMOTE_URL=https://cave.alexjamesmx.dev`, `CAVE_REMOTE_TOKEN` (the server token, from your password manager) and `BACKUP_PULL_DIR=data/vps-backups`.
+5. **Agent token and MCP keys:** mint one agent token per machine in the browser terminal (`bun run agent add claude-code-<machine> --scopes read,write`, `docs/agents.md`), and revoke the old machine's with `bun run agent revoke <name>`. `.mcp.json` reads `CAVE_AGENT_TOKEN`, `CONTEXT7_API_KEY`, `EXA_API_KEY`, `FIRECRAWL_API_KEY` and `GITHUB_PAT` from the environment, never from a file in the repo.
+   - **WSL:** keep them as Windows user environment variables, and pass them into WSL with `WSLENV` (PowerShell, then restart the Claude app and open a new Ubuntu terminal):
+     ```powershell
+     [Environment]::SetEnvironmentVariable('WSLENV', 'CAVE_AGENT_TOKEN/u:CONTEXT7_API_KEY/u:EXA_API_KEY/u:FIRECRAWL_API_KEY/u:GITHUB_PAT/u', 'User')
+     ```
+   - **Native Linux:** put them in `~/.config/environment.d/cave.conf` (`chmod 600`), which systemd gives every process of the user session.
+6. **Claude Code:** start `claude` in `~/code/jarvis`, approve the project MCP servers, check `/mcp`, then make the dev copy (section 5).
+7. **Remote Control** (the phone's Code tab reaches this checkout; `setup/remote-control.sh` runs `claude remote-control` in a restart loop, log in `~/.local/state/cave/remote-control.log`, shown in the Claude app as "cave · laptop"):
+   - **WSL:** `setup/setup.sh` registers the per-user Windows task "Cave Remote Control", which at logon keeps `wsl.exe` running the loop, and so keeps WSL up. Start it now with `powershell.exe -NoProfile -Command "Start-ScheduledTask -TaskName 'Cave Remote Control'"`. It restarts WSL 30 seconds after `wsl --shutdown`; stop the task first to keep WSL down. `setup/remote-control-task.ps1 -Remove` unregisters it.
+   - **Native Linux:** run `setup/remote-control.sh` from a systemd user service (not set up yet).
 
 ### A new phone, tablet or browser
 1. **The app:** open `https://cave.alexjamesmx.dev`, unlock it with the server token, and install the app. The first sync downloads everything.
@@ -260,7 +242,27 @@ The laptop works Linux-first: the repo, Bun, Claude Code, the e2e browser and SS
 
 Don't touch the other records (portfolio, mail).
 
-## 7. Secrets: where each lives
+## 7. Configuration
+
+The server reads environment variables; Bun loads `.env` (template: `.env.example`), and on the VPS they live in `/etc/cave/cave.env` (template: `deploy/cave.env.example`). Empty means the default.
+
+| Variable | Meaning |
+|---|---|
+| `CAVE_ENV` | `production`, `dev` or `test`; unset is `dev`, anything else refuses to start. Only `production` sends notifications; the others write them to the outbox `/system` lists and show a DEV or TEST badge |
+| `CAVE_HOST` | listen address, default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN` |
+| `PORT` | default 3000 |
+| `CAVE_DB_PATH` | default `data/cave.db` |
+| `CAVE_TOKEN` | bearer token for `/api` |
+| `CAVE_ALLOWED_HOSTS` | extra host names `/api` and `/mcp` answer to, comma-separated |
+| `CAVE_PUBLIC_ORIGIN` | the https origin behind a reverse proxy; requires `CAVE_TOKEN`, 32+ characters in production |
+| `BACKUP_DIR` | default `backups` next to the database |
+| `VAULT_PATH` | the old Obsidian vault `bun run import` reads; imported on first start when the database has no items; nothing writes to it |
+| `CAVE_DEPLOY_STATUS`, `CAVE_OFFSITE_STATUS` | the `status.json` files `cave-deploy` and `cave-offsite` write; Settings and `/system` show them, and the Cave alerts once when the off-box copy is over 48 hours old or its check failed |
+| `CAVE_VAPID_PUBLIC`, `CAVE_VAPID_PRIVATE`, `CAVE_VAPID_SUBJECT` | Web Push; all three or none (`bun run push-keys`) |
+| `CAVE_TELEGRAM_BOT_TOKEN`, `CAVE_DISCORD_WEBHOOK_URL` | optional channels; never logged or sent to a client |
+| `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-backups`, `pull-data`, `import --remote`, `money-review` |
+
+## 8. Secrets: where each lives
 
 | Secret | Lives in | Never in |
 |---|---|---|
@@ -274,7 +276,8 @@ Don't touch the other records (portfolio, mail).
 | Telegram bot token `CAVE_TELEGRAM_BOT_TOKEN` | `/etc/cave/cave.env`; @BotFather can reissue it | logs, API answers, the client |
 | Discord webhook `CAVE_DISCORD_WEBHOOK_URL` | `/etc/cave/cave.env`: anyone holding it can post | logs, API answers, the client |
 
-## 8. Where to look next
+## 9. Where to look next
+- `docs/guide.md`: using the app.
 - `docs/plan-v0.1.md`: data model, sync protocol, milestones.
 - `docs/hosting.md`: the server runbook.
 - `docs/agents.md`: connecting Claude Code, Codex and OpenCode.

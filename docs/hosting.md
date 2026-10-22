@@ -382,5 +382,6 @@ The newest `cave-YYYY-MM-DDTHHMM.db` under `./r2-restore/var/lib/cave/backups/` 
   - The restore gives the database a new `db_id`, so devices push their newer edits back (M4).
 - **`bun run deploy`**, from the laptop: checks for a clean tree whose `HEAD` is the tip of `origin/main`, runs `ssh cave-vps cave-deploy now` (deploys the tip even if held, waiting for a running deploy), then checks the public URL.
 - **`bun run deploy --rollback`**: runs `cave-deploy rollback`, which points `current` at `previous`, restarts, checks health and holds the tip of `main`, so the timer doesn't ship it again. `cave-deploy now` brings the tip back.
+- **From the phone:** for a bug in a healthy deploy, ask a cloud session to revert the change and merge the revert; in an emergency, run `cave-deploy rollback` in hPanel's browser terminal.
 - **On the VPS:** `cave-deploy status` prints the last result; `journalctl -u cave-deploy` shows each run's output.
 - **Pause auto-deploy:** `systemctl stop cave-deploy.timer` until the next boot; `systemctl disable --now cave-deploy.timer` keeps it off. `systemctl enable --now cave-deploy.timer` turns it back on.

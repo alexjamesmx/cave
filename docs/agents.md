@@ -92,15 +92,7 @@ Put the token in `CAVE_AGENT_TOKEN` on the agent's machine, then add this `.mcp.
 
 Codex and OpenCode take the same URL in place of `http://127.0.0.1:3000/mcp` in the examples below.
 
-### From another machine without the hosted server: Tailscale only
-
-The server speaks plain HTTP, so on an ordinary LAN the agent token, and everything the agent reads, crosses the network unencrypted. Anyone on that Wi-Fi could copy the token. Tailscale encrypts traffic between your devices, so use it for any agent not on the server's machine:
-
-1. Start the server on the Tailscale address with an owner token: `CAVE_HOST=<tailscale IP>` and `CAVE_TOKEN=<long random value>` (see AGENTS.md).
-2. Add the name agents use to reach it: `CAVE_ALLOWED_HOSTS=laptop.tail1234.ts.net`.
-3. Point the agent at `http://laptop.tail1234.ts.net:3000/mcp`.
-
-Don't expose the server on a plain LAN or to the internet. `/api` and `/mcp` refuse any `Host` they don't know (protection against DNS rebinding) and any foreign `Origin`.
+The local server speaks plain HTTP and answers on loopback only; any other machine uses the hosted server over HTTPS. `/api` and `/mcp` refuse any `Host` they don't know (protection against DNS rebinding) and any foreign `Origin`.
 
 ### Claude Code
 
