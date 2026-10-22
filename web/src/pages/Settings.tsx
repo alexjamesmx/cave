@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Status } from "../../../server/owner-api.ts";
 import { formatInterests, interestsOf, parseInterests } from "../../../shared/radar.ts";
-import { currentProvider, PROVIDERS } from "../ai/providers.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone, useTimeZone } from "../app/hooks.ts";
 import { forgetDevice, lockDevice } from "../app/lock.ts";
@@ -16,14 +15,13 @@ import { CollectionPage } from "./CollectionPage.tsx";
 
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 
-/** Settings → General: who you are, when date-only reminders are due, and the AI in use. */
+/** Settings → General: who you are, when date-only reminders are due, the radar's interests. */
 export function SettingsGeneral() {
   return (
     <>
       <OwnerName />
       <ReminderTime />
       <RadarInterests />
-      <AiSettings />
     </>
   );
 }
@@ -260,28 +258,6 @@ function ServerStatus() {
         </button>
         {exportFailed && <span className="muted">The server refused or could not be reached.</span>}
       </div>
-    </section>
-  );
-}
-
-/** Which AI answers the Ask box; more providers come when the owner picks one. */
-function AiSettings() {
-  const provider = currentProvider();
-  return (
-    <section
-      id="ai"
-      className="panel"
-      style={{ padding: 18, display: "grid", gap: 6, maxWidth: 560 }}
-    >
-      <span className="k">AI</span>
-      <span>
-        The Ask box uses <strong>{provider.label}</strong>: {provider.where.toLowerCase()}, with the
-        question prefilled and copied. Claude reads and writes the Cave through its connector.
-      </span>
-      <span className="muted" style={{ fontSize: 13 }}>
-        Available: {PROVIDERS.map((p) => p.label).join(", ")}. An API key, OpenAI-compatible models
-        and Telegram come later. Rules, skills and tools are on <a href="/ai">the AI page</a>.
-      </span>
     </section>
   );
 }

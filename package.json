@@ -21,8 +21,7 @@
     "sync": "bun run server/cli/sync.ts",
     "wip": "bun run server/cli/wip.ts",
     "push-keys": "bun run server/cli/push-keys.ts",
-    "money-review": "bun run server/cli/money-review.ts",
-    "ai-sync": "bun run server/cli/ai-sync.ts"
+    "money-review": "bun run server/cli/money-review.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",

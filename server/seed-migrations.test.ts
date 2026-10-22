@@ -6,7 +6,7 @@ import { DEFAULT_TEMPLATES } from "../shared/projects.ts";
 import { CAVE_PROJECT, LEETCODE_PROJECT, projectsMigration } from "../shared/projects-seed.ts";
 import { DEFAULT_INTERESTS } from "../shared/radar.ts";
 import type { Field } from "../shared/schema.ts";
-import { SEED_VERSION, seedDocs } from "../shared/seed.ts";
+import { retireAiMigration, SEED_VERSION, seedDocs } from "../shared/seed.ts";
 import type { Doc } from "../shared/types.ts";
 import { openDb } from "./db.ts";
 import m2Seed from "./fixtures/m2-seed.json";
@@ -21,7 +21,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
   expect(store.get("proposals")).toBeUndefined();
   expect(seedVersionOf(store)).toBe(1);
 
-  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
   expect(store.get("flows")?.data).toMatchObject({ name: "Flows", hidden: true });
   expect(store.get("flow-rent")).toMatchObject({ collection: "flows", actor: "seed" });
   const proposals = store.get("proposals");
@@ -38,7 +38,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
   // The migration and the version bump are one change batch with one actor and time.
   const log = store.changeLog().filter((c) => c.at === NOW);
   expect(new Set(log.map((c) => c.actor))).toEqual(new Set(["seed"]));
-  expect(log.slice(0, 10).map((c) => c.id)).toEqual([
+  expect(log.slice(0, 9).map((c) => c.id)).toEqual([
     "proposals",
     "settings",
     "settings",
@@ -48,8 +48,9 @@ test("a database seeded before seed migrations gets the proposals and the remind
     "money",
     "tasks",
     "payments",
-    "ai",
   ]);
+  // Migration 8 (the `ai` collection) is a no-op since M10 retired it.
+  expect(store.get("ai")).toBeUndefined();
   expect(log.at(-1)?.id).toBe("settings");
 
   const length = store.changeLog().length;
@@ -164,4 +165,58 @@ test("a later migration's write to the same key in one run wins over an earlier 
   expect(ids).toContain("project");
   const category = fieldsOf(store.get("money")).find((f) => f.id === "category");
   expect(category?.options?.some((o) => o.value === "gula")).toBe(true);
+});
+
+test("seed migration 16 marks the ai collection and its live items deleted, touches nothing else, and is idempotent", () => {
+  const store = createStore(openDb(":memory:"));
+  store.seedIfEmpty(m2Seed as Doc[], 1);
+  // A database at version 15 with the collection migration 8 used to create, and items in it.
+  const stamp = formatStamp(NOW - 5000, 0, "ai-sync");
+  const doc = (
+    id: string,
+    kind: Doc["kind"],
+    collection: string | null,
+    data: Record<string, unknown>,
+  ): Doc => ({
+    id,
+    kind,
+    collection,
+    data,
+    stamps: Object.fromEntries(Object.keys(data).map((k) => [k, stamp])),
+    actor: "user:ai-sync",
+  });
+  store.applyChanges(
+    [
+      doc("ai", "collection", null, { name: "AI", icon: "sparkles", fields: [], views: [] }),
+      doc("ai-rule", "item", "ai", { _title: "AGENTS.md", kind: "rule" }),
+      doc("ai-skill", "item", "ai", { _title: "A skill", kind: "skill" }),
+      doc("ai-gone", "item", "ai", { _title: "Old", kind: "rule", _deleted: true }),
+      doc("task-1", "item", "tasks", { _title: "Keep me", status: "todo" }),
+      doc("settings", "setting", null, { seedVersion: 15 }),
+    ],
+    "user:ai-sync",
+    NOW - 5000,
+  );
+
+  expect(migrateSeed(store, NOW)).toEqual([16]);
+  for (const id of ["ai", "ai-rule", "ai-skill"]) {
+    const d = store.get(id) as Doc;
+    expect(d.data._deleted).toBe(true);
+    expect(d.actor).toBe("seed");
+    expect(d.stamps._deleted?.endsWith("seed")).toBe(true);
+  }
+  // Other keys keep their stamps; only `_deleted` was written.
+  expect(store.get("ai-rule")?.data).toMatchObject({ _title: "AGENTS.md", kind: "rule" });
+  expect(store.get("ai-rule")?.stamps._title).toBe(stamp);
+  expect(store.get("ai-gone")?.stamps._deleted).toBe(stamp);
+  expect(store.get("task-1")?.data._deleted).toBeUndefined();
+  expect(store.itemsOf("ai")).toEqual([]);
+  expect(seedVersionOf(store)).toBe(16);
+
+  // Nothing left to do on what it produced, or on a database that never had the collection.
+  expect(retireAiMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);
+  const fresh = createStore(openDb(":memory:"));
+  fresh.seedIfEmpty(seedDocs(), 1);
+  expect(fresh.get("ai")).toBeUndefined();
+  expect(retireAiMigration(fresh.get, (c) => fresh.itemsOf(c))).toEqual([]);
 });

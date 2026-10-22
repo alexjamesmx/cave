@@ -22,7 +22,10 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/money/review")).toEqual(section("money", "review"));
   expect(parseRoute("/money/nope")).toEqual(section("money", "overview"));
   expect(parseRoute("/calendar/agenda")).toEqual(section("calendar", "agenda"));
-  expect(parseRoute("/ai/flows/flow-rent")).toEqual(section("ai", "flows", ["flow-rent"]));
+  expect(parseRoute("/settings/flows/flow-rent")).toEqual(
+    section("settings", "flows", ["flow-rent"]),
+  );
+  expect(parseRoute("/projects/activity")).toEqual(section("projects", "activity", []));
   expect(parseRoute("/settings/data/money/untagged")).toEqual(
     section("settings", "data", ["money", "untagged"]),
   );
@@ -50,13 +53,19 @@ test("every old path redirects to its new home", () => {
     ["/c/projects", "/projects"],
     ["/c/leetcode", "/projects/proj-leetcode/items"],
     ["/c/leetcode/table", "/projects/proj-leetcode/items"],
-    ["/c/flows", "/ai/flows"],
-    ["/c/ai", "/ai/setup"],
+    ["/c/flows", "/settings/flows"],
+    ["/c/ai", "/settings/data/ai"],
     ["/c/proposals", "/settings/data/proposals"],
-    ["/agents", "/ai/agents"],
-    ["/flows", "/ai/flows"],
-    ["/flows/flow-rent", "/ai/flows/flow-rent"],
-    ["/ai", "/ai/setup"],
+    ["/agents", "/settings/agents"],
+    ["/flows", "/settings/flows"],
+    ["/flows/flow-rent", "/settings/flows/flow-rent"],
+    ["/ai", "/settings/agents"],
+    ["/ai/setup", "/settings/agents"],
+    ["/ai/overview", "/settings/agents"],
+    ["/ai/agents", "/settings/agents"],
+    ["/ai/flows", "/settings/flows"],
+    ["/ai/flows/flow-rent", "/settings/flows/flow-rent"],
+    ["/ai/activity", "/projects/activity"],
     ["/system", "/settings/system"],
     ["/system/jobs", "/settings/system/jobs"],
   ];
@@ -64,7 +73,7 @@ test("every old path redirects to its new home", () => {
     expect([from, redirectOf(from)]).toEqual([from, to]);
     expect(parseRoute(from)).toEqual({ name: "redirect", to });
   }
-  for (const current of ["/", "/money/overview", "/ai/setup", "/r/x", "/calendar"])
+  for (const current of ["/", "/money/overview", "/settings/agents", "/r/x", "/calendar"])
     expect(redirectOf(current)).toBeUndefined();
 });
 
@@ -88,8 +97,8 @@ test("links to a collection or a flow go straight to their new home", () => {
   expect(collectionPath("tasks", "board")).toBe("/tasks/board");
   expect(collectionPath("money")).toBe("/money/overview");
   expect(collectionPath("proposals")).toBe("/settings/data/proposals");
-  expect(flowPath("flow-rent")).toBe("/ai/flows/flow-rent");
-  expect(flowPath()).toBe("/ai/flows");
+  expect(flowPath("flow-rent")).toBe("/settings/flows/flow-rent");
+  expect(flowPath()).toBe("/settings/flows");
 });
 
 test("C opens the calendar, except while typing or with a modifier", () => {

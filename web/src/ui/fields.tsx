@@ -4,6 +4,7 @@ import { isSafeUrl, offeredOptions } from "../../../shared/fields.ts";
 import type { Field, SelectOption } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
+import { flowPath } from "../app/router.ts";
 import { formatMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
 import { useDoc, useItems } from "../store/queries.ts";
@@ -158,7 +159,7 @@ export function FieldInput({ field, value, onChange, id }: InputProps) {
           Edit on the project's Map tab
         </span>
       ) : (
-        <a id={id} href="/ai/flows" className="link">
+        <a id={id} href={flowPath()} className="link">
           Edit on the Flows page
         </a>
       );

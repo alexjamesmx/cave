@@ -5,9 +5,8 @@ import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections
 import { titleOf } from "../logic/views.ts";
 import { useItems } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
+import { ActivityPage } from "./Activity.tsx";
 import { Agents } from "./Agents.tsx";
-import { AiActivity, AiOverview } from "./AiHome.tsx";
-import { AiPage } from "./AiPage.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { Flows } from "./Flows.tsx";
@@ -39,11 +38,9 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   radar: () => <RadarPage />,
   notes: (rest) => <NotesPage {...(rest[0] ? { noteId: rest[0] } : {})} />,
   project: (rest) => <ProjectPage rest={rest} />,
+  activity: () => <ActivityPage />,
   agents: () => <Agents />,
   flows: (rest) => <Flows id={rest[0]} />,
-  "ai-overview": () => <AiOverview />,
-  "ai-setup": () => <AiPage />,
-  "ai-activity": () => <AiActivity />,
   "settings-general": () => <SettingsGeneral />,
   "settings-lists": () => <SettingsLists />,
   "settings-notifications": () => <SettingsNotifications />,

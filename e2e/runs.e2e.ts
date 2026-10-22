@@ -1,7 +1,7 @@
 import { mcpClient, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("a run an agent starts shows in the project's Activity, on its Map and in AI → Activity, updating live", async ({
+test("a run an agent starts shows in the project's Activity, on its Map and in Projects → Activity, updating live", async ({
   browser,
   baseURL,
 }) => {
@@ -69,14 +69,14 @@ test("a run an agent starts shows in the project's Activity, on its Map and in A
     .click();
   await expect(page.locator(".map-run", { hasText: "Plan the parts" })).toBeVisible();
 
-  // Finished: it leaves the Map and shows done in AI → Activity.
+  // Finished: it leaves the Map and shows done in Projects → Activity.
   await call("finish_run", { run, status: "done", summary: "Three parts drafted." });
   await synced(() =>
     expect(page.locator(".map-run", { hasText: "Plan the parts" })).toHaveCount(0, {
       timeout: 1000,
     }),
   );
-  await page.goto("/ai/activity?source=agent");
+  await page.goto("/projects/activity?source=agent");
   const all = page.getByRole("list", { name: "All runs" });
   await expect(all.getByRole("button", { name: /Plan the parts/ })).toContainText("done");
   await client.close();

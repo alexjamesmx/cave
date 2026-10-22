@@ -6,7 +6,7 @@ import { EnvBadge } from "./EnvBadge.tsx";
 import { Icon } from "./icon.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
-/** The sidebar lists the eight sections from the registry, each once; the dock reads the same. */
+/** The sidebar lists the seven sections from the registry, each once; the dock reads the same. */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const active = route.name === "section" ? route.section : undefined;
   return (

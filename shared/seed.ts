@@ -1,4 +1,3 @@
-import { AI, AI_COLLECTION } from "./ai.ts";
 import { mergeCategoryOptions } from "./categories.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
@@ -26,6 +25,8 @@ import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import { RUNS, RUNS_COLLECTION, runsMigration } from "./runs.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
 import type { Doc, Kind } from "./types.ts";
+
+const AI = "ai";
 
 const C = {
   lime: "#B6FF3B",
@@ -347,6 +348,28 @@ function mergeMoneyCategories(get: (id: string) => Doc | undefined): SeedMigrati
   ];
 }
 
+/**
+ * M10: the Cave is not an AI tool. The `ai` collection (M7b part 8, filled by `ai-sync`) and
+ * every live item in it are marked deleted, never removed: they stay in every copy and in
+ * backups, and undo still works. Runs again on what it produced: nothing left to do.
+ */
+export function retireAiMigration(
+  get: (id: string) => Doc | undefined,
+  items: (collection: string) => Doc[],
+): SeedMigration["docs"] {
+  const collection = get(AI);
+  if (!collection || collection.data._deleted === true) return [];
+  return [
+    { id: AI, kind: "collection", data: { _deleted: true } },
+    ...items(AI).map((d) => ({
+      id: d.id,
+      kind: "item" as const,
+      collection: AI,
+      data: { _deleted: true },
+    })),
+  ];
+}
+
 // Flows (M7 Part C): the collection and two drafts, as one migration so they arrive together.
 const FLOW_DOCS: SeedMigration["docs"] = [
   { id: FLOWS, kind: "collection", data: FLOWS_COLLECTION },
@@ -370,8 +393,9 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 5, docs: FLOW_DOCS },
   { version: 6, docs: [], update: mergeMoneyCategories },
   { version: 7, docs: [], update: repeatingTasksAndPayments },
-  // M7b part 8: the AI collection, empty until `bun run ai-sync` fills it.
-  { version: 8, docs: [{ id: AI, kind: "collection", data: AI_COLLECTION }] },
+  // M7b part 8 created the `ai` collection; M10 retired it (16), so a database that never had
+  // it gets nothing here.
+  { version: 8, docs: [] },
   // M8 part 2: project refs, parts, templates, and the LeetCode and Cave projects.
   { version: 9, docs: [], update: projectsMigration },
   // M7c part 3: accounts as a select, payments share money's lists, detail archived.
@@ -386,6 +410,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 14, docs: [], update: notesMigration },
   // M9 part B: the radar, fed by agents, ranked by the owner's interests.
   { version: 15, docs: [], update: radarMigration },
+  // M10: the `ai` collection and its items are deleted; the Cave is not an AI tool.
+  { version: 16, docs: [], update: retireAiMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -429,7 +455,6 @@ export function seedDocs(): Doc[] {
     ),
     seeded("proposals", "collection", PROPOSALS),
     seeded(PAYMENTS, "collection", withProjects(PAYMENTS, PAYMENTS_COLLECTION)),
-    seeded(AI, "collection", AI_COLLECTION),
     seeded(PARTS, "collection", PARTS_COLLECTION),
     seeded(RUNS, "collection", RUNS_COLLECTION),
     seeded(NOTES, "collection", NOTES_COLLECTION),

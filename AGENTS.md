@@ -24,7 +24,7 @@ Pre-v0.1: M1 to M9 are on `main` and live at `https://cave.alexjamesmx.dev` (a p
 - `bun run deploy` (deploy the tip of `origin/main` now through `cave-deploy` on the VPS; `--rollback`); `bun run pull-data` (the newest verified VPS backup replaces the dev database inside `data/`; the old one stays as `<db>.prev`).
 - `bun run backup` (`--dir`, `--keep`, `--sha`); `bun run restore <file>` (server stopped); `bun run verify-backup <file>`; `bun run export`.
 - `bun run agent add|list|revoke` (agent tokens, `docs/agents.md`); `bun run push-keys` (VAPID keys).
-- `bun run money-review` (category proposals; `--local`, `--dry-run`); `bun run ai-sync` (AI setup to the `ai` collection, secrets redacted; `--apply`, `--local`).
+- `bun run money-review` (category proposals; `--local`, `--dry-run`).
 
 Environment variables: `docs/system.md` section 7; template in `.env.example`.
 
@@ -34,7 +34,7 @@ Environment variables: `docs/system.md` section 7; template in `.env.example`.
 - One brain, many agents: agents go through the MCP server or HTTP API, never the database file.
 - The owner keeps the data: records and notes in SQLite, full JSON export at any time.
 - Nothing is hard-deleted. Every change records who made it (user or which agent) and can be undone.
-- Model-agnostic: no feature depends on one model vendor. AI calls go through a provider adapter.
+- Not an AI tool: the Cave holds the owner's life and shows what agents did to it; it never runs a model, mirrors an agent's configuration or depends on one vendor. The Ask boxes open Claude with the question; swapping that link is one module (`web/src/logic/ask-claude.ts`).
 
 ## Stack
 

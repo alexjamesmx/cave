@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { CONNECTOR_HINT, claudeProvider, claudeUrl, currentProvider } from "./providers.ts";
+import { askClaude, CONNECTOR_HINT, claudeUrl } from "./ask-claude.ts";
 
 test("the Claude URL prefills the question after the connector line", () => {
   const url = new URL(claudeUrl("  What did I spend on food this month? "));
@@ -12,17 +12,16 @@ test("the Claude URL prefills the question after the connector line", () => {
 test("asking copies the question, then opens Claude; a failed copy still opens", async () => {
   const opened: string[] = [];
   const copied: string[] = [];
-  await claudeProvider.ask("hola", {
+  await askClaude("hola", {
     open: (u) => opened.push(u),
     copy: async (t) => void copied.push(t),
   });
-  await claudeProvider.ask("again", {
+  await askClaude("again", {
     open: (u) => opened.push(u),
     copy: async () => {
       throw new Error("denied");
     },
   });
   expect(copied).toEqual(["hola"]);
-  expect(opened).toHaveLength(2);
-  expect(currentProvider().id).toBe("claude");
+  expect(opened).toEqual([claudeUrl("hola"), claudeUrl("again")]);
 });

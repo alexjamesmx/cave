@@ -20,9 +20,14 @@ const enc = (...segments: string[]) => `/${segments.map(encodeURIComponent).join
 export function redirectOf(pathname: string): string | undefined {
   const p = parts(pathname);
   const [first, second, third] = p;
-  if (first === "agents" && p.length === 1) return "/ai/agents";
-  if (first === "flows") return second ? enc("ai", "flows", second) : "/ai/flows";
-  if (first === "ai" && p.length === 1) return "/ai/setup";
+  if (first === "agents" && p.length === 1) return "/settings/agents";
+  if (first === "flows") return flowPath(second);
+  // The AI section (M8 to M10): agents and flows moved to Settings, Activity to Projects.
+  if (first === "ai") {
+    if (second === "flows") return flowPath(third);
+    if (second === "activity") return "/projects/activity";
+    return "/settings/agents";
+  }
   if (first === "system") return second ? enc("settings", "system", second) : "/settings/system";
   // Wealth is Net worth since M7c.
   if (first === "money" && second === "wealth") return "/money/net-worth";
@@ -40,8 +45,7 @@ export function redirectOf(pathname: string): string | undefined {
   if (collection === "money" && view === "table") return "/money/transactions";
   if (collection === "projects") return "/projects";
   if (collection === "ideas") return "/projects/ideas";
-  if (collection === "flows") return "/ai/flows";
-  if (collection === "ai") return "/ai/setup";
+  if (collection === "flows") return flowPath();
   return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);
 }
 
@@ -71,7 +75,7 @@ export const collectionPath = (collection: string, view?: string) => {
 export const projectPath = (id: string, tab?: string) =>
   tab ? enc("projects", id, tab) : enc("projects", id);
 
-export const flowPath = (id?: string) => (id ? enc("ai", "flows", id) : "/ai/flows");
+export const flowPath = (id?: string) => (id ? enc("settings", "flows", id) : "/settings/flows");
 
 // pushState fires no event, so navigation announces itself for subscribers.
 const NAVIGATE = "cave:navigate";
