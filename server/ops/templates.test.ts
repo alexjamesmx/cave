@@ -224,11 +224,12 @@ test("the server env template sets CAVE_ENV=production and the off-box status fi
   expect(env).toMatch(/^CAVE_OFFSITE_STATUS=\/var\/lib\/cave-offsite\/status\.json$/m);
 });
 
-test("Claude Code settings: setup's template is the committed file, which turns the commit hook on", () => {
-  const read = (path: string) => readFileSync(join(import.meta.dir, "../..", path), "utf8");
-  const committed = read(".claude/settings.json");
-  expect(read("setup/claude-settings.json")).toBe(committed);
-  const settings = JSON.parse(committed);
+test("Claude Code settings turn the commit hook on and keep the owner's mode out of the repo", () => {
+  const settings = JSON.parse(
+    readFileSync(join(import.meta.dir, "../../.claude/settings.json"), "utf8"),
+  );
+  // A permission mode is the owner's choice per machine: .claude/settings.local.json.
+  expect(settings.permissions.defaultMode).toBeUndefined();
   expect(settings.attribution).toEqual({ commit: "", pr: "", sessionUrl: false });
   expect(settings.hooks.SessionStart).toEqual([
     {
@@ -335,12 +336,9 @@ test("Remote Control: one same-dir session in the default permission mode, resta
   expect(task).toContain("-WindowStyle Hidden");
   // The power setting is only suggested; the owner decides.
   expect(task).not.toMatch(/^\s*powercfg/m);
-  const main = setup("setup.ps1");
-  expect(main).toContain("param([switch]$RemoveRemoteControl)");
-  expect(main).toContain("remote-control-task.ps1') -Remove");
-  // PowerShell 5.1 reads a file without a BOM as ANSI; the scripts stay ASCII.
-  for (const text of [task, main])
-    expect([...text].every((c) => (c.codePointAt(0) ?? 0) < 128)).toBe(true);
+  expect(setup("setup.sh")).toContain("setup/remote-control-task.ps1");
+  // PowerShell 5.1 reads a file without a BOM as ANSI; the script stays ASCII.
+  expect([...task].every((c) => (c.codePointAt(0) ?? 0) < 128)).toBe(true);
 });
 
 test("Remote Control: the task finds the distro and Linux path of the WSL checkout", () => {
