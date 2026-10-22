@@ -195,7 +195,7 @@ The laptop works Linux-first: the repo, Bun, Claude Code, the e2e browser and SS
    bun install && bun run check && bun test && bun run e2e
    ```
 3. **SSH to the VPS:**
-   - Run `ssh-keygen -t ed25519` (with a passphrase; `ssh-keygen -p -f ~/.ssh/id_ed25519` adds one to an existing key). The same key can serve GitHub.
+   - Run `ssh-keygen -t ed25519`. The laptop's key has no passphrase by the owner's choice (`docs/decisions.md`, 2026-10-21); `ssh-keygen -p -f ~/.ssh/id_ed25519` adds one later. The same key can serve GitHub.
    - Add the new public key to `/root/.ssh/authorized_keys` on the VPS: in hPanel's browser terminal, or from a machine that already gets in, for example the Windows side: `wsl cat ~/.ssh/id_ed25519.pub | ssh cave-vps "cat >> /root/.ssh/authorized_keys"` in PowerShell.
    - Add to `~/.ssh/config`:
      ```
@@ -206,7 +206,7 @@ The laptop works Linux-first: the repo, Bun, Claude Code, the e2e browser and SS
        IdentitiesOnly yes
        AddKeysToAgent yes
      ```
-   - Let the user `ssh-agent` hold the key, so deploys ask for the passphrase once per WSL boot. Ubuntu's `ssh-agent.socket` user unit is on by default; shells started by `wsl.exe` don't see it, so add to `~/.bashrc`: `export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-$XDG_RUNTIME_DIR/openssh_agent}"` (`setup/remote-control.sh` sets the same for the phone's sessions).
+   - With a passphrase, let the user `ssh-agent` hold the key, so deploys ask for it once per WSL boot. Ubuntu's `ssh-agent.socket` user unit is on by default; shells started by `wsl.exe` don't see it, so add to `~/.bashrc`: `export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-$XDG_RUNTIME_DIR/openssh_agent}"` (`setup/remote-control.sh` sets the same for the phone's sessions).
    - Run `ssh cave-vps true`. Check that the host key fingerprint matches `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` in the browser terminal.
 4. **`.env`:** copy it from `.env.example`. Set:
    - `CAVE_DB_PATH=data/dev.db`;
