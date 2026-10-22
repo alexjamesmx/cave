@@ -4,7 +4,7 @@ import type { Doc } from "../../shared/types.ts";
 import { every, type Job } from "../jobs/scheduler.ts";
 import type { Store } from "../store.ts";
 import type { Notifier, SentLog } from "./notifier.ts";
-import { CATCH_UP_MS, describeDue, SWEEP_MS } from "./reminder-sweep.ts";
+import { CATCH_UP_MS, describeDue, predates, SWEEP_MS } from "./reminder-sweep.ts";
 import type { Notification } from "./types.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -96,6 +96,7 @@ export function createPaymentSweep({ store, notifier, sent, zone }: PaymentSweep
             now - at > CATCH_UP_MS ||
             (when === "before" && dueAt !== undefined && now >= dueAt)
           ) {
+            if (predates(doc, at)) continue;
             sent.markMissed(key, doc.id, now);
             missed += 1;
             continue;

@@ -61,7 +61,7 @@ test("/system renders each tab with a flow, a reminder and a job run", async ({
 
   await tabs.getByRole("link", { name: "Notifications" }).click();
   await expect(
-    page.getByRole("region", { name: "Notification log" }).getByText(/missed reminders/),
+    page.getByRole("region", { name: "Notification log" }).getByText(/\d+ missed reminders?/),
   ).toBeVisible();
 
   expect(foreign).toEqual([]);

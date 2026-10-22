@@ -108,3 +108,17 @@ test("a notice seen too late is recorded as missed, and a day-before notice afte
   expect(notified).toEqual([]);
   expect(await run(DUE_AT + 8 * HOUR)).toMatchObject({ summary: "0 sent, 0 missed" });
 });
+
+test("a notice timed before the payment existed is skipped, not counted as missed", async () => {
+  // Added at 22:13 the evening before: the day-before notice (09:00 that morning) never applied.
+  const created = at("2026-10-16T04:13:00Z");
+  write(
+    "new",
+    { _title: "New", due: DUE, active: true, _created: new Date(created).toISOString() },
+    created,
+  );
+  expect(await run(created + 60_000)).toMatchObject({ summary: "0 sent, 0 missed" });
+  expect(sent.missedCount()).toBe(0);
+  expect(await run(DUE_AT)).toMatchObject({ summary: "1 sent, 0 missed" });
+  expect(titles()).toEqual(["New · due today"]);
+});

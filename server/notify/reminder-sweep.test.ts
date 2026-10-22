@@ -125,3 +125,10 @@ test("a date-only reminder is due at the reminder time", async () => {
   expect(notified[0]?.details).toEqual(["Thu Oct 15, 09:00"]);
   expect(describeDue("2026-10-22T18:05", MX)).toBe("Thu Oct 22, 18:05");
 });
+
+test("a reminder added with a time already long past is skipped, not counted as missed", async () => {
+  write("old", { _title: "Old", due: "2026-10-15T03:00", _created: new Date(NOW).toISOString() });
+  expect(await run(NOW + 30_000)).toMatchObject({ summary: "0 sent, 0 missed" });
+  expect(sent.missedCount()).toBe(0);
+  expect(notified).toEqual([]);
+});

@@ -9,6 +9,14 @@ import type { Notification } from "./types.ts";
 export const CATCH_UP_MS = 6 * 60 * 60 * 1000;
 export const SWEEP_MS = 30_000;
 
+/**
+ * Whether a late send was timed before the item existed (a reminder added with a time long
+ * past, a payment's day-before notice for one added that evening). Nothing was missed then,
+ * so the sweeps skip it instead of logging it as missed. Unknown when `_created` is absent.
+ */
+export const predates = (doc: Doc, at: number) =>
+  at < Date.parse(typeof doc.data._created === "string" ? doc.data._created : "");
+
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -72,6 +80,7 @@ export function createReminderSweep({ store, notifier, sent, zone }: SweepOption
         const key = reminderKey(doc.id, doc.data.due);
         if (sent.wasSent(key)) continue;
         if (now - at > CATCH_UP_MS) {
+          if (predates(doc, at)) continue;
           sent.markMissed(key, doc.id, now);
           missed += 1;
           continue;
