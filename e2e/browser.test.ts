@@ -13,7 +13,7 @@ const cloud = (path: string) => path === CLOUD_CHROMIUM;
 describe("chooseBrowser", () => {
   test("an explicit executable wins over everything", () => {
     expect(
-      chooseBrowser({ CAVE_E2E_EXECUTABLE: "/x/chrome", CAVE_E2E_CHANNEL: "msedge" }, "win32"),
+      chooseBrowser({ CAVE_E2E_EXECUTABLE: "/x/chrome", CAVE_E2E_CHANNEL: "chrome" }, "linux"),
     ).toEqual({ executablePath: "/x/chrome" });
   });
 
@@ -21,10 +21,6 @@ describe("chooseBrowser", () => {
     expect(chooseBrowser({ CAVE_E2E_CHANNEL: "chrome" }, "linux", cloud)).toEqual({
       channel: "chrome",
     });
-  });
-
-  test("Windows uses the installed Edge", () => {
-    expect(chooseBrowser({}, "win32", none)).toEqual({ channel: "msedge" });
   });
 
   test("Linux uses the cloud VM's Chromium when it is there", () => {
@@ -46,21 +42,20 @@ describe("chooseBrowser", () => {
   });
 
   test("empty variables count as unset", () => {
-    expect(chooseBrowser({ CAVE_E2E_EXECUTABLE: "", CAVE_E2E_CHANNEL: "" }, "win32")).toEqual({
-      channel: "msedge",
-    });
+    expect(
+      chooseBrowser({ CAVE_E2E_EXECUTABLE: "", CAVE_E2E_CHANNEL: "" }, "linux", cloud),
+    ).toEqual({ executablePath: CLOUD_CHROMIUM });
   });
 });
 
 describe("snapshotPathTemplate", () => {
-  test("Google Chrome gets its own baselines; Edge and Chromium keep the platform's", () => {
+  test("Google Chrome gets its own baselines; the cloud Chromium keeps the platform's", () => {
     expect(snapshotPathTemplate({ channel: "chrome" })).toBe(
       "{testDir}/{testFileName}-snapshots/{arg}-{platform}-chrome{ext}",
     );
-    for (const choice of [{ channel: "msedge" }, { executablePath: CLOUD_CHROMIUM }])
-      expect(snapshotPathTemplate(choice)).toBe(
-        "{testDir}/{testFileName}-snapshots/{arg}-{platform}{ext}",
-      );
+    expect(snapshotPathTemplate({ executablePath: CLOUD_CHROMIUM })).toBe(
+      "{testDir}/{testFileName}-snapshots/{arg}-{platform}{ext}",
+    );
   });
 });
 
@@ -69,6 +64,6 @@ describe("browserUse", () => {
     expect(browserUse({ executablePath: "/x" })).toEqual({
       launchOptions: { executablePath: "/x" },
     });
-    expect(browserUse({ channel: "msedge" })).toEqual({ channel: "msedge" });
+    expect(browserUse({ channel: "chrome" })).toEqual({ channel: "chrome" });
   });
 });

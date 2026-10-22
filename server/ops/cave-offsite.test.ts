@@ -5,7 +5,7 @@ import { join } from "node:path";
 // skips, and the harness also runs by hand.
 const hasRestic = Bun.which("restic") !== null;
 
-test.skipIf(process.platform === "win32" || !hasRestic)(
+test.skipIf(!hasRestic)(
   "deploy/cave-offsite: backs up, checks a restored copy, fails on corruption, keeps secrets out",
   () => {
     const result = Bun.spawnSync(["bash", join(import.meta.dir, "cave-offsite.test.sh")], {

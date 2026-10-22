@@ -18,7 +18,6 @@ export function chooseBrowser(
 ): BrowserChoice {
   if (env.CAVE_E2E_EXECUTABLE) return { executablePath: env.CAVE_E2E_EXECUTABLE };
   if (env.CAVE_E2E_CHANNEL) return { channel: env.CAVE_E2E_CHANNEL };
-  if (platform === "win32") return { channel: "msedge" };
   if (platform === "linux" && exists(CLOUD_CHROMIUM)) return { executablePath: CLOUD_CHROMIUM };
   if (platform === "linux" && exists(LINUX_CHROME)) return { channel: "chrome" };
   throw new Error("No browser for e2e: set CAVE_E2E_EXECUTABLE or CAVE_E2E_CHANNEL");
