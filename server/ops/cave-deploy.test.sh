@@ -51,7 +51,7 @@ case "$1" in
   install) [ -n "${SLOW:-}" ] && sleep 2; [ "${FAIL_AT:-}" = install ] && exit 1 ;;
   run)
     if [ "$2" = backup ]; then
-      # Records which release's code took it, then answers like server/backup-cli.ts.
+      # Records which release's code took it, then answers like server/cli/backup.ts.
       echo "backup taken by release $(basename "$(pwd -P)")" >>"$CALLS"
       [ "${FAIL_AT:-}" = backup ] && { echo "Backup of cave.db failed: disk full" >&2; exit 1; }
       shift 2

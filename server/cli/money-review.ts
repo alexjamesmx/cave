@@ -1,6 +1,6 @@
-import { fieldsOf } from "../shared/fields.ts";
-import { buildReview } from "../shared/money-review.ts";
-import type { Doc } from "../shared/types.ts";
+import { fieldsOf } from "../../shared/fields.ts";
+import { buildReview } from "../../shared/money-review.ts";
+import type { Doc } from "../../shared/types.ts";
 
 /**
  * `bun run money-review`: reads every money entry from the hosted server (`/api/export`),

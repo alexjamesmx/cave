@@ -1,4 +1,4 @@
-import { checkLocal, healthCheck, type Run, remote, runningCommit } from "./deploy.ts";
+import { checkLocal, healthCheck, type Run, remote, runningCommit } from "../ops/deploy.ts";
 
 const ssh = process.env.CAVE_SSH || "cave-vps";
 const url = process.env.CAVE_REMOTE_URL;

@@ -1,5 +1,5 @@
-import { resolveConfig } from "./config.ts";
-import { restoreBackup } from "./restore.ts";
+import { resolveConfig } from "../config.ts";
+import { restoreBackup } from "../restore.ts";
 
 const file = process.argv[2];
 if (!file) {

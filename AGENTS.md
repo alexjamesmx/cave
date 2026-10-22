@@ -2,7 +2,7 @@
 
 Open-source, local-first, multi-agent personal brain. One place for money, tasks, habits, diary, ideas, learning and notes, built so any agent (Claude, Codex, OpenCode, OpenClaw or a local model) can read it and act on it through one API.
 
-Repository: https://github.com/alexjamesmx/cave (private: the plan and design docs hold real financial numbers). CI (`.github/workflows/ci.yml`) runs `bun run check` and `bun test` on every push and pull request.
+Repository: https://github.com/alexjamesmx/cave (private: the plan and design docs hold real financial numbers). CI (`.github/workflows/ci.yml`) runs `bun run check`, `bun test`, `bun run e2e` (on the runner's Google Chrome) and shellcheck on every push and pull request.
 
 ## Status
 
@@ -49,7 +49,7 @@ Environment variables: `docs/system.md` section 7; template in `.env.example`.
 
 ## Layout
 
-- `server/`: HTTP API, sync, MCP server, jobs, notifications, flows, ops tooling (`server/ops/`).
+- `server/`: HTTP API, sync, MCP server, jobs, notifications, flows, ops tooling (`server/ops/`); every `bun run` command's entry point is in `server/cli/`.
 - `shared/`: types, field schemas, merge logic used by server and client.
 - `web/`: the PWA.
 - `e2e/`: browser checks.
@@ -96,7 +96,7 @@ Two agents share this repo: an architect (Claude in the desktop app: specs, desi
 Claude Code cloud sessions (claude.ai/code, the Code tab in the Claude app) run in the `cave` environment: Trusted network, `setup/cloud-setup.sh` as its setup script, no environment variables, no secrets.
 
 - A cloud session has no production access, by design: no tokens, no SSH, no `data/`. Never ask for any, and never add any to the environment.
-- Run `bun install --frozen-lockfile`, `bun run check` and `bun test`; `bun run e2e` (preinstalled Chromium) when a change touches the UI. CI doesn't run e2e.
+- Run `bun install --frozen-lockfile`, `bun run check` and `bun test`; `bun run e2e` (preinstalled Chromium) when a change touches the UI.
 - It may push to `main` only after the owner says so in the conversation; otherwise it pushes a branch and opens a PR. It never merges.
 - A PR description says what changes for the running app, and calls out any migration on its own line. Migrations on real data need the owner's explicit approval in the PR conversation.
 - Use `gh api` (REST) or the built-in GitHub tools: the session proxy rejects GraphQL, so `gh pr` and `gh issue` fail.

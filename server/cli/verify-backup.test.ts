@@ -9,7 +9,7 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 const cli = (file?: string) =>
-  Bun.spawnSync(["bun", join(import.meta.dir, "verify-backup-cli.ts"), ...(file ? [file] : [])], {
+  Bun.spawnSync(["bun", join(import.meta.dir, "verify-backup.ts"), ...(file ? [file] : [])], {
     stdout: "pipe",
     stderr: "pipe",
   });

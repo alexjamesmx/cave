@@ -58,7 +58,7 @@ build() {
   local sha="$1" rel="$root/releases/$1" current
   step=args
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "not a full commit id: $sha" >&2; return 2; }
-  step=env
+  step="env"
   require_production
   step=fetch
   git -C "$root/repo.git" fetch --quiet origin '+refs/heads/main:refs/heads/main'
@@ -78,7 +78,7 @@ build() {
   bun install --frozen-lockfile
   step=check
   bun run check
-  step=test
+  step="test"
   bun test
   cd "$root"
   step=switch

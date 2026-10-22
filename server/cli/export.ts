@@ -1,9 +1,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { resolveConfig } from "./config.ts";
-import { openDb } from "./db.ts";
-import { exportAll, exportName } from "./export.ts";
-import { createStore } from "./store.ts";
+import { resolveConfig } from "../config.ts";
+import { openDb } from "../db.ts";
+import { exportAll, exportName } from "../export.ts";
+import { createStore } from "../store.ts";
 
 const config = resolveConfig(process.env);
 if (!config.ok) {

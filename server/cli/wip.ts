@@ -1,5 +1,5 @@
-import { gitIn } from "./git.ts";
-import { finishWip, type Outcome, resumeWip, saveWip } from "./wip.ts";
+import { gitIn } from "../ops/git.ts";
+import { finishWip, type Outcome, resumeWip, saveWip } from "../ops/wip.ts";
 
 const git = gitIn(process.cwd());
 const [flag, message] = process.argv.slice(2);

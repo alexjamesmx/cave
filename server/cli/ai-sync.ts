@@ -2,9 +2,9 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { formatStamp } from "../../shared/hlc.ts";
 import type { Doc } from "../../shared/types.ts";
-import { applyEdits } from "./apply.ts";
-import { type AiItem, collectAi } from "./collect.ts";
-import { aiId, hashOf, planSync } from "./plan.ts";
+import { applyEdits } from "../ai-sync/apply.ts";
+import { type AiItem, collectAi } from "../ai-sync/collect.ts";
+import { aiId, hashOf, planSync } from "../ai-sync/plan.ts";
 
 /**
  * `bun run ai-sync`: reads the repository's and this laptop's AI rules, skills, MCP servers,

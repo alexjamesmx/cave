@@ -4,7 +4,7 @@ import { expect, type Page, test } from "./test.ts";
 
 /** `bun run money-review --local` against the e2e server, as the owner runs it on the laptop. */
 function runReview(baseURL: string): string {
-  const result = spawnSync("bun", ["run", "server/money-review-cli.ts", "--local"], {
+  const result = spawnSync("bun", ["run", "server/cli/money-review.ts", "--local"], {
     env: { ...process.env, PORT: new URL(baseURL).port, CAVE_TOKEN: E2E_TOKEN },
     encoding: "utf8",
   });

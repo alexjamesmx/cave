@@ -1,6 +1,6 @@
-import { createAgentRegistry } from "./agents.ts";
-import { resolveConfig } from "./config.ts";
-import { openDb } from "./db.ts";
+import { createAgentRegistry } from "../agents.ts";
+import { resolveConfig } from "../config.ts";
+import { openDb } from "../db.ts";
 
 const USAGE = `Usage:
   bun run agent add <name> --scopes read,write [--collections money,tasks]

@@ -1,4 +1,4 @@
-import { parseSeedArgs, seedDatabase } from "./sample-db.ts";
+import { parseSeedArgs, seedDatabase } from "../sample-db.ts";
 
 const args = parseSeedArgs(process.argv.slice(2));
 if (!args.ok) {

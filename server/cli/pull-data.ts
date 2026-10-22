@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { resolveConfig } from "../config.ts";
-import { pullDataRefusal, restoreNewest } from "./pull-data.ts";
-import { pullFromVps, reportPulled } from "./pull-remote.ts";
+import { pullDataRefusal, restoreNewest } from "../ops/pull-data.ts";
+import { pullFromVps, reportPulled } from "../ops/pull-remote.ts";
 
 const ssh = process.env.CAVE_SSH || "cave-vps";
 const remoteDir = process.env.CAVE_REMOTE_BACKUP_DIR || "/var/lib/cave/backups";
