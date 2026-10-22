@@ -1,6 +1,6 @@
 import type { Doc } from "./types.ts";
 
-export interface MergeResult {
+interface MergeResult {
   doc: Doc;
   /** Keys whose value or stamp came from `incoming`; empty means `local` is unchanged. */
   changed: string[];

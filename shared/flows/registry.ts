@@ -8,12 +8,12 @@ import { templateErrors } from "./templates.ts";
  */
 
 export const OPS = ["=", "!=", ">", ">=", "<", "<=", "contains", "empty", "not-empty"] as const;
-export type Op = (typeof OPS)[number];
+type Op = (typeof OPS)[number];
 export const EVERY = ["day", "week", "month", "year"] as const;
-export const OPEN = ["trigger-item", "created-item", "calendar"] as const;
+const OPEN = ["trigger-item", "created-item", "calendar"] as const;
 
 /** A parameter's kind decides both its schema and the editor's input for it. */
-export type ParamKind =
+type ParamKind =
   | "collection"
   | "field"
   | "value"
@@ -36,7 +36,7 @@ export interface ParamSpec {
   max?: number;
 }
 
-export interface TypeSpec {
+interface TypeSpec {
   type: string;
   label: string;
   params: ParamSpec[];

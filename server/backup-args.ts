@@ -1,4 +1,4 @@
-export interface BackupArgs {
+interface BackupArgs {
   /** Where the backup goes; the configured backup directory when absent. */
   dir?: string;
   /** Keep only the newest this many backups of the same kind in `dir`; daily retention when absent. */

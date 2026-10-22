@@ -8,7 +8,7 @@ export interface OutboxRow {
   rev: number;
 }
 
-export type MetaRow =
+type MetaRow =
   | { key: "cursor"; value: number }
   | { key: "clock"; value: ClockState }
   /** Server time minus device time, set by clock recovery; added to every local time. */

@@ -45,7 +45,7 @@ export function useReminderZone(): Zone {
   return useMemo(() => ({ timeZone, defaultTime }), [timeZone, defaultTime]);
 }
 
-export interface Saver {
+interface Saver {
   save(id: string, patch: Record<string, unknown>): Promise<boolean>;
   create(patch: Record<string, unknown>): Promise<string | undefined>;
   error: string | undefined;

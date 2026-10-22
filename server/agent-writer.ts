@@ -20,12 +20,12 @@ import type { Doc } from "../shared/types.ts";
 import type { Agent } from "./agents.ts";
 import type { Store } from "./store.ts";
 
-export const MAX_TITLE_CHARS = 500;
+const MAX_TITLE_CHARS = 500;
 export const MAX_BODY_BYTES = 100 * 1024;
 export const PROPOSALS = "proposals";
 const REMINDERS = "reminders";
 
-export interface AgentPatch {
+interface AgentPatch {
   title?: string | undefined;
   body?: string | undefined;
   fields?: Record<string, unknown> | undefined;

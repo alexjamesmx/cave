@@ -17,7 +17,7 @@ import type { Store } from "../store.ts";
 const fail = (error: string): WriteResult => ({ ok: false, error });
 const live = (d: Doc | undefined): d is Doc => d !== undefined && d.data._deleted !== true;
 
-export interface RunDeps {
+interface RunDeps {
   store: Store;
   agent: Agent;
   writer: () => AgentWriter;

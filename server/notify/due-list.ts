@@ -3,9 +3,9 @@ import { dueInstant, isOpen, type Zone } from "../../shared/reminders.ts";
 import type { Doc } from "../../shared/types.ts";
 import type { Store } from "../store.ts";
 
-export type DueGroup = "Overdue" | "Today" | "Tomorrow";
+type DueGroup = "Overdue" | "Today" | "Tomorrow";
 
-export interface DueEntry {
+interface DueEntry {
   group: DueGroup;
   doc: Doc;
   collection: "reminders" | "tasks";

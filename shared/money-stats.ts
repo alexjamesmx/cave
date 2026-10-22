@@ -83,7 +83,7 @@ export function filterFromSearch(search: string): MoneyFilter {
   return f;
 }
 
-export const monthsOf = (year: string) =>
+const monthsOf = (year: string) =>
   Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`);
 
 export interface PeriodSummary {
@@ -136,7 +136,7 @@ export const previousPeriod = (p: { kind: "month" | "year"; key: string }) =>
     ? { ...p, key: shiftMonth(p.key, -1) }
     : { ...p, key: String(Number(p.key) - 1) };
 
-export interface TrendPoint {
+interface TrendPoint {
   month: string;
   spent: number;
   income: number;

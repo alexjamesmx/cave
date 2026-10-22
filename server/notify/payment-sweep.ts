@@ -10,7 +10,7 @@ import type { Notification } from "./types.ts";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** `notify_days` as set on the payment, else 1; a negative or broken value counts as 1. */
-export const notifyDaysOf = (doc: Doc) => {
+const notifyDaysOf = (doc: Doc) => {
   const n = doc.data.notify_days;
   return typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : 1;
 };
@@ -18,7 +18,7 @@ export const notifyDaysOf = (doc: Doc) => {
 type When = "before" | "due";
 
 /** Names one send for one due date: a paid or advanced payment never sends for the old one. */
-export const paymentKey = (id: string, due: string, when: When) => `payment:${id}:${due}:${when}`;
+const paymentKey = (id: string, due: string, when: When) => `payment:${id}:${due}:${when}`;
 
 const dueIn = (days: number) => (days === 1 ? "due tomorrow" : `due in ${days} days`);
 
@@ -26,7 +26,7 @@ const dueIn = (days: number) => (days === 1 ? "due tomorrow" : `due in ${days} d
  * The title carries the wording ("due tomorrow", "charged today"), so a titles-only channel
  * still says what's happening; the amount stays in the details, shown only at full detail.
  */
-export function paymentNotification(doc: Doc, when: When, zone: Zone): Notification {
+function paymentNotification(doc: Doc, when: When, zone: Zone): Notification {
   const due = doc.data.due as string;
   const name = typeof doc.data._title === "string" && doc.data._title ? doc.data._title : "Payment";
   const autopay = doc.data.autopay === true;
@@ -50,7 +50,7 @@ export function paymentNotification(doc: Doc, when: When, zone: Zone): Notificat
 }
 
 /** When each send for this payment is due; an autopay one only tells on the day. */
-export function paymentSends(doc: Doc, zone: Zone): { when: When; at: number }[] {
+function paymentSends(doc: Doc, zone: Zone): { when: When; at: number }[] {
   if (!isActive(doc) || typeof doc.data.due !== "string") return [];
   const at = dueInstant(doc.data.due, zone);
   if (at === undefined) return [];
@@ -62,7 +62,7 @@ export function paymentSends(doc: Doc, zone: Zone): { when: When; at: number }[]
   return [...before, { when: "due", at }];
 }
 
-export interface PaymentSweepOptions {
+interface PaymentSweepOptions {
   store: Store;
   notifier: Notifier;
   sent: SentLog;

@@ -7,7 +7,7 @@ export const BACKUP_PATTERN = /^cave-(\d{4})-(\d{2})-(\d{2})T(\d{2})(\d{2})\.db$
 
 const KEEP_NEWEST = 14;
 const KEEP_MONTHS = 12;
-export const BACKUP_EVERY_MS = 24 * 60 * 60 * 1000;
+const BACKUP_EVERY_MS = 24 * 60 * 60 * 1000;
 
 export function backupName(now: number): string {
   const iso = new Date(now).toISOString();
@@ -57,7 +57,7 @@ export function verifyBackup(file: string): Verified {
   }
 }
 
-export type BackupResult =
+type BackupResult =
   | { ok: true; file: string; docs: number }
   | { ok: false; file: string; error: string };
 

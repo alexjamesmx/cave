@@ -65,7 +65,7 @@ function htmlAsText() {
 
 const urlTransform = (url: string) => (url.startsWith(NOTE) || isSafeUrl(url) ? url : "");
 
-export interface WikiTarget {
+interface WikiTarget {
   href: string;
 }
 

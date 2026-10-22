@@ -18,7 +18,7 @@ export const DEFAULT_SEED_DB = "data/seed.db";
 /** The actor sample records carry: an owner's device, so the server treats them as records. */
 export const SAMPLE_ACTOR = "user:seed-data";
 
-export interface SeedArgs {
+interface SeedArgs {
   db: string;
   reset: boolean;
 }

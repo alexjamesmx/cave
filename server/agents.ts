@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { isDocId } from "../shared/ids.ts";
 
-export const SCOPES = ["read", "write"] as const;
+const SCOPES = ["read", "write"] as const;
 export type Scope = (typeof SCOPES)[number];
 
 export interface Agent {

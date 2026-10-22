@@ -12,7 +12,7 @@ export interface AiView {
   desc: boolean;
 }
 
-export const AI_SORTS = ["kind", "title", "changed", "source"] as const;
+const AI_SORTS = ["kind", "title", "changed", "source"] as const;
 export type AiSort = (typeof AI_SORTS)[number];
 
 const FILTERS = ["kind", "surface", "scope", "status", "text"] as const;
@@ -22,8 +22,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCas
 const byChars = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** When an item last changed anywhere: its newest stamp. */
-export const changedAt = (d: Doc) =>
-  Math.max(0, ...Object.values(d.stamps).map((s) => parseStamp(s).ms));
+const changedAt = (d: Doc) => Math.max(0, ...Object.values(d.stamps).map((s) => parseStamp(s).ms));
 
 export function viewFromSearch(search: string): AiView {
   const p = new URLSearchParams(search);

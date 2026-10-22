@@ -33,7 +33,7 @@ export function StatusPill({ status }: { status: string }) {
 }
 
 /** A run's steps as a vertical pipeline; the current step of an active run pulses. */
-export function RunPipeline({ entry }: { entry: ActivityEntry }) {
+function RunPipeline({ entry }: { entry: ActivityEntry }) {
   const last = entry.steps.length - 1;
   return (
     <ol className="run-pipeline" aria-label={`Steps of ${entry.title}`}>

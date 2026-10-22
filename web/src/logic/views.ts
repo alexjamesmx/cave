@@ -1,7 +1,7 @@
 import type { Field } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
 
-export interface ViewFilter {
+interface ViewFilter {
   field: string;
   op: "empty" | "not-empty" | "eq" | "neq";
   value?: unknown;
@@ -9,7 +9,7 @@ export interface ViewFilter {
 
 const OPS = ["empty", "not-empty", "eq", "neq"];
 
-export const isEmptyValue = (v: unknown) => v === undefined || v === null || v === "";
+const isEmptyValue = (v: unknown) => v === undefined || v === null || v === "";
 
 export function readFilter(config: Record<string, unknown>): ViewFilter | undefined {
   const f = config.filter as Partial<ViewFilter> | undefined;
@@ -36,7 +36,7 @@ export function applyFilter(docs: Doc[], filter: ViewFilter | undefined): Doc[] 
   });
 }
 
-export interface Group {
+interface Group {
   /** Option value, or null for items without one. */
   value: string | null;
   docs: Doc[];

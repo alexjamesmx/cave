@@ -16,7 +16,7 @@ export type GroupData = { title: string };
 export type RunData = { title: string; status: string; step?: string };
 
 /** An active run, as the map draws it beside its part. */
-export interface MapRun {
+interface MapRun {
   id: string;
   title: string;
   status: string;

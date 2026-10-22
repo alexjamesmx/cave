@@ -77,7 +77,7 @@ function readVapid(
 const TELEGRAM_TOKEN_RE = /^\d{5,}:[A-Za-z0-9_-]{30,}$/;
 
 /** A Discord channel webhook: `https://discord.com/api/webhooks/…` (or discordapp.com). */
-export function isDiscordWebhook(value: string): boolean {
+function isDiscordWebhook(value: string): boolean {
   if (!URL.canParse(value)) return false;
   const url = new URL(value);
   return (
@@ -90,7 +90,7 @@ export function isDiscordWebhook(value: string): boolean {
 const WILDCARDS = new Set(["0.0.0.0", "::", "[::]"]);
 
 /** A token long enough that guessing it over the network is hopeless. */
-export const MIN_PUBLIC_TOKEN_CHARS = 32;
+const MIN_PUBLIC_TOKEN_CHARS = 32;
 
 function allowedHosts(
   hostname: string,

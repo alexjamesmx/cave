@@ -14,8 +14,8 @@ import type { Notifier } from "../notify/notifier.ts";
 import type { AppliedChange, Store } from "../store.ts";
 import { createFlowWriter } from "./writer.ts";
 
-export const MAX_WRITES = 10;
-export const MAX_NOTIFICATIONS = 3;
+const MAX_WRITES = 10;
+const MAX_NOTIFICATIONS = 3;
 const CATCH_UP_MS = 6 * 60 * 60 * 1000;
 
 export interface StepLog {
@@ -34,7 +34,7 @@ export interface FlowRun extends RunLog {
   startedAt: number;
 }
 
-export interface EngineOptions {
+interface EngineOptions {
   store: Store;
   db: Database;
   notifier: Notifier;

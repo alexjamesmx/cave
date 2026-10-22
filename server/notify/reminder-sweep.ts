@@ -28,10 +28,10 @@ export function describeDue(due: string, zone: Zone): string {
   return `${weekday} ${MONTHS[m - 1]} ${d}, ${time}`;
 }
 
-export const reminderKey = (id: string, due: string) => `reminder:${id}:${due}`;
+const reminderKey = (id: string, due: string) => `reminder:${id}:${due}`;
 
 /** The reminder as every channel gets it; the notifier decides how much each one sees. */
-export function reminderNotification(doc: Doc, zone: Zone): Notification {
+function reminderNotification(doc: Doc, zone: Zone): Notification {
   const due = doc.data.due as string;
   const repeat = repeatOf(doc.data);
   const title =
@@ -51,7 +51,7 @@ export function reminderNotification(doc: Doc, zone: Zone): Notification {
   };
 }
 
-export interface SweepOptions {
+interface SweepOptions {
   store: Store;
   notifier: Notifier;
   sent: SentLog;

@@ -7,7 +7,7 @@ Repository: https://github.com/alexjamesmx/cave (private: the plan and design do
 ## Status
 
 - Pre-v0.1. M1 to M9 are on `main` and live at `https://cave.alexjamesmx.dev`; merging to `main` deploys within minutes. History: `docs/log/<milestone>.md`.
-- Owner steps still open: M5 step 10 (client setup and phone check), M7b (money-review, payments, ai-sync), M9 (the radar check from the Claude app).
+- Owner steps still open: the phone check (`docs/log/m5.md` step 10), payments and the category review (`docs/log/m7b.md`).
 - The laptop is Linux-first: WSL Ubuntu at `~/code/jarvis` today, native Linux later (`docs/system.md` section 6).
 
 Update this section in the same change as anything it describes.

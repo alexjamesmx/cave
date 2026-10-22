@@ -7,12 +7,12 @@ import {
 } from "react";
 
 /** Where a dragged card would land: a column (`data-column`) and a slot among its cards. */
-export interface DropTarget {
+interface DropTarget {
   column: string;
   index: number;
 }
 
-export interface DragState extends DropTarget {
+interface DragState extends DropTarget {
   id: string;
   dx: number;
   dy: number;

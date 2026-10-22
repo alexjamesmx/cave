@@ -25,7 +25,7 @@ type TabId = (typeof TABS)[number]["id"];
 
 const notePath = (id: string) => `/projects/notes/${encodeURIComponent(id)}`;
 
-export function useRadar() {
+function useRadar() {
   const { local } = useCave();
   const items = useItems(local.db, RADAR);
   const settings = useDoc(local.db, "settings");

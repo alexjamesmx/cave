@@ -186,7 +186,7 @@ export function radarTabs(items: Doc[], interests: Interest[]) {
   };
 }
 
-export interface RadarWrite {
+interface RadarWrite {
   id: string;
   collection: string;
   patch: Record<string, unknown>;

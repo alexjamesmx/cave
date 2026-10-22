@@ -3,7 +3,7 @@ import { retryAfterMs } from "./webpush.ts";
 const TIMEOUT_MS = 10_000;
 const SEND_GAP_MS = 1000;
 
-export class TelegramError extends Error {
+class TelegramError extends Error {
   constructor(
     readonly method: string,
     readonly code: number,
@@ -14,7 +14,7 @@ export class TelegramError extends Error {
   }
 }
 
-export interface TelegramApiOptions {
+interface TelegramApiOptions {
   token: string;
   now: () => number;
   fetch?: typeof fetch;

@@ -15,7 +15,7 @@ export type Pulled =
   | { name: string; ok: true; docs: number }
   | { name: string; ok: false; error: string };
 
-export interface PullOptions {
+interface PullOptions {
   remote: string[];
   dir: string;
   /** Copies one remote backup to a local path; true when the copy completed. */

@@ -11,7 +11,7 @@ import { AccountPicker } from "./AccountPicker.tsx";
 
 type Direction = "expense" | "income";
 
-export interface MoneyPrefill {
+interface MoneyPrefill {
   title?: string;
   amount?: number;
   category?: string;

@@ -48,7 +48,7 @@ export interface SelectOption {
 }
 
 /** A select that shows another field's options instead of keeping a copy (M7c). */
-export interface OptionsFrom {
+interface OptionsFrom {
   collection: string;
   field: string;
   /** Only options of these kinds (payments offer money's expense categories). */
@@ -65,7 +65,7 @@ export interface Field {
   archived?: boolean;
 }
 
-export interface FieldConfig {
+interface FieldConfig {
   /**
    * Date values are ISO 8601 local time: `YYYY-MM-DD`, or `YYYY-MM-DDTHH:mm[:ss]` when
    * this is set. The `settings` doc's `timezone` says which local time.

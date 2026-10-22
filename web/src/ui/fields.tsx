@@ -80,7 +80,7 @@ type Blur = { target: HTMLInputElement };
 const changed = (e: Blur) => e.target.value !== e.target.defaultValue;
 
 /** Where a ref's target opens, when it has a page of its own. */
-export const refPath = (doc: Doc) =>
+const refPath = (doc: Doc) =>
   doc.collection === "projects" ? `/projects/${encodeURIComponent(doc.id)}` : undefined;
 
 /** A ref shows its target's title; a deleted or missing target says so. */

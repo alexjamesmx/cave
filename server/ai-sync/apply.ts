@@ -7,7 +7,7 @@ import { hasRedaction } from "./redact.ts";
 export type Ask = (question: string) => boolean;
 
 /** The lines that go and come, for the owner to read before saying yes. */
-export function diffLines(before: string, after: string): string {
+function diffLines(before: string, after: string): string {
   const a = before.split("\n");
   const b = after.split("\n");
   const inB = new Set(b);

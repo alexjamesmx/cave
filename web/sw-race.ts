@@ -1,5 +1,5 @@
 /** How long the shell waits for the network before answering from the cache. */
-export const NETWORK_TIMEOUT_MS = 3000;
+const NETWORK_TIMEOUT_MS = 3000;
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 

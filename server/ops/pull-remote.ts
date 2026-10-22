@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { type Pulled, pullBackups } from "./pull-backups.ts";
 
-export type RemotePull = { ok: true; results: Pulled[] } | { ok: false; error: string };
+type RemotePull = { ok: true; results: Pulled[] } | { ok: false; error: string };
 
 /** Lists the VPS backup folder over SSH and copies what the laptop lacks, verified. */
 export function pullFromVps(ssh: string, remoteDir: string, dir: string): RemotePull {

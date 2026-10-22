@@ -18,7 +18,7 @@ export function approvalRef(flow: Doc): string {
   return `${flow.id}.${digest.slice(0, 16)}`;
 }
 
-export interface ApprovalOptions {
+interface ApprovalOptions {
   store: Store;
   notifier: Notifier;
   /** Telegram's writer: an approval from a chat is recorded as `channel:telegram`. */

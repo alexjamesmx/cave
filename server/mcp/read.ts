@@ -12,7 +12,7 @@ export type ToolOutcome =
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; error: string };
 
-export const QUERY_LIMIT = 50;
+const QUERY_LIMIT = 50;
 export const QUERY_MAX = 200;
 const EXCERPT_CHARS = 280;
 const HISTORY = 20;
@@ -59,7 +59,7 @@ export function listCollections(store: Store, agent: Agent): ToolOutcome {
   return { ok: true, value: { collections } };
 }
 
-export interface QueryInput {
+interface QueryInput {
   collection: string;
   where?: Record<string, string | number | boolean | null> | undefined;
   from?: string | undefined;

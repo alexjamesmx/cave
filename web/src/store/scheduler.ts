@@ -1,5 +1,5 @@
-export const WRITE_DEBOUNCE_MS = 1000;
-export const SYNC_INTERVAL_MS = 60_000;
+const WRITE_DEBOUNCE_MS = 1000;
+const SYNC_INTERVAL_MS = 60_000;
 
 type TimerId = ReturnType<typeof setTimeout> | number;
 

@@ -8,7 +8,7 @@ import type { Doc } from "./types.ts";
  * the owner approves, and each value is filled in only when the history shows it.
  */
 
-export interface ProposedCharge {
+interface ProposedCharge {
   id: string;
   day: string;
   amount: number;
@@ -120,7 +120,7 @@ export function subscriptionProposals(
   return found.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
-export interface ApprovalWrite {
+interface ApprovalWrite {
   id: string;
   collection: "payments" | "money";
   patch: Record<string, unknown>;

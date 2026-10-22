@@ -11,10 +11,10 @@ import type { Doc } from "./types.ts";
 export const PROJECTS = "projects";
 export const PARTS = "parts";
 
-export const WIDGETS = ["progress", "budget", "board", "timeline", "runs", "counts"] as const;
-export type Widget = (typeof WIDGETS)[number];
+const WIDGETS = ["progress", "budget", "board", "timeline", "runs", "counts"] as const;
+type Widget = (typeof WIDGETS)[number];
 
-export interface ProjectTemplate {
+interface ProjectTemplate {
   label: string;
   /** Parts created with a new project. */
   parts: { title: string; kind: string }[];
@@ -211,7 +211,7 @@ export function progressBy(items: Doc[], field: string, done: string[]) {
 }
 
 /** Expenses linked to the project, for the `budget` widget; transfers excluded. */
-export function projectBudget(money: Doc[], transfers: ReadonlySet<string>) {
+function projectBudget(money: Doc[], transfers: ReadonlySet<string>) {
   let spent = 0;
   let count = 0;
   for (const d of money) {
@@ -298,7 +298,7 @@ export interface Upcoming {
 }
 
 /** Everything an Overview's widgets show, from the items linked to one project. */
-export interface ProjectOverview {
+interface ProjectOverview {
   progress: { done: number; total: number; of: string };
   budget: { spent: number; count: number };
   tasks: { status: string; count: number }[];

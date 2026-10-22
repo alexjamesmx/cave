@@ -5,7 +5,7 @@ import type { LocalStore } from "../store/local-store.ts";
 import { useCave } from "./context.ts";
 
 /** Writes in order, so a part's project exists on this device before the part points at it. */
-export async function applyWrites(local: LocalStore, writes: PlannedWrite[]): Promise<void> {
+async function applyWrites(local: LocalStore, writes: PlannedWrite[]): Promise<void> {
   for (const w of writes)
     await local.write({ id: w.id, kind: "item", collection: w.collection }, w.patch);
 }

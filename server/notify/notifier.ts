@@ -25,7 +25,7 @@ export function render(n: Notification, detail: Detail, origin: string): Message
   };
 }
 
-export interface NotifierOptions {
+interface NotifierOptions {
   channels: NotificationChannel[];
   settings: () => NotificationSettings;
   db: Database;
@@ -41,7 +41,7 @@ export interface NotifierOptions {
 }
 
 /** The result a send gets instead of going out when the server doesn't deliver. */
-export const OUTBOX = "outbox";
+const OUTBOX = "outbox";
 
 export interface Notifier {
   /** Every registered channel and what it needs, for Settings → Integrations. */

@@ -22,7 +22,7 @@ interface TelegramState {
   link: { hash: string; expiresAt: number };
 }
 
-export const LINK_TTL_MS = 10 * 60 * 1000;
+const LINK_TTL_MS = 10 * 60 * 1000;
 const POLL_SECONDS = 25;
 // Easy to read and type on a phone: no 0/O or 1/I.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -48,7 +48,7 @@ export interface Approvals {
   decide(ref: string, approve: boolean): string;
 }
 
-export interface TelegramOptions {
+interface TelegramOptions {
   api: TelegramApi | undefined;
   state: ChannelState;
   store: Store;

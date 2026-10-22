@@ -10,13 +10,13 @@ import { mergeDoc } from "../../../shared/merge.ts";
 import type { Doc, Kind, Rejection } from "../../../shared/types.ts";
 import type { LocalDb, OutboxRow } from "./db.ts";
 
-export interface WriteTarget {
+interface WriteTarget {
   id: string;
   kind: Kind;
   collection: string | null;
 }
 
-export interface PendingChange {
+interface PendingChange {
   row: OutboxRow;
   doc: Doc;
 }
@@ -30,7 +30,7 @@ interface OpenOptions {
 }
 
 /** Within this gap the device clock counts as right again and the recovery offset goes. */
-export const CLOCK_AGREES_MS = 60_000;
+const CLOCK_AGREES_MS = 60_000;
 
 const PUSH_ORDER: Record<Kind, number> = { setting: 0, collection: 1, item: 2 };
 

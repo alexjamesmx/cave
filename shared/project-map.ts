@@ -14,14 +14,14 @@ export interface MapPoint {
   y: number;
 }
 
-export interface MapNote {
+interface MapNote {
   id: string;
   text: string;
   x: number;
   y: number;
 }
 
-export interface MapGroup {
+interface MapGroup {
   id: string;
   title: string;
   x: number;
@@ -30,7 +30,7 @@ export interface MapGroup {
   h: number;
 }
 
-export interface MapEdge {
+interface MapEdge {
   id: string;
   from: string;
   to: string;

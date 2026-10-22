@@ -5,10 +5,10 @@ import { mergeDoc } from "../shared/merge.ts";
 import { type Doc, KINDS, type Kind, type Rejection, type SyncRequest } from "../shared/types.ts";
 
 /** Keeps one request under the body limit even after a long offline period; clients batch. */
-export const MAX_PUSH_DOCS = 1000;
+const MAX_PUSH_DOCS = 1000;
 
 /** A stamp further ahead than this would outrank honest edits and drag every clock forward. */
-export const MAX_CLOCK_AHEAD_MS = 10 * 60_000;
+const MAX_CLOCK_AHEAD_MS = 10 * 60_000;
 
 // Field ids and the reserved `_title`-style keys. `__proto__` would match, so it is refused
 // explicitly: merging it with plain assignment would replace the object's prototype.
@@ -16,7 +16,7 @@ const DATA_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
 
 type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
-export const isDataKey = (key: string) => DATA_KEY_RE.test(key) && key !== "__proto__";
+const isDataKey = (key: string) => DATA_KEY_RE.test(key) && key !== "__proto__";
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);

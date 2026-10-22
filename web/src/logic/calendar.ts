@@ -14,7 +14,7 @@ import type { Doc } from "../../../shared/types.ts";
 import { titleOf } from "./views.ts";
 
 /** UTC instants; `to` is exclusive. */
-export interface Range {
+interface Range {
   from: number;
   to: number;
 }

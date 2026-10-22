@@ -2,7 +2,7 @@ import type { FlowDefinition } from "../shared/flows/registry.ts";
 import { LEETCODE_PROJECT } from "../shared/projects-seed.ts";
 
 /** One fake record: an item of `collection`, written as the owner would. */
-export interface SampleDoc {
+interface SampleDoc {
   id: string;
   collection: string;
   data: Record<string, unknown>;

@@ -7,12 +7,12 @@ import type { JobState } from "../jobs/scheduler.ts";
 import type { Notifier } from "../notify/notifier.ts";
 import { type OffsiteStatus, readOffsiteStatus } from "../offsite-status.ts";
 
-export const DEVICE_DAYS = 30;
-export const AGENT_DAYS = 7;
-export const JOB_RUNS = 50;
-export const NOTIFICATION_ROWS = 100;
+const DEVICE_DAYS = 30;
+const AGENT_DAYS = 7;
+const JOB_RUNS = 50;
+const NOTIFICATION_ROWS = 100;
 /** `cave-deploy.timer` runs 2 minutes after its last run ended. */
-export const DEPLOY_EVERY_MS = 2 * 60 * 1000;
+const DEPLOY_EVERY_MS = 2 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -55,7 +55,7 @@ export interface SystemReport {
   }[];
 }
 
-export interface ReportDeps {
+interface ReportDeps {
   env: CaveEnv;
   db: Database;
   version: string;

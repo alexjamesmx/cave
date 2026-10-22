@@ -7,7 +7,7 @@ const text = (v: unknown) => (typeof v === "string" ? v : "");
 const live = (d: Doc) => d.data._deleted !== true;
 
 /** Lower case without accents, so "accion" finds "acción". */
-export const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 export interface FolderNode {
   path: string;
@@ -59,7 +59,7 @@ export const inFolder = (notes: Doc[], folder: string) =>
     return live(n) && (!folder || f === folder || f.startsWith(`${folder}/`));
   });
 
-export interface SearchHit {
+interface SearchHit {
   doc: Doc;
   inTitle: boolean;
   bodyHits: number;

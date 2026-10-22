@@ -2,7 +2,7 @@ import type { Change } from "../../../shared/types.ts";
 import { type UndoPlan, undoPatch } from "../../../shared/undo.ts";
 import type { LocalStore } from "../store/local-store.ts";
 
-export type UndoResult = { ok: true; plan: UndoPlan } | { ok: false; error: string };
+type UndoResult = { ok: true; plan: UndoPlan } | { ok: false; error: string };
 
 /**
  * Undoes an agent's change from this device. It syncs first and plans from the fresh copy:

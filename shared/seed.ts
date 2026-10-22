@@ -293,7 +293,7 @@ const PROPOSALS: CollectionData = {
 };
 
 /** A change to seeded docs after real databases exist; applied once, in version order. */
-export interface SeedMigration {
+interface SeedMigration {
   version: number;
   docs: { id: string; kind: Kind; collection?: string; data: Record<string, unknown> }[];
   /**

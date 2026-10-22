@@ -3,7 +3,7 @@ import { isAuthorized } from "./auth.ts";
 import type { Store } from "./store.ts";
 
 /** Most changes the item drawer shows; older history stays in the log for undo. */
-export const HISTORY_LIMIT = 200;
+const HISTORY_LIMIT = 200;
 
 export function createHistoryHandler({
   store,

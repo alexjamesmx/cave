@@ -7,7 +7,7 @@ import type { CaveEnv } from "./env.ts";
 import { type OffsiteStatus, readOffsiteStatus } from "./offsite-status.ts";
 import type { Store } from "./store.ts";
 
-export const ACTIVITY_LIMIT = 50;
+const ACTIVITY_LIMIT = 50;
 const ACTIVITY_MAX = 200;
 
 /** `GET /api/agents`: each agent's scopes, allowlist, state and last call; never a hash. */

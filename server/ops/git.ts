@@ -1,4 +1,4 @@
-export interface GitResult {
+interface GitResult {
   ok: boolean;
   out: string;
   err: string;
@@ -28,7 +28,7 @@ export const isClean = (git: Git) => {
   return status.ok && status.out === "";
 };
 
-export interface WipRef {
+interface WipRef {
   /** `origin/wip/…` */
   ref: string;
   /** ISO time of its last commit. */

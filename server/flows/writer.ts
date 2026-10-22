@@ -59,4 +59,3 @@ export function createFlowWriter(store: Store, flowId: string, now: () => number
     },
   };
 }
-export type FlowWriter = ReturnType<typeof createFlowWriter>;

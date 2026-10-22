@@ -9,7 +9,7 @@ export const hashOf = (body: string) =>
 /** Re-runs update the same item: its id comes from where it was read. */
 export const aiId = (source: string) => `ai-${hashOf(source).slice(0, 20)}`;
 
-export interface SyncPlan {
+interface SyncPlan {
   /** Item data to write, by id (only the keys that change). */
   push: { id: string; data: Record<string, unknown> }[];
   /** Edited in the Cave since the last sync; `--apply` writes these back. */

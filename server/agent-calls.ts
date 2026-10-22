@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 
 /** Longest stored form of a call's arguments; the log is for reading, not replay. */
-export const MAX_ARGS_CHARS = 2048;
+const MAX_ARGS_CHARS = 2048;
 
 export interface AgentCall {
   seq: number;

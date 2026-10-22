@@ -5,7 +5,7 @@ import { isClockAhead, parseSyncRequest, rejectInvalid } from "./validate.ts";
 
 export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 
-export interface SyncHandlerOptions {
+interface SyncHandlerOptions {
   store: Store;
   /** When set, requests need `Authorization: Bearer <token>`. */
   token: string | undefined;

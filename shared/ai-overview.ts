@@ -12,7 +12,7 @@ import type { Doc } from "./types.ts";
  * any URL loses its query, so no token or keyed URL can appear.
  */
 
-export type OverviewStatus = "active" | "disabled" | "failing";
+type OverviewStatus = "active" | "disabled" | "failing";
 export type OverviewColumn = "surfaces" | "connections" | "tools" | "automations";
 
 // A type, not an interface, so React Flow can carry it as node data.

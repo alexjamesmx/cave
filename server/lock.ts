@@ -7,7 +7,7 @@ export const lockPathOf = (dbPath: string) => `${dbPath}.lock`;
 /** Two readings of the boot time differ by clock drift and rounding; a reboot moves it far more. */
 const SAME_BOOT_MS = 2 * 60 * 1000;
 
-export type LockState =
+type LockState =
   | { state: "free" }
   | { state: "held"; pid: number }
   | { state: "stale"; pid: number };
@@ -61,7 +61,7 @@ export function readLock(path: string, deps: LockDeps = systemDeps): LockState {
     : { state: "stale", pid: lock.pid };
 }
 
-export type Acquired = { ok: true; replaced?: number } | { ok: false; pid: number };
+type Acquired = { ok: true; replaced?: number } | { ok: false; pid: number };
 
 /**
  * Takes the lock for `pid`. The file is created exclusively, so of two processes starting

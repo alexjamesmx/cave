@@ -16,12 +16,12 @@ import type { Store } from "./store.ts";
 import { createSyncHandler, MAX_BODY_BYTES } from "./sync.ts";
 import type { SystemReportFn } from "./system/report.ts";
 
-export interface AgentOptions {
+interface AgentOptions {
   registry: AgentRegistry;
   calls: CallLog;
 }
 
-export interface AppOptions {
+interface AppOptions {
   hostname: string;
   port: number;
   store: Store;

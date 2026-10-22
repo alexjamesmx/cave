@@ -11,7 +11,7 @@ interface DiscordState {
   gone?: string;
 }
 
-export interface DiscordOptions {
+interface DiscordOptions {
   webhook: string | undefined;
   state: ChannelState;
   now: () => number;

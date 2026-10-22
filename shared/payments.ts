@@ -12,7 +12,7 @@ const select = (id: string, name: string, values: [string, string, string][]): F
   options: values.map(([value, icon, color]) => ({ value, icon, color })),
 });
 
-export const REPEAT_FIELD: Field = select("repeat", "Repeat", [
+const REPEAT_FIELD: Field = select("repeat", "Repeat", [
   ["none", "minus", "#8C93A0"],
   ["daily", "repeat", "#3DE0FF"],
   ["weekly", "repeat", "#3DE0FF"],
@@ -61,7 +61,7 @@ export const TASK_FIELDS: Field[] = [
 
 export const isActive = (p: ReminderLike) => p.data.active !== false && p.data._deleted !== true;
 
-export interface UpcomingPayment {
+interface UpcomingPayment {
   id: string;
   at: number;
   overdue: boolean;

@@ -5,7 +5,7 @@ export const CLOUD_CHROMIUM = "/opt/pw-browsers/chromium";
 /** Google Chrome from its .deb (the laptop's WSL Ubuntu), where Playwright's `chrome` channel looks. */
 export const LINUX_CHROME = "/opt/google/chrome/chrome";
 
-export type BrowserChoice = { executablePath: string } | { channel: string };
+type BrowserChoice = { executablePath: string } | { channel: string };
 
 /**
  * The browser e2e drives: an explicit binary, then an explicit channel, then the platform's

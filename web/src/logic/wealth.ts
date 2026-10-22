@@ -1,6 +1,6 @@
 import type { Doc } from "../../../shared/types.ts";
 
-export interface WealthSummary {
+interface WealthSummary {
   assets: number;
   debt: number;
   net: number;

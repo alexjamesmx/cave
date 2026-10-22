@@ -112,7 +112,7 @@ export function resumeWip(git: Git): Outcome {
   return { ok: true, message: `on ${branch}` };
 }
 
-export interface FinishDeps {
+interface FinishDeps {
   git: Git;
   /** `bun run check` and `bun test`; true when both pass. */
   checks: () => boolean;

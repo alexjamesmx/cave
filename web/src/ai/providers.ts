@@ -5,7 +5,7 @@
  * provider, OpenAI-compatible endpoints (which covers free and local models), and asking
  * through the Telegram bot.
  */
-export interface AiProvider {
+interface AiProvider {
   id: string;
   label: string;
   /** Where the answer appears, shown under the box: "Opens in Claude". */
@@ -14,7 +14,7 @@ export interface AiProvider {
   ask(text: string, context: AskContext): Promise<void>;
 }
 
-export interface AskContext {
+interface AskContext {
   /** Opens a URL in a new tab or the installed app. */
   open(url: string): void;
   /** Best-effort copy, so the question survives if the prefill doesn't. */

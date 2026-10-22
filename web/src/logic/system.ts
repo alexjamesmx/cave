@@ -8,7 +8,7 @@ import { titleOf } from "./views.ts";
 
 export const SCHEDULE_DAYS = 7;
 
-export interface CollectionStat {
+interface CollectionStat {
   collection: string;
   count: number;
   /** The newest stamp on any of its items: when it last changed, on any device. */
@@ -35,7 +35,7 @@ export function collectionStats(items: Doc[]): Map<string, CollectionStat> {
   return stats;
 }
 
-export interface ScheduleEntry {
+interface ScheduleEntry {
   key: string;
   at: number;
   kind: "reminder" | "flow" | "job" | "deploy";
@@ -45,7 +45,7 @@ export interface ScheduleEntry {
   approximate?: boolean;
 }
 
-export interface JobTimes {
+interface JobTimes {
   id: string;
   label: string;
   nextRun: number;

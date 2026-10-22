@@ -17,7 +17,7 @@ export interface Notification {
   actions?: NotificationAction[];
 }
 
-export interface NotificationAction {
+interface NotificationAction {
   id: "done" | "snooze60" | "approve" | "reject";
   label: string;
   path: string;

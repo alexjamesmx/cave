@@ -3,7 +3,7 @@ import webpush from "web-push";
 import type { VapidKeys } from "../config.ts";
 import type { ChannelStatus, Message, NotificationChannel, SendResult } from "./types.ts";
 
-export interface StoredSubscription {
+interface StoredSubscription {
   endpoint: string;
   p256dh: string;
   auth: string;
@@ -124,7 +124,7 @@ export function retryAfterMs(header: string | null, now: number): number {
   return Math.min(Math.max(Number.isFinite(ms) ? ms : 0, 0), MAX_RETRY_MS);
 }
 
-export interface WebPushOptions {
+interface WebPushOptions {
   keys: VapidKeys | undefined;
   subscriptions: Subscriptions;
   now: () => number;

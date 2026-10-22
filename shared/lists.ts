@@ -8,7 +8,7 @@ import type { Doc, Kind } from "./types.ts";
 
 type SeedDoc = { id: string; kind: Kind; collection?: string; data: Record<string, unknown> };
 
-export const accountOption = (value: string): SelectOption => ({
+const accountOption = (value: string): SelectOption => ({
   value,
   icon: "landmark",
   color: "#8C93A0",
@@ -31,7 +31,7 @@ export const PAYMENT_ACCOUNT: Field = {
 };
 
 /** `options` with `value` added at the end, unless it is there already (archived or not). */
-export function withOption(
+function withOption(
   options: readonly SelectOption[],
   value: string,
   make: (value: string) => SelectOption,

@@ -38,7 +38,7 @@ const SUFFIXES = ["", "-wal", "-shm"];
  * Moves the current database to `<db>.prev`, replacing the previous one: one step of undo,
  * not a growing pile of copies of real data. The -wal is folded in first so `.prev` is whole.
  */
-export function keepAsPrev(dbPath: string): string | undefined {
+function keepAsPrev(dbPath: string): string | undefined {
   if (!existsSync(dbPath)) return undefined;
   const db = new Database(dbPath);
   try {
@@ -53,11 +53,11 @@ export function keepAsPrev(dbPath: string): string | undefined {
   return prev;
 }
 
-export type PulledData =
+type PulledData =
   | { ok: true; backup: string; at: number; docs: number; prev: string | undefined }
   | { ok: false; error: string };
 
-export interface PullDataOptions {
+interface PullDataOptions {
   dir: string;
   dbPath: string;
   env: CaveEnv;

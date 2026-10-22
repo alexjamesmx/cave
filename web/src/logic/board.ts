@@ -41,7 +41,7 @@ export function statusPatch(doc: Doc, status: string, now: string): Record<strin
   return patch;
 }
 
-export interface Drop {
+interface Drop {
   /** The dragged card. */
   doc: Doc;
   /** The grouping field and the target column's value (`null`: the "no value" column). */

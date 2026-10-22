@@ -42,7 +42,7 @@ export function runningCommit(output: string): string | undefined {
   return /^== running ([0-9a-f]{40})$/m.exec(output)?.[1];
 }
 
-export interface HealthOptions {
+interface HealthOptions {
   url: string;
   token: string;
   sha: string;

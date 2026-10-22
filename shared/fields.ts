@@ -4,7 +4,7 @@ import { parseSteps } from "./runs.ts";
 import type { Field, SelectOption } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
-export interface FieldError {
+interface FieldError {
   key: string;
   error: string;
 }

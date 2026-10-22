@@ -18,7 +18,7 @@ import { type Approvals, createTelegram } from "./telegram.ts";
 import { createTelegramApi } from "./telegram-api.ts";
 import { createSubscriptions, createWebPushChannel } from "./webpush.ts";
 
-export interface NotificationSystemOptions {
+interface NotificationSystemOptions {
   db: Database;
   store: Store;
   now: () => number;

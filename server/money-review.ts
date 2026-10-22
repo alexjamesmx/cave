@@ -43,10 +43,8 @@ const ProposalSchema = z
     direction: z.string().max(20).nullable(),
   })
   .strict();
-export const SubmitSchema = z
-  .object({ proposals: z.array(ProposalSchema).max(MAX_PROPOSALS) })
-  .strict();
-export const DecideSchema = z
+const SubmitSchema = z.object({ proposals: z.array(ProposalSchema).max(MAX_PROPOSALS) }).strict();
+const DecideSchema = z
   .object({
     decisions: z
       .array(z.object({ id: z.string().min(1).max(64), category: Category }).strict())
@@ -112,7 +110,7 @@ export function createMoneyReview(db: Database, now: () => number) {
     },
   };
 }
-export type MoneyReview = ReturnType<typeof createMoneyReview>;
+type MoneyReview = ReturnType<typeof createMoneyReview>;
 
 const bad = (message: string) => Response.json({ error: message }, { status: 400 });
 

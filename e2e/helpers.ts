@@ -92,7 +92,7 @@ export async function pushed(page: Page, action: () => Promise<unknown>): Promis
 }
 
 /** A write-scope agent on the e2e server's database, as `bun run agent add` makes one. */
-export function mintAgent(name: string): string {
+function mintAgent(name: string): string {
   const out = spawnSync(
     "bun",
     ["run", "server/agent-cli.ts", "add", name, "--scopes", "read,write"],

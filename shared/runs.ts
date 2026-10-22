@@ -10,14 +10,7 @@ import type { Doc } from "./types.ts";
  */
 
 export const RUNS = "runs";
-export const RUN_STATUSES = [
-  "queued",
-  "running",
-  "waiting",
-  "done",
-  "failed",
-  "cancelled",
-] as const;
+const RUN_STATUSES = ["queued", "running", "waiting", "done", "failed", "cancelled"] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 export const FINISHED: readonly RunStatus[] = ["done", "failed", "cancelled"];
 export const STEP_STATUSES = ["running", "done", "failed", "waiting", "skipped"] as const;

@@ -6,7 +6,7 @@ import { type Subscriptions, validateSubscription } from "./webpush.ts";
 
 const MAX_SUBSCRIBE_BYTES = 4 * 1024;
 
-export interface NotificationApiDeps {
+interface NotificationApiDeps {
   notifier: Notifier;
   sent: SentLog;
   subscriptions: Subscriptions;

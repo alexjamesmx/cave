@@ -1,5 +1,5 @@
 /** Where a resumed page says it is back: the document's visibility, the window's focus and pageshow. */
-export interface ClockTargets {
+interface ClockTargets {
   window: Pick<EventTarget, "addEventListener" | "removeEventListener">;
   document: Pick<EventTarget, "addEventListener" | "removeEventListener">;
 }
