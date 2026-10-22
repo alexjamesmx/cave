@@ -68,7 +68,7 @@ sequenceDiagram
 
 - **Every field merges on its own.** Edits to different fields of one record never overwrite each other. For the same field, the newer stamp wins.
 - **Nothing is hard-deleted.** Deleting sets `_deleted`. Every change keeps its previous value, which is what undo uses.
-- **Spec:** `docs/plan-v0.1.md`, "Sync protocol".
+- **Spec:** `docs/architecture.md`, "Sync protocol".
 
 ## 3. How code moves (develop, review, deploy)
 
@@ -277,8 +277,8 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 
 ## 9. Where to look next
 - `docs/guide.md`: using the app.
-- `docs/plan-v0.1.md`: data model, sync protocol, milestones.
+- `docs/architecture.md`: data model, sync protocol, seed collections, the client.
 - `docs/hosting.md`: the server runbook.
 - `docs/agents.md`: connecting Claude Code, Codex and OpenCode.
 - `docs/decisions.md`: why things are the way they are.
-- `docs/log/` and `docs/review/`: what was built and checked, milestone by milestone.
+- `git tag`: `v0.1-history` is the last commit with the milestone plans, logs and reviews (M1 to M9).

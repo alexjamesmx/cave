@@ -16,7 +16,7 @@ ProtectHome=true
 # the hostname, cgroupfs writes, realtime scheduling, setuid files, foreign ABIs, new
 # namespaces and exotic sockets. Unix sockets carry systemctl and the journal, inet git fetch
 # and the health check, netlink PAM in runuser. Bun's JIT needs writable executable memory,
-# git needs the network and the restart needs root, so those stay (docs/log/m6.md).
+# git needs the network and the restart needs root, so those stay.
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectKernelLogs=true

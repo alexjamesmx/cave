@@ -29,6 +29,7 @@ A new machine: `docs/system.md` section 6. Every command and the rules for worki
 
 - [docs/guide.md](docs/guide.md): using the app.
 - [docs/system.md](docs/system.md): how the whole system fits together, local dev, configuration, rebuilding any piece.
+- [docs/architecture.md](docs/architecture.md): data model, sync protocol, seed collections, the client.
 - [docs/hosting.md](docs/hosting.md): the VPS runbook (Caddy, systemd, deploy on merge, off-box backups).
 - [docs/agents.md](docs/agents.md): connecting Claude Code, Codex, OpenCode and the Claude apps.
 - [docs/decisions.md](docs/decisions.md): why things are the way they are.

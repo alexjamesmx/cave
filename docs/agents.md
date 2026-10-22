@@ -116,7 +116,7 @@ Or add it from the command line. Here the shell expands the variable, so the tok
 claude mcp add --transport http --scope user cave http://127.0.0.1:3000/mcp --header "Authorization: Bearer $CAVE_AGENT_TOKEN"
 ```
 
-Checked against `claude mcp add --help` (Claude Code 2.1.296) and a headless run with `--mcp-config` (`docs/log/m3.md`).
+Checked against `claude mcp add --help` (Claude Code 2.1.296).
 
 ### Codex
 

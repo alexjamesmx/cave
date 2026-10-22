@@ -6,17 +6,13 @@ Repository: https://github.com/alexjamesmx/cave (private: the plan and design do
 
 ## Status
 
-- Pre-v0.1. M1 to M9 are on `main` and live at `https://cave.alexjamesmx.dev`; merging to `main` deploys within minutes. History: `docs/log/<milestone>.md`.
-- Owner steps still open: the phone check (`docs/log/m5.md` step 10), payments and the category review (`docs/log/m7b.md`).
-- The laptop is Linux-first: WSL Ubuntu at `~/code/jarvis` today, native Linux later (`docs/system.md` section 6).
-
-Update this section in the same change as anything it describes.
+Pre-v0.1: M1 to M9 are on `main` and live at `https://cave.alexjamesmx.dev` (a push to `main` deploys within minutes); the laptop is Linux-first, WSL Ubuntu at `~/code/jarvis` (`docs/system.md` section 6). Keep this line current in the same change as anything it describes.
 
 ## Docs
 
 - `docs/system.md`: what runs where, data and code flows, local dev, configuration, recreating any piece.
 - `docs/guide.md`: using the app. `docs/agents.md`: connecting agents. `docs/hosting.md`: the VPS runbook.
-- `docs/plan-v0.1.md`: data model, sync protocol, milestones. `docs/design/*.html`: approved mockups.
+- `docs/architecture.md`: the shape, data model, sync protocol, seed collections, client and visual tokens. `docs/design/*.html`: approved mockups.
 - `docs/decisions.md`: why things are the way they are.
 
 ## Commands
@@ -75,9 +71,8 @@ Environment variables: `docs/system.md` section 7; template in `.env.example`.
 
 Two agents share this repo: an architect (Claude in the desktop app: specs, design, reviews) and a builder (Claude Code: code, tests, commits). The repo is the only channel between them.
 
-- `docs/plan-*.md`: specs with acceptance checks. The builder implements exactly one milestone at a time.
-- `docs/log/<milestone>.md`: written by the builder when a milestone is done: what changed, commands run with their real output, deviations from the plan, open questions.
-- `docs/review/<milestone>.md`: written by the architect. The builder addresses every item, then appends what changed to the log.
+- The working tree holds only the current state; git history keeps the past. `docs/plan-<m>.md` (the spec with acceptance checks) and `docs/log/<m>.md` (what changed, commands run with their real output, deviations, open questions) exist only for the milestone being built, one at a time. When it ships, both are deleted in the same change and the commit before that change is tagged `<m>-history`, so the history stays one checkout away (`v0.1-history` holds M1 to M9).
+- Reviews go in the PR, or in the plan file when there is no PR. The builder addresses every item and notes what changed in the log.
 - `docs/decisions.md`: append-only record of decisions. Read it before proposing an alternative to something already decided.
 - **Logging work in the Cave:** when the `cave` connector is connected, Claude Code logs its work on the Cave project (`proj-cave`; `get_project` lists its parts): `start_run` per part, a `log_step` per meaningful action (tests written, tests passing, a commit, a push, a deploy), then `finish_run`. When it isn't connected, skip it and say so once.
 - **How work ships:** small changes are committed on `main` and pushed, and the push deploys within minutes. A branch and a PR only for changes that are dangerous or hard to undo: a schema migration; auth, the request guard, tokens or secrets; anything under `deploy/` or the server's privileges; deleting or rewriting real data; a new runtime dependency. The owner can always ask for a PR.
