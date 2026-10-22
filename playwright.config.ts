@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig } from "@playwright/test";
 import webpush from "web-push";
-import { browserUse } from "./e2e/browser.ts";
+import { browserUse, chooseBrowser, snapshotPathTemplate } from "./e2e/browser.ts";
 
 const PORT = 3210;
 // The server listens here; the specs reach it through the CSP proxy on PORT.
@@ -20,16 +20,19 @@ const vapid = JSON.parse(process.env.CAVE_E2E_VAPID) as { publicKey: string; pri
 // The server needs a token, as in production; specs unlock with it (`e2e/helpers.ts`).
 process.env.CAVE_E2E_TOKEN ??= crypto.randomUUID().replaceAll("-", "");
 
+const browser = chooseBrowser();
+
 export default defineConfig({
   testDir: "e2e",
   testMatch: "*.e2e.ts",
+  snapshotPathTemplate: snapshotPathTemplate(browser),
   // The specs share one server and database, so they run one at a time.
   fullyParallel: false,
   workers: 1,
   reporter: "list",
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    ...browserUse(),
+    ...browserUse(browser),
   },
   webServer: [
     {

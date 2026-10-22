@@ -125,7 +125,7 @@ The Cave can run on a VPS as the server every device syncs with. Today that is a
 - **Changing code from the phone:** the Code tab of the Claude app runs cloud sessions on this repo in the `cave` environment. They push a branch and open a PR; the owner merges. See AGENTS.md "Cloud sessions".
 - **Backups:**
   - **On the VPS:** the server backs itself up to `/var/lib/cave/backups`, with the same verification and retention as on the laptop.
-  - **On the laptop:** `bun run pull-backups` copies new ones into `BACKUP_PULL_DIR` with `scp` and verifies each. It never deletes anything on the VPS. To run it daily, create a Windows Task Scheduler task that runs `bun run pull-backups` in this folder (optional).
+  - **On the laptop:** `bun run pull-backups` copies new ones into `BACKUP_PULL_DIR` with `scp` and verifies each. It never deletes anything on the VPS. To run it daily, add a cron entry or systemd user timer in the laptop's WSL Ubuntu that runs `bun run pull-backups` in `~/code/jarvis` (optional).
   - **Hostinger:** it also keeps weekly snapshots of the whole VPS (hPanel → VPS → Backups).
 - **Restoring on the VPS:**
   1. `systemctl stop cave`;
@@ -137,9 +137,13 @@ The Cave can run on a VPS as the server every device syncs with. Today that is a
 
 ## Developing
 
-`bun run dev` runs the server in development mode. `bun run check` runs the type check and lint, `bun test` the tests, and `bun run e2e` the browser checks against the installed Edge. All commands: [AGENTS.md](AGENTS.md).
+`bun run dev` runs the server in development mode. `bun run check` runs the type check and lint, `bun test` the tests, and `bun run e2e` the browser checks against the installed browser (Google Chrome in WSL, Edge on Windows). All commands: [AGENTS.md](AGENTS.md).
 
-### Machine setup (Windows)
+### Machine setup (WSL Ubuntu, the laptop's default)
+
+The laptop works in WSL Ubuntu at `~/code/jarvis`: tools, SSH to the VPS, the MCP variables and Remote Control are in [docs/system.md](docs/system.md) section 6, "A new development laptop".
+
+### Machine setup (Windows-native)
 
 Double-click `setup/setup.cmd`. It:
 

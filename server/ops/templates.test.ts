@@ -316,15 +316,20 @@ test("the cloud setup script pins Bun from npm and never installs dependencies",
   expect(script).not.toMatch(/^[^#]*bun\.sh/m);
 });
 
-test("Remote Control: one same-dir session in the default permission mode, restarted, run at logon", () => {
+test("Remote Control: one same-dir session in the default permission mode, restarted, run in WSL at logon", () => {
   const setup = (name: string) => readFileSync(join(import.meta.dir, "../../setup", name), "utf8");
-  const loop = setup("remote-control.ps1");
-  expect(loop).toContain("remote-control --name $name --spawn same-dir --capacity 1");
-  expect(loop).toContain('$name = "cave $([char]0x00B7) laptop"');
-  expect(loop).toContain("Start-Sleep -Seconds 30");
+  expect(existsSync(join(import.meta.dir, "../../setup/remote-control.ps1"))).toBe(false);
+  const loop = setup("remote-control.sh");
+  expect(loop).toContain('claude remote-control --name "$name" --spawn same-dir --capacity 1');
+  expect(loop).toContain('name="cave · laptop"');
+  expect(loop).toContain("sleep 30");
   expect(loop).not.toMatch(/permission-mode|bypass|dangerously/i);
+  expect(loop).not.toContain("\r");
   const task = setup("remote-control-task.ps1");
   expect(task).toContain("$taskName = 'Cave Remote Control'");
+  // The task keeps wsl.exe attached for the whole loop, which keeps the WSL VM up.
+  expect(task).toContain("wsl.exe -d $distro --cd '$linuxRoot' -- bash setup/remote-control.sh");
+  expect(task).toContain("Start-Sleep -Seconds 30");
   expect(task).toContain("-AtLogOn -User $user");
   expect(task).toContain("-RunLevel Limited");
   expect(task).toContain("-WindowStyle Hidden");
@@ -334,6 +339,19 @@ test("Remote Control: one same-dir session in the default permission mode, resta
   expect(main).toContain("param([switch]$RemoveRemoteControl)");
   expect(main).toContain("remote-control-task.ps1') -Remove");
   // PowerShell 5.1 reads a file without a BOM as ANSI; the scripts stay ASCII.
-  for (const text of [loop, task, main])
+  for (const text of [task, main])
     expect([...text].every((c) => (c.codePointAt(0) ?? 0) < 128)).toBe(true);
+});
+
+test("Remote Control: the task finds the distro and Linux path of the WSL checkout", () => {
+  const task = readFileSync(join(import.meta.dir, "../../setup/remote-control-task.ps1"), "utf8");
+  const pattern = task.match(/-notmatch '([^']+)'/)?.[1];
+  expect(pattern).toBeDefined();
+  const wsl = new RegExp(pattern ?? "", "i");
+  expect("\\\\wsl.localhost\\Ubuntu\\home\\sgale\\code\\jarvis".match(wsl)?.slice(1)).toEqual([
+    "Ubuntu",
+    "\\home\\sgale\\code\\jarvis",
+  ]);
+  expect("\\\\wsl$\\Ubuntu\\home\\x".match(wsl)?.[1]).toBe("Ubuntu");
+  expect("C:\\Users\\sgale\\projects\\jarvis".match(wsl)).toBeNull();
 });

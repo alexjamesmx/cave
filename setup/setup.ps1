@@ -86,7 +86,11 @@ if (-not (Test-Path (Join-Path $root '.git'))) { git -C $root init -b main }
 git -C $root config core.hooksPath .githooks
 
 Write-Host "`n== Remote Control (the phone's Code tab reaches this laptop)" -ForegroundColor Cyan
-& (Join-Path $PSScriptRoot 'remote-control-task.ps1')
+if ($root -like '\\wsl*') {
+  & (Join-Path $PSScriptRoot 'remote-control-task.ps1')
+} else {
+  Write-Host 'Remote Control runs from the WSL checkout: run setup\remote-control-task.ps1 from there.' -ForegroundColor Yellow
+}
 
 Write-Host "`nDone. Next:" -ForegroundColor Green
 Write-Host "  cd `"$root`""

@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { browserUse, CLOUD_CHROMIUM, chooseBrowser } from "./browser.ts";
+import {
+  browserUse,
+  CLOUD_CHROMIUM,
+  chooseBrowser,
+  LINUX_CHROME,
+  snapshotPathTemplate,
+} from "./browser.ts";
 
 const none = () => false;
 const cloud = (path: string) => path === CLOUD_CHROMIUM;
@@ -25,6 +31,13 @@ describe("chooseBrowser", () => {
     expect(chooseBrowser({}, "linux", cloud)).toEqual({ executablePath: CLOUD_CHROMIUM });
   });
 
+  test("Linux without it uses the installed Google Chrome", () => {
+    const chrome = (path: string) => path === LINUX_CHROME;
+    expect(chooseBrowser({}, "linux", chrome)).toEqual({ channel: "chrome" });
+    const both = (path: string) => cloud(path) || chrome(path);
+    expect(chooseBrowser({}, "linux", both)).toEqual({ executablePath: CLOUD_CHROMIUM });
+  });
+
   test("otherwise it fails naming both variables", () => {
     expect(() => chooseBrowser({}, "linux", none)).toThrow(
       "set CAVE_E2E_EXECUTABLE or CAVE_E2E_CHANNEL",
@@ -36,6 +49,18 @@ describe("chooseBrowser", () => {
     expect(chooseBrowser({ CAVE_E2E_EXECUTABLE: "", CAVE_E2E_CHANNEL: "" }, "win32")).toEqual({
       channel: "msedge",
     });
+  });
+});
+
+describe("snapshotPathTemplate", () => {
+  test("Google Chrome gets its own baselines; Edge and Chromium keep the platform's", () => {
+    expect(snapshotPathTemplate({ channel: "chrome" })).toBe(
+      "{testDir}/{testFileName}-snapshots/{arg}-{platform}-chrome{ext}",
+    );
+    for (const choice of [{ channel: "msedge" }, { executablePath: CLOUD_CHROMIUM }])
+      expect(snapshotPathTemplate(choice)).toBe(
+        "{testDir}/{testFileName}-snapshots/{arg}-{platform}{ext}",
+      );
   });
 });
 
