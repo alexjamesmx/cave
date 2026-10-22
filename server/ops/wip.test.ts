@@ -103,6 +103,12 @@ describe("prReasons", () => {
     ).toHaveLength(1);
   });
 
+  test("agent token code needs a PR", () => {
+    expect(prReasons(["server/agents.ts"], undefined, undefined)).toEqual([
+      "agent tokens (server/agents.ts)",
+    ]);
+  });
+
   test("a runtime dependency change needs a PR; a dev dependency or other edit does not", () => {
     expect(prReasons(["package.json"], pkg({ zod: "4" }), pkg({ zod: "4", left: "1" }))).toEqual([
       "a runtime dependency change (package.json)",

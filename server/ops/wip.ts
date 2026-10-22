@@ -19,11 +19,12 @@ export function secretPaths(paths: string[]): string[] {
   });
 }
 
-// What AGENTS.md ships as a PR: a schema migration, auth and the request guard, deploy/.
+// What AGENTS.md ships as a PR: a schema migration, auth and the request guard, tokens, deploy/.
 const PR_PATHS: [RegExp, string][] = [
   [/^deploy\//, "deploy/"],
   [/^server\/db\.ts$/, "a schema migration (server/db.ts)"],
   [/^server\/(auth|request-guard)\.ts$/, "auth or the request guard"],
+  [/^server\/agents\.ts$/, "agent tokens (server/agents.ts)"],
 ];
 
 const dependenciesOf = (packageJson: string | undefined): string => {
