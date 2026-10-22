@@ -51,8 +51,6 @@ export interface StatusOptions {
   /** The deployed git commit; `null` when the server does not run from a git checkout. */
   commit: string | null;
   backupDir: string;
-  /** Vault notes not imported yet, from the start-up dry run; `null` without a vault. */
-  newVaultNotes: () => number | null;
   /** `status.json` written by `cave-deploy`, read on every request; unset on a laptop. */
   deployStatusPath?: string;
   /** `status.json` written by `cave-offsite`, read on every request; unset off the VPS. */
@@ -67,7 +65,6 @@ export interface Status {
   docs: number;
   dbId: string;
   lastBackupAt: string | null;
-  newVaultNotes: number | null;
   /** The last deploy on the VPS; `null` without one or when its file is unreadable. */
   deploy: DeployStatus | null;
   /** The off-box backup and its weekly check; `null` when not set up. */
@@ -85,7 +82,6 @@ export function statusHandler(store: Store, options: StatusOptions) {
       docs: store.docCount(),
       dbId: store.dbId(),
       lastBackupAt: last === undefined ? null : new Date(last).toISOString(),
-      newVaultNotes: options.newVaultNotes(),
       deploy: readDeployStatus(options.deployStatusPath),
       offsite: readOffsiteStatus(options.offsiteStatusPath),
     };

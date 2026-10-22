@@ -53,7 +53,6 @@ test("the env template starts a public production server once a token is filled 
       .filter((line) => line && !line.startsWith("#"))
       .map((line) => line.split(/=(.*)/s).slice(0, 2) as [string, string]),
   );
-  expect(env.VAULT_PATH).toBeUndefined();
   expect(env.BUN_RUNTIME_TRANSPILER_CACHE_PATH).toBe("0");
   expect(env.CAVE_TOKEN).toBe("");
   expect(env.CAVE_DEPLOY_STATUS).toBe("/var/lib/cave-deploy/status.json");

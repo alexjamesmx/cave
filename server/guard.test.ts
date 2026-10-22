@@ -29,7 +29,6 @@ beforeAll(() => {
       version: "test",
       commit: null,
       backupDir: "missing-dir",
-      newVaultNotes: () => null,
     },
   });
 });

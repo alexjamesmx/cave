@@ -43,7 +43,6 @@ beforeAll(() => {
       version: "0.1.0-dev",
       commit: "abc123",
       backupDir,
-      newVaultNotes: () => 3,
       deployStatusPath: join(deployDir, "status.json"),
     },
   });
@@ -77,7 +76,6 @@ test("status reports CAVE_ENV, version, doc count, db id, the newest real backup
     docs: store.docCount(),
     dbId: store.dbId(),
     lastBackupAt: "2026-10-13T14:05:00.000Z",
-    newVaultNotes: 3,
     deploy: null,
     offsite: null,
   });
@@ -124,7 +122,7 @@ test("behind the proxy: the public origin passes, its http twin and other hosts 
     now: Date.now,
     allowedHosts: ["localhost", "127.0.0.1", "[::1]", "cave.example.dev"],
     publicOrigin: PUBLIC,
-    status: { env: "test", version: "x", commit: null, backupDir, newVaultNotes: () => null },
+    status: { env: "test", version: "x", commit: null, backupDir },
   });
   try {
     const get = (headers: Record<string, string>) =>

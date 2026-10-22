@@ -9,8 +9,6 @@ export interface ServerConfig {
   port: number;
   token: string | undefined;
   dbPath: string;
-  /** Obsidian vault to import from, read-only; unset means no import. */
-  vaultPath: string | undefined;
   /** Where backups go; next to the database unless `BACKUP_DIR` says otherwise. */
   backupDir: string;
   /** The `https:` origin browsers use behind a reverse proxy, e.g. `https://cave.example.dev`. */
@@ -197,7 +195,6 @@ export function resolveConfig(
       port,
       token,
       dbPath,
-      vaultPath: env.VAULT_PATH || undefined,
       backupDir: env.BACKUP_DIR || join(dirname(dbPath), "backups"),
       publicOrigin,
       allowedHosts: allowedHosts(hostname, env.CAVE_ALLOWED_HOSTS, publicOrigin),

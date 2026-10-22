@@ -45,7 +45,6 @@ export default defineConfig({
       env: {
         PORT: String(SERVER_PORT),
         CAVE_DB_PATH: dbPath,
-        VAULT_PATH: "",
         BACKUP_DIR: "",
         CAVE_TOKEN: process.env.CAVE_E2E_TOKEN,
         CAVE_HOST: "",

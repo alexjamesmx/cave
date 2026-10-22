@@ -125,7 +125,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
   S["Cave server"] -- "at start-up and every 24 h<br/>VACUUM INTO, verified" --> VB[("VPS backups<br/>newest 14 + one per month")]
-  VB -- "bun run pull-backups<br/>(scp, verify, keep)" --> LB[("Laptop<br/>data/vps-backups")]
+  VB -- "bun run pull-data<br/>(scp, verify, keep)" --> LB[("Laptop<br/>data/vps-backups")]
   LB -- "bun run restore" --> DEV[("Local dev copy<br/>data/dev.db")]
   VB -- "bun run restore (on the VPS)" --> S
   VB -- "cave-offsite backup, daily<br/>restic, encrypted" --> R2[("Cloudflare R2<br/>30 daily + 24 monthly snapshots")]
@@ -256,11 +256,10 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 | `CAVE_ALLOWED_HOSTS` | extra host names `/api` and `/mcp` answer to, comma-separated |
 | `CAVE_PUBLIC_ORIGIN` | the https origin behind a reverse proxy; requires `CAVE_TOKEN`, 32+ characters in production |
 | `BACKUP_DIR` | default `backups` next to the database |
-| `VAULT_PATH` | the old Obsidian vault `bun run import` reads; imported on first start when the database has no items; nothing writes to it |
 | `CAVE_DEPLOY_STATUS`, `CAVE_OFFSITE_STATUS` | the `status.json` files `cave-deploy` and `cave-offsite` write; Settings and `/system` show them, and the Cave alerts once when the off-box copy is over 48 hours old or its check failed |
 | `CAVE_VAPID_PUBLIC`, `CAVE_VAPID_PRIVATE`, `CAVE_VAPID_SUBJECT` | Web Push; all three or none (`bun run push-keys`) |
 | `CAVE_TELEGRAM_BOT_TOKEN`, `CAVE_DISCORD_WEBHOOK_URL` | optional channels; never logged or sent to a client |
-| `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-backups`, `pull-data`, `import --remote`, `money-review` |
+| `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-data`, `money-review` |
 
 ## 8. Secrets: where each lives
 

@@ -339,7 +339,7 @@ systemctl restart cave
 ```
 Commands run by hand pass `--no-cache`: restic's cache belongs to the units. The units create `/var/lib/cave-offsite` and `/var/cache/cave-offsite` (owned by `cave`), see the rest of the system read-only, and read the backups read-only. Backups run daily at 05:15 UTC and checks on Sundays at 06:15 UTC, each with up to 10 minutes' random delay, and catch up after downtime. The server has no fixed backup time (its hourly job takes one once 24 hours have passed), so the daily run always finds a daily backup under about 25 hours old.
 
-**Known limit.** Root on the VPS can read the R2 keys and delete the copies. The laptop's pulled backups (`bun run pull-backups`, `bun run pull-data`) stay a third copy. R2 Object Lock would conflict with `forget --prune` and is out of scope.
+**Known limit.** Root on the VPS can read the R2 keys and delete the copies. The laptop's pulled backups (`bun run pull-data`) stay a third copy. R2 Object Lock would conflict with `forget --prune` and is out of scope.
 
 ## Restoring from R2
 **On a new VPS.** Set it up through step 8 (the service stopped), install restic (step 14.3), write `/etc/cave/offsite.env` and `/etc/cave/offsite.key` again from the password manager (step 14.2), then:

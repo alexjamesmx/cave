@@ -80,27 +80,6 @@ describe("openDb", () => {
   });
 });
 
-test("hasItems ignores everything the seed wrote, the flow drafts included", () => {
-  const store = createStore(openDb(":memory:"));
-  store.seedIfEmpty(seedDocs(), 1);
-  expect(store.hasItems()).toBe(false);
-  store.applyChanges(
-    [
-      {
-        id: "t1",
-        kind: "item",
-        collection: "tasks",
-        data: { _title: "x" },
-        stamps: { _title: formatStamp(2, 0, "dev-a") },
-        actor: "",
-      },
-    ],
-    "user:dev-a",
-    2,
-  );
-  expect(store.hasItems()).toBe(true);
-});
-
 test("each change records the stamp its keys got and returns its seq", () => {
   const store = createStore(openDb(":memory:"));
   const stamp = formatStamp(5, 0, "dev-a");

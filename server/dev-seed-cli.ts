@@ -1,7 +1,7 @@
 import { DEFAULT_SEED_DB, seedDatabase } from "./sample-db.ts";
 
 // Fresh sample data, then the dev server on it. The owner's settings never reach that server:
-// it skips .env and gets none of the CAVE_ settings, so no token, vault or notifier is live.
+// it skips .env and gets none of the CAVE_ settings, so no token or notifier is live.
 const seeded = seedDatabase({ db: DEFAULT_SEED_DB, reset: true }, process.env, Date.now());
 if (!seeded.ok) {
   console.error(`Not seeded: ${seeded.error}`);
@@ -13,9 +13,7 @@ const TOKEN = "seed";
 console.log(`Unlock the app with the token "${TOKEN}"`);
 
 const env: Record<string, string | undefined> = Object.fromEntries(
-  Object.entries(process.env).filter(
-    ([key]) => !key.startsWith("CAVE_") && key !== "VAULT_PATH" && key !== "BACKUP_DIR",
-  ),
+  Object.entries(process.env).filter(([key]) => !key.startsWith("CAVE_") && key !== "BACKUP_DIR"),
 );
 env.CAVE_ENV = "dev";
 env.CAVE_TOKEN = TOKEN;

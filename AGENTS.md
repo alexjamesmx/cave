@@ -7,7 +7,7 @@ Repository: https://github.com/alexjamesmx/cave (private: the plan and design do
 ## Status
 
 - Pre-v0.1. M1 to M9 are on `main` and live at `https://cave.alexjamesmx.dev`; merging to `main` deploys within minutes. History: `docs/log/<milestone>.md`.
-- Owner steps still open: M5 step 10 (client setup and phone check), M7b (money-review, payments, ai-sync), M9 (`bun run import --remote`, the radar check from the Claude app).
+- Owner steps still open: M5 step 10 (client setup and phone check), M7b (money-review, payments, ai-sync), M9 (the radar check from the Claude app).
 - The laptop is Linux-first: WSL Ubuntu at `~/code/jarvis` today, native Linux later (`docs/system.md` section 6).
 
 Update this section in the same change as anything it describes.
@@ -25,10 +25,9 @@ Update this section in the same change as anything it describes.
 - `bun run check` (tsc + Biome); `bun test`; `bun run e2e` (Playwright in `e2e/` on an installed browser, never a download: `CAVE_E2E_EXECUTABLE`, else `CAVE_E2E_CHANNEL`, else the cloud's `/opt/pw-browsers/chromium`, else Google Chrome).
 - `bun run seed` (fake data in `data/seed.db`; `--db`, `--reset`; refuses production and the real database); `bun run dev:seed` (fresh seed, then a dev server on it with the token `seed`).
 - `bun run sync` (fetch, fast-forward a branch that only lags, list other devices' `origin/wip/*`; the SessionStart hook runs it); `bun run wip` (save unfinished work on a `wip/*` branch; `--resume`; `--finish "<message>"` lands it on `main`).
-- `bun run deploy` (deploy the tip of `origin/main` now through `cave-deploy` on the VPS; `--rollback`); `bun run pull-backups`; `bun run pull-data` (the newest verified VPS backup replaces the dev database inside `data/`; the old one stays as `<db>.prev`).
+- `bun run deploy` (deploy the tip of `origin/main` now through `cave-deploy` on the VPS; `--rollback`); `bun run pull-data` (the newest verified VPS backup replaces the dev database inside `data/`; the old one stays as `<db>.prev`).
 - `bun run backup` (`--dir`, `--keep`, `--sha`); `bun run restore <file>` (server stopped); `bun run verify-backup <file>`; `bun run export`.
 - `bun run agent add|list|revoke` (agent tokens, `docs/agents.md`); `bun run push-keys` (VAPID keys).
-- `bun run import` (add-only import of the old Obsidian vault from `VAULT_PATH`; `--dry-run`; `--remote` imports into the hosted server).
 - `bun run money-review` (category proposals; `--local`, `--dry-run`); `bun run ai-sync` (AI setup to the `ai` collection, secrets redacted; `--apply`, `--local`).
 
 Environment variables: `docs/system.md` section 7; template in `.env.example`.
@@ -50,7 +49,7 @@ Environment variables: `docs/system.md` section 7; template in `.env.example`.
 
 ## Layout
 
-- `server/`: HTTP API, sync, MCP server, jobs, notifications, flows, importer, ops tooling (`server/ops/`).
+- `server/`: HTTP API, sync, MCP server, jobs, notifications, flows, ops tooling (`server/ops/`).
 - `shared/`: types, field schemas, merge logic used by server and client.
 - `web/`: the PWA.
 - `e2e/`: browser checks.
@@ -61,7 +60,6 @@ Environment variables: `docs/system.md` section 7; template in `.env.example`.
 
 - Never commit or paste into a prompt anything from `data/`, `.env*`, tokens or keys.
 - Never guess an amount, category or account. Leave the field empty for the owner.
-- The vault import only adds records and never writes to the vault.
 - Money totals include every entry. Nothing is filtered out silently.
 
 ## Code rules

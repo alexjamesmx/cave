@@ -8,7 +8,6 @@ import { serveCave } from "./app.ts";
 import { resolveConfig } from "./config.ts";
 import { openDb } from "./db.ts";
 import { flowRoutes } from "./flows/api.ts";
-import { formatReport, importIfEmpty, importVault, newNotes } from "./import/importer.ts";
 import { createBackupJob } from "./jobs/backup-job.ts";
 import { createOffsiteJob } from "./jobs/offsite-job.ts";
 import { createScheduler } from "./jobs/scheduler.ts";
@@ -32,7 +31,6 @@ const {
   port,
   token,
   dbPath,
-  vaultPath,
   allowedHosts,
   publicOrigin,
   backupDir,
@@ -62,18 +60,6 @@ const db = openDb(dbPath);
 const store = createStore(db);
 store.seedIfEmpty(seedDocs(), Date.now());
 migrateSeed(store, Date.now());
-const imported = await importIfEmpty(store, vaultPath, Date.now());
-if (imported) console.log(`Imported ${vaultPath}\n${formatReport(imported)}`);
-
-// Importing on every start would bring a renamed vault note back as a duplicate, so the
-// owner is only told; `bun run import` adds them.
-let newVaultNotes: number | null = null;
-if (vaultPath) {
-  newVaultNotes = imported
-    ? 0
-    : newNotes(await importVault({ root: vaultPath, store, now: Date.now(), dryRun: true }));
-  if (newVaultNotes > 0) console.log(`Vault has ${newVaultNotes} new notes: run bun run import`);
-}
 
 // Links in messages point at the address the owner opens: the public origin behind Caddy.
 const origin =
@@ -133,7 +119,6 @@ const server = serveCave({
     version,
     commit,
     backupDir,
-    newVaultNotes: () => newVaultNotes,
     ...(deployStatusPath ? { deployStatusPath } : {}),
     ...(offsiteStatusPath ? { offsiteStatusPath } : {}),
   },

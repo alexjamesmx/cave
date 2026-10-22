@@ -14,7 +14,6 @@ test("the owner's name reaches the greeting; Settings shows the server and downl
   // The server backs up at start, so a fresh database already has one.
   await expect(page.getByText("Last backup")).toBeVisible();
   await expect(page.getByText("None yet")).toHaveCount(0);
-  await expect(page.getByText("No vault set")).toBeVisible();
 
   await page.goto("/settings/general");
   const pushed = page.waitForResponse(

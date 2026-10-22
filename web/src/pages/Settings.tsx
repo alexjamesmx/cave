@@ -225,14 +225,6 @@ function ServerStatus() {
           <dd className="num" style={{ margin: 0 }}>
             {status.docs}
           </dd>
-          <dt className="muted">New vault notes</dt>
-          <dd style={{ margin: 0 }}>
-            {status.newVaultNotes === null
-              ? "No vault set"
-              : status.newVaultNotes === 0
-                ? "None"
-                : `${status.newVaultNotes}: run bun run import`}
-          </dd>
           {status.deploy && (
             <>
               <dt className="muted">Deploy</dt>

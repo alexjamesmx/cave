@@ -13,7 +13,6 @@ describe("resolveConfig", () => {
         port: 3000,
         token: undefined,
         dbPath: "data/cave.db",
-        vaultPath: undefined,
         publicOrigin: undefined,
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
@@ -68,7 +67,6 @@ describe("resolveConfig", () => {
         port: 8080,
         token: "t",
         dbPath: "data/cave.db",
-        vaultPath: undefined,
         publicOrigin: undefined,
         backupDir: join("data", "backups"),
         allowedHosts: ["localhost", "127.0.0.1", "[::1]"],
@@ -106,11 +104,6 @@ describe("resolveConfig", () => {
       "100.64.0.7",
       "laptop.local",
     ]);
-  });
-
-  test("reads the vault path", () => {
-    const result = resolveConfig({ VAULT_PATH: "C:/vault" });
-    expect(result.ok && result.value.vaultPath).toBe("C:/vault");
   });
 
   test("reads the database path", () => {

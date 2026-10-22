@@ -86,17 +86,11 @@ describe("seedDatabase", () => {
     expect(dues.some((due) => due >= today && due <= "2026-10-31")).toBe(true);
   });
 
-  test("sample items are the owner's records, so vault import never runs over them", () => {
-    const { path, docs } = seeded();
+  test("sample items are written as the sample actor", () => {
+    const { docs } = seeded();
     expect(docs.filter((d) => d.id.startsWith("s-")).every((d) => d.actor === SAMPLE_ACTOR)).toBe(
       true,
     );
-    const db = openDb(path);
-    try {
-      expect(createStore(db).hasItems()).toBe(true);
-    } finally {
-      db.close();
-    }
   });
 
   test("a folder that doesn't exist yet is created, as data/ in a fresh checkout", () => {
