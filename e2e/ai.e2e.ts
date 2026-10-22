@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { E2E_TOKEN, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-const CLI = resolve("server/ai-sync/cli.ts");
+const CLI = resolve("server/cli/ai-sync.ts");
 // Assembled at run time so no token-shaped literal sits in the source.
 const SECRET = ["gh", "p_", "R4n6D0mE2E".repeat(4)].join("");
 

@@ -19,7 +19,23 @@ jobs:
           bun-version: 1.4.3
       # restic for deploy/cave-offsite's test; Ubuntu's package is older than the VPS's pinned
       # 0.19.1, and the commands the script uses exist in both.
-      - run: sudo apt-get update -q && sudo apt-get install -y -q restic
+      - run: sudo apt-get update -q && sudo apt-get install -y -q restic shellcheck
+      - run: shellcheck -S warning deploy/cave-deploy deploy/cave-offsite deploy/release.sh setup/*.sh .githooks/commit-msg
       - run: bun install --frozen-lockfile
       - run: bun run check
       - run: bun test
+      # The browser checks drive Google Chrome, the laptop's browser too, so the screenshot
+      # baselines are shared. The runner image ships it; the install is for when it doesn't.
+      - run: |
+          test -x /opt/google/chrome/chrome || {
+            curl -fsSLO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt-get install -y -q ./google-chrome-stable_current_amd64.deb
+          }
+          google-chrome --version
+      - run: bun run e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: e2e-results
+          path: test-results/
+          if-no-files-found: ignore

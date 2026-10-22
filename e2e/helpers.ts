@@ -95,7 +95,7 @@ export async function pushed(page: Page, action: () => Promise<unknown>): Promis
 function mintAgent(name: string): string {
   const out = spawnSync(
     "bun",
-    ["run", "server/agent-cli.ts", "add", name, "--scopes", "read,write"],
+    ["run", "server/cli/agent.ts", "add", name, "--scopes", "read,write"],
     {
       env: {
         ...process.env,

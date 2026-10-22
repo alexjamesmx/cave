@@ -1,5 +1,5 @@
-import { gitIn } from "./git.ts";
-import { syncRepo } from "./sync.ts";
+import { gitIn } from "../ops/git.ts";
+import { syncRepo } from "../ops/sync.ts";
 
 // Run by the SessionStart hook: whatever happens, the session starts.
 try {

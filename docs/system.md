@@ -172,7 +172,7 @@ The laptop runs Ubuntu: today inside WSL (systemd on in `/etc/wsl.conf`), later 
 
 1. **Tools:**
    ```bash
-   sudo apt install git gh build-essential
+   sudo apt install git gh build-essential shellcheck   # shellcheck: CI lints deploy/ and setup/ with it
    curl -fsSL https://bun.com/install | bash -s bun-v1.4.3
    curl -fsSL https://claude.ai/install.sh | bash       # then run claude once to log in
    ```

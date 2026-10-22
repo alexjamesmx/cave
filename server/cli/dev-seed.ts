@@ -1,4 +1,4 @@
-import { DEFAULT_SEED_DB, seedDatabase } from "./sample-db.ts";
+import { DEFAULT_SEED_DB, seedDatabase } from "../sample-db.ts";
 
 // Fresh sample data, then the dev server on it. The owner's settings never reach that server:
 // it skips .env and gets none of the CAVE_ settings, so no token or notifier is live.

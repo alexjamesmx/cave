@@ -5,7 +5,7 @@
 # session at a time. No permission flag is passed here; the project's deny rules on .env and data/
 # still apply. remote-control exits after about 10 minutes offline, so the loop starts it again.
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 name="cave · laptop"
 log_dir="${XDG_STATE_HOME:-$HOME/.local/state}/cave"
 log="$log_dir/remote-control.log"

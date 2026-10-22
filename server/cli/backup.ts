@@ -8,9 +8,9 @@ import {
   pruneBeyondNewest,
   takeBackup,
   verifyBackup,
-} from "./backup.ts";
-import { BACKUP_USAGE, parseBackupArgs } from "./backup-args.ts";
-import { resolveConfig } from "./config.ts";
+} from "../backup.ts";
+import { BACKUP_USAGE, parseBackupArgs } from "../backup-args.ts";
+import { resolveConfig } from "../config.ts";
 
 const config = resolveConfig(process.env);
 if (!config.ok) {

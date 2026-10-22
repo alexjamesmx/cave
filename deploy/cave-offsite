@@ -26,7 +26,7 @@ now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 # The doc count of a backup file, as the running release verifies it (bun run verify-backup);
 # the file is run directly, so no bun on PATH is needed. Fails if it does not verify.
 docs_of() {
-  "$bun_bin/bun" "$root/current/server/verify-backup-cli.ts" "$1" 2>/dev/null |
+  "$bun_bin/bun" "$root/current/server/cli/verify-backup.ts" "$1" 2>/dev/null |
     sed -n 's/.*: integrity ok, \([0-9][0-9]*\) docs$/\1/p' | grep .
 }
 

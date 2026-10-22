@@ -2,10 +2,10 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { seedDocs } from "../shared/seed.ts";
-import { backupName, PRE_DEPLOY_PATTERN, preDeployName } from "./backup.ts";
-import { openDb } from "./db.ts";
-import { createStore } from "./store.ts";
+import { seedDocs } from "../../shared/seed.ts";
+import { backupName, PRE_DEPLOY_PATTERN, preDeployName } from "../backup.ts";
+import { openDb } from "../db.ts";
+import { createStore } from "../store.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "cave-backup-cli-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -16,7 +16,7 @@ createStore(db).seedIfEmpty(seedDocs(), 1);
 db.close();
 
 const cli = (args: string[]) =>
-  Bun.spawnSync(["bun", "--no-env-file", join(import.meta.dir, "backup-cli.ts"), ...args], {
+  Bun.spawnSync(["bun", "--no-env-file", join(import.meta.dir, "backup.ts"), ...args], {
     env: { ...process.env, CAVE_DB_PATH: dbPath, BACKUP_DIR: join(dir, "backups") },
     stdout: "pipe",
     stderr: "pipe",

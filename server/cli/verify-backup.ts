@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import { verifyBackup } from "./backup.ts";
+import { verifyBackup } from "../backup.ts";
 
 // The same check and line a backup gets when it is taken, for a copy restored from anywhere;
 // `deploy/cave-offsite` reads the doc count from it.
