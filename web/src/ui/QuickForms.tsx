@@ -1,11 +1,10 @@
 import { type FormEvent, type ReactNode, useId, useState } from "react";
-import { localDateTime } from "../../../shared/dates.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
 import { REPEATS } from "../../../shared/recurrence.ts";
 import { preview, type WhenContext } from "../../../shared/when.ts";
 import { useCave } from "../app/context.ts";
-import { useNow, useReminderZone, useTimeZone } from "../app/hooks.ts";
+import { useNow, useReminderZone } from "../app/hooks.ts";
 import { parseWhen } from "../logic/when-field.ts";
 import type { CollectionDoc } from "../store/queries.ts";
 

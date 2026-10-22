@@ -1,8 +1,6 @@
 import type { CollectionData } from "../schema.ts";
 
 export const FLOWS = "flows";
-export const FLOW_STATUSES = ["draft", "on", "off", "pending-approval"] as const;
-export type FlowStatus = (typeof FLOW_STATUSES)[number];
 
 /**
  * Automations. The Flows page (`/flows`) is how they are seen and edited, so the collection

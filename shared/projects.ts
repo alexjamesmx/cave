@@ -104,8 +104,6 @@ export const projectRef: Field = {
   config: { collection: PROJECTS },
 };
 
-export const PART_STATUSES = ["planned", "active", "blocked", "done", "dropped"] as const;
-
 export const PARTS_COLLECTION: CollectionData = {
   name: "Parts",
   icon: "layers",

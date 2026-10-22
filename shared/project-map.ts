@@ -129,12 +129,6 @@ export function parseMap(value: unknown): Parsed {
   return { ok: true, map: value as unknown as ProjectMap };
 }
 
-/** The stored map, or an empty one when it is missing or broken (a view never fails on it). */
-export const mapOf = (project: Doc | undefined): ProjectMap => {
-  const parsed = parseMap(project?.data.map);
-  return parsed.ok ? parsed.map : EMPTY_MAP;
-};
-
 /** Positions and edges of items that no longer exist are dropped before a save. */
 export function pruneMap(map: ProjectMap, live: ReadonlySet<string>): ProjectMap {
   const local = new Set([...map.notes.map((n) => n.id), ...map.groups.map((g) => g.id)]);

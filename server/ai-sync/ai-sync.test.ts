@@ -163,7 +163,10 @@ test("apply writes after a yes, refuses redacted bodies, and moves deleted files
     [agents, claude, mcp],
     [memory],
     roots,
-    (q) => (asked.push(q), true),
+    (q) => {
+      asked.push(q);
+      return true;
+    },
     () => {},
     read,
   );
@@ -206,7 +209,10 @@ test("an edited source never decides where apply writes: only files this run rea
     [forged, outside],
     [],
     roots,
-    (q) => (asked.push(q), true),
+    (q) => {
+      asked.push(q);
+      return true;
+    },
     () => {},
     read,
   );

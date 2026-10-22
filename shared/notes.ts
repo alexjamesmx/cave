@@ -10,7 +10,6 @@ import type { Doc } from "./types.ts";
 
 export const NOTES = "notes";
 export const INBOX = "Inbox";
-export const NOTE_SOURCES = ["owner", "agent", "radar", "import"] as const;
 
 export const NOTES_COLLECTION: CollectionData = {
   name: "Notes",
