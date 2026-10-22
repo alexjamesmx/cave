@@ -403,32 +403,6 @@ const OTHER: SampleDoc[] = [
       status: "pending",
     },
   },
-  {
-    id: "s-ai-agents-md",
-    collection: "ai",
-    data: {
-      _title: "AGENTS.md",
-      _body: "Project rules for every agent working in this repo.",
-      kind: "rule",
-      surface: "any",
-      scope: "repo",
-      source: "repo:AGENTS.md",
-      status: "active",
-    },
-  },
-  {
-    id: "s-ai-github-mcp",
-    collection: "ai",
-    data: {
-      _title: "GitHub MCP server",
-      _body: "Issues, pull requests and Actions.",
-      kind: "mcp-server",
-      surface: "claude-code",
-      scope: "repo",
-      source: "repo:.mcp.json",
-      status: "active",
-    },
-  },
 ];
 
 /**

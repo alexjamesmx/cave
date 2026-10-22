@@ -29,11 +29,9 @@ export type PageId =
   | "notes"
   | "radar"
   | "project"
+  | "activity"
   | "agents"
   | "flows"
-  | "ai-overview"
-  | "ai-setup"
-  | "ai-activity"
   | "settings-general"
   | "settings-lists"
   | "settings-notifications"
@@ -136,6 +134,7 @@ export const SECTIONS: Section[] = [
       page("ideas", "Ideas", "projects-ideas"),
       page("radar", "Radar", "radar"),
       page("notes", "Notes", "notes"),
+      page("activity", "Activity", "activity"),
       // One project's page, at `/projects/<id>/<tab>`; pinned ones also show as tabs.
       page("project", "Project", "project", true),
     ],
@@ -154,21 +153,6 @@ export const SECTIONS: Section[] = [
     owns: ["journal"],
   },
   {
-    id: "ai",
-    label: "AI",
-    icon: "sparkles",
-    color: "var(--purple)",
-    path: "/ai",
-    tabs: [
-      page("overview", "Overview", "ai-overview"),
-      page("agents", "Agents", "agents"),
-      page("flows", "Flows", "flows"),
-      page("setup", "Setup", "ai-setup"),
-      page("activity", "Activity", "ai-activity"),
-    ],
-    owns: ["flows", "ai"],
-  },
-  {
     id: "settings",
     label: "Settings",
     icon: "settings",
@@ -181,8 +165,10 @@ export const SECTIONS: Section[] = [
       page("devices", "Devices", "settings-devices"),
       page("data", "Data", "settings-data"),
       page("system", "System", "settings-system"),
+      page("agents", "Agents", "agents"),
+      page("flows", "Flows", "flows"),
     ],
-    owns: [],
+    owns: ["flows"],
   },
 ];
 
@@ -203,7 +189,7 @@ export const visibleTabs = (section: Section) => section.tabs.filter((t) => !t.h
 export const DOCK_SIZE = 4;
 export const DEFAULT_DOCK = ["home", "money", "tasks", "calendar"];
 
-/** Dock ids from before M8, and the section each now lives in. */
+/** Dock ids from before M8 (and the AI section, gone in M10), and where each lives now. */
 const OLD_DOCK: Record<string, string> = {
   payments: "money",
   wealth: "money",
@@ -211,8 +197,9 @@ const OLD_DOCK: Record<string, string> = {
   leetcode: "projects",
   ideas: "projects",
   diary: "life",
-  agents: "ai",
-  flows: "ai",
+  agents: "settings",
+  flows: "settings",
+  ai: "settings",
   system: "settings",
 };
 

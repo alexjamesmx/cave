@@ -277,13 +277,13 @@ export function promoteIdeaWrites(
 export const linkedTo = (items: Doc[], project: string) =>
   items.filter((d) => d.data._deleted !== true && d.data.project === project);
 
-/** What a provider is asked about a project; ids let an agent call `get_project`. */
+/** What Claude is asked about a project; ids let an agent call `get_project`. */
 export function projectPrompt(project: Doc, question: string): string {
   const title = String(project.data._title ?? "Untitled");
   return `About my Cave project "${title}" (id ${project.id}; call get_project for its parts, tasks and items): ${question}`;
 }
 
-/** What a provider is asked to start an idea. */
+/** What Claude is asked to start an idea. */
 export function ideaPrompt(idea: Doc): string {
   const title = String(idea.data._title ?? "Untitled");
   const body = typeof idea.data._body === "string" ? idea.data._body.trim() : "";

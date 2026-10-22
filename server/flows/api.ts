@@ -16,7 +16,7 @@ export function flowRoutes(engine: FlowEngine) {
     runs(req: Req) {
       return Response.json({ runs: engine.runs(req.params.id ?? "") });
     },
-    /** Every flow's newest runs, for AI → Activity; ids and step outcomes, never secrets. */
+    /** Every flow's newest runs, for Projects → Activity; ids and step outcomes, never secrets. */
     recent() {
       return Response.json({ runs: engine.recent(RECENT) });
     },

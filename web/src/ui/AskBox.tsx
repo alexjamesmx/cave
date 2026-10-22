@@ -1,18 +1,14 @@
 import { type FormEvent, useState } from "react";
-import { currentProvider } from "../ai/providers.ts";
+import { ASK_WHERE, askClaude, browserAsk } from "../logic/ask-claude.ts";
 
-/** One box to ask or tell the Cave anything; the provider decides where the answer appears. */
+/** One box to ask or tell the Cave anything; the answer happens in Claude. */
 export function AskBox({ autoFocus = false, onAsked }: { autoFocus?: boolean; onAsked?(): void }) {
   const [text, setText] = useState("");
-  const provider = currentProvider();
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!text.trim()) return;
-    await provider.ask(text, {
-      open: (url) => window.open(url, "_blank", "noopener"),
-      copy: (value) => navigator.clipboard.writeText(value),
-    });
+    await askClaude(text, browserAsk);
     setText("");
     onAsked?.();
   };
@@ -40,7 +36,7 @@ export function AskBox({ autoFocus = false, onAsked }: { autoFocus?: boolean; on
       />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span className="muted" style={{ fontSize: 13, flex: 1 }}>
-          {provider.where}; the question is also copied.
+          {ASK_WHERE}; the question is also copied.
         </span>
         <button type="submit" className="btn primary" disabled={!text.trim()}>
           Ask

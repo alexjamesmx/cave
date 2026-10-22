@@ -12,11 +12,11 @@ import {
   templatesOf,
 } from "../../../shared/projects.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { currentProvider } from "../ai/providers.ts";
 import { useActivity } from "../app/activity.ts";
 import { useCave } from "../app/context.ts";
 import { useWriteError } from "../app/project-actions.ts";
 import { projectPath, setSearch, useSearch } from "../app/router.ts";
+import { ASK_WHERE, askClaude, browserAsk } from "../logic/ask-claude.ts";
 import { formatMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
 import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
@@ -402,14 +402,10 @@ function AddTask({ project, parts }: { project: string; parts: Doc[] }) {
 
 function AskProject({ project }: { project: Doc }) {
   const [text, setText] = useState("");
-  const provider = currentProvider();
   const ask = async (e: FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
-    await provider.ask(projectPrompt(project, text.trim()), {
-      open: (url) => window.open(url, "_blank", "noopener"),
-      copy: (value) => navigator.clipboard.writeText(value),
-    });
+    await askClaude(projectPrompt(project, text.trim()), browserAsk);
     setText("");
   };
   return (
@@ -435,7 +431,7 @@ function AskProject({ project }: { project: Doc }) {
         </button>
       </div>
       <span className="muted" style={{ fontSize: 13 }}>
-        {provider.where}; the question is also copied.
+        {ASK_WHERE}; the question is also copied.
       </span>
     </form>
   );

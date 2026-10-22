@@ -1,7 +1,7 @@
 import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("the sidebar shows each of the eight sections once; a tab survives a reload; old links land in place", async ({
+test("the sidebar shows each of the seven sections once; a tab survives a reload; old links land in place", async ({
   browser,
 }) => {
   const page = await (
@@ -16,7 +16,6 @@ test("the sidebar shows each of the eight sections once; a tab survives a reload
     "Tasks",
     "Projects",
     "Life",
-    "AI",
     "Settings",
   ]);
 
@@ -33,7 +32,9 @@ test("the sidebar shows each of the eight sections once; a tab survives a reload
 
   for (const [from, to] of [
     ["/c/journal", /\/life\/diary$/],
-    ["/agents", /\/ai\/agents$/],
+    ["/agents", /\/settings\/agents$/],
+    ["/ai/flows/flow-salary", /\/settings\/flows\/flow-salary$/],
+    ["/ai/activity", /\/projects\/activity$/],
     ["/system/jobs", /\/settings\/system\/jobs$/],
     ["/c/proposals", /\/settings\/data\/proposals$/],
   ] as const) {
