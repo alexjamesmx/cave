@@ -281,4 +281,4 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 - `docs/hosting.md`: the server runbook.
 - `docs/agents.md`: connecting Claude Code, Codex and OpenCode.
 - `docs/decisions.md`: why things are the way they are.
-- `git tag`: `v0.1-history` is the last commit with the milestone plans, logs and reviews (M1 to M9).
+- `git tag`: `v0.1-history` is the last commit with the milestone plans, logs and reviews (M1 to M9); `m10-history` the last with M10's.
