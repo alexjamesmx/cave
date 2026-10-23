@@ -74,7 +74,7 @@ export function PartEditor({ def, selection, collections, onChange, onSelect }: 
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <span className="k" style={{ color: "#cfff7a" }}>
+      <span className="k" style={{ color: "var(--accent)" }}>
         {kind === "trigger" ? "Trigger" : `Step ${(selection as number) + 1}`}
       </span>
       <Row label="Type">

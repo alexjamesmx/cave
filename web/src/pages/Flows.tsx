@@ -23,9 +23,9 @@ import {
 import { Icon } from "../ui/icon.tsx";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "#8c93a0",
+  draft: "var(--muted)",
   on: "var(--income)",
-  off: "#8c93a0",
+  off: "var(--muted)",
   "pending-approval": "var(--gold)",
 };
 const statusText = (s: unknown) => (s === "pending-approval" ? "pending approval" : String(s));
@@ -64,7 +64,7 @@ export function Flows({ id }: { id: string | undefined }) {
             </span>
             <span
               className="dot"
-              style={{ background: STATUS_COLORS[String(f.data.status)] ?? "#8c93a0" }}
+              style={{ background: STATUS_COLORS[String(f.data.status)] ?? "var(--muted)" }}
             />
           </a>
         ))}
@@ -164,7 +164,7 @@ function FlowDetail({ flow }: { flow: Doc }) {
         />
         <span
           className="chip num"
-          style={{ background: "#161a21", color: STATUS_COLORS[status] ?? "#a3a9b4" }}
+          style={{ background: "var(--line)", color: STATUS_COLORS[status] ?? "var(--muted)" }}
         >
           {statusText(status).toUpperCase()}
         </span>

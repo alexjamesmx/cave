@@ -66,7 +66,7 @@ export function HabitsDashboard({ collection, view, items }: ViewProps) {
                   key={day}
                   className={`day habit-day${day === today ? " today" : ""}`}
                   title={`${shortDay(day)}: ${done.length ? done.join(", ") : "no habits logged"}`}
-                  style={{ background: `rgba(182, 255, 59, ${0.06 + share * 0.6})` }}
+                  style={{ background: `rgba(143, 208, 160, ${0.06 + share * 0.6})` }}
                 >
                   <span className="num">{Number(day.slice(8))}</span>
                   <span className="num" style={{ fontSize: 10 }}>

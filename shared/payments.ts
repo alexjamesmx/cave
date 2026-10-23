@@ -1,4 +1,5 @@
 import { PAYMENT_ACCOUNT, PAYMENT_CATEGORY } from "./lists.ts";
+import { PALETTE } from "./palette.ts";
 import { advance, dueInstant, type ReminderLike, type Zone } from "./recurrence.ts";
 import type { CollectionData, Field } from "./schema.ts";
 
@@ -13,11 +14,11 @@ const select = (id: string, name: string, values: [string, string, string][]): F
 });
 
 const REPEAT_FIELD: Field = select("repeat", "Repeat", [
-  ["none", "minus", "#8C93A0"],
-  ["daily", "repeat", "#3DE0FF"],
-  ["weekly", "repeat", "#3DE0FF"],
-  ["monthly", "repeat", "#8B7CFF"],
-  ["yearly", "repeat", "#F5C451"],
+  ["none", "minus", PALETTE.grey],
+  ["daily", "repeat", PALETTE.teal],
+  ["weekly", "repeat", PALETTE.teal],
+  ["monthly", "repeat", PALETTE.vio],
+  ["yearly", "repeat", PALETTE.warn],
 ]);
 
 /**
@@ -27,15 +28,15 @@ const REPEAT_FIELD: Field = select("repeat", "Repeat", [
 export const PAYMENTS_COLLECTION: CollectionData = {
   name: "Payments",
   icon: "calendar-clock",
-  color: "#FF9F43",
+  color: PALETTE.orange,
   order: 8,
   fields: [
     select("kind", "Kind", [
-      ["subscription", "repeat", "#3DE0FF"],
-      ["card", "credit-card", "#8B7CFF"],
-      ["bill", "receipt", "#FF9F43"],
-      ["loan", "landmark", "#F5C451"],
-      ["other", "ellipsis", "#8C93A0"],
+      ["subscription", "repeat", PALETTE.teal],
+      ["card", "credit-card", PALETTE.vio],
+      ["bill", "receipt", PALETTE.orange],
+      ["loan", "landmark", PALETTE.warn],
+      ["other", "ellipsis", PALETTE.grey],
     ]),
     { id: "amount", name: "Amount", type: "money" },
     { id: "approx", name: "Amount varies", type: "checkbox" },

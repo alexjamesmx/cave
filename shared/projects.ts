@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette.ts";
 import { MAP_FIELD } from "./project-map.ts";
 import type { CollectionData, Field, SelectOption } from "./schema.ts";
 import type { Doc } from "./types.ts";
@@ -107,7 +108,7 @@ export const projectRef: Field = {
 export const PARTS_COLLECTION: CollectionData = {
   name: "Parts",
   icon: "layers",
-  color: "#8B7CFF",
+  color: PALETTE.vio,
   order: 10,
   fields: [
     { id: "project", name: "Project", type: "ref", config: { collection: PROJECTS } },
@@ -117,11 +118,11 @@ export const PARTS_COLLECTION: CollectionData = {
       name: "Status",
       type: "select",
       options: [
-        opt("planned", "circle", "#8C93A0"),
-        opt("active", "circle-dot", "#3DE0FF"),
-        opt("blocked", "octagon-alert", "#FF5C7A"),
-        opt("done", "circle-check", "#B6FF3B"),
-        opt("dropped", "circle-x", "#8C93A0"),
+        opt("planned", "circle", PALETTE.grey),
+        opt("active", "circle-dot", PALETTE.teal),
+        opt("blocked", "octagon-alert", PALETTE.bad),
+        opt("done", "circle-check", PALETTE.ok),
+        opt("dropped", "circle-x", PALETTE.grey),
       ],
     },
     { id: "order", name: "Order", type: "number" },
@@ -131,10 +132,10 @@ export const PARTS_COLLECTION: CollectionData = {
       name: "Kind",
       type: "select",
       options: [
-        opt("milestone", "flag", "#F5C451"),
-        opt("component", "box", "#3DE0FF"),
-        opt("phase", "milestone", "#8B7CFF"),
-        opt("other", "ellipsis", "#8C93A0"),
+        opt("milestone", "flag", PALETTE.warn),
+        opt("component", "box", PALETTE.teal),
+        opt("phase", "milestone", PALETTE.vio),
+        opt("other", "ellipsis", PALETTE.grey),
       ],
     },
   ],
@@ -148,7 +149,7 @@ export const PROJECT_FIELDS: Field[] = [
     id: "template",
     name: "Template",
     type: "select",
-    options: Object.keys(DEFAULT_TEMPLATES).map((t) => opt(t, "layout-template", "#C77DFF")),
+    options: Object.keys(DEFAULT_TEMPLATES).map((t) => opt(t, "layout-template", PALETTE.purple)),
   },
   { id: "pinned", name: "Pinned", type: "checkbox" },
   MAP_FIELD,

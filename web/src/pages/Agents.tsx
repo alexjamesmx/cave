@@ -69,7 +69,7 @@ export function Agents() {
           agents.map((a) => (
             <div key={a.name} className="entry" style={{ cursor: "default" }}>
               <span style={{ flex: 1, fontWeight: 600 }}>{a.name}</span>
-              <span className="chip" style={{ background: "#11141a" }}>
+              <span className="chip" style={{ background: "var(--on)" }}>
                 {a.scopes.join(" · ")}
               </span>
               <span className="muted" style={{ fontSize: 12 }}>
@@ -244,7 +244,7 @@ function ProposalRow({
           </button>
         </>
       ) : (
-        <span className="chip" style={{ background: "#11141a" }}>
+        <span className="chip" style={{ background: "var(--on)" }}>
           {String(proposal.data.status)}
         </span>
       )}

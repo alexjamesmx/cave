@@ -35,7 +35,7 @@ export function FlowCards({
         aria-pressed={selected === selection}
         onClick={() => onSelect(selection)}
       >
-        <span className="ico" style={{ background: "#11141a", color: look.color }}>
+        <span className="ico" style={{ background: "var(--on)", color: look.color }}>
           <Icon name={look.icon} size={19} />
         </span>
         <span style={{ display: "grid", gap: 2, minWidth: 0, textAlign: "left" }}>

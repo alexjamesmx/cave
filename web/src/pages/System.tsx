@@ -218,7 +218,10 @@ function Overview({ server }: { server: Server }) {
               <span>{i.label}</span>
               <span
                 className="chip"
-                style={{ background: "#11141a", color: i.ready ? "var(--income)" : "var(--gold)" }}
+                style={{
+                  background: "var(--on)",
+                  color: i.ready ? "var(--income)" : "var(--gold)",
+                }}
               >
                 {i.ready ? "ready" : "not ready"}
               </span>
@@ -254,7 +257,7 @@ function Schedules({ server }: { server: Server }) {
             {e.approximate ? "≈ " : ""}
             {when(e.at)}
           </span>
-          <span className="chip" style={{ background: "#11141a" }}>
+          <span className="chip" style={{ background: "var(--on)" }}>
             {e.kind}
           </span>
           <a className="link" href={e.path}>
@@ -332,7 +335,7 @@ function Flows({ server }: { server: Server }) {
             <a className="link" href={flowPath(f.id)}>
               {titleOf(f)}
             </a>
-            <span className="chip" style={{ background: "#11141a" }}>
+            <span className="chip" style={{ background: "var(--on)" }}>
               {String(f.data.status)}
             </span>
             <span className="muted">by {String(f.data.author ?? "owner")}</span>

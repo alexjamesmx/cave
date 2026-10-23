@@ -22,7 +22,7 @@ env.CAVE_DB_PATH = seeded.path;
 env.BACKUP_DIR = `${seeded.path}-backups`;
 
 const server = Bun.spawn(["bun", "--no-env-file", "run", "server/main.ts"], {
-  cwd: `${import.meta.dir}/..`,
+  cwd: `${import.meta.dir}/../..`,
   env,
   stdio: ["inherit", "inherit", "inherit"],
 });

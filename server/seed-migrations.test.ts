@@ -21,7 +21,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
   expect(store.get("proposals")).toBeUndefined();
   expect(seedVersionOf(store)).toBe(1);
 
-  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+  expect(migrateSeed(store, NOW)).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
   expect(store.get("flows")?.data).toMatchObject({ name: "Flows", hidden: true });
   expect(store.get("flow-rent")).toMatchObject({ collection: "flows", actor: "seed" });
   const proposals = store.get("proposals");
@@ -76,7 +76,7 @@ test("seed migration 6 merges the categories: the owner's options and edits stay
           ...f,
           options: [
             ...(f.options ?? []).map((o) => (o.value === "food" ? { ...o, label: "Comida" } : o)),
-            { value: "pets", icon: "dog", color: "#8C93A0" },
+            { value: "pets", icon: "dog", color: "#123456" },
           ],
         }
       : f,
@@ -97,7 +97,7 @@ test("seed migration 6 merges the categories: the owner's options and edits stay
   const options = fieldsOf(store.get("money")).find((f) => f.id === "category")?.options ?? [];
   const byValue = new Map(options.map((o) => [o.value, o]));
   expect(byValue.get("food")).toMatchObject({ label: "Comida", emoji: "🍔", kind: "expense" });
-  expect(byValue.get("pets")).toEqual({ value: "pets", icon: "dog", color: "#8C93A0" });
+  expect(byValue.get("pets")).toEqual({ value: "pets", icon: "dog", color: "#123456" });
   expect(byValue.get("health")).toMatchObject({ label: "Health & gym", kind: "expense" });
   expect(byValue.get("investment")?.kind).toBe("transfer");
   for (const value of ["gula", "error", "subscriptions", "salary", "vales", "between_accounts"])
@@ -198,7 +198,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
     NOW - 5000,
   );
 
-  expect(migrateSeed(store, NOW)).toEqual([16]);
+  expect(migrateSeed(store, NOW)).toEqual([16, 17]);
   for (const id of ["ai", "ai-rule", "ai-skill"]) {
     const d = store.get(id) as Doc;
     expect(d.data._deleted).toBe(true);
@@ -211,7 +211,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
   expect(store.get("ai-gone")?.stamps._deleted).toBe(stamp);
   expect(store.get("task-1")?.data._deleted).toBeUndefined();
   expect(store.itemsOf("ai")).toEqual([]);
-  expect(seedVersionOf(store)).toBe(16);
+  expect(seedVersionOf(store)).toBe(17);
 
   // Nothing left to do on what it produced, or on a database that never had the collection.
   expect(retireAiMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);

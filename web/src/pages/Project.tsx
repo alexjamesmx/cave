@@ -456,7 +456,7 @@ function Items({ project }: { project: Doc }) {
   if (!current) return <p className="muted">This template lists no collections.</p>;
   const chip = (active: boolean) => ({
     color: active ? "var(--on-lime)" : "var(--text)",
-    background: active ? "var(--lime)" : "#11141a",
+    background: active ? "var(--lime)" : "var(--on)",
     border: 0,
     cursor: "pointer",
   });

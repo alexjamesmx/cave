@@ -1,17 +1,8 @@
+import { PALETTE } from "../../../shared/palette.ts";
 import type { SelectOption } from "../../../shared/schema.ts";
 
 /** Swatches that keep their contrast on the light and the dark surface. */
-export const SWATCHES = [
-  "#B6FF3B",
-  "#2EE6A6",
-  "#FF5C7A",
-  "#3DE0FF",
-  "#8B7CFF",
-  "#F5C451",
-  "#FF9F43",
-  "#C77DFF",
-  "#8C93A0",
-];
+export const SWATCHES: string[] = Object.values(PALETTE);
 
 export const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
@@ -29,7 +20,7 @@ export function addOption(
         ? `“${existing.value}” is archived; restore it instead`
         : `“${existing.value}” is already in the list`,
     };
-  return { options: [...options, { value, icon: "tag", color: "#8C93A0" }] };
+  return { options: [...options, { value, icon: "tag", color: PALETTE.grey }] };
 }
 
 /** Moves the option at `from` to `to`; positions are kept in the stored order. */

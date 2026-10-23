@@ -5,6 +5,7 @@ import { SEED_STAMP } from "./hlc.ts";
 import { listsMigration, MONEY_ACCOUNT } from "./lists.ts";
 import { NOTES, NOTES_COLLECTION, notesMigration } from "./notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
+import { PALETTE, recolour } from "./palette.ts";
 import {
   MONEY_PAYMENT_REF,
   PAYMENTS,
@@ -29,15 +30,15 @@ import type { Doc, Kind } from "./types.ts";
 const AI = "ai";
 
 const C = {
-  lime: "#B6FF3B",
-  income: "#2EE6A6",
-  expense: "#FF5C7A",
-  cyan: "#3DE0FF",
-  violet: "#8B7CFF",
-  gold: "#F5C451",
-  orange: "#FF9F43",
-  purple: "#C77DFF",
-  grey: "#8C93A0",
+  lime: PALETTE.ok,
+  income: PALETTE.ok,
+  expense: PALETTE.bad,
+  cyan: PALETTE.teal,
+  violet: PALETTE.vio,
+  gold: PALETTE.warn,
+  orange: PALETTE.orange,
+  purple: PALETTE.purple,
+  grey: PALETTE.grey,
 };
 
 const opt = (value: string, icon: string, color: string): SelectOption => ({ value, icon, color });
@@ -370,6 +371,58 @@ export function retireAiMigration(
   ];
 }
 
+// Every collection the seed has ever created; the recolouring touches no other doc.
+const SEEDED_COLLECTIONS = [
+  "money",
+  "tasks",
+  "journal",
+  "ideas",
+  "wealth",
+  "leetcode",
+  "projects",
+  "reminders",
+  "proposals",
+  "flows",
+  "payments",
+  "parts",
+  "notes",
+  "radar",
+  "runs",
+];
+
+/**
+ * M11 part 1: palette A. A collection's colour and its options' colours that still equal a
+ * retired seed colour become the palette colour; anything the owner changed to another value
+ * stays. `fields` is one key, so the whole array is written back from what the database holds.
+ */
+export function recolourMigration(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
+  const docs: SeedMigration["docs"] = [];
+  for (const id of SEEDED_COLLECTIONS) {
+    const doc = get(id);
+    if (doc?.kind !== "collection" || doc.data._deleted === true) continue;
+    const data: Record<string, unknown> = {};
+    const color = recolour(doc.data.color);
+    if (color !== doc.data.color) data.color = color;
+    const fields = (doc.data as unknown as CollectionData).fields;
+    if (Array.isArray(fields)) {
+      let changed = false;
+      const next = fields.map((f) => {
+        if (!Array.isArray(f.options)) return f;
+        const options = f.options.map((o) => {
+          const c = recolour(o.color);
+          if (c === o.color) return o;
+          changed = true;
+          return { ...o, color: c as string };
+        });
+        return changed ? { ...f, options } : f;
+      });
+      if (changed) data.fields = next;
+    }
+    if (Object.keys(data).length > 0) docs.push({ id, kind: "collection", data });
+  }
+  return docs;
+}
+
 // Flows (M7 Part C): the collection and two drafts, as one migration so they arrive together.
 const FLOW_DOCS: SeedMigration["docs"] = [
   { id: FLOWS, kind: "collection", data: FLOWS_COLLECTION },
@@ -412,6 +465,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 15, docs: [], update: radarMigration },
   // M10: the `ai` collection and its items are deleted; the Cave is not an AI tool.
   { version: 16, docs: [], update: retireAiMigration },
+  // M11 part 1: palette A replaces the neon seed colours still in place.
+  { version: 17, docs: [], update: recolourMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

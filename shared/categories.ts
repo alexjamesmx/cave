@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette.ts";
 import type { Field, OptionKind, SelectOption } from "./schema.ts";
 
 /**
@@ -6,15 +7,15 @@ import type { Field, OptionKind, SelectOption } from "./schema.ts";
  * ids: "health" shows as "Health & gym" without rewriting a single entry.
  */
 const C = {
-  orange: "#FF9F43",
-  violet: "#8B7CFF",
-  cyan: "#3DE0FF",
-  expense: "#FF5C7A",
-  purple: "#C77DFF",
-  grey: "#8C93A0",
-  gold: "#F5C451",
-  income: "#2EE6A6",
-  lime: "#B6FF3B",
+  orange: PALETTE.orange,
+  violet: PALETTE.vio,
+  cyan: PALETTE.teal,
+  expense: PALETTE.bad,
+  purple: PALETTE.purple,
+  grey: PALETTE.grey,
+  gold: PALETTE.warn,
+  income: PALETTE.ok,
+  lime: PALETTE.ok,
 };
 
 const cat = (

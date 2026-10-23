@@ -20,7 +20,7 @@ test("Settings → Lists: rename, emoji, colour, reorder, archive and restore; p
 
   // A colour from the palette, then one typed as hex.
   await priority.getByRole("button", { name: "Colour for high", exact: true }).click();
-  await priority.getByRole("button", { name: "#3DE0FF" }).click();
+  await priority.getByRole("button", { name: "#7FC4CF" }).click();
   await priority.getByRole("button", { name: "Colour for high", exact: true }).click();
   await priority.getByLabel("Colour for high as hex").fill("#123456");
   await priority.getByLabel("Colour for high as hex").press("Enter");

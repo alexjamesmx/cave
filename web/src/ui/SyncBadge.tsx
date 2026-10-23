@@ -29,9 +29,9 @@ export function SyncBadge() {
         ? "Open the items marked “not synced” to fix their values"
         : undefined;
   return (
-    <div className="sync num" role="status" title={title}>
-      <span className="dot" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
-      {label}
+    <div className="sync num" role="status" title={title} data-label={label}>
+      <span className="dot" style={{ background: color }} />
+      <span className="rail-label">{label}</span>
     </div>
   );
 }

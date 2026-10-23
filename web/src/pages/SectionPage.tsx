@@ -75,10 +75,10 @@ export function SectionPage({
   return (
     <>
       <header style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <span className="ico" style={{ background: "#11141a", color: section.color }}>
-          <Icon name={section.icon} size={20} />
+        <span className="ico" style={{ background: "var(--on)", color: section.color }}>
+          <Icon name={section.icon} size={18} />
         </span>
-        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>{section.label}</h1>
+        <h1 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>{section.label}</h1>
       </header>
       {tabs.length + extra.length > 1 && (
         <nav aria-label={`${section.label} tabs`} className="section-tabs">

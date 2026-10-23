@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette.ts";
 import { PROJECTS } from "./projects.ts";
 import type { CollectionData } from "./schema.ts";
 import type { Doc } from "./types.ts";
@@ -14,7 +15,7 @@ export const INBOX = "Inbox";
 export const NOTES_COLLECTION: CollectionData = {
   name: "Notes",
   icon: "notebook-pen",
-  color: "#8B7CFF",
+  color: PALETTE.vio,
   order: 12,
   fields: [
     { id: "folder", name: "Folder", type: "text" },
@@ -24,10 +25,10 @@ export const NOTES_COLLECTION: CollectionData = {
       name: "Source",
       type: "select",
       options: [
-        { value: "owner", icon: "user", color: "#B6FF3B" },
-        { value: "agent", icon: "bot", color: "#C77DFF" },
-        { value: "radar", icon: "radar", color: "#3DE0FF" },
-        { value: "import", icon: "download", color: "#8C93A0" },
+        { value: "owner", icon: "user", color: PALETTE.ok },
+        { value: "agent", icon: "bot", color: PALETTE.purple },
+        { value: "radar", icon: "radar", color: PALETTE.teal },
+        { value: "import", icon: "download", color: PALETTE.grey },
       ],
     },
     { id: "project", name: "Project", type: "ref", config: { collection: PROJECTS } },

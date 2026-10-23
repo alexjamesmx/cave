@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette.ts";
 import { PARTS, PROJECTS } from "./projects.ts";
 import type { CollectionData, Field, SelectOption } from "./schema.ts";
 import type { Doc } from "./types.ts";
@@ -38,7 +39,7 @@ const STEPS_FIELD: Field = {
 export const RUNS_COLLECTION: CollectionData = {
   name: "Runs",
   icon: "activity",
-  color: "#3DE0FF",
+  color: PALETTE.teal,
   order: 11,
   hidden: true,
   fields: [
@@ -50,12 +51,12 @@ export const RUNS_COLLECTION: CollectionData = {
       name: "Status",
       type: "select",
       options: [
-        opt("queued", "clock", "#8C93A0"),
-        opt("running", "loader", "#3DE0FF"),
-        opt("waiting", "hourglass", "#F5C451"),
-        opt("done", "circle-check", "#B6FF3B"),
-        opt("failed", "circle-x", "#FF5C7A"),
-        opt("cancelled", "ban", "#8C93A0"),
+        opt("queued", "clock", PALETTE.grey),
+        opt("running", "loader", PALETTE.teal),
+        opt("waiting", "hourglass", PALETTE.warn),
+        opt("done", "circle-check", PALETTE.ok),
+        opt("failed", "circle-x", PALETTE.bad),
+        opt("cancelled", "ban", PALETTE.grey),
       ],
     },
     { id: "started_at", name: "Started", type: "date", config: { withTime: true } },

@@ -63,7 +63,7 @@ export function RadarPage() {
               cursor: "pointer",
               border: 0,
               color: t.id === tab ? "var(--on-lime)" : "var(--text)",
-              background: t.id === tab ? "var(--lime)" : "#11141a",
+              background: t.id === tab ? "var(--lime)" : "var(--on)",
             }}
           >
             {t.label} <span className="num">{counts[t.id]}</span>
@@ -146,7 +146,7 @@ function Finding({ item, interests }: { item: Doc; interests: Interest[] }) {
         display: "grid",
         gap: 6,
         padding: "12px 0",
-        borderTop: "1px solid var(--line, #161A21)",
+        borderTop: "1px solid var(--line, var(--line))",
       }}
     >
       {url ? (
@@ -166,7 +166,7 @@ function Finding({ item, interests }: { item: Doc; interests: Interest[] }) {
       )}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
         {chips.map((c) => (
-          <span key={c} className="chip" style={{ background: "#11141a" }}>
+          <span key={c} className="chip" style={{ background: "var(--on)" }}>
             {c}
           </span>
         ))}

@@ -1,48 +1,42 @@
 import type { ReactNode } from "react";
 import type { Route } from "../app/router.ts";
-import { SECTIONS } from "../app/sections.ts";
+import { SECTIONS, type Section } from "../app/sections.ts";
 import { Dock } from "./Dock.tsx";
 import { EnvBadge } from "./EnvBadge.tsx";
 import { Icon } from "./icon.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
-/** The sidebar lists the seven sections from the registry, each once; the dock reads the same. */
+/**
+ * The rail (M11): the mark, one icon per section from the registry with Settings at the
+ * bottom, then the sync state. Each link keeps its label for assistive tech and shows it
+ * beside the icon on hover or focus; the dock reads the same registry on a phone.
+ */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const active = route.name === "section" ? route.section : undefined;
+  const link = (s: Section) => (
+    <a
+      key={s.id}
+      href={s.path}
+      className={s.id === active ? "on" : undefined}
+      aria-current={s.id === active ? "page" : undefined}
+      data-label={s.label}
+    >
+      <Icon name={s.icon} size={18} color={s.id === active ? s.color : undefined} />
+      <span className="rail-label">{s.label}</span>
+    </a>
+  );
   return (
     <div className="app">
-      <nav aria-label="Main" className="side">
-        <div className="brand">
-          <div className="brand-mark">
-            <Icon name="zap" size={18} strokeWidth={2.2} />
-          </div>
-          <div className="brand-text" style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontWeight: 700, fontSize: 15 }}>Cave</span>
-            <span className="num muted" style={{ fontSize: 11 }}>
-              v0.1
-            </span>
-          </div>
-        </div>
-        <div className="nav-group">
-          {SECTIONS.map((s) => (
-            <a
-              key={s.id}
-              href={s.path}
-              className={s.id === active ? "on" : undefined}
-              aria-current={s.id === active ? "page" : undefined}
-            >
-              <Icon name={s.icon} size={17} color={s.color} />
-              {s.label}
-              {s.id === "calendar" && (
-                <span className="kbd" aria-hidden="true">
-                  C
-                </span>
-              )}
-            </a>
-          ))}
-        </div>
+      <aside className="side">
+        <a className="brand-mark" href="/" aria-label="Cave" data-label="Cave">
+          <Icon name="zap" size={16} strokeWidth={2.2} />
+        </a>
+        <nav aria-label="Main" className="rail-nav">
+          {SECTIONS.filter((s) => s.id !== "settings").map(link)}
+          <div className="rail-end">{SECTIONS.filter((s) => s.id === "settings").map(link)}</div>
+        </nav>
         <SyncBadge />
-      </nav>
+      </aside>
       <main className="stage">
         <div className="page">
           <ClockAheadBanner />

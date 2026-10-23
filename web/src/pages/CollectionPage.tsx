@@ -128,7 +128,7 @@ export function CollectionPage({ id, viewId }: { id: string; viewId: string | un
             style={{
               textDecoration: "none",
               color: v.id === view?.id ? "var(--on-lime)" : "var(--text)",
-              background: v.id === view?.id ? "var(--lime)" : "#11141a",
+              background: v.id === view?.id ? "var(--lime)" : "var(--on)",
             }}
           >
             {v.name}

@@ -3,6 +3,7 @@ import { CATEGORY_SET } from "./categories.ts";
 import { parseDefinition } from "./flows/registry.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
+import { PALETTE } from "./palette.ts";
 import { FIELD_TYPES, VIEW_TYPES } from "./schema.ts";
 import { SEED_VERSION, seedDocs } from "./seed.ts";
 
@@ -84,10 +85,10 @@ test("seeded select options and colours", () => {
   const values = (c: string, f: string) => fieldOf(c, f)?.options?.map((o) => o.value);
   expect(values("projects", "status")).toEqual(["active", "paused", "done", "dropped"]);
   expect(fieldOf("projects", "status")?.options?.map((o) => o.color)).toEqual([
-    "#B6FF3B",
-    "#F5C451",
-    "#3DE0FF",
-    "#FF5C7A",
+    PALETTE.ok,
+    PALETTE.warn,
+    PALETTE.teal,
+    PALETTE.bad,
   ]);
   expect(values("reminders", "repeat")).toEqual(["none", "daily", "weekly", "monthly", "yearly"]);
   expect(values("leetcode", "difficulty")).toEqual(["easy", "medium", "hard"]);

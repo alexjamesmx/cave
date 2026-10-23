@@ -6,7 +6,7 @@ import { addOption, isHexColor, moveOption, patchOption, setArchived } from "./o
 const o = (value: string, extra: Partial<SelectOption> = {}): SelectOption => ({
   value,
   icon: "tag",
-  color: "#8C93A0",
+  color: "#98A0AB",
   ...extra,
 });
 

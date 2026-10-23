@@ -1,3 +1,4 @@
+import { PALETTE } from "../palette.ts";
 import type { CollectionData } from "../schema.ts";
 
 export const FLOWS = "flows";
@@ -10,7 +11,7 @@ export const FLOWS = "flows";
 export const FLOWS_COLLECTION: CollectionData = {
   name: "Flows",
   icon: "workflow",
-  color: "#8B7CFF",
+  color: PALETTE.vio,
   order: 9,
   hidden: true,
   fields: [
@@ -19,10 +20,10 @@ export const FLOWS_COLLECTION: CollectionData = {
       name: "Status",
       type: "select",
       options: [
-        { value: "draft", icon: "pencil", color: "#8C93A0" },
-        { value: "on", icon: "circle-play", color: "#2EE6A6" },
-        { value: "off", icon: "circle-pause", color: "#8C93A0" },
-        { value: "pending-approval", icon: "hourglass", color: "#F5C451" },
+        { value: "draft", icon: "pencil", color: PALETTE.grey },
+        { value: "on", icon: "circle-play", color: PALETTE.ok },
+        { value: "off", icon: "circle-pause", color: PALETTE.grey },
+        { value: "pending-approval", icon: "hourglass", color: PALETTE.warn },
       ],
     },
     { id: "definition", name: "Definition", type: "json", config: { schema: "flow" } },

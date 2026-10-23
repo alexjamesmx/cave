@@ -1,4 +1,5 @@
 import { INBOX, NOTES } from "./notes.ts";
+import { PALETTE } from "./palette.ts";
 import type { CollectionData } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
@@ -14,7 +15,7 @@ export const RADAR_PER_DAY = 50;
 export const RADAR_COLLECTION: CollectionData = {
   name: "Radar",
   icon: "radar",
-  color: "#3DE0FF",
+  color: PALETTE.teal,
   order: 13,
   fields: [
     { id: "url", name: "URL", type: "url" },
@@ -27,9 +28,9 @@ export const RADAR_COLLECTION: CollectionData = {
       name: "Status",
       type: "select",
       options: [
-        { value: "new", icon: "sparkle", color: "#3DE0FF" },
-        { value: "saved", icon: "bookmark", color: "#B6FF3B" },
-        { value: "dismissed", icon: "x", color: "#8C93A0" },
+        { value: "new", icon: "sparkle", color: PALETTE.teal },
+        { value: "saved", icon: "bookmark", color: PALETTE.ok },
+        { value: "dismissed", icon: "x", color: PALETTE.grey },
       ],
     },
     { id: "note", name: "Note", type: "ref", config: { collection: NOTES } },

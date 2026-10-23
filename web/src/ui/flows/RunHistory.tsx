@@ -35,7 +35,7 @@ const when = (ms: number) =>
 
 export function ResultChip({ result }: { result: RunLog["result"] }) {
   return (
-    <span className="chip" style={{ background: "#11141a", color: COLORS[result] }}>
+    <span className="chip" style={{ background: "var(--on)", color: COLORS[result] }}>
       {result}
     </span>
   );

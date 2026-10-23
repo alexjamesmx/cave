@@ -1,3 +1,4 @@
+import { PALETTE } from "./palette.ts";
 import type { CollectionData, Field, SelectOption } from "./schema.ts";
 import type { Doc, Kind } from "./types.ts";
 
@@ -11,7 +12,7 @@ type SeedDoc = { id: string; kind: Kind; collection?: string; data: Record<strin
 const accountOption = (value: string): SelectOption => ({
   value,
   icon: "landmark",
-  color: "#8C93A0",
+  color: PALETTE.grey,
 });
 
 export const MONEY_ACCOUNT: Field = { id: "account", name: "Account", type: "select", options: [] };
@@ -88,7 +89,7 @@ export function listsMigration(
       for (const value of used) {
         const look = paymentCategory.options?.find((o) => o.value === value);
         options = withOption(options, value, () => ({
-          ...(look ?? { value, icon: "tag", color: "#8C93A0" }),
+          ...(look ?? { value, icon: "tag", color: PALETTE.grey }),
           kind: "expense",
         }));
       }

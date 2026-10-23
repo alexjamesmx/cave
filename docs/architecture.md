@@ -91,9 +91,13 @@ Hidden collections stay out of navigation and out of agents' reach except throug
 
 ## Visual tokens
 
-- Background `#050607`, panels `rgba(13,15,19,.9)`, border `#1C2028`, radius 18 px (panels) / 12 px (controls).
-- Text `#E6E8EC`, secondary `#8C93A0`, labels `#7E8592` uppercase 11 px with 0.14 em tracking.
-- Accent lime `#B6FF3B` (text on it `#0A0F00`); income `#2EE6A6`; expense `#FF5C7A`; cyan `#3DE0FF`; violet `#8B7CFF`; gold `#F5C451`; orange `#FF9F43`; purple `#C77DFF`.
+Palette A (M11). The hex values live once in `shared/palette.ts` and as tokens in `web/src/styles.css`; `web/src/tokens.test.ts` keeps them equal and checks contrast (text 4.5:1 on every surface, status colours 3:1).
+
+- Surfaces: page `#15171b`, rail `#111317`, panels `#1b1e24`, controls `#181b20`, active and hover `#22262e`, lines `#272b33`. Radius 10 px (panels) / 7 px (controls). No glows, gradients or grid behind content.
+- Text `#e4e7eb` (13.5 px / 1.5), secondary and labels `#98a0ab`, labels uppercase 11 px with 0.06 em tracking.
+- Accent sage `#8fd0a0` (text on it `#0f1a12`): focus, primary buttons, the active tab.
+- Status and marks: ok `#8fd0a0` (on track, income, done), warn `#d9b56f`, wait `#8cb7dd`, bad `#e59aa4` (blocked, expense, overdue), vio `#a39be0`, teal `#7fc4cf`, orange `#d9a06f`, purple `#c9a3e0`. The pre-M11 names (`--lime`, `--income`, `--expense`, `--cyan`, `--violet`, `--gold`, `--orange`, `--purple`) are aliases of these.
+- Sections: Money ok, Calendar bad, Flows warn, Projects vio, Diary wait, Tasks teal, Settings `#6b7380`.
 - Fonts: Space Grotesk (UI), JetBrains Mono (numbers, tabular), Newsreader (diary).
-- Faint 32 px grid plus soft radial glows behind content; glow shadows only on primary elements.
+- The rail: 52 px, icons only, the label beside the icon on hover or focus; under 768 px the dock replaces it.
 - Icons: inline stroke SVG at 1.9 px; every collection, category, habit and field type has one.

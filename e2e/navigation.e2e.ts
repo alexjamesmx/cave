@@ -12,7 +12,7 @@ test("the sidebar shows each of the seven sections once; a tab survives a reload
   await expect(main.getByRole("link")).toHaveText([
     "Home",
     "Money",
-    "CalendarC",
+    "Calendar",
     "Tasks",
     "Projects",
     "Life",
