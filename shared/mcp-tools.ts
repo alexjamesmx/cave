@@ -15,6 +15,7 @@ export const CAVE_TOOLS: { name: string; scope: "read" | "write" }[] = [
   { name: "mark_paid", scope: "write" },
   { name: "save_flow", scope: "write" },
   { name: "start_run", scope: "write" },
+  // `log_step(question: true)` also writes a task for the owner; `get_project` returns the answer.
   { name: "log_step", scope: "write" },
   { name: "finish_run", scope: "write" },
   { name: "add_note", scope: "write" },

@@ -65,11 +65,21 @@ function ownRun(d: RunDeps, id: string): { ok: true; run: Doc } | { ok: false; e
   return { ok: true, run };
 }
 
-/** `log_step`: one step appended; the run waits while its newest step waits. */
+/**
+ * `log_step`: one step appended; the run waits while its newest step waits. With `question`,
+ * the step is also a question for the owner: a task "Answer: <step>" in the project, marked
+ * `_askedBy` and `_run`, which "needs you" lists and `get_project` reports back with its answer.
+ */
 export function logStep(
   d: RunDeps,
-  args: { run: string; title: string; status: StepStatus; detail?: string | undefined },
-): WriteResult {
+  args: {
+    run: string;
+    title: string;
+    status: StepStatus;
+    detail?: string | undefined;
+    question?: boolean | undefined;
+  },
+): WriteResult & { question?: string } {
   const own = ownRun(d, args.run);
   if (!own.ok) return own;
   const parsed = parseSteps(own.run.data.steps ?? []);
@@ -84,10 +94,15 @@ export function logStep(
     ...(args.detail ? { detail: args.detail } : {}),
     at: new Date(d.now()).toISOString(),
   };
-  return d.writer().writeRun(own.run, {
+  const writer = d.writer();
+  const logged = writer.writeRun(own.run, {
     steps: [...steps, step],
     status: args.status === "waiting" ? "waiting" : "running",
   });
+  if (!logged.ok || !args.question) return logged;
+  const asked = writer.writeQuestion(own.run, step.title);
+  if (!asked.ok) return asked;
+  return { ...logged, seqs: [...logged.seqs, ...asked.seqs], question: asked.id };
 }
 
 /** `finish_run`: the final status and a summary; a finished run takes no more steps. */

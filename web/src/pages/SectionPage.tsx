@@ -5,8 +5,8 @@ import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections
 import { withActiveFields } from "../logic/field-edits.ts";
 import { titleOf } from "../logic/views.ts";
 import { useCollections, useItems } from "../store/queries.ts";
-import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { NeedsYou } from "../ui/NeedsYou.tsx";
 import { ActivityPage } from "./Activity.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
@@ -34,7 +34,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "money-lists": () => <MoneyLists />,
   "projects-all": () => (
     <>
-      <LandingDue />
+      <LandingNeedsYou />
       <ProjectsAll />
     </>
   ),
@@ -119,9 +119,9 @@ function usePinnedProjects() {
   return projects?.filter((p) => p.data.pinned === true);
 }
 
-/** What is due, on the screen the app opens on; the "needs you" strip (M11 part 4) replaces it. */
-function LandingDue() {
+/** What needs the owner, on the screen the app opens on; the Scene (M11 part 5) keeps it on top. */
+function LandingNeedsYou() {
   const stored = useCollections(useCave().local.db);
   const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
-  return collections ? <DueCard collections={collections} /> : null;
+  return collections ? <NeedsYou collections={collections} /> : null;
 }

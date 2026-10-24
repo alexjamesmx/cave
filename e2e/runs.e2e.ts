@@ -1,4 +1,4 @@
-import { mcpClient, ownerContext } from "./helpers.ts";
+import { mcpClient, ownerContext, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("a run an agent starts shows in the project's Activity, on its Map and in Projects → Activity, updating live", async ({
@@ -69,7 +69,47 @@ test("a run an agent starts shows in the project's Activity, on its Map and in P
     .click();
   await expect(page.locator(".map-run", { hasText: "Plan the parts" })).toBeVisible();
 
+  // A question for the owner (M11 part 4): a task the "Needs you" strip lists; the project
+  // waits on it; Done answers it, and the agent reads the answer through get_project.
+  const asked = await call("log_step", {
+    run,
+    title: "Which database?",
+    status: "waiting",
+    question: true,
+  });
+  const question = (asked.structuredContent as { question?: string } | undefined)?.question;
+  expect(question).toMatch(/^[0-9A-Z]{26}$/);
+  await page.goto("/projects/all");
+  const needs = page.getByRole("region", { name: "Needs you" });
+  await synced(() =>
+    expect(needs.getByRole("list", { name: "Questions" })).toContainText(
+      "Answer: Which database?",
+      {
+        timeout: 1000,
+      },
+    ),
+  );
+  // The run waits on the question, so the agent is not "working"; the project waits on you.
+  await expect(page.locator(".project-card", { hasText: "Runs e2e" })).toContainText(
+    "waiting on you · 1 question",
+  );
+  await needs
+    .getByRole("list", { name: "Questions" })
+    .getByRole("listitem")
+    .filter({ hasText: "Which database?" })
+    .getByRole("button", { name: "Done" })
+    .click();
+  await expect(needs.getByRole("list", { name: "Questions" })).toHaveCount(0);
+  await expect(async () => {
+    const got = (await client.callTool({ name: "get_project", arguments: { id: project } })) as {
+      structuredContent?: { questions: { open: unknown[]; answered: { id: string }[] } };
+    };
+    expect(got.structuredContent?.questions.open).toEqual([]);
+    expect(got.structuredContent?.questions.answered.map((q) => q.id)).toEqual([question]);
+  }).toPass({ timeout: 20_000 });
+
   // Finished: it leaves the Map and shows done in Projects → Activity.
+  await page.goto(`/projects/${project}/map`);
   await call("finish_run", { run, status: "done", summary: "Three parts drafted." });
   await synced(() =>
     expect(page.locator(".map-run", { hasText: "Plan the parts" })).toHaveCount(0, {
@@ -80,4 +120,12 @@ test("a run an agent starts shows in the project's Activity, on its Map and in P
   const all = page.getByRole("list", { name: "All runs" });
   await expect(all.getByRole("button", { name: /Plan the parts/ })).toContainText("done");
   await client.close();
+
+  // Leave the shared database as found: the answered question goes, so the Tasks board looks
+  // the same for the other specs.
+  page.on("dialog", (dialog) => void dialog.accept());
+  await page.goto("/tasks/list");
+  await page.getByRole("button", { name: "Answer: Which database?" }).click();
+  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
+  await expect(page.getByRole("button", { name: "Answer: Which database?" })).toHaveCount(0);
 });

@@ -1,18 +1,19 @@
 import { type FormEvent, useState } from "react";
 import { fieldsOf } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
+import { STATE_TOKEN, summarize, summaryLine } from "../../../shared/project-status.ts";
 import {
   ideaPrompt,
   linkedTo,
   newProjectWrites,
   PARTS,
-  partProgress,
-  progressBy,
   promoteIdeaWrites,
   templatesOf,
 } from "../../../shared/projects.ts";
+import { RUNS } from "../../../shared/runs.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
+import { useNow, useToday } from "../app/hooks.ts";
 import { useWriteError } from "../app/project-actions.ts";
 import { navigate, projectPath, setSearch, useSearch } from "../app/router.ts";
 import { askClaude, browserAsk } from "../logic/ask-claude.ts";
@@ -53,6 +54,8 @@ export function ProjectsAll() {
   const collections = useCollections(db);
   const settings = useDoc(db, "settings");
   const search = useSearch();
+  const today = useToday();
+  const now = useNow().getTime();
   const [title, setTitle] = useState("");
   const [template, setTemplate] = useState("generic");
   const write = useWriteError();
@@ -155,34 +158,48 @@ export function ProjectsAll() {
       <div className="project-cards">
         {shown.map((p) => {
           const own = linkedTo(parts, p.id);
-          // A template with its own progress (LeetCode: problems solved) shows that instead.
-          const spec = templates[String(p.data.template ?? "")]?.progress;
-          const progress = spec
-            ? progressBy(linkedTo(itemsOf(spec.collection), p.id), spec.field, spec.done)
-            : partProgress(own);
-          const unit = spec ? nameOf(spec.collection) : "parts";
+          const linked = (c: string) => linkedTo(itemsOf(c), p.id);
+          // The status model (M11 part 4): a template with its own progress rule (LeetCode:
+          // problems solved) counts that; the line reads "72% · on track · agent working".
+          const summary = summarize(
+            {
+              project: p,
+              parts: own,
+              tasks: linked("tasks"),
+              runs: linked(RUNS),
+              others: [...linked("notes"), ...linked("ideas")],
+            },
+            templates[String(p.data.template ?? "")]?.progress,
+            linked,
+            today,
+            now,
+          );
+          const progress = summary.progress;
+          const color = `var(${STATE_TOKEN[summary.state]})`;
           const next = own
             .filter((x) => typeof x.data.due === "string" && x.data.status !== "done")
             .sort((a, b) => String(a.data.due).localeCompare(String(b.data.due)))[0];
           return (
             <a key={p.id} href={projectPath(p.id)} className="panel project-card">
               <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span className="dot" style={{ background: color }} aria-hidden="true" />
                 <strong style={{ flex: 1 }}>{titleOf(p)}</strong>
                 {p.data.pinned === true && <Icon name="pin" size={14} />}
                 {status && <OptionChip field={status} value={p.data.status} />}
               </span>
               <span className="muted" style={{ fontSize: 13 }}>
-                {progress.total > 0
-                  ? `${progress.done} of ${progress.total} ${unit} done`
-                  : `No ${unit} yet`}
+                {summaryLine(summary)}
+                {progress && progress.total > 0
+                  ? ` · ${progress.done} of ${progress.total} ${progress.of === "parts" || progress.of === "tasks" ? progress.of : nameOf(progress.of)}`
+                  : ""}
               </span>
-              {progress.total > 0 && (
+              {progress && progress.total > 0 && (
                 <span className="bar-track" aria-hidden="true">
                   <span
                     className="bar-fill"
                     style={{
                       width: `${Math.max((progress.done / progress.total) * 100, 1)}%`,
-                      background: "var(--lime)",
+                      background: color,
                     }}
                   />
                 </span>

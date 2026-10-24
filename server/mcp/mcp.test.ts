@@ -44,6 +44,7 @@ beforeAll(() => {
   mint("reader", ["read"]);
   mint("money-only", ["read", "write"], ["money"]);
   mint("other", ["read", "write"]);
+  mint("no-tasks", ["read", "write"], ["projects", "parts"]);
   mint("gone", ["read"]);
   registry.revoke("gone", Date.now());
   server = serveCave({
@@ -149,6 +150,7 @@ test("agent tokens are refused by the owner API", async () => {
     "claude",
     "gone",
     "money-only",
+    "no-tasks",
     "other",
     "reader",
   ]);
@@ -249,8 +251,13 @@ test("get_project: parts as a tree, open tasks and linked items; refs are checke
     openTasks: { title: string }[];
     items: Record<string, { count: number }>;
     runs: unknown[];
+    status: { state: string; progress: { done: number; total: number; of: string } };
+    questions: { open: unknown[]; answered: unknown[] };
   };
   expect(got.project.title).toBe("Garden");
+  expect(got.status.state).toBe("on-track");
+  expect(got.status.progress).toEqual({ done: 0, total: 2, of: "parts" });
+  expect(got.questions).toEqual({ open: [], answered: [] });
   expect(got.parts.map((p) => [p.title, p.children.map((c) => c.title)])).toEqual([
     ["Beds", ["Soil"]],
   ]);
@@ -358,6 +365,78 @@ test("runs: start, steps and finish; only the agent that started a run can touch
   expect(textOf(await call(client, "log_step", { run: id, title: "late", status: "done" }))).toBe(
     `run ${id} is finished`,
   );
+});
+
+test("log_step with question: true asks the owner through a task, with or without tasks in the allowlist; get_project returns the answer", async () => {
+  for (const name of ["claude", "no-tasks"]) {
+    const client = await connect(name);
+    const created = await call(client, "create", {
+      collection: "projects",
+      title: `Asking ${name}`,
+      fields: { status: "active" },
+    });
+    const project = (created.structuredContent as { id: string }).id;
+    const run = (
+      (await call(client, "start_run", { project, title: "Choose a database" }))
+        .structuredContent as { id: string }
+    ).id;
+    const asked = await call(client, "log_step", {
+      run,
+      title: "SQLite or Postgres for the new service?",
+      status: "waiting",
+      question: true,
+    });
+    expect(asked.isError).toBeUndefined();
+    const task = (asked.structuredContent as { question: string }).question;
+    expect(store.get(task)?.data).toMatchObject({
+      _title: "Answer: SQLite or Postgres for the new service?",
+      project,
+      status: "todo",
+      _askedBy: name,
+      _run: run,
+    });
+    expect(store.get(task)?.actor).toBe(`agent:${name}`);
+    expect(store.get(run)?.data.status).toBe("waiting");
+
+    // The project waits on the owner; the question is listed whether or not tasks are visible.
+    let got = (await call(client, "get_project", { id: project })).structuredContent as {
+      status: { state: string };
+      openTasks: unknown[];
+      questions: { open: { id: string; question: string; answer: null }[]; answered: unknown[] };
+    };
+    expect(got.status.state).toBe("waiting");
+    expect(got.openTasks).toEqual([]);
+    expect(got.questions.open).toEqual([
+      expect.objectContaining({
+        id: task,
+        question: "SQLite or Postgres for the new service?",
+        answer: null,
+        askedBy: name,
+        run,
+      }),
+    ]);
+
+    // The owner answers in the task's body and marks it done, from a device.
+    const owner = await device(`owner-${name}`);
+    await owner.local.write(
+      { id: task, kind: "item", collection: "tasks" },
+      { _body: "SQLite, as everywhere else.", status: "done" },
+    );
+    await owner.sync();
+    got = (await call(client, "get_project", { id: project })).structuredContent as typeof got;
+    expect(got.status.state).toBe("on-track");
+    expect(got.questions.open).toEqual([]);
+    expect(got.questions.answered).toEqual([
+      expect.objectContaining({ id: task, answer: "SQLite, as everywhere else.", status: "done" }),
+    ]);
+    // Only the question reaches an agent without tasks; another task of the project does not.
+    if (name === "no-tasks") {
+      expect(textOf(await call(client, "get", { id: task }))).toBe(`item ${task} not found`);
+      expect(textOf(await call(client, "create", { collection: "tasks", title: "x" }))).toBe(
+        "collection tasks not found",
+      );
+    }
+  }
 });
 
 test("a run keeps at most 200 steps", async () => {

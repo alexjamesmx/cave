@@ -1,11 +1,16 @@
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
+import { parseDefinition } from "../../../shared/flows/registry.ts";
+import { FLOWS } from "../../../shared/flows/seed.ts";
 import { PAYMENTS } from "../../../shared/payments.ts";
+import { isLive, openQuestions } from "../../../shared/project-status.ts";
+import { PARTS } from "../../../shared/projects.ts";
 import { repeatOf, type Zone, zonedInstant } from "../../../shared/reminders.ts";
 import { completeTask } from "../../../shared/tasks.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone, useToday } from "../app/hooks.ts";
+import { flowPath, projectPath } from "../app/router.ts";
 import {
   type CalendarEvent,
   mergeEvents,
@@ -13,8 +18,10 @@ import {
   reminderSource,
   taskSource,
 } from "../logic/calendar.ts";
+import { titleOf } from "../logic/views.ts";
 import { type CollectionDoc, useItems } from "../store/queries.ts";
 import { DocDrawer } from "./DocDrawer.tsx";
+import { ApproveButtons } from "./flows/PendingFlows.tsx";
 import { Icon } from "./icon.tsx";
 import { ReminderActions } from "./ReminderActions.tsx";
 import { rowOpen } from "./row-open.ts";
@@ -24,8 +31,129 @@ const nextDay = (day: string) => {
   return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
 };
 
+/**
+ * "Needs you" (M11 part 4): what only the owner can do, each item a link to where it is
+ * handled: questions agents asked, blocked parts, flows waiting for approval, and what is due
+ * (overdue, today, tomorrow: reminders, tasks and payments, with their actions).
+ */
+export function NeedsYou({ collections }: { collections: CollectionDoc[] }) {
+  const { db } = useCave().local;
+  const tasks = useItems(db, "tasks");
+  const parts = useItems(db, PARTS);
+  const projects = useItems(db, "projects");
+  const flows = useItems(db, FLOWS);
+  const zone = useReminderZone();
+  const [open, setOpen] = useState<{ id: string; collection: string }>();
+
+  const questions = openQuestions(tasks ?? []);
+  const projectTitle = (id: unknown) => {
+    const p = projects?.find((x) => x.id === id);
+    return p ? titleOf(p) : "";
+  };
+  const blocked = (parts ?? []).filter((p) => isLive(p) && p.data.status === "blocked");
+  const pending = (flows ?? []).filter((f) => isLive(f) && f.data.status === "pending-approval");
+  const tomorrow = nextDay(useToday());
+
+  return (
+    <section className="panel due-card" aria-label="Needs you">
+      <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Icon name="hand" size={16} color="var(--warn)" />
+        <span className="k" style={{ flex: 1 }}>
+          Needs you
+        </span>
+        <a href="/calendar" className="link" style={{ fontSize: 13 }}>
+          Calendar
+        </a>
+      </header>
+      {questions.length > 0 && (
+        <Group label="Questions from agents" name="Questions">
+          {questions.map((t) => (
+            <li
+              key={t.id}
+              className="agenda-row"
+              {...rowOpen(() => setOpen({ id: t.id, collection: "tasks" }))}
+            >
+              <span className="mark" style={{ background: "var(--wait)" }} />
+              <span className="num muted agenda-time">{String(t.data._askedBy)}</span>
+              <button
+                type="button"
+                className="link"
+                onClick={() => setOpen({ id: t.id, collection: "tasks" })}
+              >
+                {titleOf(t)}
+              </button>
+              {projectTitle(t.data.project) && (
+                <a className="chip" href={projectPath(String(t.data.project))}>
+                  {projectTitle(t.data.project)}
+                </a>
+              )}
+              <TaskActions doc={t} zone={zone} tomorrow={tomorrow} />
+            </li>
+          ))}
+        </Group>
+      )}
+      {blocked.length > 0 && (
+        <Group label="Blocked" name="Blocked">
+          {blocked.map((p) => (
+            <li key={p.id} className="agenda-row">
+              <span className="mark" style={{ background: "var(--bad)" }} />
+              <a className="link" href={projectPath(String(p.data.project))}>
+                {titleOf(p)}
+              </a>
+              <span className="muted">{projectTitle(p.data.project)}</span>
+            </li>
+          ))}
+        </Group>
+      )}
+      {pending.length > 0 && (
+        <Group label="Flows waiting for approval" name="Flows waiting">
+          {pending.map((f) => {
+            const parsed = parseDefinition(f.data.definition);
+            return (
+              <li key={f.id} className="agenda-row">
+                <span className="mark" style={{ background: "var(--warn)" }} />
+                <a className="link" href={flowPath(f.id)}>
+                  {titleOf(f)}
+                </a>
+                <span className="muted">
+                  {String(f.data.author ?? "")}
+                  {parsed.ok ? "" : " · invalid definition"}
+                </span>
+                <span className="reminder-actions">
+                  <ApproveButtons flow={f} />
+                </span>
+              </li>
+            );
+          })}
+        </Group>
+      )}
+      <Due collections={collections} onOpen={setOpen} />
+      {open && (
+        <DocDrawer id={open.id} collection={open.collection} onClose={() => setOpen(undefined)} />
+      )}
+    </section>
+  );
+}
+
+function Group({ label, name, children }: { label: string; name: string; children: ReactNode }) {
+  return (
+    <div>
+      <span className="k">{label}</span>
+      <ul className="agenda-list" aria-label={name}>
+        {children}
+      </ul>
+    </div>
+  );
+}
+
 /** Overdue, today's and tomorrow's reminders, tasks and payments, each with its actions. */
-export function DueCard({ collections }: { collections: CollectionDoc[] }) {
+function Due({
+  collections,
+  onOpen,
+}: {
+  collections: CollectionDoc[];
+  onOpen(target: { id: string; collection: string }): void;
+}) {
   const { db } = useCave().local;
   const reminders = useItems(db, "reminders");
   const tasks = useItems(db, "tasks");
@@ -55,19 +183,9 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
   const doc = (e: CalendarEvent) =>
     (e.collection === "reminders" ? reminders : tasks)?.find((d) => d.id === e.itemId);
   const color = (id: string) => collections.find((c) => c.id === id)?.data.color;
-  const [open, setOpen] = useState<CalendarEvent>();
 
   return (
-    <section className="panel due-card" aria-label="Due">
-      <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Icon name="bell" size={16} color="var(--expense)" />
-        <span className="k" style={{ flex: 1 }}>
-          Due
-        </span>
-        <a href="/calendar" className="link" style={{ fontSize: 13 }}>
-          Calendar
-        </a>
-      </header>
+    <section aria-label="Due" style={{ display: "grid", gap: 12 }}>
       {events.length === 0 && <span className="muted">Nothing due today or tomorrow.</span>}
       {groups
         .filter(([, list]) => list.length > 0)
@@ -77,18 +195,19 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
             <ul className="agenda-list">
               {list.map((e) => {
                 const item = doc(e);
+                const target = { id: e.itemId, collection: e.collection };
                 return (
                   <li
                     key={e.key}
                     className={`agenda-row${e.overdue ? " overdue" : ""}`}
-                    {...rowOpen(() => setOpen(e))}
+                    {...rowOpen(() => onOpen(target))}
                   >
                     <span className="mark" style={{ background: color(e.collection) }} />
                     <span className="num muted agenda-time">
                       {e.day === today || e.day === tomorrow ? (e.time ?? "") : e.day.slice(5)}
                       {e.day !== today && e.day !== tomorrow && e.time ? ` ${e.time}` : ""}
                     </span>
-                    <button type="button" className="link" onClick={() => setOpen(e)}>
+                    <button type="button" className="link" onClick={() => onOpen(target)}>
                       {e.title}
                     </button>
                     {item && e.collection === "reminders" && <ReminderActions doc={item} />}
@@ -101,13 +220,6 @@ export function DueCard({ collections }: { collections: CollectionDoc[] }) {
             </ul>
           </div>
         ))}
-      {open && (
-        <DocDrawer
-          id={open.itemId}
-          collection={open.collection}
-          onClose={() => setOpen(undefined)}
-        />
-      )}
     </section>
   );
 }

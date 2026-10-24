@@ -147,11 +147,11 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       "get_project",
       {
         description:
-          "Get one project (an item in projects): its data, its parts as a tree, its open tasks, and per collection how many items point at it (their `project` field) with the latest 20. Items link to a project through a `project` ref field holding its id; query with where {project: id} for more.",
+          "Get one project (an item in projects): its data, its status (state, progress, activity this week, whether an agent is on it), its parts as a tree, its open tasks, its questions for the owner (open, and answered in the last 30 days with the owner's answer), and per collection how many items point at it (their `project` field) with the latest 20. Items link to a project through a `project` ref field holding its id; query with where {project: id} for more.",
         inputSchema: z.object({ id: z.string() }),
         annotations: READ,
       },
-      (args) => run("get_project", args, () => getProject(store, agent, args.id)),
+      (args) => run("get_project", args, () => getProject(store, agent, args.id, deps.now())),
     );
     server.registerTool(
       "list_flows",
@@ -279,6 +279,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
         }),
     );
     const runDeps = { store, agent, writer, now: deps.now, timeZone };
+    // `question: true` writes a task for the owner, which is also how the answer comes back.
     server.registerTool(
       "start_run",
       {
@@ -295,16 +296,27 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
     server.registerTool(
       "log_step",
       {
-        description: `Add a step to a run you started: a short title, its status (running, done, failed, waiting, skipped) and an optional detail. At most ${STEP_LIMITS.steps} steps per run; a finished run takes no more.`,
+        description: `Add a step to a run you started: a short title, its status (running, done, failed, waiting, skipped) and an optional detail. At most ${STEP_LIMITS.steps} steps per run; a finished run takes no more. question: true when the step is a question only the owner can answer (the title is the question): the Cave adds a task for the owner and returns its id as question; read the answer later with get_project (questions). Prefer status waiting with it.`,
         inputSchema: z.object({
           run: z.string(),
           title: z.string().min(1).max(STEP_LIMITS.title),
           status: z.enum(STEP_STATUSES),
           detail: z.string().max(STEP_LIMITS.detail).optional(),
+          question: z.boolean().optional(),
         }),
         annotations: WRITE,
       },
-      (args) => run("log_step", args, () => fromWrite(logStep(runDeps, args))),
+      (args) =>
+        run("log_step", args, () => {
+          const result = logStep(runDeps, args);
+          return result.ok
+            ? {
+                ok: true,
+                value: { id: result.id, ...(result.question ? { question: result.question } : {}) },
+                seqs: result.seqs,
+              }
+            : result;
+        }),
     );
     server.registerTool(
       "finish_run",
