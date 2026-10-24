@@ -58,8 +58,8 @@ test("Devices & server renders each sub-section with a reminder and a job run; A
     page.getByRole("region", { name: "Notification log" }).getByText(/\d+ missed reminders?/),
   ).toBeVisible();
 
-  // Flows → Runs: every flow with its last run and next slot.
-  await page.goto("/flows/runs");
+  // Flows → List: every flow with its last run and next slot.
+  await page.goto("/flows/list");
   const flows = page.getByRole("region", { name: "Flows" });
   await expect(flows.getByRole("link", { name: "Rent reminder" })).toBeVisible();
   await expect(flows.getByText(/next /)).toBeVisible();

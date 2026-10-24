@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { FieldValueError } from "../../../shared/fields.ts";
-import { type FlowDefinition, parseDefinition } from "../../../shared/flows/registry.ts";
+import { type FlowDefinition, MAX_STEPS, parseDefinition } from "../../../shared/flows/registry.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
 import { newId } from "../../../shared/ids.ts";
 import type { Doc } from "../../../shared/types.ts";
@@ -10,7 +10,7 @@ import { flowPath, navigate } from "../app/router.ts";
 import { addStep, blankFlow, blankPart, copyData, type Selection } from "../logic/flow-edit.ts";
 import { titleOf } from "../logic/views.ts";
 import { useCollections, useItems } from "../store/queries.ts";
-import { FlowCards } from "../ui/flows/FlowCards.tsx";
+import { FlowCanvas } from "../ui/flows/FlowCanvas.tsx";
 import { PartEditor } from "../ui/flows/PartEditor.tsx";
 import { ApproveButtons } from "../ui/flows/PendingFlows.tsx";
 import {
@@ -45,33 +45,26 @@ export function Flows({ id }: { id: string | undefined }) {
   };
 
   return (
-    <div className="flows-page">
-      <nav aria-label="All flows" className="panel flows-list">
-        <span className="k" style={{ padding: "6px 12px" }}>
-          Flows
-        </span>
-        {flows.map((f) => (
-          <a
-            key={f.id}
-            href={flowPath(f.id)}
-            className={`flows-item${f.id === selected?.id ? " on" : ""}`}
-          >
-            <span style={{ minWidth: 0 }}>
-              {titleOf(f)}
-              <span className="muted" style={{ display: "block", fontSize: 12 }}>
-                {statusText(f.data.status)} · {String(f.data.author ?? "owner")}
-              </span>
-            </span>
-            <span
-              className="dot"
-              style={{ background: STATUS_COLORS[String(f.data.status)] ?? "var(--muted)" }}
-            />
-          </a>
-        ))}
+    <div className="flow-detail">
+      <div className="flow-picker">
+        <select
+          className="input"
+          aria-label="Flow"
+          value={selected?.id ?? ""}
+          onChange={(e) => navigate(flowPath(e.target.value || undefined))}
+          style={{ width: "auto", maxWidth: 320 }}
+        >
+          {flows.length === 0 && <option value="">No flows yet</option>}
+          {flows.map((f) => (
+            <option key={f.id} value={f.id}>
+              {titleOf(f)} · {statusText(f.data.status)}
+            </option>
+          ))}
+        </select>
         <button type="button" className="btn" onClick={() => void create()}>
           <Icon name="plus" size={15} /> New flow
         </button>
-      </nav>
+      </div>
       {selected ? (
         <FlowDetail key={selected.id} flow={selected} />
       ) : (
@@ -233,18 +226,26 @@ function FlowDetail({ flow }: { flow: Doc }) {
         </p>
       )}
       <div className="flow-workspace">
-        <section aria-label="Flow" className="panel flow-canvas">
-          <FlowCards
-            def={draft}
-            selected={selection}
-            onSelect={setSelection}
-            onAdd={() => {
-              const next = addStep(draft, blankPart("step", "notify", "tasks"));
-              setDraft(next);
-              setSelection(next.steps.length - 1);
-            }}
-          />
-        </section>
+        <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn"
+              disabled={draft.steps.length >= MAX_STEPS}
+              onClick={() => {
+                const next = addStep(draft, blankPart("step", "notify", "tasks"));
+                setDraft(next);
+                setSelection(next.steps.length - 1);
+              }}
+            >
+              <Icon name="plus" size={15} /> Add a step
+            </button>
+            <span className="muted" style={{ fontSize: 13 }}>
+              Click a node to edit it; an if stops the flow when its conditions fail.
+            </span>
+          </div>
+          <FlowCanvas def={draft} selected={selection} onSelect={setSelection} />
+        </div>
         <aside aria-label="Step settings" className="panel flow-editor">
           <PartEditor
             def={draft}

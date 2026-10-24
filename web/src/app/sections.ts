@@ -30,6 +30,7 @@ export type PageId =
   | "project"
   | "activity"
   | "flows"
+  | "flows-list"
   | "flows-runs"
   | "money-lists"
   | "settings-general"
@@ -110,8 +111,13 @@ export const SECTIONS: Section[] = [
     icon: "workflow",
     color: "var(--warn)",
     path: "/flows",
-    // One flow's page is `/flows/<id>`: anything after Flows that is not a tab is a flow.
-    tabs: [page("list", "List", "flows"), page("runs", "Runs", "flows-runs")],
+    // One flow's page is `/flows/<id>`: anything after Flows that is not a tab is a flow, open
+    // on the canvas.
+    tabs: [
+      page("canvas", "Canvas", "flows"),
+      page("list", "List", "flows-list"),
+      page("runs", "Runs", "flows-runs"),
+    ],
     owns: ["flows"],
   },
   {

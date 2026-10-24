@@ -22,7 +22,7 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/money/review")).toEqual(section("money", "review"));
   expect(parseRoute("/money/nope")).toEqual(section("money", "overview"));
   expect(parseRoute("/calendar/agenda")).toEqual(section("calendar", "agenda"));
-  expect(parseRoute("/flows/flow-rent")).toEqual(section("flows", "list", ["flow-rent"]));
+  expect(parseRoute("/flows/flow-rent")).toEqual(section("flows", "canvas", ["flow-rent"]));
   expect(parseRoute("/flows/list")).toEqual(section("flows", "list"));
   expect(parseRoute("/diary")).toEqual(section("diary", "write"));
   expect(parseRoute("/projects/activity")).toEqual(section("projects", "activity", []));
@@ -81,7 +81,7 @@ test("every old path redirects to its new home", () => {
     ["/settings/system/overview", "/settings/devices"],
     ["/settings/system/schedules", "/settings/devices/schedules"],
     ["/settings/system/notifications", "/settings/devices/notifications"],
-    ["/settings/system/flows", "/flows/runs"],
+    ["/settings/system/flows", "/flows/list"],
     ["/settings/system/agents", "/settings/agents"],
     ["/settings/lists", "/money/lists"],
   ];

@@ -861,37 +861,6 @@ textarea.input {
 }
 
 /* Flows (M7 Part C): list, cards top to bottom, the editor beside them. */
-.flows-page {
-  display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-
-.flows-list {
-  padding: 10px;
-  display: grid;
-  gap: 4px;
-}
-
-.flows-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--radius-control);
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.flows-item.on,
-.flows-item:hover {
-  background: var(--on);
-}
-
 .flow-detail {
   display: grid;
   gap: 14px;
@@ -921,62 +890,6 @@ textarea.input {
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 14px;
   align-items: start;
-}
-
-.flow-canvas {
-  padding: 22px;
-  background-color: var(--side);
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-.flow-cards {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  justify-items: center;
-}
-
-.flow-cards li {
-  display: grid;
-  justify-items: center;
-  width: 100%;
-}
-
-.flow-card {
-  width: min(100%, 380px);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
-}
-
-.flow-card.on {
-  border-color: var(--accent);
-}
-
-.flow-card-text {
-  font-size: 14px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.flow-wire {
-  width: 2px;
-  height: 22px;
-  background: linear-gradient(#3a414d, #6b7280);
-}
-
-.flow-branch {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .flow-editor {
@@ -1023,12 +936,6 @@ textarea.input {
 
 @media (max-width: 1100px) {
   .flow-workspace {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 760px) {
-  .flows-page {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -2080,4 +1987,77 @@ a.btn {
   .diagram-split {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Flows on a canvas (M11 part 7): the picker, the nodes and the else branch. */
+.flow-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.flow-node {
+  position: relative;
+  width: 232px;
+}
+
+.flow-node-body {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.flow-node.on .flow-node-body {
+  border-color: var(--accent);
+}
+
+.flow-node-text {
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.flow-node-approval {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+  margin-left: auto;
+}
+
+.flow-handle-else {
+  left: 50%;
+}
+
+.flow-stop {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+  font-size: 12px;
+  background: var(--bg);
+}
+
+.flow-edge .react-flow__edge-path {
+  stroke: var(--muted);
+}
+
+.flow-edge-else .react-flow__edge-path {
+  stroke-dasharray: 4 4;
+}
+
+.flow-edge-else .react-flow__edge-textbg {
+  fill: var(--bg);
+}
+
+.flow-edge-else .react-flow__edge-text {
+  fill: var(--muted);
 }

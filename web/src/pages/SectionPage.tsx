@@ -11,6 +11,7 @@ import { NeedsYou } from "../ui/NeedsYou.tsx";
 import { ActivityPage } from "./Activity.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
+import { FlowList } from "./FlowList.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
@@ -51,6 +52,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   project: (rest) => <ProjectPage rest={rest} />,
   activity: () => <ActivityPage />,
   flows: (rest) => <Flows id={rest[0]} />,
+  "flows-list": () => <FlowList />,
   "flows-runs": () => <FlowRuns />,
   "settings-general": () => <SettingsGeneral />,
   "settings-devices": (rest) => <SettingsDevices tab={rest[0]} />,

@@ -64,8 +64,13 @@ test("the Scene: projects in every state as orbs and as a hidden list by what ne
   const link = list.getByRole("link", { name: new RegExp(`Scene ok ${stamp}`) });
   const x = Number(await link.getAttribute("data-x"));
   const y = Number(await link.getAttribute("data-y"));
-  const box = await page.locator(".scene-canvas").boundingBox();
+  // The strip above can push the canvas below the fold (other specs leave due items), and a
+  // click outside the viewport lands nowhere: bring the canvas on screen first.
+  const scene = page.locator(".scene-canvas");
+  await scene.scrollIntoViewIfNeeded();
+  const box = await scene.boundingBox();
   if (!box) throw new Error("no canvas");
+  await page.mouse.move(box.x + x, box.y + y);
   await page.mouse.click(box.x + x, box.y + y);
   await expect(page).toHaveURL(new RegExp(`/projects/${ok}$`));
   await expect(page.getByRole("heading", { name: `Scene ok ${stamp}` })).toBeVisible();

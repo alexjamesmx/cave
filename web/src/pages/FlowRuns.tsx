@@ -1,56 +1,59 @@
-import { parseDefinition } from "../../../shared/flows/registry.ts";
-import { nextSlot } from "../../../shared/flows/schedule.ts";
+import { useCallback, useEffect, useState } from "react";
 import { FLOWS } from "../../../shared/flows/seed.ts";
-import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
-import { useNow, useReminderZone } from "../app/hooks.ts";
+import { ownerGet } from "../app/owner-api.ts";
 import { flowPath } from "../app/router.ts";
 import { titleOf } from "../logic/views.ts";
 import { useItems } from "../store/queries.ts";
-import { ApproveButtons } from "../ui/flows/PendingFlows.tsx";
-import { Offline, Panel, Row, useSystemReport, when } from "./settings/shared.tsx";
+import { type FlowRun, ResultChip, StepList } from "../ui/flows/RunHistory.tsx";
 
-/** Flows → Runs: every flow with its last run and next slot; M11 part 7 adds each run's steps. */
+const when = (ms: number) =>
+  new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+/** Flows → Runs: the newest runs across every flow, each step's outcome, Undo on what they wrote. */
 export function FlowRuns() {
   const { db } = useCave().local;
   const flows = useItems(db, FLOWS) ?? [];
-  const zone = useReminderZone();
-  const now = useNow().getTime();
-  const { server } = useSystemReport();
-  const runs = new Map(typeof server === "object" ? server.flowRuns.map((r) => [r.flowId, r]) : []);
-  const next = (flow: Doc) => {
-    const parsed = parseDefinition(flow.data.definition);
-    if (flow.data.status !== "on" || !parsed.ok || parsed.value.trigger.type !== "schedule")
-      return undefined;
-    return nextSlot(parsed.value.trigger, now, zone.timeZone);
+  const [runs, setRuns] = useState<(FlowRun & { flowId: string })[] | "offline">();
+  const load = useCallback(() => {
+    void ownerGet<{ runs: (FlowRun & { flowId: string })[] }>("/api/flow-runs").then((r) =>
+      setRuns(r?.runs ?? "offline"),
+    );
+  }, []);
+  useEffect(load, [load]);
+  const title = (id: string) => {
+    const flow = flows.find((f) => f.id === id);
+    return flow ? titleOf(flow) : id;
   };
   return (
-    <Panel title="Flows">
-      {server === "offline" && <Offline what="Last runs" />}
-      {flows.map((f) => {
-        const run = runs.get(f.id);
-        const n = next(f);
-        return (
-          <Row key={f.id}>
-            <a className="link" href={flowPath(f.id)}>
-              {titleOf(f)}
-            </a>
-            <span className="chip" style={{ background: "var(--on)" }}>
-              {String(f.data.status)}
-            </span>
-            <span className="muted">by {String(f.data.author ?? "owner")}</span>
-            <span className="muted">
-              {run ? `last ${when(run.lastAt)} · ${run.result}` : "never run"}
-            </span>
-            <span className="muted">{n ? `next ${when(n)}` : ""}</span>
-            {f.data.status === "pending-approval" && (
-              <span style={{ display: "flex", gap: 8 }}>
-                <ApproveButtons flow={f} />
+    <section
+      className="panel"
+      aria-label="Flow runs"
+      style={{ padding: 16, display: "grid", gap: 8 }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span className="k">Recent runs</span>
+        <button type="button" className="btn" onClick={load}>
+          Refresh
+        </button>
+      </div>
+      {runs === "offline" && <span className="muted">Runs need the server.</span>}
+      {Array.isArray(runs) && runs.length === 0 && <span className="muted">No runs yet.</span>}
+      {Array.isArray(runs) &&
+        runs.map((r) => (
+          <div key={r.key} style={{ borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <a className="link" href={flowPath(r.flowId)}>
+                {title(r.flowId)}
+              </a>
+              <ResultChip result={r.result} />
+              <span className="num muted" style={{ fontSize: 12 }}>
+                {when(r.startedAt)}
               </span>
-            )}
-          </Row>
-        );
-      })}
-    </Panel>
+            </div>
+            <StepList steps={r.steps} flowId={r.flowId} />
+          </div>
+        ))}
+    </section>
   );
 }
