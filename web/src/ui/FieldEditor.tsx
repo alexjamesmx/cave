@@ -91,7 +91,7 @@ export function FieldEditor({
             {field.type === "select" && field.config?.optionsFrom && (
               <span className="muted" style={{ fontSize: 13 }}>
                 Shares the {field.config.optionsFrom.field} list of{" "}
-                {field.config.optionsFrom.collection}; edit it in Settings → Lists.
+                {field.config.optionsFrom.collection}; edit it there.
               </span>
             )}
             {field.type === "select" && !field.config?.optionsFrom && (

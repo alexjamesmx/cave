@@ -28,14 +28,14 @@ export type PageId =
   | "radar"
   | "project"
   | "activity"
-  | "agents"
   | "flows"
+  | "flows-runs"
+  | "money-lists"
   | "settings-general"
-  | "settings-lists"
-  | "settings-notifications"
   | "settings-devices"
-  | "settings-data"
-  | "settings-system";
+  | "settings-notifications"
+  | "settings-agents"
+  | "settings-data";
 
 export interface Section {
   id: string;
@@ -81,6 +81,10 @@ export const SECTIONS: Section[] = [
         ...view("net-worth", "Net worth", "wealth"),
         description: "What you own minus what you owe.",
       },
+      {
+        ...page("lists", "Categories & accounts", "money-lists"),
+        description: "The lists every expense, income and payment picks from.",
+      },
       // Not a tab: Transactions links to it when the review has work.
       page("review", "Review", "review", true),
     ],
@@ -106,7 +110,7 @@ export const SECTIONS: Section[] = [
     color: "var(--warn)",
     path: "/flows",
     // One flow's page is `/flows/<id>`: anything after Flows that is not a tab is a flow.
-    tabs: [page("list", "List", "flows")],
+    tabs: [page("list", "List", "flows"), page("runs", "Runs", "flows-runs")],
     owns: ["flows"],
   },
   {
@@ -157,14 +161,13 @@ export const SECTIONS: Section[] = [
     icon: "settings",
     color: "#6b7380",
     path: "/settings",
+    // Only general things live here (M11 part 3); each section edits its own lists.
     tabs: [
       page("general", "General", "settings-general"),
-      page("lists", "Lists", "settings-lists"),
+      page("devices", "Devices & server", "settings-devices"),
       page("notifications", "Notifications", "settings-notifications"),
-      page("devices", "Devices", "settings-devices"),
+      page("agents", "Agents", "settings-agents"),
       page("data", "Data", "settings-data"),
-      page("system", "System", "settings-system"),
-      page("agents", "Agents", "agents"),
     ],
     owns: [],
   },

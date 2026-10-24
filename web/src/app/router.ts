@@ -29,11 +29,15 @@ export function redirectOf(pathname: string): string | undefined {
     if (second === "activity") return "/projects/activity";
     return "/settings/agents";
   }
-  // Flows lived under Settings from M10 to M11.
+  // Flows lived under Settings from M10 to M11; Lists until M11 part 3.
   if (first === "settings" && second === "flows") return flowPath(third);
+  if (first === "settings" && second === "lists") return "/money/lists";
   // Life is Diary since M11; its Diary tab is Write.
   if (first === "life") return second === "diary" ? "/diary/write" : enc("diary", ...p.slice(1));
-  if (first === "system") return second ? enc("settings", "system", second) : "/settings/system";
+  // The System page (M9 to M11 part 3) is Settings → Devices & server; its Flows and Agents
+  // tabs went to their own pages.
+  if (first === "system" || (first === "settings" && second === "system"))
+    return systemPath(first === "system" ? second : third);
   // Wealth is Net worth since M7c.
   if (first === "money" && second === "wealth") return "/money/net-worth";
   if (first !== "c" || !second) return undefined;
@@ -52,6 +56,14 @@ export function redirectOf(pathname: string): string | undefined {
   if (collection === "ideas") return "/projects/ideas";
   if (collection === "flows") return flowPath();
   return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);
+}
+
+function systemPath(tab: string | undefined): string {
+  if (tab === "flows") return "/flows/runs";
+  if (tab === "agents") return "/settings/agents";
+  if (tab === "schedules" || tab === "jobs" || tab === "notifications")
+    return `/settings/devices/${tab}`;
+  return "/settings/devices";
 }
 
 export function parseRoute(pathname: string): Route {

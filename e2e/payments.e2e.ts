@@ -39,7 +39,7 @@ test("a card payment marked paid logs the expense and moves to next month; Undo 
 
   await page.goto("/c/payments");
   const list = page.getByRole("region", { name: "Payments by due date" });
-  const row = list.locator(".system-row", { hasText: "Nu card e2e" });
+  const row = list.locator(".sub-row", { hasText: "Nu card e2e" });
   await expect(row).toContainText(due.slice(0, 10));
   await expect(row).toContainText("≈ $3,000");
   const pay = async (amount: string) => {

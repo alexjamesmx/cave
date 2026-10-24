@@ -104,7 +104,7 @@ test("CAVE_ENV=test: a reminder due in a minute lands in the outbox and never re
     await page.waitForTimeout(35_000);
     expect(service.received).toHaveLength(0);
 
-    await page.goto("/settings/system/notifications");
+    await page.goto("/settings/devices/notifications");
     await expect(page.getByText("TEST", { exact: true })).toBeVisible();
     await expect(page.getByRole("region", { name: "Dev outbox" })).toContainText("webpush");
   } finally {

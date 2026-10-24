@@ -1,55 +1,56 @@
 import { openAsk, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Settings → Lists: rename, emoji, colour, reorder, archive and restore; payments share money's lists", async ({
+test("Money → Categories & accounts: rename, emoji, colour, reorder, archive and restore; payments share the lists", async ({
   browser,
 }) => {
   const page = await (
     await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
   ).newPage();
-  await page.goto("/settings/lists");
-  const tasks = page.getByRole("region", { name: "Tasks lists" });
-  const priority = tasks.getByRole("list", { name: "Priority options" });
-  await expect(priority.getByRole("listitem")).toHaveCount(3);
+  await page.goto("/money/lists");
+  const categories = page.getByRole("region", { name: "Category list" });
+  const list = categories.getByRole("list", { name: "Category options" });
+  await expect(list.getByRole("listitem").first()).toContainText("🍔 Food");
+  const count = await list.getByRole("listitem").count();
+  expect(count).toBeGreaterThanOrEqual(20);
 
   // Rename and an emoji: the value stays, only what shows changes.
-  await priority.getByLabel("Name for high").fill("Urgent");
-  await priority.getByLabel("Emoji for high").fill("🔥");
-  await priority.getByLabel("Emoji for high").blur();
-  await expect(priority.getByRole("listitem").first()).toContainText("🔥 Urgent");
+  await list.getByLabel("Name for food").fill("Takeout");
+  await list.getByLabel("Emoji for food").fill("🥡");
+  await list.getByLabel("Emoji for food").blur();
+  await expect(list.getByRole("listitem").first()).toContainText("🥡 Takeout");
 
   // A colour from the palette, then one typed as hex.
-  await priority.getByRole("button", { name: "Colour for high", exact: true }).click();
-  await priority.getByRole("button", { name: "#7FC4CF" }).click();
-  await priority.getByRole("button", { name: "Colour for high", exact: true }).click();
-  await priority.getByLabel("Colour for high as hex").fill("#123456");
-  await priority.getByLabel("Colour for high as hex").press("Enter");
-  await expect(priority.locator(".swatch").first()).toHaveCSS(
-    "background-color",
-    "rgb(18, 52, 86)",
-  );
+  await list.getByRole("button", { name: "Colour for food", exact: true }).click();
+  await list.getByRole("button", { name: "#7FC4CF" }).click();
+  await list.getByRole("button", { name: "Colour for food", exact: true }).click();
+  await list.getByLabel("Colour for food as hex").fill("#123456");
+  await list.getByLabel("Colour for food as hex").press("Enter");
+  await expect(list.locator(".swatch").first()).toHaveCSS("background-color", "rgb(18, 52, 86)");
 
-  // Reorder, archive and restore.
-  await priority.getByRole("button", { name: "Move low up" }).click();
-  await expect(priority.getByRole("listitem").nth(1)).toContainText("low");
-  await priority.getByRole("button", { name: "Archive low" }).click();
-  await expect(priority.getByRole("listitem")).toHaveCount(2);
-  await tasks.getByText("Archived (1)").click();
-  await tasks.getByRole("button", { name: "Restore low" }).click();
-  await expect(priority.getByRole("listitem")).toHaveCount(3);
+  // Reorder, archive and restore, on whichever category is second (the stored order is the
+  // owner's).
+  const secondName = list
+    .getByRole("listitem")
+    .nth(1)
+    .getByRole("textbox", { name: /^Name for / });
+  const second = ((await secondName.getAttribute("aria-label")) ?? "").replace("Name for ", "");
+  expect(second).not.toBe("");
+  await list.getByRole("button", { name: `Move ${second} up` }).click();
+  await expect(list.getByRole("listitem").first().getByLabel(`Name for ${second}`)).toBeVisible();
+  await list.getByRole("button", { name: `Archive ${second}` }).click();
+  await expect(list.getByRole("listitem")).toHaveCount(count - 1);
+  await categories.getByText("Archived (1)").click();
+  await categories.getByRole("button", { name: `Restore ${second}` }).click();
+  await expect(list.getByRole("listitem")).toHaveCount(count);
 
   // Put it back as it was for the other specs.
-  await priority.getByRole("button", { name: "Move low down" }).click();
-  await priority.getByLabel("Name for high").fill("");
-  await priority.getByLabel("Emoji for high").fill("");
-  await priority.getByLabel("Emoji for high").blur();
-  await expect(priority.getByRole("listitem").nth(2)).toContainText("low");
-
-  // Payments' category and account are money's lists, not copies.
-  const money = page.getByRole("region", { name: "Money lists" });
-  await expect(money.getByText("Payments · Category")).toBeVisible();
-  await expect(money.getByText(/Uses Money → Category \(expense only\)/)).toBeVisible();
-  await expect(money.getByText(/Uses Money → Account,/)).toBeVisible();
+  await list.getByRole("button", { name: `Move ${second} down` }).click();
+  await expect(list.getByRole("listitem").first().getByLabel("Name for food")).toBeVisible();
+  await list.getByLabel("Name for food").fill("Food");
+  await list.getByLabel("Emoji for food").fill("🍔");
+  await list.getByLabel("Emoji for food").blur();
+  await expect(list.getByRole("listitem").first()).toContainText("🍔 Food");
 
   // A new account typed in the money form joins the list the payment form offers.
   const account = `E2E bank ${Date.now()}`;
@@ -69,7 +70,7 @@ test("Settings → Lists: rename, emoji, colour, reorder, archive and restore; p
   await expect(pay.getByLabel("Account").locator("option", { hasText: account })).toHaveCount(1);
 
   // Archive the account again so the shared list stays as found; the entry keeps it, greyed.
-  await page.goto("/settings/lists");
+  await page.goto("/money/lists");
   const accounts = page.getByRole("list", { name: "Account options" });
   await accounts.getByRole("button", { name: `Archive ${account}` }).click();
   await expect(accounts.getByText(account)).toHaveCount(0);

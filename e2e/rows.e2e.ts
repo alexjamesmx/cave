@@ -63,7 +63,7 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
 
   // Money → Payments; Paid opens the money form, not the drawer.
   await page.goto("/money/payments");
-  const payment = page.locator(".system-row", { hasText: "Rows e2e bill" });
+  const payment = page.locator(".sub-row", { hasText: "Rows e2e bill" });
   await opensByClickAndKey(page, payment, payment.locator(".num").first(), "Payments item");
   await payment.getByRole("button", { name: "Paid" }).click();
   await expect(page.getByRole("complementary", { name: "Payments item" })).toHaveCount(0);

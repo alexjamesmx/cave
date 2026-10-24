@@ -165,7 +165,7 @@ export function PaymentsView({ collection, items, open }: ViewProps) {
               return (
                 <div key={id} style={{ display: "grid", gap: 8 }}>
                   <div
-                    className={`system-row${key === "overdue" ? " overdue" : ""}${key === "inactive" ? " muted" : ""}`}
+                    className={`sub-row${key === "overdue" ? " overdue" : ""}${key === "inactive" ? " muted" : ""}`}
                     {...rowOpen(() => open(id))}
                   >
                     <span

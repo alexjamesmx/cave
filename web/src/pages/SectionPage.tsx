@@ -8,23 +8,21 @@ import { useCollections, useItems } from "../store/queries.ts";
 import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { ActivityPage } from "./Activity.tsx";
-import { Agents } from "./Agents.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
+import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
-import { SettingsLists } from "./Lists.tsx";
+import { MoneyLists } from "./MoneyLists.tsx";
 import { NotesPage } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { RadarPage } from "./Radar.tsx";
 import { ReviewCategories } from "./ReviewCategories.tsx";
-import {
-  SettingsData,
-  SettingsDevices,
-  SettingsGeneral,
-  SettingsNotifications,
-} from "./Settings.tsx";
-import { System } from "./System.tsx";
+import { SettingsAgents } from "./settings/Agents.tsx";
+import { SettingsData } from "./settings/Data.tsx";
+import { SettingsDevices } from "./settings/Devices.tsx";
+import { SettingsGeneral } from "./settings/General.tsx";
+import { SettingsNotifications } from "./settings/Notifications.tsx";
 import { Transactions } from "./Transactions.tsx";
 
 /** Each page tab's component; \`rest\` is the path after the tab (a flow id, a collection). */
@@ -33,6 +31,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-agenda": () => <Calendar mode="agenda" />,
   review: () => <ReviewCategories />,
   "money-transactions": () => <Transactions />,
+  "money-lists": () => <MoneyLists />,
   "projects-all": () => (
     <>
       <LandingDue />
@@ -44,14 +43,13 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   notes: (rest) => <NotesPage {...(rest[0] ? { noteId: rest[0] } : {})} />,
   project: (rest) => <ProjectPage rest={rest} />,
   activity: () => <ActivityPage />,
-  agents: () => <Agents />,
   flows: (rest) => <Flows id={rest[0]} />,
+  "flows-runs": () => <FlowRuns />,
   "settings-general": () => <SettingsGeneral />,
-  "settings-lists": () => <SettingsLists />,
+  "settings-devices": (rest) => <SettingsDevices tab={rest[0]} />,
   "settings-notifications": () => <SettingsNotifications />,
-  "settings-devices": () => <SettingsDevices />,
+  "settings-agents": () => <SettingsAgents />,
   "settings-data": (rest) => <SettingsData rest={rest} />,
-  "settings-system": (rest) => <System tab={rest[0]} />,
 };
 
 /** A section: its title, its tab bar (scrolls on a phone) and the open tab. */

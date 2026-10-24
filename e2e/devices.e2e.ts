@@ -1,7 +1,7 @@
 import { fillReminder, offOriginRequests, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("/system renders each tab with a flow, a reminder and a job run", async ({
+test("Devices & server renders each sub-section with a reminder and a job run; Agents and Flows → Runs hold what System had", async ({
   browser,
   baseURL,
 }) => {
@@ -25,19 +25,22 @@ test("/system renders each tab with a flow, a reminder and a job run", async ({
   await expect(page).toHaveURL(/\/settings$/);
   await page
     .getByRole("navigation", { name: "Settings tabs" })
-    .getByRole("link", { name: "System" })
+    .getByRole("link", { name: "Devices & server" })
     .click();
-  await expect(page).toHaveURL(/\/settings\/system$/);
-  const tabs = page.getByRole("navigation", { name: "System sections" });
+  await expect(page).toHaveURL(/\/settings\/devices$/);
+  const tabs = page.getByRole("navigation", { name: "Devices sections" });
   await expect(
-    page.getByRole("region", { name: "Collections" }).getByText("Reminders"),
+    page
+      .getByRole("region", { name: "This device" })
+      .getByRole("button", { name: "Lock this device" }),
   ).toBeVisible();
+  await expect(page.getByRole("region", { name: "Server" }).getByText("Last backup")).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Integrations" }).getByText("Web Push"),
   ).toBeVisible();
 
   await tabs.getByRole("link", { name: "Schedules" }).click();
-  await expect(page).toHaveURL(/\/settings\/system\/schedules$/);
+  await expect(page).toHaveURL(/\/settings\/devices\/schedules$/);
   const schedule = page.getByRole("region", { name: "Next 7 days" });
   await expect(schedule.getByRole("link", { name: "system check" })).toBeVisible();
   await expect(schedule.getByRole("link", { name: "Reminder notifications" })).toBeVisible();
@@ -50,19 +53,24 @@ test("/system renders each tab with a flow, a reminder and a job run", async ({
     page.getByRole("region", { name: "Recent runs" }).getByText("backups", { exact: true }),
   ).toBeVisible();
 
-  await tabs.getByRole("link", { name: "Flows" }).click();
-  const flows = page.getByRole("region", { name: "Flows" });
-  await expect(flows.getByRole("link", { name: "Rent reminder" })).toBeVisible();
-  await expect(flows.getByText(/next /)).toBeVisible();
-
-  await tabs.getByRole("link", { name: "Agents" }).click();
-  // Other specs may have added agents to the shared database (runs.e2e mints one).
-  await expect(page.getByRole("region", { name: "Agents" })).toContainText(/No agents yet\.|read/);
-
   await tabs.getByRole("link", { name: "Notifications" }).click();
   await expect(
     page.getByRole("region", { name: "Notification log" }).getByText(/\d+ missed reminders?/),
   ).toBeVisible();
+
+  // Flows → Runs: every flow with its last run and next slot.
+  await page.goto("/flows/runs");
+  const flows = page.getByRole("region", { name: "Flows" });
+  await expect(flows.getByRole("link", { name: "Rent reminder" })).toBeVisible();
+  await expect(flows.getByText(/next /)).toBeVisible();
+
+  // Agents: tokens and use; other specs may have added agents (runs.e2e mints one).
+  await page.goto("/settings/agents");
+  await expect(page.getByRole("region", { name: "Agents" })).toContainText(/No agents yet\.|read/);
+  await expect(page.getByRole("region", { name: "Proposals" })).toBeVisible();
+  // Agents' writes and their Undo live under Data.
+  await page.goto("/settings/data");
+  await expect(page.getByRole("region", { name: "Undo history" })).toBeVisible();
 
   expect(foreign).toEqual([]);
 });

@@ -38,7 +38,9 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
     ["/settings/flows/flow-rent", /\/flows\/flow-rent$/],
     ["/ai/flows/flow-salary", /\/flows\/flow-salary$/],
     ["/ai/activity", /\/projects\/activity$/],
-    ["/system/jobs", /\/settings\/system\/jobs$/],
+    ["/system/jobs", /\/settings\/devices\/jobs$/],
+    ["/settings/system/flows", /\/flows\/runs$/],
+    ["/settings/lists", /\/money\/lists$/],
     ["/c/proposals", /\/settings\/data\/proposals$/],
   ] as const) {
     await page.goto(from);

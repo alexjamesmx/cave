@@ -29,7 +29,9 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/settings/data/money/untagged")).toEqual(
     section("settings", "data", ["money", "untagged"]),
   );
-  expect(parseRoute("/settings/system/jobs")).toEqual(section("settings", "system", ["jobs"]));
+  expect(parseRoute("/settings/devices/jobs")).toEqual(section("settings", "devices", ["jobs"]));
+  expect(parseRoute("/flows/runs")).toEqual(section("flows", "runs"));
+  expect(parseRoute("/money/lists")).toEqual(section("money", "lists"));
   expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
   expect(parseRoute("/radar")).toEqual({ name: "not-found" });
 });
@@ -70,8 +72,15 @@ test("every old path redirects to its new home", () => {
     ["/ai/flows", "/flows"],
     ["/ai/flows/flow-rent", "/flows/flow-rent"],
     ["/ai/activity", "/projects/activity"],
-    ["/system", "/settings/system"],
-    ["/system/jobs", "/settings/system/jobs"],
+    ["/system", "/settings/devices"],
+    ["/system/jobs", "/settings/devices/jobs"],
+    ["/settings/system", "/settings/devices"],
+    ["/settings/system/overview", "/settings/devices"],
+    ["/settings/system/schedules", "/settings/devices/schedules"],
+    ["/settings/system/notifications", "/settings/devices/notifications"],
+    ["/settings/system/flows", "/flows/runs"],
+    ["/settings/system/agents", "/settings/agents"],
+    ["/settings/lists", "/money/lists"],
   ];
   for (const [from, to] of cases) {
     expect([from, redirectOf(from)]).toEqual([from, to]);
@@ -84,6 +93,8 @@ test("every old path redirects to its new home", () => {
     "/diary",
     "/r/x",
     "/calendar",
+    "/settings/devices/jobs",
+    "/money/lists",
   ])
     expect(redirectOf(current)).toBeUndefined();
 });

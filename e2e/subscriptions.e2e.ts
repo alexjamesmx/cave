@@ -90,14 +90,14 @@ test("a payment past its due date shows under Overdue with Paid, Set next date a
   await form.getByRole("button", { name: "Save" }).click();
 
   const overdue = page.getByRole("region", { name: "Overdue" });
-  const row = overdue.locator(".system-row", { hasText: title });
+  const row = overdue.locator(".sub-row", { hasText: title });
   for (const action of ["Paid", "Set next date", "Deactivate"])
     await expect(row.getByRole("button", { name: action })).toBeVisible();
   await row.getByRole("button", { name: "Deactivate" }).click();
   const inactive = page.getByRole("region", { name: "Inactive" });
-  await expect(inactive.locator(".system-row", { hasText: title })).toBeVisible();
+  await expect(inactive.locator(".sub-row", { hasText: title })).toBeVisible();
   // Its kind is left as the owner set it.
-  await expect(inactive.locator(".system-row", { hasText: title })).toContainText("bill");
+  await expect(inactive.locator(".sub-row", { hasText: title })).toContainText("bill");
 
   await inactive.getByRole("button", { name: title, exact: true }).click();
   await page

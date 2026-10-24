@@ -98,7 +98,7 @@ export function jobEntries(
     at: Math.max(j.nextRun, now),
     kind: "job",
     label: j.label,
-    path: "/settings/system/jobs",
+    path: "/settings/devices/jobs",
   }));
   if (deployNextAt !== null)
     entries.push({
@@ -106,7 +106,7 @@ export function jobEntries(
       at: Math.max(deployNextAt, now),
       kind: "deploy",
       label: "Deploy check",
-      path: "/settings/system/jobs",
+      path: "/settings/devices/jobs",
       approximate: true,
     });
   return entries;

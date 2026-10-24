@@ -222,7 +222,7 @@ export function ReviewCategories() {
                 p.direction === "income" ? "income" : "expense",
               );
               return (
-                <div key={p.id} className="system-row">
+                <div key={p.id} className="sub-row">
                   <span className="num muted">{p.date.slice(0, 10)}</span>
                   <span style={{ flex: 1, minWidth: 140 }}>{p.title || "Untitled"}</span>
                   <span className="num">{p.amount === null ? "—" : formatMoney(p.amount)}</span>

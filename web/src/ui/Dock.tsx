@@ -84,7 +84,7 @@ export function Dock() {
 }
 
 /** Pick exactly four; the order picked is the dock's order, left to right. */
-function EditDock({ current, onSave }: { current: string[]; onSave(ids: string[]): void }) {
+export function EditDock({ current, onSave }: { current: string[]; onSave(ids: string[]): void }) {
   const [picked, setPicked] = useState(current);
   const toggle = (id: string) =>
     setPicked((p) =>

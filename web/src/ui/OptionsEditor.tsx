@@ -12,7 +12,7 @@ import {
 import { Icon } from "./icon.tsx";
 
 /**
- * One select's options, as Settings → Lists and the field editor show them. Values are fixed
+ * One select's options, as Money → Categories & accounts and the field editor show them. Values are fixed
  * once added (items store them); the name, emoji, colour and kind change freely. Options are
  * archived, never deleted, so items that hold one keep showing it.
  */
