@@ -31,7 +31,7 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
   await expect(page.getByRole("region", { name: "Payments by due date" })).toBeVisible();
 
   for (const [from, to] of [
-    ["/", /\/projects\/all$/],
+    ["/", /\/projects\/scene$/],
     ["/c/journal", /\/diary\/write$/],
     ["/life/habits", /\/diary\/habits$/],
     ["/agents", /\/settings\/agents$/],

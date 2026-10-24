@@ -4,6 +4,7 @@ import { projectPath } from "../app/router.ts";
 import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { titleOf } from "../logic/views.ts";
+import { Scene } from "../scene/Scene.tsx";
 import { useCollections, useItems } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
 import { NeedsYou } from "../ui/NeedsYou.tsx";
@@ -32,6 +33,12 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   review: () => <ReviewCategories />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
+  "projects-scene": () => (
+    <>
+      <LandingNeedsYou />
+      <Scene />
+    </>
+  ),
   "projects-all": () => (
     <>
       <LandingNeedsYou />
@@ -119,7 +126,7 @@ function usePinnedProjects() {
   return projects?.filter((p) => p.data.pinned === true);
 }
 
-/** What needs the owner, on the screen the app opens on; the Scene (M11 part 5) keeps it on top. */
+/** What needs the owner, above the Scene and the All list. */
 function LandingNeedsYou() {
   const stored = useCollections(useCave().local.db);
   const collections = useMemo(() => stored?.map(withActiveFields), [stored]);

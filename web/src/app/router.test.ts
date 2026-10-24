@@ -16,7 +16,7 @@ const section = (s: string, tab: string, rest: string[] = []) => ({
 });
 
 test("sections and their tabs; an unknown tab falls back to the first", () => {
-  expect(parseRoute("/")).toEqual({ name: "redirect", to: "/projects/all" });
+  expect(parseRoute("/")).toEqual({ name: "redirect", to: "/projects/scene" });
   expect(parseRoute("/money")).toEqual(section("money", "overview"));
   expect(parseRoute("/money/payments")).toEqual(section("money", "payments"));
   expect(parseRoute("/money/review")).toEqual(section("money", "review"));
@@ -47,7 +47,7 @@ test("every old path redirects to its new home", () => {
     ["/c/wealth", "/money/net-worth"],
     ["/money/wealth", "/money/net-worth"],
     ["/c/reminders", "/calendar/reminders"],
-    ["/", "/projects/all"],
+    ["/", "/projects/scene"],
     ["/c/journal", "/diary/write"],
     ["/c/journal/habits", "/diary/habits"],
     ["/life", "/diary"],

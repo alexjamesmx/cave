@@ -1840,3 +1840,65 @@ a.btn {
   text-decoration: underline dashed;
   cursor: pointer;
 }
+
+/* The Scene (M11 part 5): a canvas that fills the content area; the legend sits bottom-left. */
+.scene-wrap {
+  position: relative;
+  height: min(68vh, 720px);
+  min-height: 340px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.scene-canvas.hot {
+  cursor: pointer;
+}
+
+.scene-legend {
+  position: absolute;
+  left: 12px;
+  bottom: 8px;
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.scene-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* The hidden links keep their place in the tab order; a focused one shows as a chip. */
+.scene-links a:focus-visible {
+  position: fixed;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  width: auto;
+  height: auto;
+  clip: auto;
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  background: var(--on);
+  color: var(--text);
+  z-index: 10;
+}
+
+@media (max-width: 767px) {
+  .scene-wrap {
+    height: 60vh;
+  }
+}

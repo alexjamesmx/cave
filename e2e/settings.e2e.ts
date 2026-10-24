@@ -26,7 +26,7 @@ test("Settings: five pages; the name and goal sync; Data exports a file and impo
   await page.getByLabel("Goal").fill("Ship the Cave");
   await page.getByLabel("Goal").blur();
   expect((await goal).ok()).toBe(true);
-  await expect(page.getByText("Opens on").locator("..")).toContainText("Projects → All");
+  await expect(page.getByText("Opens on").locator("..")).toContainText("Projects → Scene");
   // The phone dock editor shows the dock's four sections with their position (buttons in rail order).
   await expect(page.getByRole("button", { pressed: true })).toHaveText([
     "2. Money",

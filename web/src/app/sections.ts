@@ -22,6 +22,7 @@ export type PageId =
   | "calendar-agenda"
   | "review"
   | "money-transactions"
+  | "projects-scene"
   | "projects-all"
   | "projects-ideas"
   | "notes"
@@ -120,6 +121,7 @@ export const SECTIONS: Section[] = [
     color: "var(--vio)",
     path: "/projects",
     tabs: [
+      page("scene", "Scene", "projects-scene"),
       page("all", "All", "projects-all"),
       page("ideas", "Ideas", "projects-ideas"),
       page("radar", "Radar", "radar"),
@@ -173,8 +175,8 @@ export const SECTIONS: Section[] = [
   },
 ];
 
-/** Where the app opens: Projects, until the Scene (M11 part 5) takes its place. */
-export const LANDING = "/projects/all";
+/** Where the app opens: the Scene (M11 part 5). */
+export const LANDING = "/projects/scene";
 
 /** Collections with no section: reached only from Settings → Data. */
 export const DATA_ONLY = ["proposals", "runs"];

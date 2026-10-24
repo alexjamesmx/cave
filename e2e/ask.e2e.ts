@@ -15,7 +15,7 @@ test("Ask from anywhere: ⌘K opens the sheet, the box opens Claude, a quick for
 
   // No Home: the app opens on Projects, and nothing takes a command grammar.
   await page.goto("/");
-  await expect(page).toHaveURL(/\/projects\/all$/);
+  await expect(page).toHaveURL(/\/projects\/scene$/);
   await expect(page.getByLabel("Capture or jump")).toHaveCount(0);
 
   // The shortcut ignores keys typed into a field, so nothing may have focus.
