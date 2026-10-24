@@ -36,12 +36,28 @@ interface MapEdge {
   to: string;
 }
 
+export const SHAPE_KINDS = ["rect", "rounded", "diamond"] as const;
+export type ShapeKind = (typeof SHAPE_KINDS)[number];
+
+/** A drawn shape with text (M11 part 6): the draw.io cases people reach for. */
+export interface MapShape {
+  id: string;
+  kind: ShapeKind;
+  text: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface ProjectMap {
   version: 1;
   positions: Record<string, MapPoint>;
   notes: MapNote[];
   groups: MapGroup[];
   edges: MapEdge[];
+  /** Maps stored before M11 part 6 have none; they parse as an empty list. */
+  shapes: MapShape[];
 }
 
 export const EMPTY_MAP: ProjectMap = {
@@ -50,6 +66,7 @@ export const EMPTY_MAP: ProjectMap = {
   notes: [],
   groups: [],
   edges: [],
+  shapes: [],
 };
 
 export const MAP_LIMITS = { nodes: 500, edges: 500, text: 2000, bytes: 200_000 } as const;
@@ -83,14 +100,16 @@ export function parseMap(value: unknown): Parsed {
   if (!isRecord(value) || value.version !== 1) return fail("must be a map with version 1");
   if (JSON.stringify(value).length > MAP_LIMITS.bytes) return fail("is too large");
   const { positions, notes, groups, edges } = value;
+  const shapes = value.shapes ?? [];
   if (
     !isRecord(positions) ||
     !Array.isArray(notes) ||
     !Array.isArray(groups) ||
-    !Array.isArray(edges)
+    !Array.isArray(edges) ||
+    !Array.isArray(shapes)
   )
     return fail("needs positions, notes, groups and edges");
-  const nodeCount = Object.keys(positions).length + notes.length + groups.length;
+  const nodeCount = Object.keys(positions).length + notes.length + groups.length + shapes.length;
   if (nodeCount > MAP_LIMITS.nodes) return fail(`has more than ${MAP_LIMITS.nodes} nodes`);
   if (edges.length > MAP_LIMITS.edges) return fail(`has more than ${MAP_LIMITS.edges} edges`);
 
@@ -117,6 +136,17 @@ export function parseMap(value: unknown): Parsed {
       return fail(`group ${g.id} needs x, y, w and h`);
     ids.add(g.id);
   }
+  for (const s of shapes) {
+    if (!isRecord(s) || typeof s.id !== "string" || !LOCAL_ID.test(s.id))
+      return fail("a shape needs an id");
+    if (!SHAPE_KINDS.includes(s.kind as ShapeKind))
+      return fail(`shape ${s.id} must be one of: ${SHAPE_KINDS.join(", ")}`);
+    const bad = text(s.text, `shape ${s.id}`);
+    if (bad) return fail(bad);
+    if (!coord(s.x) || !coord(s.y) || !size(s.w) || !size(s.h))
+      return fail(`shape ${s.id} needs x, y, w and h`);
+    ids.add(s.id);
+  }
   for (const e of edges) {
     if (!isRecord(e) || typeof e.id !== "string" || !LOCAL_ID.test(e.id))
       return fail("an edge needs an id");
@@ -126,12 +156,16 @@ export function parseMap(value: unknown): Parsed {
       return fail(`edge ${e.id} joins a node the map doesn't place`);
     if (e.from === e.to) return fail(`edge ${e.id} joins a node to itself`);
   }
-  return { ok: true, map: value as unknown as ProjectMap };
+  return { ok: true, map: { ...(value as unknown as ProjectMap), shapes: shapes as MapShape[] } };
 }
 
 /** Positions and edges of items that no longer exist are dropped before a save. */
 export function pruneMap(map: ProjectMap, live: ReadonlySet<string>): ProjectMap {
-  const local = new Set([...map.notes.map((n) => n.id), ...map.groups.map((g) => g.id)]);
+  const local = new Set([
+    ...map.notes.map((n) => n.id),
+    ...map.groups.map((g) => g.id),
+    ...map.shapes.map((s) => s.id),
+  ]);
   const keep = (id: string) => live.has(id) || local.has(id);
   const positions = Object.fromEntries(Object.entries(map.positions).filter(([id]) => keep(id)));
   const placed = new Set([...Object.keys(positions), ...local]);

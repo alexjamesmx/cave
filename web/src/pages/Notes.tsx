@@ -17,11 +17,12 @@ import { useCollections, useItems } from "../store/queries.ts";
 import { FieldInput, OptionChip } from "../ui/fields.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { MarkdownView } from "../ui/Markdown.tsx";
+import { projectFilterOf } from "../ui/ProjectFilter.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
 const notePath = (id: string, project?: string) =>
   project
-    ? `/projects/${encodeURIComponent(project)}/notes?note=${encodeURIComponent(id)}`
+    ? `/projects/notes?project=${encodeURIComponent(project)}&note=${encodeURIComponent(id)}`
     : `/projects/notes/${encodeURIComponent(id)}`;
 
 /** Creates a note and returns its id; `folder` and `project` place it. */
@@ -45,13 +46,15 @@ async function createNote(
 }
 
 /**
- * Projects → Notes, and a project's Notes tab (`project`): a folder tree and search on the
+ * Projects → Notes (scoped to one project with `?project=`): a folder tree and search on the
  * left, the open note on the right, rendered, with its links and backlinks. Works offline.
  */
-export function NotesPage({ noteId, project }: { noteId?: string; project?: string }) {
+export function NotesPage({ noteId }: { noteId?: string }) {
   const { local } = useCave();
   const all = useItems(local.db, NOTES);
   const search = useSearch();
+  // `?project=` scopes the page to one project (the project page links here).
+  const project = projectFilterOf(search);
   const params = new URLSearchParams(search);
   const query = params.get("q") ?? "";
   const folder = params.get("folder") ?? "";

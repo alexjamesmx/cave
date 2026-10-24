@@ -1,5 +1,10 @@
 import type { Edge, Node } from "@xyflow/react";
-import { autoLayout, type MapPoint, type ProjectMap } from "../../../shared/project-map.ts";
+import {
+  autoLayout,
+  type MapPoint,
+  type ProjectMap,
+  type ShapeKind,
+} from "../../../shared/project-map.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { titleOf } from "./views.ts";
 
@@ -12,6 +17,7 @@ export type CardData = {
   docId: string;
 };
 export type NoteData = { text: string };
+export type ShapeData = { kind: ShapeKind; text: string };
 export type GroupData = { title: string };
 export type RunData = { title: string; status: string; step?: string };
 
@@ -29,6 +35,7 @@ export type MapNode =
   | Node<CardData, "card">
   | Node<NoteData, "note">
   | Node<GroupData, "frame">
+  | Node<ShapeData, "shape">
   | Node<RunData, "run">;
 
 const status = (d: Doc) => (typeof d.data.status === "string" ? d.data.status : undefined);
@@ -73,6 +80,13 @@ export function buildGraph(
     style: { width: g.w, height: g.h },
     zIndex: -1,
     data: { title: g.title },
+  }));
+  const shapes: MapNode[] = map.shapes.map((s) => ({
+    id: s.id,
+    type: "shape",
+    position: { x: s.x, y: s.y },
+    style: { width: s.w, height: s.h },
+    data: { kind: s.kind, text: s.text },
   }));
   const notes: MapNode[] = map.notes.map((n) => ({
     id: n.id,
@@ -129,6 +143,7 @@ export function buildGraph(
       ...parts.map((d) => card(d, "part")),
       ...tasks.map((d) => card(d, "task")),
       ...others.map((d) => card(d, "item")),
+      ...shapes,
       ...notes,
       ...runNodes,
     ],
@@ -143,10 +158,12 @@ export function moved(map: ProjectMap, id: string, p: MapPoint): ProjectMap {
     return { ...map, notes: map.notes.map((n) => (n.id === id ? { ...n, ...point } : n)) };
   if (map.groups.some((g) => g.id === id))
     return { ...map, groups: map.groups.map((g) => (g.id === id ? { ...g, ...point } : g)) };
+  if (map.shapes.some((s) => s.id === id))
+    return { ...map, shapes: map.shapes.map((s) => (s.id === id ? { ...s, ...point } : s)) };
   return { ...map, positions: { ...map.positions, [id]: point } };
 }
 
 /** A short id for a note, group or edge the map owns; never an item id. */
-export const localId = (prefix: "n" | "g" | "e", taken: ReadonlySet<string>): string => {
+export const localId = (prefix: "n" | "g" | "e" | "s", taken: ReadonlySet<string>): string => {
   for (let i = 1; ; i++) if (!taken.has(`${prefix}${i}`)) return `${prefix}${i}`;
 };

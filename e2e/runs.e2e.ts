@@ -62,10 +62,10 @@ test("a run an agent starts shows in the project's Activity, on its Map and in P
     ),
   );
 
-  // While active, it glows on the Map.
+  // While active, it glows on the Canvas.
   await page
     .getByRole("navigation", { name: "Project tabs" })
-    .getByRole("link", { name: "Map" })
+    .getByRole("link", { name: "Canvas" })
     .click();
   await expect(page.locator(".map-run", { hasText: "Plan the parts" })).toBeVisible();
 
@@ -109,7 +109,7 @@ test("a run an agent starts shows in the project's Activity, on its Map and in P
   }).toPass({ timeout: 20_000 });
 
   // Finished: it leaves the Map and shows done in Projects → Activity.
-  await page.goto(`/projects/${project}/map`);
+  await page.goto(`/projects/${project}/canvas`);
   await call("finish_run", { run, status: "done", summary: "Three parts drafted." });
   await synced(() =>
     expect(page.locator(".map-run", { hasText: "Plan the parts" })).toHaveCount(0, {

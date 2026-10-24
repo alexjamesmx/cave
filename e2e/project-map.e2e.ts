@@ -12,7 +12,9 @@ const translate = async (page: Page, title: string) => {
   return m ? { x: Number(m[1]), y: Number(m[2]) } : undefined;
 };
 
-test("a project's map: drag a part, add a note, and both survive a reload", async ({ browser }) => {
+test("a project's canvas: drag a part, add a note and a shape, and all survive a reload", async ({
+  browser,
+}) => {
   const page = await (
     await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
   ).newPage();
@@ -26,9 +28,9 @@ test("a project's map: drag a part, add a note, and both survive a reload", asyn
 
   await page
     .getByRole("navigation", { name: "Project tabs" })
-    .getByRole("link", { name: "Map" })
+    .getByRole("link", { name: "Canvas" })
     .click();
-  const canvas = page.getByRole("region", { name: "Project map" });
+  const canvas = page.getByRole("region", { name: "Project canvas" });
   const plan = card(page, "Plan");
   await expect(plan).toBeVisible();
   // Let fitView settle before grabbing the card.
@@ -49,8 +51,17 @@ test("a project's map: drag a part, add a note, and both survive a reload", asyn
   await note.blur();
   await page.waitForTimeout(300);
 
+  // A drawn shape with text (M11 part 6).
+  await page.getByRole("button", { name: "Add diamond" }).click();
+  const shape = canvas.getByLabel("diamond shape text");
+  await shape.fill("Ready?");
+  await shape.blur();
+  await page.waitForTimeout(300);
+
   await page.reload();
   await expect(card(page, "Plan")).toBeVisible();
+  await expect(canvas.getByLabel("diamond shape text")).toHaveValue("Ready?");
+  await expect(canvas.locator(".map-shape-diamond")).toBeVisible();
   // Stored positions are whole pixels; a drag can end between two.
   const reloaded = await translate(page, "Plan");
   expect(Math.abs((reloaded?.x ?? 0) - (after?.x ?? 0))).toBeLessThanOrEqual(1);

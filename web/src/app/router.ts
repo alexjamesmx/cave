@@ -11,6 +11,8 @@ export type Route =
   | { name: "not-found" };
 
 const parts = (pathname: string) => pathname.split("/").filter(Boolean).map(decodeURIComponent);
+const isProjectsTab = (segment: string) =>
+  sectionById("projects")?.tabs.some((t) => t.id === segment) ?? false;
 const enc = (...segments: string[]) => `/${segments.map(encodeURIComponent).join("/")}`;
 
 /**
@@ -40,11 +42,17 @@ export function redirectOf(pathname: string): string | undefined {
     return systemPath(first === "system" ? second : third);
   // Wealth is Net worth since M7c.
   if (first === "money" && second === "wealth") return "/money/net-worth";
+  // A project's Items and Notes tabs went with M11 part 6; its Map is the Canvas.
+  if (first === "projects" && second && third && !isProjectsTab(second)) {
+    if (third === "items") return enc("projects", second);
+    if (third === "notes") return `/projects/notes?project=${encodeURIComponent(second)}`;
+    if (third === "map") return enc("projects", second, "canvas");
+  }
   if (first !== "c" || !second) return undefined;
   const collection = second;
   const view = third;
-  // LeetCode is a project now (M8 part 2): its items live on that project's Items tab.
-  if (collection === "leetcode") return "/projects/proj-leetcode/items";
+  // LeetCode is a project now (M8 part 2): its items are on that project's page.
+  if (collection === "leetcode") return "/projects/proj-leetcode";
   const owner = ownerOf(collection);
   const tabs = owner?.tabs.filter((t) => t.kind === "view" && t.collection === collection) ?? [];
   const tab = view

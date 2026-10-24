@@ -118,3 +118,30 @@ test("seed migration 12 adds the map field once", () => {
   expect((out?.data.fields as unknown[] | undefined)?.at(-1)).toEqual(MAP_FIELD);
   expect(mapMigration(() => ({ ...projects, data: out?.data ?? {} }))).toEqual([]);
 });
+
+test("shapes (M11 part 6): a kind, text and a box; edges may join them; old maps parse without any", () => {
+  const shape = { id: "s1", kind: "diamond" as const, text: "Ready?", x: 0, y: 0, w: 160, h: 90 };
+  const m = map({
+    shapes: [shape],
+    edges: [{ id: "e1", from: "s1", to: "n1" }],
+    notes: [{ id: "n1", text: "x", x: 0, y: 0 }],
+  });
+  expect(parseMap(m)).toEqual({ ok: true, map: m });
+  const error = (v: unknown) => {
+    const parsed = parseMap(v);
+    return parsed.ok ? "ok" : parsed.error;
+  };
+  expect(error(map({ shapes: [{ ...shape, kind: "star" as "rect" }] }))).toBe(
+    "shape s1 must be one of: rect, rounded, diamond",
+  );
+  expect(error(map({ shapes: [{ ...shape, text: "<b>x</b>" }] }))).toBe(
+    "shape s1 must be plain text, not HTML",
+  );
+  expect(error(map({ shapes: [{ ...shape, w: 0 }] }))).toBe("shape s1 needs x, y, w and h");
+  // A map stored before shapes existed.
+  const { shapes: _, ...old } = EMPTY_MAP;
+  const parsed = parseMap(old);
+  expect(parsed.ok && parsed.map.shapes).toEqual([]);
+  // Pruning keeps shapes and the edges that use them.
+  expect(pruneMap(m, new Set())).toEqual(m);
+});

@@ -13,6 +13,8 @@ import {
   type ProjectMap as Layout,
   parseMap,
   pruneMap,
+  SHAPE_KINDS,
+  type ShapeKind,
 } from "../../../shared/project-map.ts";
 import { linkedTo, PARTS, templatesOf } from "../../../shared/projects.ts";
 import { isActiveRun } from "../../../shared/runs.ts";
@@ -28,6 +30,7 @@ import {
   moved,
   type NoteData,
   type RunData,
+  type ShapeData,
 } from "../logic/map-graph.ts";
 import { useAllItems, useDoc } from "../store/queries.ts";
 import { DocDrawer } from "./DocDrawer.tsx";
@@ -38,12 +41,14 @@ interface Editing {
   setNote(id: string, text: string): void;
   resizeGroup(id: string, w: number, h: number): void;
   renameGroup(id: string, title: string): void;
+  setShape(id: string, patch: { text?: string; w?: number; h?: number }): void;
 }
 const EditContext = createContext<Editing>({
   editable: false,
   setNote: () => {},
   resizeGroup: () => {},
   renameGroup: () => {},
+  setShape: () => {},
 });
 
 function CardNode({ data }: NodeProps<Extract<MapNode, { type: "card" }>>) {
@@ -124,6 +129,39 @@ function GroupNode({ id, data, selected }: NodeProps<Extract<MapNode, { type: "f
   );
 }
 
+/** A drawn shape with text (M11 part 6): a rectangle, a rounded one or a diamond. */
+function ShapeNode({ id, data, selected }: NodeProps<Extract<MapNode, { type: "shape" }>>) {
+  const { editable, setShape } = useContext(EditContext);
+  const d = data as ShapeData;
+  return (
+    <div className={`map-shape map-shape-${d.kind}`}>
+      {editable && (
+        <NodeResizer
+          isVisible={selected ?? false}
+          minWidth={80}
+          minHeight={48}
+          onResizeEnd={(_, p) => setShape(id, { w: Math.round(p.width), h: Math.round(p.height) })}
+        />
+      )}
+      <Handle type="target" position={Position.Left} isConnectable={editable} />
+      {editable ? (
+        <input
+          key={d.text}
+          className="map-shape-text nodrag"
+          aria-label={`${d.kind} shape text`}
+          defaultValue={d.text}
+          onBlur={(e) => {
+            if (e.target.value !== d.text) setShape(id, { text: e.target.value });
+          }}
+        />
+      ) : (
+        <span className="map-shape-text">{d.text}</span>
+      )}
+      <Handle type="source" position={Position.Right} isConnectable={editable} />
+    </div>
+  );
+}
+
 /** An active run beside its part, glowing; its newest step says what it is doing. */
 function RunNode({ data }: NodeProps<Extract<MapNode, { type: "run" }>>) {
   const d = data as RunData;
@@ -143,7 +181,19 @@ function RunNode({ data }: NodeProps<Extract<MapNode, { type: "run" }>>) {
 }
 
 // "frame", not "group": React Flow styles its own group type.
-const NODE_TYPES = { card: CardNode, note: NoteNode, frame: GroupNode, run: RunNode };
+const NODE_TYPES = {
+  card: CardNode,
+  note: NoteNode,
+  frame: GroupNode,
+  shape: ShapeNode,
+  run: RunNode,
+};
+
+const SHAPE_LABEL: Record<ShapeKind, string> = {
+  rect: "box",
+  rounded: "rounded box",
+  diamond: "diamond",
+};
 
 /** Desktop with a mouse edits the map; a phone views it (pan, zoom, tap to open). */
 function useEditable(): boolean {
@@ -158,7 +208,7 @@ function useEditable(): boolean {
   return editable;
 }
 
-/** A project's Map tab: its parts, tasks and items on a whiteboard, saved in its `map` key. */
+/** A project's Canvas tab: its parts, tasks, items and drawn shapes, saved in its `map` key. */
 export function ProjectMap({ project }: { project: Doc }) {
   const { local } = useCave();
   const all = useAllItems(local.db);
@@ -220,6 +270,7 @@ export function ProjectMap({ project }: { project: Doc }) {
       ...layout.notes.map((n) => n.id),
       ...layout.groups.map((g) => g.id),
       ...layout.edges.map((e) => e.id),
+      ...layout.shapes.map((s) => s.id),
     ]);
   const editing: Editing = {
     editable,
@@ -229,10 +280,13 @@ export function ProjectMap({ project }: { project: Doc }) {
       save({ ...layout, groups: layout.groups.map((g) => (g.id === id ? { ...g, w, h } : g)) }),
     renameGroup: (id, title) =>
       save({ ...layout, groups: layout.groups.map((g) => (g.id === id ? { ...g, title } : g)) }),
+    setShape: (id, patch) =>
+      save({ ...layout, shapes: layout.shapes.map((s) => (s.id === id ? { ...s, ...patch } : s)) }),
   };
   const connect = ({ source, target }: Connection) => {
-    const parts = new Set(linked.parts.map((p) => p.id));
-    if (!source || !target || !parts.has(source) || !parts.has(target) || source === target) return;
+    // Parts and shapes connect; cards of other kinds and notes do not.
+    const ends = new Set([...linked.parts.map((p) => p.id), ...layout.shapes.map((s) => s.id)]);
+    if (!source || !target || !ends.has(source) || !ends.has(target) || source === target) return;
     if (layout.edges.some((e) => e.from === source && e.to === target)) return;
     // Both ends need a stored place for the edge to be valid; take where they are drawn now.
     const at = (id: string) => nodes.find((n) => n.id === id)?.position ?? { x: 0, y: 0 };
@@ -277,14 +331,32 @@ export function ProjectMap({ project }: { project: Doc }) {
           >
             Add frame
           </button>
+          {SHAPE_KINDS.map((kind) => (
+            <button
+              key={kind}
+              type="button"
+              className="btn"
+              onClick={() =>
+                save({
+                  ...layout,
+                  shapes: [
+                    ...layout.shapes,
+                    { id: localId("s", taken()), kind, text: "", x: 0, y: -300, w: 160, h: 72 },
+                  ],
+                })
+              }
+            >
+              Add {SHAPE_LABEL[kind]}
+            </button>
+          ))}
           <span className="muted" style={{ fontSize: 13, alignSelf: "center" }}>
-            Drag to arrange; connect two parts for "depends on"; double-click a card to open it;
-            select a note, frame or edge and press Delete to remove it.
+            Drag to arrange; connect parts and shapes for "depends on"; double-click a card to open
+            it; select a note, frame, shape or edge and press Delete to remove it.
           </span>
         </div>
       )}
       <MapCanvas<MapNode, Edge>
-        label="Project map"
+        label="Project canvas"
         minimap={editable}
         nodeTypes={NODE_TYPES}
         nodes={nodes}
@@ -301,6 +373,7 @@ export function ProjectMap({ project }: { project: Doc }) {
             ...layout,
             notes: layout.notes.filter((n) => !ids.has(n.id)),
             groups: layout.groups.filter((g) => !ids.has(g.id)),
+            shapes: layout.shapes.filter((s) => !ids.has(s.id)),
             edges: layout.edges.filter((e) => !ids.has(e.from) && !ids.has(e.to)),
           });
         }}

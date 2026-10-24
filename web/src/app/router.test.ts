@@ -57,8 +57,11 @@ test("every old path redirects to its new home", () => {
     ["/c/tasks/table", "/tasks/list"],
     ["/c/ideas", "/projects/ideas"],
     ["/c/projects", "/projects"],
-    ["/c/leetcode", "/projects/proj-leetcode/items"],
-    ["/c/leetcode/table", "/projects/proj-leetcode/items"],
+    ["/c/leetcode", "/projects/proj-leetcode"],
+    ["/c/leetcode/table", "/projects/proj-leetcode"],
+    ["/projects/proj-cave/items", "/projects/proj-cave"],
+    ["/projects/proj-cave/notes", "/projects/notes?project=proj-cave"],
+    ["/projects/proj-cave/map", "/projects/proj-cave/canvas"],
     ["/c/flows", "/flows"],
     ["/settings/flows", "/flows"],
     ["/settings/flows/flow-rent", "/flows/flow-rent"],
@@ -88,6 +91,8 @@ test("every old path redirects to its new home", () => {
   }
   for (const current of [
     "/projects/all",
+    "/projects/proj-cave/canvas",
+    "/projects/notes",
     "/money/overview",
     "/flows/flow-rent",
     "/diary",
@@ -112,7 +117,7 @@ test("anything after Projects that is not a tab is a project's page", () => {
     tab: "ideas",
     rest: [],
   });
-  expect(projectPath("proj-cave", "items")).toBe("/projects/proj-cave/items");
+  expect(projectPath("proj-cave", "board")).toBe("/projects/proj-cave/board");
 });
 
 test("links to a collection or a flow go straight to their new home", () => {

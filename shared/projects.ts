@@ -142,7 +142,13 @@ export const PARTS_COLLECTION: CollectionData = {
   views: [{ id: "table", name: "Table", type: "table", config: {} }],
 };
 
-/** What projects gain (M8 parts 2 and 3). */
+/** The project page's own fields (M11 part 6): where the work lives, and its Mermaid diagram. */
+export const PAGE_FIELDS: Field[] = [
+  { id: "lives_in", name: "Lives in", type: "text" },
+  { id: "diagram", name: "Diagram", type: "text" },
+];
+
+/** What projects gain (M8 parts 2 and 3, M11 part 6). */
 export const PROJECT_FIELDS: Field[] = [
   { id: "goal", name: "Goal", type: "text" },
   {
@@ -153,7 +159,20 @@ export const PROJECT_FIELDS: Field[] = [
   },
   { id: "pinned", name: "Pinned", type: "checkbox" },
   MAP_FIELD,
+  ...PAGE_FIELDS,
 ];
+
+/** Seed migration 18: projects gain `lives_in` and `diagram` when they lack them. */
+export function projectPageMigration(
+  get: (id: string) => Doc | undefined,
+): { id: string; kind: "collection"; data: Record<string, unknown> }[] {
+  const projects = get(PROJECTS);
+  const fields = projects?.kind === "collection" ? projects.data.fields : undefined;
+  if (!Array.isArray(fields) || projects?.data._deleted === true) return [];
+  const missing = PAGE_FIELDS.filter((f) => !(fields as Field[]).some((x) => x.id === f.id));
+  if (missing.length === 0) return [];
+  return [{ id: PROJECTS, kind: "collection", data: { fields: [...fields, ...missing] } }];
+}
 
 /** Collections that gain a `project` ref (notes join in M9). */
 export const LINKED = ["tasks", "ideas", "leetcode", "reminders", "payments", "money", "flows"];

@@ -14,7 +14,7 @@ import {
   TASK_FIELDS,
 } from "./payments.ts";
 import { mapMigration } from "./project-map.ts";
-import { DEFAULT_TEMPLATES, PARTS, PARTS_COLLECTION } from "./projects.ts";
+import { DEFAULT_TEMPLATES, PARTS, PARTS_COLLECTION, projectPageMigration } from "./projects.ts";
 import {
   LEETCODE_PROJECT,
   LEETCODE_PROJECT_DATA,
@@ -467,6 +467,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 16, docs: [], update: retireAiMigration },
   // M11 part 1: palette A replaces the neon seed colours still in place.
   { version: 17, docs: [], update: recolourMigration },
+  // M11 part 6: the project page's `lives_in` and `diagram` fields.
+  { version: 18, docs: [], update: projectPageMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

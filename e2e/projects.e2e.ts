@@ -95,6 +95,7 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   await idea.getByRole("button", { name: "Create project" }).click();
 
   await expect(page).toHaveURL(/\/projects\/[0-9A-Z]{26}$/);
+  const project = new URL(page.url()).pathname.split("/")[2] as string;
   await expect(page.getByRole("heading", { name })).toBeVisible();
   const parts = page.getByRole("region", { name: "Parts" });
   await expect(parts.getByRole("listitem")).toHaveText([/Plan/, /Build/, /Ship/]);
@@ -122,9 +123,55 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   await page.goto("/projects/ideas");
   await expect(idea.getByRole("link", { name: "Project" })).toBeVisible();
 
-  // LeetCode's old link lands on its project.
+  // Every project has the same tabs (M11 part 6): Overview, Board, Diagram, Canvas, Activity.
+  await page.goto(`/projects/${project}`);
+  const tabs = page.getByRole("navigation", { name: "Project tabs" });
+  await expect(tabs.getByRole("link")).toHaveText([
+    "Overview",
+    "Board",
+    "Diagram",
+    "Canvas",
+    "Activity",
+  ]);
+  await expect(page.getByRole("region", { name: "Parts" }).getByText("current")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Latest from the agent" })).toContainText(
+    "No agent has worked on this project yet.",
+  );
+  await page.getByLabel("Lives in").fill("github:alex/garden");
+  await page.getByLabel("Lives in").blur();
+  await expect(page.getByRole("region", { name: "Connected" })).toContainText("github:alex/garden");
+  await expect(page.locator(".project-meta")).toContainText("lives in github:alex/garden");
+
+  await tabs.getByRole("link", { name: "Diagram" }).click();
+  await expect(page).toHaveURL(/\/diagram$/);
+  await page.getByRole("button", { name: "Start from an example" }).click();
+  const diagram = page.getByRole("region", { name: "Diagram" });
+  await expect(diagram.locator("svg")).toBeVisible();
+  await expect(diagram.locator("svg")).toContainText("Ship");
+  await expect(diagram.locator("[style]")).toHaveCount(0);
+  await expect(diagram.locator("style")).toHaveCount(0);
+  await page.getByLabel("Mermaid").fill("wat\n  A --> B");
+  await expect(page.getByRole("alert")).toContainText("Invalid mermaid header");
+  // The last good render stays while the source is broken.
+  await expect(diagram.locator("svg")).toContainText("Ship");
+  await page.getByLabel("Mermaid").fill("flowchart LR\n  Seeds --> Beds");
+  await page.getByLabel("Mermaid").blur();
+  await expect(diagram.locator("svg")).toContainText("Seeds");
+  await page.reload();
+  await expect(page.getByLabel("Mermaid")).toHaveValue("flowchart LR\n  Seeds --> Beds");
+
+  await tabs.getByRole("link", { name: "Canvas" }).click();
+  await expect(page.getByRole("region", { name: "Project canvas" })).toBeVisible();
+  await tabs.getByRole("link", { name: "Activity" }).click();
+  await expect(page.getByRole("list", { name: "Project runs" })).toBeVisible();
+
+  // Old paths: Items is the Overview, Map is the Canvas, LeetCode's link lands on its project.
+  await page.goto(`/projects/${project}/items`);
+  await expect(page).toHaveURL(new RegExp(`/projects/${project}$`));
+  await page.goto(`/projects/${project}/map`);
+  await expect(page).toHaveURL(/\/canvas$/);
   await page.goto("/c/leetcode");
-  await expect(page).toHaveURL(/\/projects\/proj-leetcode\/items$/);
+  await expect(page).toHaveURL(/\/projects\/proj-leetcode$/);
   await expect(page.getByRole("heading", { name: "LeetCode" })).toBeVisible();
 
   // Leave the shared database as found: the task goes, so the Tasks board looks the same.

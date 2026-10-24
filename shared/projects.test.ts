@@ -3,7 +3,6 @@ import { validateFields } from "./fields.ts";
 import {
   DEFAULT_TEMPLATES,
   newProjectWrites,
-  overviewOf,
   partsTree,
   projectRef,
   promoteIdeaWrites,
@@ -103,48 +102,4 @@ test("the parts tree nests children under live parents; orphans become roots", (
     ["b", []],
     ["x1", []],
   ]);
-});
-
-test("an overview counts only the project's items, and its budget leaves transfers out", () => {
-  const p = "p1";
-  const items: Record<string, Doc[]> = {
-    parts: [
-      item("pa", "parts", { project: p, status: "done" }),
-      item("pb", "parts", { project: p, status: "active", due: "2026-11-02", _title: "Beta" }),
-      item("pc", "parts", { project: p, status: "dropped" }),
-      item("other", "parts", { project: "p2", status: "done" }),
-    ],
-    tasks: [
-      item("t1", "tasks", { project: p, status: "todo", due: "2026-10-20", _title: "First" }),
-      item("t2", "tasks", { project: p, status: "done", due: "2026-10-01" }),
-      item("t3", "tasks", { project: "p2", status: "todo" }),
-    ],
-    money: [
-      item("m1", "money", { project: p, direction: "expense", amount: 100, category: "food" }),
-      item("m2", "money", { project: p, direction: "expense", amount: 900, category: "invest" }),
-      item("m3", "money", { project: p, direction: "income", amount: 50 }),
-    ],
-    leetcode: [
-      item("l1", "leetcode", { project: p, status: "solved" }),
-      item("l2", "leetcode", { project: p, status: "queued" }),
-    ],
-  };
-  const itemsOf = (c: string) => items[c] ?? [];
-  const generic = overviewOf(p, DEFAULT_TEMPLATES.generic, itemsOf, new Set(["invest"]));
-  expect(generic.progress).toEqual({ done: 1, total: 2, of: "parts" });
-  expect(generic.budget).toEqual({ spent: 100, count: 1 });
-  expect(generic.tasks).toEqual([
-    { status: "todo", count: 1 },
-    { status: "done", count: 1 },
-  ]);
-  expect(generic.upcoming.map((u) => [u.title, u.kind])).toEqual([
-    ["First", "task"],
-    ["Beta", "part"],
-  ]);
-  expect(generic.counts).toEqual([
-    { collection: "tasks", count: 2 },
-    { collection: "ideas", count: 0 },
-  ]);
-  const learning = overviewOf(p, DEFAULT_TEMPLATES.learning, itemsOf, new Set());
-  expect(learning.progress).toEqual({ done: 1, total: 2, of: "leetcode" });
 });
