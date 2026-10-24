@@ -42,7 +42,7 @@ flowchart LR
 | Claude Code cloud sessions | Anthropic VM | change the code from the phone or browser; push branches and open PRs, never merge; no production access |
 | Laptop repo | the laptop (Linux), `~/code/jarvis` | where code is written and tested; Remote Control and `bun run deploy` run from here |
 
-**The app's structure** (M8): seven sections (Home, Money, Calendar, Tasks, Projects, Life, Settings), each with tabs, all from one registry (`web/src/app/sections.ts`) that the sidebar, the phone dock and the router read. Every collection belongs to one section or is reached only from Settings → Data. A project has its own page: Overview, Map (React Flow), Board, Activity (agents' runs) and Items; Projects → Activity lists every run, and Settings holds the agent tokens (Agents) and Flows.
+**The app's structure** (M11): six sections (Money, Calendar, Flows, Projects, Diary, Tasks) and Settings, each with tabs, all from one registry (`web/src/app/sections.ts`) that the rail, the phone dock and the router read; the app opens on the Scene (Projects). Every collection belongs to one section or is reached only from Settings → Data. A project has its own page: Overview, Board, Diagram, Canvas (React Flow) and Activity (agents' runs); Projects → Activity lists every run; Settings holds only general things (General, Devices & server, Notifications, Agents, Data).
 
 **Who gets in.** Every `/api` request needs the server token, and `/mcp` needs an agent token. Before any token check, the request guard refuses unknown hosts, foreign origins and non-JSON posts. The firewall lets in only 22, 80 and 443, and SSH takes keys only.
 
@@ -115,7 +115,7 @@ sequenceDiagram
 
 - **One job loop** runs the reminder sweep, scheduled flows, Telegram's long poll and the hourly backup check (`server/jobs/`).
 - **Flows** (`server/flows/`): scheduled ones run from that loop; item triggers run after the write that caused them commits (`Store.onApplied`). Each slot or change runs once (`flow_runs`), writes as `flow:<id>`, and never triggers another flow. Agents save flows through `save_flow`; one that changes existing items waits as `pending-approval`.
-- **`/system`** shows all of it: jobs and their runs, schedules for 7 days, flows, agents, devices, integrations and the notification log. `GET /api/system` (`server/system/report.ts`) answers with what only the server knows, by id, channel and key, never a secret; the rest comes from the device's copy.
+- **Settings → Devices & server** (`/settings/devices`) shows all of it: jobs and their runs, schedules for 7 days, flows, agents, devices, integrations and the notification log. `GET /api/system` (`server/system/report.ts`) answers with what only the server knows, by id, channel and key, never a secret; the rest comes from the device's copy.
 - **Channels sit behind one interface** (`server/notify/types.ts`): Web Push is the private default; Telegram is two-way for one linked chat; Discord is one-way. Each says what it needs ("needs keys", "needs linking", "webhook gone").
 - **Nothing is sent twice:** `notifications_sent` keeps every key; a snooze or the next repeat is a new key. A reminder more than 6 hours late after downtime is recorded as missed, not sent.
 - **No token in the service worker:** a notification's buttons open the app, which does the write.
@@ -132,7 +132,7 @@ flowchart LR
   R2 -- "cave-offsite check, weekly<br/>restore and verify" --> VB
 ```
 
-**Three copies.** The VPS's own backups, the encrypted copy in R2 (`/usr/local/sbin/cave-offsite`, from `deploy/cave-offsite`; `docs/hosting.md` step 14), and the laptop's pulled backups. `/system` and Settings show the last off-box backup and check, and the Cave notifies once when the copy is over 48 hours old or a check failed.
+**Three copies.** The VPS's own backups, the encrypted copy in R2 (`/usr/local/sbin/cave-offsite`, from `deploy/cave-offsite`; `docs/hosting.md` step 14), and the laptop's pulled backups. Settings → Devices & server shows the last off-box backup and check, and the Cave notifies once when the copy is over 48 hours old or a check failed.
 
 **Restore recovers a broken server; it doesn't undo edits.** After a restore, devices push back anything newer than the backup. To reverse a change, use undo on the Agents page or the item's history.
 
@@ -141,7 +141,7 @@ flowchart LR
 The local server and production never share data:
 - the local app runs at `http://127.0.0.1:3000`, a different origin, so its IndexedDB is separate;
 - the local database is a separate file;
-- it runs as `CAVE_ENV=dev` unless told otherwise, so a copy of real data sends no push, Telegram or Discord message: sends go to the Dev outbox in `/system`, and a `DEV` badge shows. Only the VPS sets `CAVE_ENV=production`.
+- it runs as `CAVE_ENV=dev` unless told otherwise, so a copy of real data sends no push, Telegram or Discord message: sends go to the Dev outbox under Settings → Devices & server → Notifications, and a `DEV` badge shows. Only the VPS sets `CAVE_ENV=production`.
 
 **Fake data instead** (and the only data a cloud session ever has): `bun run dev:seed` seeds `data/seed.db` and serves it, with the token `seed`.
 
@@ -248,7 +248,7 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 
 | Variable | Meaning |
 |---|---|
-| `CAVE_ENV` | `production`, `dev` or `test`; unset is `dev`, anything else refuses to start. Only `production` sends notifications; the others write them to the outbox `/system` lists and show a DEV or TEST badge |
+| `CAVE_ENV` | `production`, `dev` or `test`; unset is `dev`, anything else refuses to start. Only `production` sends notifications; the others write them to the outbox Settings → Devices & server lists and show a DEV or TEST badge |
 | `CAVE_HOST` | listen address, default `127.0.0.1`; any non-loopback host requires `CAVE_TOKEN` |
 | `PORT` | default 3000 |
 | `CAVE_DB_PATH` | default `data/cave.db` |
@@ -256,7 +256,7 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 | `CAVE_ALLOWED_HOSTS` | extra host names `/api` and `/mcp` answer to, comma-separated |
 | `CAVE_PUBLIC_ORIGIN` | the https origin behind a reverse proxy; requires `CAVE_TOKEN`, 32+ characters in production |
 | `BACKUP_DIR` | default `backups` next to the database |
-| `CAVE_DEPLOY_STATUS`, `CAVE_OFFSITE_STATUS` | the `status.json` files `cave-deploy` and `cave-offsite` write; Settings and `/system` show them, and the Cave alerts once when the off-box copy is over 48 hours old or its check failed |
+| `CAVE_DEPLOY_STATUS`, `CAVE_OFFSITE_STATUS` | the `status.json` files `cave-deploy` and `cave-offsite` write; Settings → Devices & server shows them, and the Cave alerts once when the off-box copy is over 48 hours old or its check failed |
 | `CAVE_VAPID_PUBLIC`, `CAVE_VAPID_PRIVATE`, `CAVE_VAPID_SUBJECT` | Web Push; all three or none (`bun run push-keys`) |
 | `CAVE_TELEGRAM_BOT_TOKEN`, `CAVE_DISCORD_WEBHOOK_URL` | optional channels; never logged or sent to a client |
 | `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-data`, `money-review` |
