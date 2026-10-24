@@ -1,7 +1,7 @@
 import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("the sidebar shows each of the seven sections once; a tab survives a reload; old links land in place", async ({
+test("the rail shows the six sections and Settings once; a tab survives a reload; old links land in place", async ({
   browser,
 }) => {
   const page = await (
@@ -10,12 +10,12 @@ test("the sidebar shows each of the seven sections once; a tab survives a reload
   await page.goto("/");
   const main = page.getByRole("navigation", { name: "Main" });
   await expect(main.getByRole("link")).toHaveText([
-    "Home",
     "Money",
     "Calendar",
-    "Tasks",
+    "Flows",
     "Projects",
-    "Life",
+    "Diary",
+    "Tasks",
     "Settings",
   ]);
 
@@ -31,9 +31,12 @@ test("the sidebar shows each of the seven sections once; a tab survives a reload
   await expect(page.getByRole("region", { name: "Payments by due date" })).toBeVisible();
 
   for (const [from, to] of [
-    ["/c/journal", /\/life\/diary$/],
+    ["/", /\/projects\/all$/],
+    ["/c/journal", /\/diary\/write$/],
+    ["/life/habits", /\/diary\/habits$/],
     ["/agents", /\/settings\/agents$/],
-    ["/ai/flows/flow-salary", /\/settings\/flows\/flow-salary$/],
+    ["/settings/flows/flow-rent", /\/flows\/flow-rent$/],
+    ["/ai/flows/flow-salary", /\/flows\/flow-salary$/],
     ["/ai/activity", /\/projects\/activity$/],
     ["/system/jobs", /\/settings\/system\/jobs$/],
     ["/c/proposals", /\/settings\/data\/proposals$/],

@@ -90,33 +90,6 @@ export function RadarPage() {
   );
 }
 
-/** Home's card: the three newest For you findings. */
-export function RadarCard() {
-  const { tabs } = useRadar();
-  const top = tabs.forYou.slice(0, 3);
-  if (top.length === 0) return null;
-  return (
-    <section className="panel" aria-label="Radar" style={{ padding: 16, display: "grid", gap: 6 }}>
-      <a className="k" href="/projects/radar" style={{ textDecoration: "none" }}>
-        Radar
-      </a>
-      {top.map((d) => {
-        const url = typeof d.data.url === "string" ? d.data.url : "";
-        return (
-          <span key={d.id} style={{ display: "flex", gap: 8, alignItems: "baseline", minWidth: 0 }}>
-            <a className="link" href={url} target="_blank" rel="noopener noreferrer">
-              {titleOf(d)}
-            </a>
-            <span className="num muted" style={{ fontSize: 11 }}>
-              {domainOf(url)}
-            </span>
-          </span>
-        );
-      })}
-    </section>
-  );
-}
-
 function Finding({ item, interests }: { item: Doc; interests: Interest[] }) {
   const { local } = useCave();
   const projects = useItems(local.db, "projects");

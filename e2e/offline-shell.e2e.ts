@@ -20,9 +20,9 @@ test("after one online visit the app opens offline with its data", async ({ brow
 
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "What's the move?" })).toBeVisible();
-  // The spent tile counts this month's entries from IndexedDB, so it shows without the server.
-  await expect(page.getByRole("link", { name: /Spent/ })).toContainText("entries");
+  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+  // The Due card reads IndexedDB, so it shows without the server.
+  await expect(page.getByRole("region", { name: "Due" })).toBeVisible();
   await expect(syncBadge(page)).toHaveText("OFFLINE · SAVED HERE");
 
   await page.goto("/c/money/table");

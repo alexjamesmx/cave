@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { ownerOf, sectionById, type Tab, tabPath } from "./sections.ts";
+import { LANDING, ownerOf, sectionById, type Tab, tabPath } from "./sections.ts";
 
 export type Route =
   /** A section's tab; `rest` is what follows it (a flow id, a collection in Data, a sub-tab). */
@@ -20,14 +20,19 @@ const enc = (...segments: string[]) => `/${segments.map(encodeURIComponent).join
 export function redirectOf(pathname: string): string | undefined {
   const p = parts(pathname);
   const [first, second, third] = p;
+  // Home is gone (M11): the app opens on Projects.
+  if (p.length === 0) return LANDING;
   if (first === "agents" && p.length === 1) return "/settings/agents";
-  if (first === "flows") return flowPath(second);
-  // The AI section (M8 to M10): agents and flows moved to Settings, Activity to Projects.
+  // The AI section (M8 to M10): agents to Settings, flows to their section, Activity to Projects.
   if (first === "ai") {
     if (second === "flows") return flowPath(third);
     if (second === "activity") return "/projects/activity";
     return "/settings/agents";
   }
+  // Flows lived under Settings from M10 to M11.
+  if (first === "settings" && second === "flows") return flowPath(third);
+  // Life is Diary since M11; its Diary tab is Write.
+  if (first === "life") return second === "diary" ? "/diary/write" : enc("diary", ...p.slice(1));
   if (first === "system") return second ? enc("settings", "system", second) : "/settings/system";
   // Wealth is Net worth since M7c.
   if (first === "money" && second === "wealth") return "/money/net-worth";
@@ -53,13 +58,15 @@ export function parseRoute(pathname: string): Route {
   const redirect = redirectOf(pathname);
   if (redirect) return { name: "redirect", to: redirect };
   const p = parts(pathname);
-  if (p.length === 0) return { name: "section", section: "home", tab: "home", rest: [] };
   if (p[0] === "r" && p[1] && p.length === 2) return { name: "reminder", id: p[1] };
   const section = sectionById(p[0] as string);
-  if (!section || section.id === "home") return { name: "not-found" };
+  if (!section) return { name: "not-found" };
   // `/projects/<id>/<tab>`: anything after Projects that is not a tab is a project.
   if (section.id === "projects" && p[1] && !section.tabs.some((t) => t.id === p[1]))
     return { name: "section", section: "projects", tab: "project", rest: p.slice(1) };
+  // `/flows/<id>`: anything after Flows that is not a tab is a flow, open in the list.
+  if (section.id === "flows" && p[1] && !section.tabs.some((t) => t.id === p[1]))
+    return { name: "section", section: "flows", tab: "list", rest: [p[1]] };
   // An unknown tab falls back to the section's first.
   const tab = section.tabs.find((t) => t.id === p[1]) ?? (section.tabs[0] as Tab);
   const rest = section.tabs.some((t) => t.id === p[1]) ? p.slice(2) : [];
@@ -75,7 +82,7 @@ export const collectionPath = (collection: string, view?: string) => {
 export const projectPath = (id: string, tab?: string) =>
   tab ? enc("projects", id, tab) : enc("projects", id);
 
-export const flowPath = (id?: string) => (id ? enc("settings", "flows", id) : "/settings/flows");
+export const flowPath = (id?: string) => (id ? enc("flows", id) : "/flows");
 
 // pushState fires no event, so navigation announces itself for subscribers.
 const NAVIGATE = "cave:navigate";

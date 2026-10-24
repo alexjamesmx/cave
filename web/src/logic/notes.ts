@@ -119,14 +119,3 @@ export function links(notes: Doc[], note: Doc) {
   );
   return { outgoing, backlinks };
 }
-
-/** The five notes changed most recently, newest first. */
-export const recentNotes = (notes: Doc[], stampOf: (d: Doc) => string) =>
-  notes
-    .filter(live)
-    .sort((a, b) => (stampOf(a) < stampOf(b) ? 1 : stampOf(a) > stampOf(b) ? -1 : 0))
-    .slice(0, 5);
-
-/** A doc's newest stamp: when it last changed anywhere. */
-export const lastStamp = (d: Doc) =>
-  Object.values(d.stamps).reduce((max, s) => (s > max ? s : max), "");

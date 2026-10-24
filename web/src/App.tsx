@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { parseRoute, replacePath, usePathname } from "./app/router.ts";
-import { sectionById } from "./app/sections.ts";
+import { SECTIONS, type Section, sectionById } from "./app/sections.ts";
 import { ReminderLink } from "./pages/ReminderLink.tsx";
 import { SectionPage } from "./pages/SectionPage.tsx";
 import { Shell } from "./ui/Shell.tsx";
@@ -17,7 +17,7 @@ export function App() {
     <Shell route={route}>
       {route.name === "section" && (
         <SectionPage
-          section={sectionById(route.section) ?? (sectionById("home") as never)}
+          section={sectionById(route.section) ?? (SECTIONS[0] as Section)}
           tabId={route.tab}
           rest={route.rest}
         />

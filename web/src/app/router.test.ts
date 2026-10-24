@@ -16,15 +16,15 @@ const section = (s: string, tab: string, rest: string[] = []) => ({
 });
 
 test("sections and their tabs; an unknown tab falls back to the first", () => {
-  expect(parseRoute("/")).toEqual(section("home", "home"));
+  expect(parseRoute("/")).toEqual({ name: "redirect", to: "/projects/all" });
   expect(parseRoute("/money")).toEqual(section("money", "overview"));
   expect(parseRoute("/money/payments")).toEqual(section("money", "payments"));
   expect(parseRoute("/money/review")).toEqual(section("money", "review"));
   expect(parseRoute("/money/nope")).toEqual(section("money", "overview"));
   expect(parseRoute("/calendar/agenda")).toEqual(section("calendar", "agenda"));
-  expect(parseRoute("/settings/flows/flow-rent")).toEqual(
-    section("settings", "flows", ["flow-rent"]),
-  );
+  expect(parseRoute("/flows/flow-rent")).toEqual(section("flows", "list", ["flow-rent"]));
+  expect(parseRoute("/flows/list")).toEqual(section("flows", "list"));
+  expect(parseRoute("/diary")).toEqual(section("diary", "write"));
   expect(parseRoute("/projects/activity")).toEqual(section("projects", "activity", []));
   expect(parseRoute("/settings/data/money/untagged")).toEqual(
     section("settings", "data", ["money", "untagged"]),
@@ -45,26 +45,30 @@ test("every old path redirects to its new home", () => {
     ["/c/wealth", "/money/net-worth"],
     ["/money/wealth", "/money/net-worth"],
     ["/c/reminders", "/calendar/reminders"],
-    ["/c/journal", "/life/diary"],
-    ["/c/journal/habits", "/life/habits"],
+    ["/", "/projects/all"],
+    ["/c/journal", "/diary/write"],
+    ["/c/journal/habits", "/diary/habits"],
+    ["/life", "/diary"],
+    ["/life/diary", "/diary/write"],
+    ["/life/habits", "/diary/habits"],
     ["/c/tasks/board", "/tasks/board"],
     ["/c/tasks/table", "/tasks/list"],
     ["/c/ideas", "/projects/ideas"],
     ["/c/projects", "/projects"],
     ["/c/leetcode", "/projects/proj-leetcode/items"],
     ["/c/leetcode/table", "/projects/proj-leetcode/items"],
-    ["/c/flows", "/settings/flows"],
+    ["/c/flows", "/flows"],
+    ["/settings/flows", "/flows"],
+    ["/settings/flows/flow-rent", "/flows/flow-rent"],
     ["/c/ai", "/settings/data/ai"],
     ["/c/proposals", "/settings/data/proposals"],
     ["/agents", "/settings/agents"],
-    ["/flows", "/settings/flows"],
-    ["/flows/flow-rent", "/settings/flows/flow-rent"],
     ["/ai", "/settings/agents"],
     ["/ai/setup", "/settings/agents"],
     ["/ai/overview", "/settings/agents"],
     ["/ai/agents", "/settings/agents"],
-    ["/ai/flows", "/settings/flows"],
-    ["/ai/flows/flow-rent", "/settings/flows/flow-rent"],
+    ["/ai/flows", "/flows"],
+    ["/ai/flows/flow-rent", "/flows/flow-rent"],
     ["/ai/activity", "/projects/activity"],
     ["/system", "/settings/system"],
     ["/system/jobs", "/settings/system/jobs"],
@@ -73,7 +77,14 @@ test("every old path redirects to its new home", () => {
     expect([from, redirectOf(from)]).toEqual([from, to]);
     expect(parseRoute(from)).toEqual({ name: "redirect", to });
   }
-  for (const current of ["/", "/money/overview", "/settings/agents", "/r/x", "/calendar"])
+  for (const current of [
+    "/projects/all",
+    "/money/overview",
+    "/flows/flow-rent",
+    "/diary",
+    "/r/x",
+    "/calendar",
+  ])
     expect(redirectOf(current)).toBeUndefined();
 });
 
@@ -97,8 +108,8 @@ test("links to a collection or a flow go straight to their new home", () => {
   expect(collectionPath("tasks", "board")).toBe("/tasks/board");
   expect(collectionPath("money")).toBe("/money/overview");
   expect(collectionPath("proposals")).toBe("/settings/data/proposals");
-  expect(flowPath("flow-rent")).toBe("/settings/flows/flow-rent");
-  expect(flowPath()).toBe("/settings/flows");
+  expect(flowPath("flow-rent")).toBe("/flows/flow-rent");
+  expect(flowPath()).toBe("/flows");
 });
 
 test("C opens the calendar, except while typing or with a modifier", () => {

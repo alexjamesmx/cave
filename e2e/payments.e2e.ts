@@ -1,4 +1,4 @@
-import { ownerContext } from "./helpers.ts";
+import { openAsk, ownerContext } from "./helpers.ts";
 import { expect, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
@@ -22,6 +22,7 @@ test("a card payment marked paid logs the expense and moves to next month; Undo 
     .toISOString()
     .slice(0, 10);
 
+  await openAsk(page);
   await page.getByRole("button", { name: "Payment", exact: true }).click();
   const form = page.getByRole("form", { name: "Payment" });
   await form.getByLabel("Title").fill("Nu card e2e");
@@ -82,6 +83,7 @@ test("a repeating task marked done comes back on its next date instead of piling
   const page = await (await ownerContext(browser)).newPage();
   await page.goto("/");
   const due = await localAt(page, 1);
+  await openAsk(page);
   await page.getByRole("button", { name: "Task", exact: true }).click();
   const form = page.getByRole("form", { name: "Task" });
   await form.getByLabel("Title").fill("Pay rent e2e");

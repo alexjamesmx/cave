@@ -1,4 +1,4 @@
-import { ownerContext } from "./helpers.ts";
+import { openAsk, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("Settings → Lists: rename, emoji, colour, reorder, archive and restore; payments share money's lists", async ({
@@ -54,7 +54,8 @@ test("Settings → Lists: rename, emoji, colour, reorder, archive and restore; p
   // A new account typed in the money form joins the list the payment form offers.
   const account = `E2E bank ${Date.now()}`;
   await page.goto("/");
-  await page.getByRole("button", { name: "Expense" }).first().click();
+  await openAsk(page);
+  await page.getByRole("button", { name: "Expense" }).click();
   const form = page.getByRole("form", { name: /Expense/ });
   await form.getByLabel("Amount").fill("10");
   await form.getByLabel("Title").fill("Lists e2e");
@@ -62,6 +63,7 @@ test("Settings → Lists: rename, emoji, colour, reorder, archive and restore; p
   await form.getByLabel("New account").fill(account);
   await form.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Lists e2e" })).toBeVisible();
+  await openAsk(page);
   await page.getByRole("button", { name: "Payment", exact: true }).click();
   const pay = page.getByRole("form", { name: "Payment" });
   await expect(pay.getByLabel("Account").locator("option", { hasText: account })).toHaveCount(1);

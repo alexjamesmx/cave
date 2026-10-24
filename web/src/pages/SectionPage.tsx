@@ -1,16 +1,17 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useCave } from "../app/context.ts";
 import { projectPath } from "../app/router.ts";
 import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections.ts";
+import { withActiveFields } from "../logic/field-edits.ts";
 import { titleOf } from "../logic/views.ts";
-import { useItems } from "../store/queries.ts";
+import { useCollections, useItems } from "../store/queries.ts";
+import { DueCard } from "../ui/DueCard.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { ActivityPage } from "./Activity.tsx";
 import { Agents } from "./Agents.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { Flows } from "./Flows.tsx";
-import { Home } from "./Home.tsx";
 import { SettingsLists } from "./Lists.tsx";
 import { NotesPage } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
@@ -28,12 +29,16 @@ import { Transactions } from "./Transactions.tsx";
 
 /** Each page tab's component; \`rest\` is the path after the tab (a flow id, a collection). */
 const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
-  home: () => <Home />,
   "calendar-month": () => <Calendar mode="month" />,
   "calendar-agenda": () => <Calendar mode="agenda" />,
   review: () => <ReviewCategories />,
   "money-transactions": () => <Transactions />,
-  "projects-all": () => <ProjectsAll />,
+  "projects-all": () => (
+    <>
+      <LandingDue />
+      <ProjectsAll />
+    </>
+  ),
   "projects-ideas": () => <IdeasPage />,
   radar: () => <RadarPage />,
   notes: (rest) => <NotesPage {...(rest[0] ? { noteId: rest[0] } : {})} />,
@@ -68,7 +73,6 @@ export function SectionPage({
     ) : (
       PAGES[tab.page](rest)
     );
-  if (section.id === "home") return content;
   const tabs = visibleTabs(section);
   // Pinned projects sit beside All and Ideas.
   const extra = section.id === "projects" ? (pinned ?? []) : [];
@@ -115,4 +119,11 @@ export function SectionPage({
 function usePinnedProjects() {
   const projects = useItems(useCave().local.db, "projects");
   return projects?.filter((p) => p.data.pinned === true);
+}
+
+/** What is due, on the screen the app opens on; the "needs you" strip (M11 part 4) replaces it. */
+function LandingDue() {
+  const stored = useCollections(useCave().local.db);
+  const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
+  return collections ? <DueCard collections={collections} /> : null;
 }

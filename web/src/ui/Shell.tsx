@@ -1,13 +1,15 @@
 import type { ReactNode } from "react";
+import { openAsk } from "../app/ask.ts";
 import type { Route } from "../app/router.ts";
 import { SECTIONS, type Section } from "../app/sections.ts";
+import { AskSheet } from "./AskSheet.tsx";
 import { Dock } from "./Dock.tsx";
 import { EnvBadge } from "./EnvBadge.tsx";
 import { Icon } from "./icon.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
 /**
- * The rail (M11): the mark, one icon per section from the registry with Settings at the
+ * The rail (M11): the mark, Ask, one icon per section from the registry with Settings at the
  * bottom, then the sync state. Each link keeps its label for assistive tech and shows it
  * beside the icon on hover or focus; the dock reads the same registry on a phone.
  */
@@ -31,6 +33,15 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         <a className="brand-mark" href="/" aria-label="Cave" data-label="Cave">
           <Icon name="zap" size={16} strokeWidth={2.2} />
         </a>
+        <button
+          type="button"
+          className="rail-ask"
+          aria-label="Ask"
+          data-label="Ask · ⌘K"
+          onClick={() => openAsk()}
+        >
+          <Icon name="message-circle" size={18} />
+        </button>
         <nav aria-label="Main" className="rail-nav">
           {SECTIONS.filter((s) => s.id !== "settings").map(link)}
           <div className="rail-end">{SECTIONS.filter((s) => s.id === "settings").map(link)}</div>
@@ -45,6 +56,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </div>
       </main>
       <Dock />
+      <AskSheet />
       <EnvBadge />
     </div>
   );

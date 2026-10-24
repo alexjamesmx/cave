@@ -8,8 +8,6 @@ import { useNow, useReminderZone } from "../app/hooks.ts";
 import { parseWhen } from "../logic/when-field.ts";
 import type { CollectionDoc } from "../store/queries.ts";
 
-export type QuickKind = "expense" | "task" | "reminder" | "payment" | "note";
-
 interface FormProps {
   collections: CollectionDoc[];
   onDone(message: string): void;

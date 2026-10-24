@@ -43,7 +43,7 @@ export function offOriginRequests(context: BrowserContext, baseURL: string): str
   return seen;
 }
 
-/** Home → Expense (or Income): the money form, saved. `category` is its shown name. */
+/** Ask → Expense (or Income): the money form, saved. `category` is its shown name. */
 export async function addMoney(
   page: Page,
   entry: {
@@ -54,9 +54,9 @@ export async function addMoney(
     yesterday?: boolean;
   },
 ) {
-  if (new URL(page.url()).pathname !== "/") await page.goto("/");
-  await page.getByRole("button", { name: "Expense" }).first().click();
-  const form = page.getByRole("form", { name: /Expense|Income/ });
+  const sheet = await openAsk(page);
+  await sheet.getByRole("button", { name: "Expense" }).click();
+  const form = sheet.getByRole("form", { name: /Expense|Income/ });
   if (entry.income) await form.getByRole("button", { name: "Income", exact: true }).click();
   await form.getByLabel("Amount").fill(String(entry.amount));
   await form.getByLabel("Title").fill(entry.title);
@@ -66,11 +66,19 @@ export async function addMoney(
   await form.getByRole("button", { name: "Save" }).click();
 }
 
-/** Home → Reminder: title and plain-language "When"; returns the form for its preview. */
+/** Opens the Ask sheet (the rail.s or the dock.s Ask), unless it is already open. */
+export async function openAsk(page: Page) {
+  const sheet = page.getByRole("dialog", { name: "Ask" });
+  if ((await sheet.count()) === 0)
+    await page.getByRole("button", { name: "Ask", exact: true }).first().click();
+  return sheet;
+}
+
+/** Ask → Reminder: title and plain-language "When"; returns the form for its preview. */
 export async function fillReminder(page: Page, title: string, when: string) {
-  if (new URL(page.url()).pathname !== "/") await page.goto("/");
-  const form = page.getByRole("form", { name: "Reminder" });
-  if ((await form.count()) === 0) await page.getByRole("button", { name: "Reminder" }).click();
+  const sheet = await openAsk(page);
+  const form = sheet.getByRole("form", { name: "Reminder" });
+  if ((await form.count()) === 0) await sheet.getByRole("button", { name: "Reminder" }).click();
   await form.getByLabel("Title").fill(title);
   await form.getByLabel("When").fill(when);
   return form;

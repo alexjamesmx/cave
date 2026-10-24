@@ -71,8 +71,4 @@ test("agent findings rank into For you with chips; Save offline makes one inert 
   await expect(note.locator(".markdown img")).toHaveCount(0);
   expect(await page.title()).not.toBe("owned");
   await context.setOffline(false);
-  await page.goto("/");
-  const card = page.getByRole("region", { name: "Radar" });
-  await expect(card).toContainText(crypto);
-  await expect(card).not.toContainText(llm);
 });

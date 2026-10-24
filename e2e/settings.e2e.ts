@@ -31,10 +31,5 @@ test("the owner's name reaches the greeting; Settings shows the server and downl
   const exported = JSON.parse(await (await file.createReadStream()).toArray().then(String));
   expect(exported.format).toBe(1);
 
-  // A second device gets the name through sync.
-  const phone = await (await ownerContext(browser)).newPage();
-  await phone.goto("/");
-  await expect(phone.getByText(/^Good (morning|afternoon|evening), Alex · /)).toBeVisible();
-
   expect(foreign).toEqual([]);
 });

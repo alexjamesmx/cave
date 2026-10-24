@@ -1,14 +1,6 @@
 import { expect, test } from "bun:test";
 import type { Doc } from "../../../shared/types.ts";
-import {
-  folderTree,
-  inFolder,
-  lastStamp,
-  links,
-  noteByTitle,
-  recentNotes,
-  searchNotes,
-} from "./notes.ts";
+import { folderTree, inFolder, links, noteByTitle, searchNotes } from "./notes.ts";
 
 const note = (
   id: string,
@@ -67,11 +59,4 @@ test("wikilinks resolve by title ignoring case; backlinks list who links here", 
   ]);
   expect(backlinks).toEqual([]);
   expect(links(notes, notes[0] as Doc).backlinks.map((n) => n.id)).toEqual(["n2", "n5"]);
-});
-
-test("recent notes are the five changed last", () => {
-  const many = Array.from({ length: 7 }, (_, i) =>
-    note(`r${i}`, `Note ${i}`, "", "", {}, `000000000000${i}:0000:t`),
-  );
-  expect(recentNotes(many, lastStamp).map((n) => n.id)).toEqual(["r6", "r5", "r4", "r3", "r2"]);
 });

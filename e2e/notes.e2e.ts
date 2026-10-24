@@ -84,12 +84,10 @@ test("an agent's note holding HTML shows it as text: no element, no CSP violatio
   expect(await page.title()).not.toBe("owned");
 });
 
-test("N on Home opens a quick note; it lands in the Inbox and on Recent notes", async ({
-  browser,
-}) => {
+test("N opens a quick note from anywhere; it lands in the Inbox", async ({ browser }) => {
   const page = await (await ownerContext(browser)).newPage();
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "What's the move?" })).toBeVisible();
+  await page.goto("/projects/all");
+  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
   // The shortcut ignores keys typed into a field, so nothing may have focus.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("n");
@@ -102,6 +100,4 @@ test("N on Home opens a quick note; it lands in the Inbox and on Recent notes", 
   await expect(
     page.getByRole("article", { name: `Note ${title}` }).getByLabel("Folder"),
   ).toHaveValue("Inbox");
-  await page.goto("/");
-  await expect(page.getByRole("region", { name: "Recent notes" })).toContainText(title);
 });

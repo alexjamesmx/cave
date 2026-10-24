@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Field } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { doneInLast, entriesByDay, habitsThisWeek, streak } from "./habits.ts";
+import { doneInLast, entriesByDay, streak } from "./habits.ts";
 import { leetcodeProgress } from "./progress.ts";
 import { applyFilter, defaultSort, groupBy, readFilter } from "./views.ts";
 import { wealthSummary } from "./wealth.ts";
@@ -85,23 +85,4 @@ test("leetcode progress per status and difficulty", () => {
     { difficulty: "hard", solved: 0, total: 0 },
   ]);
   expect(p.recentlySolved.map((d) => d.data.solved_at)).toEqual(["2026-10-05", "2026-10-01"]);
-});
-
-test("habits this week count Monday to today", () => {
-  const entry = (date: string, data: Record<string, unknown>): Doc => ({
-    id: date,
-    kind: "item",
-    collection: "journal",
-    data: { date, ...data },
-    stamps: {},
-    actor: "test",
-  });
-  const byDay = entriesByDay([
-    entry("2026-10-11", { gym: true, read: true }), // Sunday: last week
-    entry("2026-10-12", { gym: true }),
-    entry("2026-10-15", { gym: true, read: true }),
-  ]);
-  // Thursday the 15th: Mon to Thu, two habits.
-  expect(habitsThisWeek(byDay, ["gym", "read"], "2026-10-15")).toEqual({ done: 3, possible: 8 });
-  expect(habitsThisWeek(byDay, ["gym", "read"], "2026-10-12")).toEqual({ done: 1, possible: 2 });
 });
