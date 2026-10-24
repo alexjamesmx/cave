@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { formatInterests, interestsOf, parseInterests } from "../../../../shared/radar.ts";
 import { useCave } from "../../app/context.ts";
 import { useReminderZone } from "../../app/hooks.ts";
 import { dockOf, LANDING, SECTIONS } from "../../app/sections.ts";
@@ -26,7 +25,6 @@ export function SettingsGeneral() {
       <ReminderTime />
       <Look />
       <PhoneDock />
-      <RadarInterests />
     </>
   );
 }
@@ -229,35 +227,6 @@ function PhoneDock() {
         current={dock}
         onSave={(ids) => void local.write(SETTINGS, { dock: ids })}
       />
-    </Panel>
-  );
-}
-
-/** The radar's interests; they move to Projects → Ideas with M11 part 8. */
-function RadarInterests() {
-  const { local } = useCave();
-  const settings = useDoc(local.db, "settings");
-  const text = formatInterests(interestsOf(settings?.data));
-  return (
-    <Panel>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className="k">Radar interests</span>
-        <textarea
-          key={text}
-          className="input"
-          rows={6}
-          defaultValue={text}
-          onBlur={(e) => {
-            const next = parseInterests(e.target.value);
-            if (formatInterests(next) !== text)
-              void local.write(SETTINGS, { radarInterests: next });
-          }}
-        />
-      </label>
-      <span className="muted" style={{ fontSize: 13 }}>
-        One per line, as Name: keyword, keyword. A finding matches when an agent tags it with the
-        name or a keyword is a whole word of its title or domain.
-      </span>
     </Panel>
   );
 }

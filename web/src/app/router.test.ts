@@ -34,6 +34,7 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/money/lists")).toEqual(section("money", "lists"));
   expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
   expect(parseRoute("/radar")).toEqual({ name: "not-found" });
+  expect(parseRoute("/diary/months")).toEqual(section("diary", "months"));
 });
 
 test("every old path redirects to its new home", () => {
@@ -59,6 +60,7 @@ test("every old path redirects to its new home", () => {
     ["/c/projects", "/projects"],
     ["/c/leetcode", "/projects/proj-leetcode"],
     ["/c/leetcode/table", "/projects/proj-leetcode"],
+    ["/projects/radar", "/projects/ideas?bucket=finds"],
     ["/projects/proj-cave/items", "/projects/proj-cave"],
     ["/projects/proj-cave/notes", "/projects/notes?project=proj-cave"],
     ["/projects/proj-cave/map", "/projects/proj-cave/canvas"],

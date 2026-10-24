@@ -17,7 +17,7 @@ import { useCollections, useItems } from "../store/queries.ts";
 import { FieldInput, OptionChip } from "../ui/fields.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { MarkdownView } from "../ui/Markdown.tsx";
-import { projectFilterOf } from "../ui/ProjectFilter.tsx";
+import { ProjectFilter, projectFilterOf } from "../ui/ProjectFilter.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
 const notePath = (id: string, project?: string) =>
@@ -115,6 +115,7 @@ export function NotesPage({ noteId }: { noteId?: string }) {
   return (
     <div className="notes">
       <aside className="panel notes-side" aria-label="Notes">
+        <ProjectFilter value={project} />
         <input
           className="input"
           type="search"

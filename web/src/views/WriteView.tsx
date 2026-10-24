@@ -1,7 +1,9 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { shortDay } from "../../../shared/dates.ts";
 import { newId } from "../../../shared/ids.ts";
-import { useFollowing, useSaver, useToday } from "../app/hooks.ts";
+import { useSaver, useToday } from "../app/hooks.ts";
+import { useSearch } from "../app/router.ts";
+import { pick, shown } from "../logic/follow.ts";
 import { entriesByDay, previousDay } from "../logic/habits.ts";
 import { Icon } from "../ui/icon.tsx";
 import { MarkdownField } from "../ui/MarkdownField.tsx";
@@ -16,7 +18,13 @@ const nextDay = (day: string) => {
 /** The journal's diary page: one entry per day, habits as toggles, text saved on blur. */
 export function WriteView({ collection, items }: ViewProps) {
   const today = useToday();
-  const [day, setDay] = useFollowing(today);
+  // `?day=` opens a day (Months links here); otherwise the view follows today.
+  const asked = new URLSearchParams(useSearch()).get("day");
+  const [picked, setPicked] = useState(
+    asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : undefined,
+  );
+  const day = shown(picked, today);
+  const setDay = (value: string) => setPicked(pick(value, today));
   const saver = useSaver(collection.id);
   const entry = useMemo(() => entriesByDay(items).get(day), [items, day]);
   const habits = collection.data.fields.filter((f) => f.type === "checkbox");

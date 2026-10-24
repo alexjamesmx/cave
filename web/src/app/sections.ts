@@ -26,9 +26,9 @@ export type PageId =
   | "projects-all"
   | "projects-ideas"
   | "notes"
-  | "radar"
   | "project"
   | "activity"
+  | "diary-months"
   | "flows"
   | "flows-list"
   | "flows-runs"
@@ -130,7 +130,6 @@ export const SECTIONS: Section[] = [
       page("scene", "Scene", "projects-scene"),
       page("all", "All", "projects-all"),
       page("ideas", "Ideas", "projects-ideas"),
-      page("radar", "Radar", "radar"),
       page("notes", "Notes", "notes"),
       page("activity", "Activity", "activity"),
       // One project's page, at `/projects/<id>/<tab>`; pinned ones also show as tabs.
@@ -147,6 +146,7 @@ export const SECTIONS: Section[] = [
     tabs: [
       view("write", "Write", "journal", "write"),
       view("habits", "Habits", "journal", "habits"),
+      page("months", "Months", "diary-months"),
     ],
     owns: ["journal"],
   },

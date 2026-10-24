@@ -11,6 +11,7 @@ import { NeedsYou } from "../ui/NeedsYou.tsx";
 import { ActivityPage } from "./Activity.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
+import { DiaryMonths } from "./DiaryMonths.tsx";
 import { FlowList } from "./FlowList.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
@@ -18,7 +19,6 @@ import { MoneyLists } from "./MoneyLists.tsx";
 import { NotesPage } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
-import { RadarPage } from "./Radar.tsx";
 import { ReviewCategories } from "./ReviewCategories.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
 import { SettingsData } from "./settings/Data.tsx";
@@ -47,7 +47,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
     </>
   ),
   "projects-ideas": () => <IdeasPage />,
-  radar: () => <RadarPage />,
+  "diary-months": () => <DiaryMonths />,
   notes: (rest) => <NotesPage {...(rest[0] ? { noteId: rest[0] } : {})} />,
   project: (rest) => <ProjectPage rest={rest} />,
   activity: () => <ActivityPage />,

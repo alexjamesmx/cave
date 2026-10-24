@@ -42,6 +42,8 @@ export function redirectOf(pathname: string): string | undefined {
     return systemPath(first === "system" ? second : third);
   // Wealth is Net worth since M7c.
   if (first === "money" && second === "wealth") return "/money/net-worth";
+  // The Radar page is the Ideas page's "Agent finds" bucket since M11 part 8.
+  if (first === "projects" && second === "radar") return "/projects/ideas?bucket=finds";
   // A project's Items and Notes tabs went with M11 part 6; its Map is the Canvas.
   if (first === "projects" && second && third && !isProjectsTab(second)) {
     if (third === "items") return enc("projects", second);

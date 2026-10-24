@@ -2061,3 +2061,68 @@ a.btn {
 .flow-edge-else .react-flow__edge-text {
   fill: var(--muted);
 }
+
+/* Diary → Months (M11 part 8): a dot for a written day, a pip per habit under it. */
+.calendar.months .day {
+  min-height: 58px;
+  padding: 6px;
+  gap: 4px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.calendar.months .day.has-entry {
+  background: color-mix(in srgb, var(--wait) 10%, transparent);
+}
+
+.calendar.months .day:hover {
+  border-color: var(--muted);
+}
+
+.entry-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--wait);
+}
+
+.habit-strip {
+  display: flex;
+  gap: 3px;
+  margin-top: auto;
+}
+
+.habit-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.habit-pip.on {
+  background: var(--ok);
+}
+
+/* A task that belongs to a project carries the Projects colour on its card's edge. */
+.board-card.has-project {
+  border-left: 3px solid var(--vio);
+}
+
+/* Ideas buckets (M11 part 8). */
+.buckets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.buckets .chip {
+  cursor: pointer;
+  border: 0;
+  color: var(--text);
+  background: var(--on);
+}
+
+.buckets .chip[aria-pressed="true"] {
+  color: var(--on-accent);
+  background: var(--accent);
+}

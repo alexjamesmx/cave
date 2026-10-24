@@ -2,9 +2,11 @@ import { useState } from "react";
 import { newId } from "../../../shared/ids.ts";
 import {
   domainOf,
+  formatInterests,
   type Interest,
   interestsOf,
   matchedInterests,
+  parseInterests,
   RADAR,
   radarTabs,
   saveWrites,
@@ -14,7 +16,7 @@ import { useCave } from "../app/context.ts";
 import { navigate, setSearch, useSearch } from "../app/router.ts";
 import { titleOf } from "../logic/views.ts";
 import { useDoc, useItems } from "../store/queries.ts";
-import { Icon } from "../ui/icon.tsx";
+import { Icon } from "./icon.tsx";
 
 const TABS = [
   { id: "for-you", label: "For you" },
@@ -23,22 +25,20 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
+const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 const notePath = (id: string) => `/projects/notes/${encodeURIComponent(id)}`;
 
-function useRadar() {
+/**
+ * Agent finds (Projects → Ideas, the "Agent finds" bucket; the Radar page until M11 part 8):
+ * what agents found, ranked by the owner's interests, which are edited at the top. Save makes
+ * one Inbox note per finding (optionally on a project); Dismiss hides it. Works offline.
+ */
+export function Finds({ withInterests = true }: { withInterests?: boolean }) {
   const { local } = useCave();
   const items = useItems(local.db, RADAR);
   const settings = useDoc(local.db, "settings");
   const interests = interestsOf(settings?.data);
-  return { items, interests, tabs: radarTabs(items ?? [], interests) };
-}
-
-/**
- * Projects → Radar: what agents found, ranked by the owner's interests. Save makes one
- * Inbox note per finding (optionally on a project); Dismiss hides it. Works offline.
- */
-export function RadarPage() {
-  const { items, interests, tabs } = useRadar();
+  const tabs = radarTabs(items ?? [], interests);
   const search = useSearch();
   const tab = (new URLSearchParams(search).get("tab") ?? "for-you") as TabId;
   if (!items) return null;
@@ -48,23 +48,29 @@ export function RadarPage() {
     all: tabs.all.length,
     saved: tabs.saved.length,
   };
+  const pickTab = (id: TabId) => {
+    const next = new URLSearchParams(search);
+    if (id === "for-you") next.delete("tab");
+    else next.set("tab", id);
+    const s = next.toString();
+    setSearch(s ? `?${s}` : "");
+  };
 
   return (
-    <section className="panel" aria-label="Radar" style={{ padding: 18, display: "grid", gap: 12 }}>
-      <nav aria-label="Radar tabs" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+    <section
+      className="panel"
+      aria-label="Agent finds"
+      style={{ padding: 18, display: "grid", gap: 12 }}
+    >
+      {withInterests && <Interests />}
+      <nav aria-label="Finds tabs" className="buckets">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             className="chip"
             aria-pressed={t.id === tab}
-            onClick={() => setSearch(t.id === "for-you" ? "" : `?tab=${t.id}`)}
-            style={{
-              cursor: "pointer",
-              border: 0,
-              color: t.id === tab ? "var(--on-lime)" : "var(--text)",
-              background: t.id === tab ? "var(--lime)" : "var(--on)",
-            }}
+            onClick={() => pickTab(t.id)}
           >
             {t.label} <span className="num">{counts[t.id]}</span>
           </button>
@@ -72,8 +78,7 @@ export function RadarPage() {
       </nav>
       {items.length === 0 ? (
         <p className="muted" style={{ margin: 0 }}>
-          Nothing on the radar yet. Agents fill it. Ask Claude: find this week's AI news for my
-          radar.
+          Nothing found yet. Agents fill this. Ask Claude: find this week's AI news for my radar.
         </p>
       ) : listed.length === 0 ? (
         <p className="muted" style={{ margin: 0 }}>
@@ -87,6 +92,36 @@ export function RadarPage() {
         </ul>
       )}
     </section>
+  );
+}
+
+/** The interests that rank the finds: one per line, as Name: keyword, keyword. */
+function Interests() {
+  const { local } = useCave();
+  const settings = useDoc(local.db, "settings");
+  const text = formatInterests(interestsOf(settings?.data));
+  return (
+    <details className="interests">
+      <summary className="k">Interests</summary>
+      <label style={{ display: "grid", gap: 6, marginTop: 8 }}>
+        <span className="sr">Radar interests</span>
+        <textarea
+          key={text}
+          className="input"
+          rows={5}
+          defaultValue={text}
+          onBlur={(e) => {
+            const next = parseInterests(e.target.value);
+            if (formatInterests(next) !== text)
+              void local.write(SETTINGS, { radarInterests: next });
+          }}
+        />
+      </label>
+      <span className="muted" style={{ fontSize: 13 }}>
+        One per line, as Name: keyword, keyword. A finding matches when an agent tags it with the
+        name or a keyword is a whole word of its title or domain.
+      </span>
+    </details>
   );
 }
 
@@ -119,7 +154,7 @@ function Finding({ item, interests }: { item: Doc; interests: Interest[] }) {
         display: "grid",
         gap: 6,
         padding: "12px 0",
-        borderTop: "1px solid var(--line, var(--line))",
+        borderTop: "1px solid var(--line)",
       }}
     >
       {url ? (

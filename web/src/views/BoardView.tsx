@@ -123,7 +123,9 @@ export function BoardView({ collection, view, items, open, preset }: ViewProps) 
                   )}
                   <button
                     type="button"
-                    className={`card board-card${drag?.id === doc.id ? " dragging" : ""}`}
+                    className={`card board-card${drag?.id === doc.id ? " dragging" : ""}${
+                      isTasks && typeof doc.data.project === "string" ? " has-project" : ""
+                    }`}
                     data-card={doc.id}
                     style={
                       drag?.id === doc.id
