@@ -1,6 +1,6 @@
 # Cave
 
-Local-first personal brain: money, tasks, habits, diary, projects, pages. Every device holds a full offline copy; any agent reads and writes it through one MCP API. Repo: https://github.com/alexjamesmx/cave (private: real financial numbers).
+Local-first personal brain: money, tasks, habits, diary, projects, pages. Every device holds a full offline copy; any agent reads and writes it through one MCP API. Repo: https://github.com/alexjamesmx/cave (public: no real data in it, ever).
 
 ## Status
 
@@ -40,7 +40,7 @@ Bun 1.4.3 (runtime, packages, bundler, tests; no other lockfiles). TypeScript st
 
 ## Rules
 
-- Data: never commit or paste anything from `data/`, `.env*`, tokens or keys. Never guess an amount, category or account. Money totals include every entry.
+- Data: never commit or paste anything from `data/`, `.env*`, tokens or keys. Never guess an amount, category or account. Money totals include every entry. The repo is public: plans, logs, tests and docs use made-up figures and placeholders (`<vps-ipv4>`), never real amounts, names, addresses or emails.
 - Code: read first, state a plan before touching more than one file. Small single-job modules. No dead code, commented-out code, debug output or comments restating code; comments say why. New dependency only with a reason; prefer platform and Bun APIs. Check library APIs in current docs.
 - Tests next to code. Every bug fix gets a test. Removing or renaming anything a page shows: run the full `bun run e2e`.
 - Done = `check`, `test` (and `e2e` for UI) green, with what was and wasn't verified stated. Run commands with `set -o pipefail`; a piped `| tail` hides failures.

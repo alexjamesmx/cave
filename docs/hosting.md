@@ -57,7 +57,7 @@ BUN_INSTALL=/opt/bun bash /root/bun-install.sh bun-v1.4.3
 ```
 
 ## 3. Deploy key, bare clone, first release
-The VPS reads the private repo with a **read-only** deploy key. The key is created on the VPS, and only its public half leaves it.
+The VPS reads the repo with a **read-only** deploy key. The key is created on the VPS, and only its public half leaves it.
 
 ```bash
 install -d -o cave -g cave -m 700 /var/lib/cave/.ssh
@@ -173,7 +173,7 @@ Run the token check from hPanel's browser terminal, so the token stays out of sh
 From outside, port 3000 must not answer:
 
 ```bash
-timeout 5 bash -c '</dev/tcp/203.0.113.10/3000' && echo OPEN || echo closed
+timeout 5 bash -c '</dev/tcp/<vps-ipv4>/3000' && echo OPEN || echo closed
 ```
 
 ## 9. Moving the data
@@ -187,7 +187,7 @@ timeout 5 bash -c '</dev/tcp/203.0.113.10/3000' && echo OPEN || echo closed
    sudo -u cave bash -c 'set -a; . /etc/cave/cave.env; set +a; cd /opt/cave/current && /opt/bun/bin/bun run restore /var/lib/cave/restore.db'
    systemctl start cave
    ```
-5. Check `/api/status`: docs 694 or more. Also check October 2026 at 16,842 across 20 entries, via `money_month` over MCP or on the money dashboard.
+5. Check `/api/status`: docs 694 or more. Also check that one month's total in `money_month` (over MCP or on the money dashboard) matches the same month on the old server.
 6. Once those checks pass, delete both temporary copies of the data, and note in the log that they were deleted:
    ```bash
    rm /root/<newest>.db /var/lib/cave/restore.db

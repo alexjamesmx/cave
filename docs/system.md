@@ -20,7 +20,7 @@ flowchart LR
     DB[("SQLite<br/>/var/lib/cave/cave.db")]
     B[("Backups<br/>/var/lib/cave/backups")]
   end
-  GH["GitHub<br/>alexjamesmx/cave (private)"]
+  GH["GitHub<br/>alexjamesmx/cave (public)"]
 
   L -- "HTTPS + server token<br/>/api/sync" --> C
   P -- "HTTPS + server token<br/>/api/sync" --> C
@@ -89,7 +89,7 @@ flowchart TD
   L -- yes --> N["Live; Settings shows the commit"]
 ```
 
-- **Merging to `main` deploys.** Nothing on GitHub can stop a merge on a private repo with GitHub Free, so the gates are the owner's merge, the VPS re-running `check` and `test`, and the health check with automatic rollback.
+- **Merging to `main` deploys.** The gates are the owner's merge, the VPS re-running `check` and `test`, and the health check with automatic rollback.
 - **One deploy path.** `/usr/local/sbin/cave-deploy` (root, installed by hand from `deploy/cave-deploy`) is the only thing that deploys. The timer runs `cave-deploy auto`; `bun run deploy` runs `cave-deploy now` over SSH, then checks the public URL.
 - **A backup before every switch.** Each deploy first takes a verified backup with the running release's code, in `/var/lib/cave/backups/pre-deploy` (newest five kept). A rollback across a migration needs it: the older release refuses the newer schema (`docs/hosting.md`).
 - **A held commit** (failed or rolled back) is skipped by the timer until `cave-deploy now` retries it or a newer commit lands on `main`.
@@ -176,7 +176,7 @@ Install the tools and the code as `docs/onboarding.md` says; then, on Ubuntu nat
    - Add to `~/.ssh/config`:
      ```
      Host cave-vps
-       HostName 203.0.113.10
+       HostName <vps-ipv4>
        User root
        IdentityFile ~/.ssh/id_ed25519
        IdentitiesOnly yes
@@ -216,8 +216,8 @@ Install the tools and the code as `docs/onboarding.md` says; then, on Ubuntu nat
 ### The DNS records (hPanel, zone `alexjamesmx.dev`)
 | Type | Name | Value |
 |---|---|---|
-| A | `cave` | VPS IPv4 (`203.0.113.10`) |
-| AAAA | `cave` | VPS IPv6 (`2001:db8::10`) |
+| A | `cave` | VPS IPv4 (`<vps-ipv4>`) |
+| AAAA | `cave` | VPS IPv6 (`<vps-ipv6>`) |
 
 Don't touch the other records (portfolio, mail).
 

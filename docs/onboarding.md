@@ -93,7 +93,7 @@ On WSL, keep the laptop keys as Windows user environment variables and pass them
 | Cloudflare R2 backups | within R2's free tier for a database this size |
 | Email (Resend) | free up to 3,000 a month, 100 a day |
 | Web Push, Telegram, Discord | free |
-| GitHub (private repo, Actions) | free tier |
+| GitHub (public repo, Actions) | free tier |
 | Claude | your Claude subscription; the Cave calls no model, so no API key or usage bill |
 | MCP keys (Context7, Exa, Firecrawl) | their free tiers; development only |
 
