@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react";
+import { habitId } from "../../../shared/diary.ts";
 import { newId } from "../../../shared/ids.ts";
 import {
   type BlockKind,
@@ -30,16 +31,6 @@ const KIND_LABEL: Record<BlockKind, string> = {
   daily: "Daily",
   weekly: "Weekly (n times a week)",
 };
-
-/** A field id from a title: "LeetCode grind" → "leetcode_grind". */
-const slug = (title: string) =>
-  title
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 32) || "habit";
 
 /**
  * Calendar → Week (M12 part 7): the shape of a week as a list per day (fixed and daily blocks
@@ -162,7 +153,7 @@ export function Week() {
                 : undefined
             }
             onTrack={async (block, title) => {
-              const id = slug(title);
+              const id = habitId(title);
               if (!habits.some((f) => f.id === id))
                 await editFields(local, "journal", (fields) => [
                   ...fields,

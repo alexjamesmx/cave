@@ -36,7 +36,9 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/money/lists")).toEqual(section("money", "lists"));
   expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
   expect(parseRoute("/radar")).toEqual({ name: "not-found" });
-  expect(parseRoute("/diary/months")).toEqual(section("diary", "months"));
+  expect(parseRoute("/diary/days")).toEqual(section("diary", "days"));
+  expect(parseRoute("/diary/months")).toEqual({ name: "redirect", to: "/diary/days" });
+  expect(parseRoute("/diary/habits")).toEqual({ name: "redirect", to: "/diary/days" });
 });
 
 test("every old path redirects to its new home", () => {
@@ -52,7 +54,8 @@ test("every old path redirects to its new home", () => {
     ["/c/reminders", "/calendar/reminders"],
     ["/", "/projects/scene"],
     ["/c/journal", "/diary/write"],
-    ["/c/journal/habits", "/diary/habits"],
+    ["/c/journal/habits", "/diary/days"],
+    ["/c/journal/gallery", "/diary/days"],
     ["/life", "/diary"],
     ["/life/diary", "/diary/write"],
     ["/life/habits", "/diary/habits"],

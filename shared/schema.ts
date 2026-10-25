@@ -22,7 +22,6 @@ export const VIEW_TYPES = [
   "write",
   "money",
   "wealth",
-  "habits",
   "progress",
   "payments",
 ] as const;

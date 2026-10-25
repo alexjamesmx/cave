@@ -2562,3 +2562,21 @@ ul.chips {
     position: static;
   }
 }
+
+/* Diary → Days (M12 part 8). */
+.days-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.month-day[aria-current="date"] {
+  outline: 2px solid var(--accent);
+}
+
+@media (max-width: 1000px) {
+  .days-page {
+    grid-template-columns: 1fr;
+  }
+}

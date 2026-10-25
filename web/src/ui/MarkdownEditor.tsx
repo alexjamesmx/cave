@@ -96,7 +96,7 @@ export function MarkdownEditor({
 
   return (
     <div className="md-editor" data-preview={preview ? "only" : "beside"}>
-      <div className="md-toolbar" role="toolbar" aria-label={`${label} tools`}>
+      <div className="md-toolbar" role="toolbar" aria-label="Formatting">
         {TOOLS.map(([action, icon, title]) => (
           <button
             key={action}

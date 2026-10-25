@@ -1,4 +1,5 @@
 import { mergeCategoryOptions } from "./categories.ts";
+import { diaryMigration } from "./diary.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
@@ -156,11 +157,7 @@ const COLLECTIONS: Record<string, CollectionData> = {
       ...HABITS.map(([id, name]) => field(id, name, "checkbox")),
       COLOR_FIELD,
     ],
-    views: [
-      view("write", "Write", "write"),
-      view("gallery", "Gallery", "gallery"),
-      view("habits", "Habits", "habits", { habits: HABITS.map(([id, , icon]) => ({ id, icon })) }),
-    ],
+    views: [view("write", "Write", "write")],
   },
   ideas: {
     name: "Ideas",
@@ -474,6 +471,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 18, docs: [], update: projectPageMigration },
   // M12 part 6: a colour on notes and diary days, the tracker fields, the study template.
   { version: 19, docs: [], update: pagesMigration },
+  // M12 part 8: the diary's Habits and Gallery views retire; habit icons become a setting.
+  { version: 20, docs: [], update: diaryMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -484,6 +483,7 @@ const SETTINGS = {
   timezone: "America/Mexico_City",
   radarInterests: DEFAULT_INTERESTS,
   projectTemplates: DEFAULT_TEMPLATES,
+  habitIcons: Object.fromEntries(HABITS.map(([id, , icon]) => [id, icon])),
   ...REMINDER_DEFAULTS,
   ...NOTIFICATION_DEFAULTS,
   seedVersion: SEED_VERSION,

@@ -10,7 +10,8 @@ import { NeedsYou } from "../ui/NeedsYou.tsx";
 import { ActivityPage } from "./Activity.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
-import { DiaryMonths } from "./DiaryMonths.tsx";
+import { DiaryDays } from "./DiaryDays.tsx";
+import { DiaryToday } from "./DiaryToday.tsx";
 import { FlowJob } from "./FlowJob.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
@@ -45,7 +46,8 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
     </>
   ),
   "projects-ideas": () => <IdeasPage />,
-  "diary-months": () => <DiaryMonths />,
+  "diary-today": () => <DiaryToday />,
+  "diary-days": () => <DiaryDays />,
   project: (rest) => <ProjectPage rest={rest} />,
   activity: () => <ActivityPage />,
   flows: (rest) => (rest[0] === "jobs" ? <FlowJob id={rest[1]} /> : <Flows id={rest[0]} />),

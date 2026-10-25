@@ -59,7 +59,7 @@ Seeded once with stamp time 0, so any user edit wins. Changes to seeded collecti
 |---|---|---|
 | `money` | date, amount (money), direction (income/expense), category (select; options carry `label`, `emoji` and `kind`: expense, income or transfer), detail, account (select, options archived never deleted), payment (ref) | money dashboard, table, untagged (category empty) |
 | `tasks` | status (todo/doing/waiting/done/dropped), priority (high/normal/low), due (with time), repeat, notify, area, completed, cancelled, project (ref), part (ref) | board by status, table, calendar by due |
-| `journal` | date, checkbox per habit (gym, supplements, reading, meditation, water_2l, protein, creatine, learning), color (select: the palette's tokens, M12); diary text in `_body` | write, gallery, habits dashboard |
+| `journal` | date, checkbox per habit (gym, supplements, reading, meditation, water_2l, protein, creatine, learning), color (select: the palette's tokens, M12); diary text in `_body` | write (Diary → Today and Days since M12 part 8; Gallery and Habits retired by seed migration 20, habit icons in `settings.habitIcons`) |
 | `ideas` | stage (spark/exploring/building/parked), area, next step, project (ref) | table, board by stage, gallery |
 | `wealth` | type (liquid/investments/stocks/house/assets/debt), value (money), updated; history in `_body` | wealth dashboard, table |
 | `leetcode` | number, difficulty, topic, status (queued/practicing/review/solved/skipped), solved_at, notes, project (ref); since M12 list (blind75/neetcode150/grind169/amazon/contest/other), pattern, url, attempts, minutes, review_on | progress dashboard, table; the project's Problems tab |

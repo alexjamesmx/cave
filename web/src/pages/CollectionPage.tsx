@@ -12,24 +12,22 @@ import { ProjectFilter, projectFilterOf } from "../ui/ProjectFilter.tsx";
 import { BoardView } from "../views/BoardView.tsx";
 import { CalendarView } from "../views/CalendarView.tsx";
 import { GalleryView } from "../views/GalleryView.tsx";
-import { HabitsDashboard } from "../views/HabitsDashboard.tsx";
 import { MoneyDashboard } from "../views/MoneyDashboard.tsx";
 import { PaymentsView } from "../views/PaymentsView.tsx";
 import { ProgressDashboard } from "../views/ProgressDashboard.tsx";
 import { TableView } from "../views/TableView.tsx";
 import type { ViewProps } from "../views/types.ts";
 import { WealthDashboard } from "../views/WealthDashboard.tsx";
-import { WriteView } from "../views/WriteView.tsx";
+import { DiaryToday } from "./DiaryToday.tsx";
 
 const VIEWS: Record<ViewType, ComponentType<ViewProps>> = {
   table: TableView,
   board: BoardView,
   gallery: GalleryView,
   calendar: CalendarView,
-  write: WriteView,
+  write: DiaryToday,
   money: MoneyDashboard,
   wealth: WealthDashboard,
-  habits: HabitsDashboard,
   progress: ProgressDashboard,
   payments: PaymentsView,
 };

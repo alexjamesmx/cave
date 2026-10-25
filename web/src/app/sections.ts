@@ -27,7 +27,8 @@ export type PageId =
   | "projects-ideas"
   | "project"
   | "activity"
-  | "diary-months"
+  | "diary-today"
+  | "diary-days"
   | "flows"
   | "flows-runs"
   | "money-lists"
@@ -135,11 +136,7 @@ export const SECTIONS: Section[] = [
     icon: "notebook",
     color: "var(--wait)",
     path: "/diary",
-    tabs: [
-      view("write", "Write", "journal", "write"),
-      view("habits", "Habits", "journal", "habits"),
-      page("months", "Months", "diary-months"),
-    ],
+    tabs: [page("write", "Today", "diary-today"), page("days", "Days", "diary-days")],
     owns: ["journal"],
   },
   {

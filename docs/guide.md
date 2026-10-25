@@ -51,7 +51,8 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Diary
 
-- **Write:** one entry per day with the habits as toggles; text saved on blur; arrows move between days, and the day follows today until you pick one. **Habits:** a month heat map and 30-day streaks. **Months:** a grid where a written day has a dot and the habits logged a strip of pips; click a day to open it in Write.
+- **Today** (`/diary/write`): one day full width: the entry in the Markdown editor (the same toolbar, preview and autosave as pages), the habits as toggles, the day's routine blocks (a tracked one ticks its habit), a colour and Delete entry (kept in the history). Arrows move between days, and the day follows today until you pick one, so a diary left open past midnight moves on.
+- **Days:** the month as a grid: a dot for a written day, a strip of the habits logged, the day's colour as its tint, today outlined. Click a day to open it in the panel beside the grid (`/diary/days?day=`), the same day as Today shows. Without a day open, the panel shows the habits' last 30 days and streaks, and **Add habit** adds one (it becomes a toggle on every day and can be linked to a routine block). The old Habits and Months pages open Days.
 
 ## Tasks
 

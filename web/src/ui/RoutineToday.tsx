@@ -15,11 +15,18 @@ import { useDoc, useItems } from "../store/queries.ts";
 import { Icon } from "./icon.tsx";
 
 /**
- * Today's routine (M12 part 7): the day's fixed and daily blocks in time order, as the
- * Agenda shows them. A block with a habit is that habit's toggle for today, writing the
- * diary entry as the Write page does (created on the first tick).
+ * A day's routine (M12 part 7): its fixed and daily blocks in time order, on the Agenda and
+ * in the diary's day panel. A block with a habit is that habit's toggle for the day. `toggle`
+ * lets the diary write through its own entry; without it the day's entry is written here,
+ * created on the first tick.
  */
-export function RoutineToday({ day }: { day?: string }) {
+export function RoutineToday({
+  day,
+  toggle,
+}: {
+  day?: string;
+  toggle?: (habit: string, done: boolean) => void;
+}) {
   const { db } = useCave().local;
   const today = useToday();
   const date = day ?? today;
@@ -30,7 +37,8 @@ export function RoutineToday({ day }: { day?: string }) {
   const blocks = blocksForDay(routine, weekdayOf(date));
   if (blocks.length === 0) return null;
   const entry = entriesByDay(journal ?? []).get(date);
-  const toggle = (habit: string, done: boolean) => {
+  const write = (habit: string, done: boolean) => {
+    if (toggle) return toggle(habit, done);
     const id = entry?.id ?? created.current ?? newId();
     created.current = entry?.id ?? id;
     void saver.save(id, entry ? { [habit]: !done } : { date, _title: date, [habit]: !done });
@@ -67,7 +75,7 @@ export function RoutineToday({ day }: { day?: string }) {
                   aria-pressed={done}
                   aria-label={`${b.title} done`}
                   style={{ marginLeft: "auto" }}
-                  onClick={() => toggle(b.habit as string, done)}
+                  onClick={() => write(b.habit as string, done)}
                 >
                   <Icon name="check" size={14} /> {done ? "Done" : "Mark done"}
                 </button>

@@ -36,6 +36,9 @@ export function redirectOf(pathname: string): string | undefined {
   if (first === "settings" && second === "lists") return "/money/lists";
   // Life is Diary since M11; its Diary tab is Write.
   if (first === "life") return second === "diary" ? "/diary/write" : enc("diary", ...p.slice(1));
+  // Habits and Months are Days since M12 part 8.
+  if (first === "diary" && (second === "habits" || second === "months"))
+    return third ? undefined : "/diary/days";
   // The System page (M9 to M11 part 3) is Settings → Devices & server; its Flows and Agents
   // tabs went to their own pages.
   if (first === "system" || (first === "settings" && second === "system"))
@@ -57,6 +60,8 @@ export function redirectOf(pathname: string): string | undefined {
   const view = third;
   // LeetCode is a project now (M8 part 2): its items are on that project's page.
   if (collection === "leetcode") return "/projects/proj-leetcode";
+  // The journal's Write is Diary → Today; its Habits and Gallery views are Days (M12 part 8).
+  if (collection === "journal") return view && view !== "write" ? "/diary/days" : "/diary/write";
   const owner = ownerOf(collection);
   const tabs = owner?.tabs.filter((t) => t.kind === "view" && t.collection === collection) ?? [];
   const tab = view
