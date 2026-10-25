@@ -244,20 +244,6 @@ export function progressBy(items: Doc[], field: string, done: string[]) {
   };
 }
 
-/** Expenses linked to the project, for the `budget` widget; transfers excluded. */
-function projectBudget(money: Doc[], transfers: ReadonlySet<string>) {
-  let spent = 0;
-  let count = 0;
-  for (const d of money) {
-    if (d.data._deleted === true || d.data.direction !== "expense") continue;
-    if (typeof d.data.amount !== "number") continue;
-    if (typeof d.data.category === "string" && transfers.has(d.data.category)) continue;
-    spent += d.data.amount;
-    count += 1;
-  }
-  return { spent, count };
-}
-
 /** One write a project action makes, in order: a part's project must exist before the part. */
 export interface PlannedWrite {
   id: string;
@@ -322,63 +308,4 @@ export function ideaPrompt(idea: Doc): string {
   const title = String(idea.data._title ?? "Untitled");
   const body = typeof idea.data._body === "string" ? idea.data._body.trim() : "";
   return `Help me start my idea "${title}" (Cave item ${idea.id})${body ? `:\n\n${body}\n\n` : ". "}Suggest a goal, the first parts and the first three tasks.`;
-}
-
-export interface Upcoming {
-  id: string;
-  title: string;
-  due: string;
-  kind: "part" | "task";
-}
-
-/** Everything an Overview's widgets show, from the items linked to one project. */
-interface ProjectOverview {
-  progress: { done: number; total: number; of: string };
-  budget: { spent: number; count: number };
-  tasks: { status: string; count: number }[];
-  upcoming: Upcoming[];
-  counts: { collection: string; count: number }[];
-  flows: Doc[];
-}
-
-const CLOSED = new Set(["done", "dropped"]);
-
-export function overviewOf(
-  project: string,
-  template: ProjectTemplate | undefined,
-  itemsOf: (collection: string) => Doc[],
-  transfers: ReadonlySet<string>,
-): ProjectOverview {
-  const of = (c: string) => linkedTo(itemsOf(c), project);
-  const parts = of(PARTS);
-  const tasks = of("tasks");
-  const spec = template?.progress;
-  const progress = spec
-    ? { ...progressBy(of(spec.collection), spec.field, spec.done), of: spec.collection }
-    : { ...partProgress(parts), of: PARTS };
-  const byStatus = new Map<string, number>();
-  for (const t of tasks) {
-    const s = typeof t.data.status === "string" ? t.data.status : "none";
-    byStatus.set(s, (byStatus.get(s) ?? 0) + 1);
-  }
-  const upcoming: Upcoming[] = [
-    ...parts.map((d) => ({ d, kind: "part" as const })),
-    ...tasks.map((d) => ({ d, kind: "task" as const })),
-  ]
-    .filter(({ d }) => typeof d.data.due === "string" && !CLOSED.has(String(d.data.status)))
-    .map(({ d, kind }) => ({
-      id: d.id,
-      title: String(d.data._title ?? "Untitled"),
-      due: d.data.due as string,
-      kind,
-    }))
-    .sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
-  return {
-    progress: { done: progress.done, total: progress.total, of: progress.of },
-    budget: projectBudget(of("money"), transfers),
-    tasks: [...byStatus].map(([status, count]) => ({ status, count })),
-    upcoming,
-    counts: (template?.collections ?? []).map((c) => ({ collection: c, count: of(c).length })),
-    flows: of("flows"),
-  };
 }

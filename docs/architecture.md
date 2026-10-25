@@ -67,7 +67,7 @@ Seeded once with stamp time 0, so any user edit wins. Changes to seeded collecti
 | `parts` | project (ref), parent (ref), status, order, due, kind | table |
 | `payments` | kind, amount, approx, category and account (money's lists through `optionsFrom`), due, repeat, notify_days, autopay, active, project (ref) | upcoming, table |
 | `notes` | folder (text, `/`-separated), url, source (owner/agent/radar/import), project (ref), color (select, M12); the Markdown in `_body` | table, gallery; a project's Pages tab and the Inbox on All |
-| `radar` | url, source, interests (comma-separated), why, found_at (date and time), status (new/saved/dismissed), note (ref); the agent's summary in `_body`. Agents add; the writer refuses a missing or unsafe url, a missing why, a duplicate url and more than 50 a day per agent | table |
+| `radar` | url, source, interests (comma-separated), why, found_at (date and time), status (new/saved/dismissed), note (ref); the agent's summary in `_body`. Agents add; the writer refuses a missing or unsafe url, a missing why, a duplicate url and more than 50 a day per agent. Data-only since M12 (nothing shows it); `settings.radarInterests` was cleared by seed migration 22 | table |
 | `reminders` | due (date with time), repeat (none/daily/weekly/monthly/yearly), done, project (ref); hidden `_repeatFrom` (the series start while a snooze or a month-end clamp moves `due` off it) | table, calendar |
 | `flows` (hidden) | status, definition (json `flow`), author, project (ref) | table |
 | `runs` (hidden) | project (ref), part (ref), agent, status, started_at, finished_at, steps (json); written only by the run tools | table |

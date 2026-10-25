@@ -23,7 +23,7 @@ import {
   projectsMigration,
   withProjectFields,
 } from "./projects-seed.ts";
-import { DEFAULT_INTERESTS, RADAR, RADAR_COLLECTION, radarMigration } from "./radar.ts";
+import { RADAR, RADAR_COLLECTION, radarMigration } from "./radar.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import { RUNS, RUNS_COLLECTION, runsMigration } from "./runs.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
@@ -349,6 +349,26 @@ function mergeMoneyCategories(get: (id: string) => Doc | undefined): SeedMigrati
   ];
 }
 
+/** Settings keys no code reads since M12: the radar's interests and the subscription finder's dismissals. */
+const RETIRED_SETTINGS = ["radarInterests", "dismissedSubscriptions"];
+
+/**
+ * Seed migration 22: those keys are cleared (set to null, as the app clears a setting), so the
+ * owner's settings hold only what something uses. The values stay in the change history.
+ */
+export function retiredSettingsMigration(
+  get: (id: string) => Doc | undefined,
+): SeedMigration["docs"] {
+  const settings = get("settings");
+  if (settings?.kind !== "setting") return [];
+  const set = RETIRED_SETTINGS.filter(
+    (k) => settings.data[k] !== undefined && settings.data[k] !== null,
+  );
+  return set.length === 0
+    ? []
+    : [{ id: "settings", kind: "setting", data: Object.fromEntries(set.map((k) => [k, null])) }];
+}
+
 /**
  * M10: the Cave is not an AI tool. The `ai` collection (M7b part 8, filled by `ai-sync`) and
  * every live item in it are marked deleted, never removed: they stay in every copy and in
@@ -475,6 +495,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 20, docs: [], update: diaryMigration },
   // M12 part 9: Tasks → Calendar retires; Calendar → Month shows tasks already.
   { version: 21, docs: [], update: tasksCalendarMigration },
+  // M12 cleanup: settings nothing reads any more are cleared.
+  { version: 22, docs: [], update: retiredSettingsMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -483,7 +505,6 @@ export const SEED_VERSION = Math.max(1, ...SEED_MIGRATIONS.map((m) => m.version)
 // Reminders and the daily brief resolve local date-times through this timezone.
 const SETTINGS = {
   timezone: "America/Mexico_City",
-  radarInterests: DEFAULT_INTERESTS,
   projectTemplates: DEFAULT_TEMPLATES,
   habitIcons: Object.fromEntries(HABITS.map(([id, , icon]) => [id, icon])),
   ...REMINDER_DEFAULTS,

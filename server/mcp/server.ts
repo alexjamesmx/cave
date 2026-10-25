@@ -34,7 +34,7 @@ const DATA_RULE =
 const REMINDER_RULE =
   'Reminders: one whose repeat isn\'t "none" repeats on completion; done: true moves due to the next occurrence and keeps it open. The Cave sends their notifications itself; never set up outside scheduled tasks for them. To also create or change items on a schedule or when items change, use save_flow.';
 const RADAR_RULE =
-  "Radar: findings for the owner go in collection radar with fields url (http or https, required), why (one line on why it matters, required), source (your label, e.g. Hacker News) and interests (comma-separated names from settings.radarInterests); the summary goes in body. One item per address: a duplicate is refused with the existing id. At most 50 a day.";
+  "Radar: the owner no longer sees the radar collection; put something worth reading in add_note on its project instead. A radar item still needs url (http or https) and why, one item per address (a duplicate is refused with the existing id), at most 50 a day.";
 const DAY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
