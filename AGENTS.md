@@ -6,7 +6,7 @@ Repository: https://github.com/alexjamesmx/cave (private: the plan and design do
 
 ## Status
 
-Pre-v0.1: M1 to M11 are on `main` and live at `https://cave.alexjamesmx.dev` (a push to `main` deploys within minutes); the laptop is Linux-first, WSL Ubuntu at `~/code/jarvis` (`docs/system.md` section 6). Keep this line current in the same change as anything it describes.
+Pre-v0.1: M1 to M12 are on `main` and live at `https://cave.alexjamesmx.dev` (a push to `main` deploys within minutes); the laptop is Linux-first, WSL Ubuntu at `~/code/jarvis` (`docs/system.md` section 6). Keep this line current in the same change as anything it describes.
 
 ## Docs
 
