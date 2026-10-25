@@ -13,9 +13,10 @@ export function completeTask(
 ): Record<string, unknown> {
   const next = advance(t, now, zone);
   if (!next) return { status: "done", completed: nowLocal };
+  // The next occurrence starts fresh: whatever column this one was done from, it comes back todo.
   return {
     ...next,
     completed: nowLocal,
-    ...(t.data.status === "done" || t.data.status === "dropped" ? { status: "todo" } : {}),
+    ...(t.data.status !== undefined && t.data.status !== "todo" ? { status: "todo" } : {}),
   };
 }

@@ -35,7 +35,6 @@ test("a card payment marked paid logs the expense and moves to next month; Undo 
   await expect(
     page.getByRole("status").filter({ hasText: "Saved · Payment · Nu card e2e" }),
   ).toBeVisible();
-  await expect(page.getByRole("region", { name: "Due" })).toHaveCount(1);
 
   await page.goto("/c/payments");
   const list = page.getByRole("region", { name: "Payments by due date" });
@@ -92,10 +91,23 @@ test("a repeating task marked done comes back on its next date instead of piling
   await expect(form.getByText("never piles up copies")).toBeVisible();
   await form.getByRole("button", { name: "Save" }).click();
 
-  const card = page.getByRole("region", { name: "Due" }).locator("li", { hasText: "Pay rent e2e" });
-  await card.getByRole("button", { name: "Done" }).click();
-  // It moved to next month, so it leaves today's Due list.
-  await expect(card).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: "Pay rent e2e" })).toBeVisible();
+  // Done on the board (arrow keys to the done column) brings it back as todo on its next date.
+  await page.goto("/tasks/board");
+  const card = page.locator("[data-card]", { hasText: "Pay rent e2e" });
+  // A move re-renders the card, so it is focused again before each step: todo → doing → waiting → done.
+  for (const next of ["doing", "waiting"]) {
+    await card.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      page.getByRole("region", { name: next, exact: true }).getByText("Pay rent e2e"),
+    ).toBeVisible();
+  }
+  await card.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    page.getByRole("region", { name: "todo", exact: true }).getByText("Pay rent e2e"),
+  ).toBeVisible();
   await page.goto("/c/tasks/table");
   const rows = page.getByRole("row").filter({ hasText: "Pay rent e2e" });
   await expect(rows).toHaveCount(1);

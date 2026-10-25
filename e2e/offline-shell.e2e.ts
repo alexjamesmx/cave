@@ -21,8 +21,8 @@ test("after one online visit the app opens offline with its data", async ({ brow
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
-  // The Due card reads IndexedDB, so it shows without the server.
-  await expect(page.getByRole("region", { name: "Due" })).toBeVisible();
+  // The Scene reads IndexedDB, so its projects show without the server.
+  await expect(page.locator(".scene-links").getByRole("link", { name: /LeetCode/ })).toBeAttached();
   await expect(syncBadge(page)).toHaveText("OFFLINE · SAVED HERE");
 
   await page.goto("/c/money/table");

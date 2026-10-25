@@ -4,7 +4,7 @@ import { expect, test } from "./test.ts";
 // Thursday 2026-10-15, 10:00 in Mexico City, the seeded timezone. Timers keep running.
 const NOW = new Date("2026-10-15T16:00:00Z");
 
-test("a reminder from Home's form, seen in in the calendar and the Due card; Done moves a monthly one and Undo restores it", async ({
+test("a reminder from the Ask sheet, seen in the calendar and the agenda; Done moves a monthly one and Undo restores it", async ({
   browser,
   baseURL,
 }) => {
@@ -26,10 +26,6 @@ test("a reminder from Home's form, seen in in the calendar and the Due card; Don
     page.getByRole("status").filter({ hasText: "Saved · Reminder · Test" }),
   ).toBeVisible();
 
-  const due = page.getByRole("region", { name: "Due" });
-  await expect(due.getByText("Tomorrow")).toBeVisible();
-  await expect(due.getByRole("button", { name: "Test", exact: true })).toBeVisible();
-
   // C opens the calendar when no field has focus.
   await page.locator("body").focus();
   await page.keyboard.press("c");
@@ -38,6 +34,8 @@ test("a reminder from Home's form, seen in in the calendar and the Due card; Don
   await expect(page.getByRole("button", { name: "09:00 Test" })).toBeVisible();
   const agenda = page.getByRole("region", { name: "Agenda" });
   await expect(agenda.getByRole("button", { name: "Test" })).toBeVisible();
+  // What is due lives in Calendar since M12 part 5: tomorrow's reminder is in the agenda.
+  await expect(agenda.getByText("Oct 16", { exact: true })).toBeVisible();
 
   // A monthly reminder: Done moves it a month and leaves it open; Undo puts it back.
   await page.goto("/");

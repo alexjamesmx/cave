@@ -54,6 +54,11 @@ test("a repeating task comes back on its next date and stays open; a one-off is 
   expect(
     completeTask(item({ due: "2026-10-15", repeat: "weekly", status: "done" }), NOW, MX, "x"),
   ).toEqual({ due: "2026-10-22", completed: "x", status: "todo" });
+  // Done from doing or waiting (the board's done column) starts the next one fresh, as todo.
+  for (const status of ["doing", "waiting"])
+    expect(
+      completeTask(item({ due: "2026-10-26", repeat: "monthly", status }), NOW, MX, "x"),
+    ).toEqual({ due: "2026-11-26", completed: "x", status: "todo" });
   expect(completeTask(item({ status: "doing" }), NOW, MX, "x")).toEqual({
     status: "done",
     completed: "x",

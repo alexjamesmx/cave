@@ -23,11 +23,13 @@ import { SettingsDevices } from "./settings/Devices.tsx";
 import { SettingsGeneral } from "./settings/General.tsx";
 import { SettingsNotifications } from "./settings/Notifications.tsx";
 import { Transactions } from "./Transactions.tsx";
+import { Week } from "./Week.tsx";
 
 /** Each page tab's component; \`rest\` is the path after the tab (a flow id, a collection). */
 const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-month": () => <Calendar mode="month" />,
   "calendar-agenda": () => <Calendar mode="agenda" />,
+  "calendar-week": () => <Week />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
   "projects-scene": () => (

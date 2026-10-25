@@ -39,7 +39,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 - **Reminder** (Ask sheet): a title and a "When" in plain English or Spanish: `tomorrow 9am`, `vie 18:00`, `in 2h`, `every month 22 9:00`, `cada mes 22 9:00`. The form shows what it will save, and won't save without a date.
 - **Done and Snooze** on every reminder (the drawer, the table, the agenda, Needs you). A repeating reminder moves to its next occurrence and stays open; the 31st becomes the 30th in shorter months and returns to the 31st. Undo puts the previous values back.
-- **Month** (or `C`): a grid with repeats shown ahead; **Agenda**: 14 days with anything overdue on top; **Reminders**: the table. Click a day to add a reminder. Scheduled flows show their next run.
+- **Month** (or `C`): a grid with repeats shown ahead; **Agenda**: 14 days with anything overdue on top; **Reminders**: the table. **Week**: the shape of your week (M12): fixed blocks (work, Monday to Friday at 09:00), daily ones (Chinese, 30 minutes; LeetCode at 19:30) and weekly ones (gym twice a week), one column per day with the free time left in your waking window, and a This week pool with each weekly block's counter. Click a block to edit it; Track as a habit adds a diary habit and links it, so ticking it counts. The Agenda shows today's blocks on top, each tracked one a Done toggle. The routine never notifies; a reminder does that. Click a day to add a reminder. Scheduled flows show their next run.
 - A reminder with a date and no time is due at the reminder time in Settings → General (09:00 by default).
 
 ## Flows

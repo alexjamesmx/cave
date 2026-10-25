@@ -2471,3 +2471,94 @@ ul.chips {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
+
+/* Calendar → Week (M12 part 7). */
+.week-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.week-day {
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+}
+
+.week-day header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.week-day.today {
+  outline: 1px solid var(--accent);
+}
+
+.week-blocks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.week-block {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.week-block.fixed {
+  background: var(--on);
+}
+
+.week-block[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+
+.week-counter {
+  cursor: pointer;
+  border: 1px solid var(--control-border);
+  color: var(--text);
+}
+
+.week-editor {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  position: sticky;
+  top: 12px;
+}
+
+@media (max-width: 1000px) {
+  .week-page {
+    grid-template-columns: 1fr;
+  }
+
+  .week-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .week-editor {
+    position: static;
+  }
+}

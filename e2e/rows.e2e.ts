@@ -31,7 +31,7 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/");
 
-  // A payment due tomorrow (Home, Calendar, Money → Payments), a task and an expense.
+  // A payment due tomorrow (Calendar, Money → Payments), a task and an expense.
   await openAsk(page);
   await page.getByRole("button", { name: "Payment", exact: true }).click();
   const pay = page.getByRole("form", { name: "Payment" });
@@ -49,10 +49,6 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
   await expect(page.getByRole("status").filter({ hasText: "Saved · Task" })).toBeVisible();
   await addMoney(page, { amount: 42, title: "Rows e2e coffee" });
   await expect(page.getByRole("status").filter({ hasText: "Rows e2e coffee" })).toBeVisible();
-
-  // Home: the Due card.
-  const due = page.getByRole("region", { name: "Due" }).locator("li", { hasText: "Rows e2e bill" });
-  await opensByClickAndKey(page, due, due.locator(".agenda-time"), "Payments item");
 
   // Calendar → Agenda.
   await page.goto("/calendar/agenda");

@@ -22,6 +22,7 @@ import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { ReminderActions } from "../ui/ReminderActions.tsx";
+import { RoutineToday } from "../ui/RoutineToday.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -162,6 +163,7 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
             {adding && <NewReminder day={adding} onDone={() => setAdding(undefined)} />}
           </section>
         )}
+        {mode === "agenda" && <RoutineToday />}
         {agenda && <Agenda events={agenda} today={today} color={color} open={show} />}
       </div>
       {open && openCollection && (
