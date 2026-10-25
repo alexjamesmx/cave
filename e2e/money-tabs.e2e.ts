@@ -28,14 +28,13 @@ test("Money has five described tabs; an undated transaction saves, shows under U
   await expect(
     page.getByText("Money that moved. Every expense, income and transfer."),
   ).toBeVisible();
-  await expect(page.getByRole("columnheader")).toHaveText([
-    "Date",
-    "Title",
-    "Category",
-    "Amount",
-    "Account",
-  ]);
-  await page.getByRole("button", { name: "New transaction" }).click();
+  // The Account column shows only with two or more live accounts (one is taken silently).
+  const headers = page.getByRole("columnheader");
+  await expect(headers.nth(0)).toHaveText("Time");
+  await expect(headers.nth(1)).toHaveText("Title");
+  await expect(headers.nth(2)).toHaveText("Category");
+  await expect(headers.nth(3)).toHaveText("Amount");
+  await page.getByRole("button", { name: "New entry" }).click();
   const form = page.getByRole("form", { name: "Expense" });
   await form.getByLabel("Amount").fill("1240");
   await form.getByLabel("Title").fill("Undated e2e");
@@ -53,14 +52,19 @@ test("Money has five described tabs; an undated transaction saves, shows under U
   await page.goto("/money/overview");
   await expect(page.getByText(/\d+ undated, \$[\d,]+ not counted\./)).toBeVisible();
 
-  // Set date moves it out of Undated.
+  // Set date (the 1st of this month, so the month view shows it) moves it out of Undated.
+  const now = new Date();
+  const first = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   await page.goto("/money/transactions");
   await row.getByRole("button", { name: "Set date" }).click();
-  await row.getByLabel("Date for Undated e2e").fill("2026-10-01T12:00");
+  await row.getByLabel("Date for Undated e2e").fill(`${first}T12:00`);
   await row.getByRole("button", { name: "Save" }).click();
   await expect(undated.getByRole("row").filter({ hasText: "Undated e2e" })).toHaveCount(0);
   const dated = page.getByRole("row").filter({ hasText: "Undated e2e" });
-  await expect(dated).toContainText("Oct 1");
+  await expect(dated).toContainText("12:00");
+  await expect(page.getByRole("rowgroup", { name: /^[A-Z][a-z]{2} 1$/ })).toContainText(
+    "Undated e2e",
+  );
 
   // Leave the shared database as found.
   await dated.getByRole("button", { name: "Undated e2e" }).click();
@@ -78,7 +82,7 @@ test("a subscription can't be saved without amount, repeat and account", async (
   const form = page.getByRole("form", { name: "Payment" });
   await form.getByLabel("Title").fill("Strict e2e");
   await form.getByLabel("Kind").selectOption("subscription");
-  await expect(form.getByText("A subscription needs: amount, due date, account.")).toBeVisible();
+  await expect(form.getByText(/A subscription needs: amount, due date(, account)?./)).toBeVisible();
   await expect(form.getByRole("button", { name: "Save" })).toBeDisabled();
   await form.getByLabel("Kind").selectOption("bill");
   await expect(form.getByText("Still needs: due date.")).toBeVisible();

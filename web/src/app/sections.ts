@@ -20,7 +20,6 @@ export type Tab = (
 export type PageId =
   | "calendar-month"
   | "calendar-agenda"
-  | "review"
   | "money-transactions"
   | "projects-scene"
   | "projects-all"
@@ -87,8 +86,6 @@ export const SECTIONS: Section[] = [
         ...page("lists", "Categories & accounts", "money-lists"),
         description: "The lists every expense, income and payment picks from.",
       },
-      // Not a tab: Transactions links to it when the review has work.
-      page("review", "Review", "review", true),
     ],
     owns: ["money", "payments", "wealth"],
   },

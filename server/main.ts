@@ -12,7 +12,6 @@ import { createBackupJob } from "./jobs/backup-job.ts";
 import { createOffsiteJob } from "./jobs/offsite-job.ts";
 import { createScheduler } from "./jobs/scheduler.ts";
 import { acquireLock, lockPathOf, releaseLock } from "./lock.ts";
-import { createMoneyReview, moneyReviewRoutes } from "./money-review.ts";
 import { createNotificationSystem } from "./notify/system.ts";
 import { migrateSeed } from "./seed-migrations.ts";
 import { createStore } from "./store.ts";
@@ -139,7 +138,6 @@ const server = serveCave({
     now: Date.now,
   }),
   onSync: (deviceId, at) => syncs.set(deviceId, at),
-  moneyReview: moneyReviewRoutes(createMoneyReview(db, Date.now)),
   development: !production,
 });
 console.log(`Cave server listening on ${server.url}${production ? "" : " (development)"}`);

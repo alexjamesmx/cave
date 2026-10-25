@@ -1,36 +1,64 @@
-import { useEffect, useMemo, useState } from "react";
-import { kindOf, optionText } from "../../../shared/categories.ts";
-import { dayOf } from "../../../shared/dates.ts";
+import { useMemo, useState } from "react";
+import { monthName, monthOf, shiftMonth } from "../../../shared/dates.ts";
 import { undatedSummary } from "../../../shared/money.ts";
 import type { Field } from "../../../shared/schema.ts";
-import { dismissedOf, subscriptionProposals } from "../../../shared/subscription-finder.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
-import { ownerGet } from "../app/owner-api.ts";
+import { useToday } from "../app/hooks.ts";
 import { setSearch, useSearch } from "../app/router.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
+import {
+  CHIPS,
+  type Chip,
+  GROUPS,
+  type GroupBy,
+  type LedgerGroup,
+  type LedgerQuery,
+  ledger,
+  movementOf,
+  queryFromSearch,
+  queryToSearch,
+} from "../logic/ledger.ts";
 import { titleOf } from "../logic/views.ts";
-import { useCollections, useDoc, useItems } from "../store/queries.ts";
+import { useCollections, useItems } from "../store/queries.ts";
+import { soleAccount } from "../ui/AccountPicker.tsx";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
+import { Icon } from "../ui/icon.tsx";
 import { MoneyForm } from "../ui/MoneyForm.tsx";
+import { OptionPicker } from "../ui/OptionPicker.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
-// The ledger is long; it renders in pages so the DOM stays small.
+// The ledger can be long in "All time"; it renders in pages so the DOM stays small.
 const PAGE = 200;
+
+const CHIP_LABEL: Record<Chip, string> = {
+  all: "All",
+  expense: "Expenses",
+  income: "Income",
+  transfer: "Transfers",
+  uncategorized: "Uncategorized",
+};
+const GROUP_LABEL: Record<GroupBy, string> = {
+  day: "Day",
+  category: "Category",
+  account: "Account",
+  none: "None",
+};
 
 /** A signed amount, coloured by what the money did: out, in, or between own accounts. */
 function Amount({ doc, category }: { doc: Doc; category: Field | undefined }) {
   const amount = doc.data.amount;
-  if (typeof amount !== "number") return <span className="muted">—</span>;
-  if (kindOf(category, doc.data.category) === "transfer")
+  const move = movementOf(category, doc);
+  if (typeof amount !== "number" || move === "incomplete") return <span className="muted">—</span>;
+  if (move === "transfer")
     return (
       <span className="num" style={{ color: "var(--cyan)" }}>
         {formatMoney(amount)}
       </span>
     );
-  const income = doc.data.direction === "income";
+  const income = move === "income";
   return (
     <span className="num" style={{ color: income ? "var(--income)" : "var(--expense)" }}>
       {income ? "+" : "−"}
@@ -73,72 +101,58 @@ function SetDate({ doc }: { doc: Doc }) {
   );
 }
 
-/** Money → Transactions: every entry, undated ones first, newest first after that. */
+const timeOf = (date: unknown) => {
+  const s = typeof date === "string" ? date : "";
+  return s.length > 10 ? s.slice(11, 16) : "";
+};
+
+/**
+ * Money → Transactions (M12 part 1): one month at a time (or all time), direction chips,
+ * search, a searchable category filter, rows grouped by day, category or account with a
+ * subtotal each, and the entry form in place. Undated entries stay on top, in no total.
+ */
 export function Transactions() {
   const { db } = useCave().local;
   const collections = useCollections(db);
   const items = useItems(db, "money");
-  const payments = useItems(db, "payments");
-  const settings = useDoc(db, "settings");
+  const today = useToday();
+  const thisMonth = monthOf(today);
   const search = useSearch();
+  const q = useMemo(() => queryFromSearch(search, thisMonth), [search, thisMonth]);
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<string>();
   const [adding, setAdding] = useState(false);
   const [message, setMessage] = useState<string>();
-  const [toReview, setToReview] = useState<number>();
-  useEffect(() => {
-    void ownerGet<{ proposals: unknown[] }>("/api/money-review").then((r) =>
-      setToReview(r?.proposals.length),
-    );
-  }, []);
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
-  const params = new URLSearchParams(search);
-  const text = params.get("q") ?? "";
-  const categoryFilter = params.get("category") ?? "";
-  const accountFilter = params.get("account") ?? "";
-  const filter = (key: string, value: string) => {
-    const next = new URLSearchParams(search);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    const s = next.toString();
-    setSearch(s ? `?${s}` : "");
-  };
-
-  const rows = useMemo(() => {
-    const needle = text.toLowerCase();
-    return (items ?? [])
-      .filter((d) => !needle || titleOf(d).toLowerCase().includes(needle))
-      .filter((d) => !categoryFilter || d.data.category === categoryFilter)
-      .filter((d) => !accountFilter || d.data.account === accountFilter)
-      .sort((a, b) => String(b.data.date ?? "").localeCompare(String(a.data.date ?? "")));
-  }, [items, text, categoryFilter, accountFilter]);
-
-  const subscriptions = useMemo(
-    () =>
-      items && payments
-        ? subscriptionProposals(items, payments, dismissedOf(settings?.data)).reduce(
-            (n, p) => n + p.charges.length,
-            0,
-          )
-        : 0,
-    [items, payments, settings],
-  );
-  const pending = (toReview ?? 0) + subscriptions;
   const stored = collections?.find((c) => c.id === "money");
-  if (!stored || !items) return null;
-  const collection = withActiveFields(stored);
-  const field = (id: string) => collection.data.fields.find((f) => f.id === id);
+  const collection = stored ? withActiveFields(stored) : undefined;
+  const field = (id: string) => collection?.data.fields.find((f) => f.id === id);
   const category = field("category");
   const account = field("account");
-  const undated = rows.filter((d) => dayOf(d.data.date) === undefined);
-  const dated = rows.filter((d) => dayOf(d.data.date) !== undefined);
-  const lost = undatedSummary(undated);
+  const sole = soleAccount(collections);
+  const l = useMemo(() => ledger(items ?? [], q, category, account), [items, q, category, account]);
+  if (!collection || !items) return null;
+
+  const set = (patch: Partial<LedgerQuery>) =>
+    setSearch(queryToSearch({ ...q, ...patch }, thisMonth));
+  const lost = undatedSummary(l.undated);
+  const columns = sole ? 4 : 5;
+  const toggle = (key: string) =>
+    setCollapsed((c) => {
+      const next = new Set(c);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const row = (doc: Doc, undatedRow: boolean) => (
     <tr key={doc.id} {...rowOpen(() => setOpen(doc.id))}>
       <td className="num">
         {undatedRow ? (
           <SetDate doc={doc} />
+        ) : q.groupBy === "day" ? (
+          <span className="muted">{timeOf(doc.data.date)}</span>
         ) : (
           <FieldValue field={field("date") as Field} value={doc.data.date} />
         )}
@@ -152,102 +166,189 @@ export function Transactions() {
       <td style={{ textAlign: "right" }}>
         <Amount doc={doc} category={category} />
       </td>
-      <td>{account && <FieldValue field={account} value={doc.data.account} />}</td>
+      {!sole && <td>{account && <FieldValue field={account} value={doc.data.account} />}</td>}
     </tr>
   );
 
+  // Paging counts rows across groups, so "show more" reveals the next 200 wherever they fall.
+  let budget = shown;
+  const group = (g: LedgerGroup) => {
+    if (budget <= 0) return null;
+    const rows = g.rows.slice(0, budget);
+    budget -= rows.length;
+    const hidden = collapsed.has(g.key);
+    return (
+      <tbody key={g.key || "all"} aria-label={g.label || "Entries"}>
+        {q.groupBy !== "none" && (
+          <tr className="group-row">
+            <td colSpan={columns}>
+              <button type="button" onClick={() => toggle(g.key)} aria-expanded={!hidden}>
+                <Icon name={hidden ? "chevron-right" : "chevron-down"} size={14} />
+                <span>{g.label}</span>
+                <span className="num muted">{g.rows.length}</span>
+                <span className="num" style={{ marginLeft: "auto" }}>
+                  {g.out > 0 && (
+                    <span style={{ color: "var(--expense)" }}>−{formatMoney(g.out)}</span>
+                  )}
+                  {g.out > 0 && g.in > 0 && " · "}
+                  {g.in > 0 && <span style={{ color: "var(--income)" }}>+{formatMoney(g.in)}</span>}
+                </span>
+              </button>
+            </td>
+          </tr>
+        )}
+        {!hidden && rows.map((d) => row(d, false))}
+      </tbody>
+    );
+  };
+  const net = l.totals.in - l.totals.out;
+
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      {pending > 0 && (
-        <p className="panel banner" style={{ margin: 0 }}>
-          <span>
-            {pending} transaction{pending === 1 ? "" : "s"} to review
-          </span>
-          <a className="btn" href="/money/review">
-            Review
-          </a>
-        </p>
-      )}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className="btn primary" onClick={() => setAdding(!adding)}>
-          New transaction
+      <header className="period-bar">
+        <button
+          type="button"
+          className="btn"
+          aria-label="Previous month"
+          disabled={q.month === "all"}
+          onClick={() => set({ month: shiftMonth(q.month, -1) })}
+        >
+          <Icon name="chevron-left" size={15} />
         </button>
+        <h2 style={{ margin: 0, fontSize: 18, minWidth: 150 }}>
+          {q.month === "all" ? "All time" : monthName(q.month)}
+        </h2>
+        <button
+          type="button"
+          className="btn"
+          aria-label="Next month"
+          disabled={q.month === "all" || q.month >= thisMonth}
+          onClick={() => set({ month: shiftMonth(q.month, 1) })}
+        >
+          <Icon name="chevron-right" size={15} />
+        </button>
+        <button
+          type="button"
+          className="btn"
+          aria-pressed={q.month === "all"}
+          onClick={() => set({ month: q.month === "all" ? thisMonth : "all" })}
+        >
+          All time
+        </button>
+        <span className="ledger-totals num">
+          <span style={{ color: "var(--income)" }}>+{formatMoney(l.totals.in)}</span>
+          <span style={{ color: "var(--expense)" }}>−{formatMoney(l.totals.out)}</span>
+          <span style={{ color: net >= 0 ? "var(--income)" : "var(--expense)" }}>
+            net {net < 0 ? "−" : ""}
+            {formatMoney(Math.abs(net))}
+          </span>
+          {l.totals.transferred > 0 && (
+            <span style={{ color: "var(--cyan)" }}>{formatMoney(l.totals.transferred)} moved</span>
+          )}
+        </span>
+        <button
+          type="button"
+          className="btn primary"
+          aria-expanded={adding}
+          onClick={() => setAdding(!adding)}
+        >
+          <Icon name="plus" size={15} /> New entry
+        </button>
+      </header>
+      {adding && <MoneyForm keepOpen onSaved={(_, m) => setMessage(m)} />}
+      <p role="status" className="muted" style={{ margin: 0, minHeight: 20 }}>
+        {message}
+      </p>
+      <div className="ledger-controls">
+        <fieldset className="chips">
+          <legend className="sr">Show</legend>
+          {CHIPS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="btn"
+              aria-pressed={q.chip === c}
+              onClick={() => set({ chip: c })}
+            >
+              {CHIP_LABEL[c]}
+            </button>
+          ))}
+        </fieldset>
         <input
           className="input"
           type="search"
           aria-label="Search transactions"
           placeholder="Search"
-          value={text}
-          onChange={(e) => filter("q", e.target.value)}
-          style={{ flex: "1 1 160px", minWidth: 0 }}
+          value={q.text}
+          onChange={(e) => set({ text: e.target.value })}
+          style={{ flex: "1 1 140px", minWidth: 0 }}
         />
-        <select
-          className="input"
-          aria-label="Category"
-          value={categoryFilter}
-          onChange={(e) => filter("category", e.target.value)}
-          style={{ width: "auto" }}
-        >
-          <option value="">Any category</option>
-          {category?.options?.map((o) => (
-            <option key={o.value} value={o.value}>
-              {optionText(o)}
-            </option>
-          ))}
-        </select>
-        <select
-          className="input"
-          aria-label="Account"
-          value={accountFilter}
-          onChange={(e) => filter("account", e.target.value)}
-          style={{ width: "auto" }}
-        >
-          <option value="">Any account</option>
-          {account?.options?.map((o) => (
-            <option key={o.value} value={o.value}>
-              {optionText(o)}
-            </option>
-          ))}
-        </select>
+        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <span className="k">Group by</span>
+          <select
+            className="input"
+            aria-label="Group by"
+            value={q.groupBy}
+            onChange={(e) => set({ groupBy: e.target.value as GroupBy })}
+            style={{ width: "auto" }}
+          >
+            {GROUPS.map((g) => (
+              <option key={g} value={g}>
+                {GROUP_LABEL[g]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div style={{ flex: "0 1 200px" }}>
+          <OptionPicker
+            label="Category filter"
+            options={category?.options ?? []}
+            value={q.category}
+            onChange={(value) => set({ category: value })}
+            emptyLabel="Any category"
+          />
+        </div>
+        {!sole && account && (
+          <div style={{ flex: "0 1 180px" }}>
+            <OptionPicker
+              label="Account filter"
+              options={account.options ?? []}
+              value={q.account}
+              onChange={(value) => set({ account: value })}
+              emptyLabel="Any account"
+            />
+          </div>
+        )}
       </div>
-      {adding && (
-        <MoneyForm
-          onSaved={(_, m) => {
-            setAdding(false);
-            setMessage(m);
-          }}
-        />
-      )}
-      <p role="status" className="muted" style={{ margin: 0, minHeight: 20 }}>
-        {message}
-      </p>
       <section className="panel" style={{ padding: 4, overflowX: "auto" }}>
         <table className="table">
           <thead>
             <tr>
-              <th>Date</th>
+              <th>{q.groupBy === "day" ? "Time" : "Date"}</th>
               <th>Title</th>
               <th>Category</th>
               <th style={{ textAlign: "right" }}>Amount</th>
-              <th>Account</th>
+              {!sole && <th>Account</th>}
             </tr>
           </thead>
-          {undated.length > 0 && (
+          {l.undated.length > 0 && (
             <tbody aria-label="Undated">
-              <tr>
-                <th colSpan={5} className="k" style={{ textAlign: "left" }}>
+              <tr className="group-row">
+                <td colSpan={columns}>
                   Undated · {lost.count} · {formatMoney(lost.amount)} in no total until dated
-                </th>
+                </td>
               </tr>
-              {undated.map((d) => row(d, true))}
+              {l.undated.map((d) => row(d, true))}
             </tbody>
           )}
-          <tbody>{dated.slice(0, shown).map((d) => row(d, false))}</tbody>
+          {l.groups.map(group)}
         </table>
         <div style={{ padding: 12 }}>
           <span className="num muted" style={{ fontSize: 12 }}>
-            {Math.min(shown, dated.length)} of {dated.length} dated
-            {dated.length > shown && (
+            {l.totals.count === 0
+              ? "Nothing here."
+              : `${Math.min(shown, l.totals.count)} of ${l.totals.count}`}
+            {l.totals.count > shown && (
               <button type="button" className="link" onClick={() => setShown(shown + PAGE)}>
                 {" "}
                 · show more

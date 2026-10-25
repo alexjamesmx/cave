@@ -28,6 +28,14 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   await list.getByLabel("Colour for food as hex").press("Enter");
   await expect(list.locator(".swatch").first()).toHaveCSS("background-color", "rgb(18, 52, 86)");
 
+  // A kind change survives a reload (M12 part 1: it used to save the kind it replaced).
+  await list.getByLabel("Kind for transfer", { exact: true }).selectOption("expense");
+  await expect(list.getByLabel("Kind for transfer", { exact: true })).toHaveValue("expense");
+  await page.reload();
+  await expect(list.getByLabel("Kind for transfer", { exact: true })).toHaveValue("expense");
+  await list.getByLabel("Kind for transfer", { exact: true }).selectOption("transfer");
+  await expect(list.getByLabel("Kind for transfer", { exact: true })).toHaveValue("transfer");
+
   // Reorder, archive and restore, on whichever category is second (the stored order is the
   // owner's).
   const secondName = list
@@ -52,7 +60,8 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   await list.getByLabel("Emoji for food").blur();
   await expect(list.getByRole("listitem").first()).toContainText("🍔 Food");
 
-  // A new account typed in the money form joins the list the payment form offers.
+  // A new account typed in the money form joins the Account list. The e2e database starts with
+  // none, so it is then the only live one: the payment form takes it without a picker.
   const account = `E2E bank ${Date.now()}`;
   await page.goto("/");
   await openAsk(page);
@@ -67,11 +76,13 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   await openAsk(page);
   await page.getByRole("button", { name: "Payment", exact: true }).click();
   const pay = page.getByRole("form", { name: "Payment" });
-  await expect(pay.getByLabel("Account").locator("option", { hasText: account })).toHaveCount(1);
+  await expect(pay.getByLabel("Title")).toBeVisible();
+  await expect(pay.getByLabel("Account")).toHaveCount(0);
 
   // Archive the account again so the shared list stays as found; the entry keeps it, greyed.
   await page.goto("/money/lists");
   const accounts = page.getByRole("list", { name: "Account options" });
+  await expect(accounts.getByText(account)).toBeVisible();
   await accounts.getByRole("button", { name: `Archive ${account}` }).click();
   await expect(accounts.getByText(account)).toHaveCount(0);
   page.on("dialog", (dialog) => void dialog.accept());

@@ -101,13 +101,12 @@ export function OptionsEditor({
                 aria-label={`Kind for ${o.value}`}
                 value={o.kind ?? ""}
                 style={{ width: "auto" }}
-                onChange={(e) =>
-                  onChange((cur) =>
-                    patchOption(cur, o.value, {
-                      kind: (e.target.value || undefined) as OptionKind | undefined,
-                    }),
-                  )
-                }
+                onChange={(e) => {
+                  // Read now: the update runs after React has put the controlled select back
+                  // to the stored kind, so a read inside it would save the old value.
+                  const kind = (e.target.value || undefined) as OptionKind | undefined;
+                  onChange((cur) => patchOption(cur, o.value, { kind }));
+                }}
               >
                 <option value="">No kind</option>
                 <option value="expense">Expense</option>

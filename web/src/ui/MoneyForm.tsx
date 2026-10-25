@@ -1,5 +1,5 @@
-import { type FormEvent, type ReactNode, useId, useState } from "react";
-import { categoriesFor, optionText } from "../../../shared/categories.ts";
+import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { categoriesFor } from "../../../shared/categories.ts";
 import { localDateTime } from "../../../shared/dates.ts";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
@@ -7,7 +7,8 @@ import { useCave } from "../app/context.ts";
 import { useTimeZone } from "../app/hooks.ts";
 import { ensureAccount } from "../app/lists.ts";
 import { useCollections } from "../store/queries.ts";
-import { AccountPicker } from "./AccountPicker.tsx";
+import { AccountPicker, soleAccount } from "./AccountPicker.tsx";
+import { OptionPicker } from "./OptionPicker.tsx";
 
 type Direction = "expense" | "income";
 
@@ -33,17 +34,22 @@ function Labelled({ label, children }: { label: string; children(id: string): Re
 }
 
 /**
- * An expense or income on any day and time, with the direction's categories as an emoji grid.
- * Nothing is guessed: no category unless one is picked. `onSaved` gets the new entry's id.
+ * An expense or income on any day and time, the direction's categories in a searchable
+ * select. Nothing is guessed: no category unless one is picked; the one live account, when
+ * there is exactly one, is taken without asking. `onSaved` gets the new entry's id. With
+ * `keepOpen` the form stays after a save with its date, cleared for the next entry, so a
+ * batch of receipts goes in without a click per entry.
  */
 export function MoneyForm({
   prefill = {},
   onSaved,
   submitLabel = "Save",
+  keepOpen = false,
 }: {
   prefill?: MoneyPrefill;
   onSaved(id: string, message: string): void;
   submitLabel?: string;
+  keepOpen?: boolean;
 }) {
   const { local } = useCave();
   const timeZone = useTimeZone();
@@ -51,6 +57,7 @@ export function MoneyForm({
   const options =
     collections?.find((c) => c.id === "money")?.data.fields.find((f) => f.id === "category")
       ?.options ?? [];
+  const sole = soleAccount(collections);
   const [direction, setDirection] = useState<Direction>("expense");
   const [amount, setAmount] = useState(prefill.amount === undefined ? "" : String(prefill.amount));
   const [title, setTitle] = useState(prefill.title ?? "");
@@ -58,7 +65,11 @@ export function MoneyForm({
   const [account, setAccount] = useState(prefill.account ?? "");
   const [date, setDate] = useState(() => localDateTime(new Date(), timeZone));
   const [error, setError] = useState<string>();
+  const amountBox = useRef<HTMLInputElement>(null);
   const shown = categoriesFor(options, direction);
+  useEffect(() => {
+    if (sole && !prefill.account) setAccount(sole);
+  }, [sole, prefill.account]);
 
   const pickDirection = (next: Direction) => {
     setDirection(next);
@@ -91,6 +102,12 @@ export function MoneyForm({
     }
     setError(undefined);
     onSaved(id, `Saved · ${direction === "income" ? "Income" : "Expense"} · ${title.trim()}`);
+    if (keepOpen) {
+      setAmount("");
+      setTitle("");
+      setCategory("");
+      amountBox.current?.focus();
+    }
   };
 
   return (
@@ -118,6 +135,7 @@ export function MoneyForm({
           {(id) => (
             <input
               id={id}
+              ref={amountBox}
               className="input num"
               type="number"
               inputMode="decimal"
@@ -140,41 +158,30 @@ export function MoneyForm({
           )}
         </Labelled>
       </div>
-      <fieldset className="category-grid" style={{ border: 0, padding: 0, margin: 0 }}>
-        <legend className="k" style={{ paddingBottom: 6 }}>
-          Category
-        </legend>
-        <button
-          type="button"
-          className="category-pick"
-          aria-pressed={category === ""}
-          onClick={() => setCategory("")}
-        >
-          Uncategorized
-        </button>
-        {shown.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            className="category-pick"
-            aria-pressed={category === o.value}
-            onClick={() => setCategory(o.value)}
-          >
-            {optionText(o)}
-          </button>
-        ))}
-      </fieldset>
       <div className="quick-row">
-        <Labelled label="Account">
+        <Labelled label="Category">
           {(id) => (
-            <AccountPicker
+            <OptionPicker
               id={id}
-              collections={collections}
-              value={account}
-              onChange={setAccount}
+              label="Category"
+              options={shown}
+              value={category}
+              onChange={setCategory}
             />
           )}
         </Labelled>
+        {!sole && (
+          <Labelled label="Account">
+            {(id) => (
+              <AccountPicker
+                id={id}
+                collections={collections}
+                value={account}
+                onChange={setAccount}
+              />
+            )}
+          </Labelled>
+        )}
       </div>
       <div className="quick-row" style={{ alignItems: "end" }}>
         <Labelled label="When">

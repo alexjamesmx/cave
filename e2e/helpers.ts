@@ -60,8 +60,10 @@ export async function addMoney(
   if (entry.income) await form.getByRole("button", { name: "Income", exact: true }).click();
   await form.getByLabel("Amount").fill(String(entry.amount));
   await form.getByLabel("Title").fill(entry.title);
-  if (entry.category)
-    await form.getByRole("button", { name: new RegExp(`${entry.category}$`) }).click();
+  if (entry.category) {
+    await form.getByRole("combobox", { name: "Category", exact: true }).fill(entry.category);
+    await page.getByRole("option", { name: new RegExp(`${entry.category}$`) }).click();
+  }
   if (entry.yesterday) await form.getByRole("button", { name: "Yesterday" }).click();
   await form.getByRole("button", { name: "Save" }).click();
 }

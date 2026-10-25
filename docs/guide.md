@@ -25,12 +25,12 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Money
 
-- **Add** an expense or income for any day and time (Today, Yesterday) from the Ask sheet or Money; categories carry emoji and fit the direction; transfers (investments) count as neither spending nor income.
-- **Overview:** month or year, Compare to previous, filters kept in the URL, 12-month trends, top titles, fixed versus variable. **Transactions** lists everything; undated entries are listed and counted apart, never filled in.
-- **Payments** (cards, subscriptions, bills): Paid logs the expense and moves the same payment to its next date; Undo reverses both. Grouped as Overdue, This week, Later, Needs date and Inactive. Review proposes subscriptions from your history; nothing changes until you approve.
+- **Add** an expense or income from Transactions (New entry: the form stays open for the next receipt) or the Ask sheet, for any day and time (Today, Yesterday). The category is a searchable select that offers the direction's categories; transfers (investments) count as neither spending nor income. With one account in the list it is taken without asking; add another under Categories & accounts and the account picker returns.
+- **Transactions:** one month at a time (arrows, or All time) with its in, out and net on top; chips All, Expenses, Income, Transfers and Uncategorized (no category, or one that is no longer in the list); search; Group by day, category or account, each group with its subtotal, collapsible. Undated entries are listed and counted apart, never filled in.
+- **Overview:** month or year. Spent, Income, Saved and Invested (transfers into Investment) with their change against the previous period and a 12-month line; the month day by day; where it went against last period, each row opening the ledger on that category; the last 12 months stacked by category; top titles and the largest entries. Filters are kept in the URL.
+- **Payments** (cards, subscriptions, bills, anything paid on a date): you are notified before it is due (Notify days before); Paid logs the expense and moves the same payment to its next date; Undo reverses both. Grouped as Overdue, This week, Later, Needs date and Inactive.
 - **Net worth:** what you own minus what you owe.
-- **Categories & accounts:** the two lists every expense, income and payment picks from (name, emoji, colour, order, archive). Other lists (task statuses, idea stages) are edited in the field editor under Settings → Data.
-- **Review categories** (from Transactions when there is work) applies `bun run money-review`'s proposals only after you approve them, with one Undo.
+- **Categories & accounts:** the two lists every expense, income and payment picks from (name, emoji, colour, kind, order, archive). Other lists (task statuses, idea stages) are edited in the field editor under Settings → Data.
 
 ## Calendar and reminders
 

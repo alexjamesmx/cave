@@ -24,7 +24,6 @@ Pre-v0.1: M1 to M11 are on `main` and live at `https://cave.alexjamesmx.dev` (a 
 - `bun run deploy` (deploy the tip of `origin/main` now through `cave-deploy` on the VPS; `--rollback`); `bun run pull-data` (the newest verified VPS backup replaces the dev database inside `data/`; the old one stays as `<db>.prev`).
 - `bun run backup` (`--dir`, `--keep`, `--sha`); `bun run restore <file>` (server stopped); `bun run verify-backup <file>`; `bun run export`.
 - `bun run agent add|list|revoke` (agent tokens, `docs/agents.md`); `bun run push-keys` (VAPID keys).
-- `bun run money-review` (category proposals; `--local`, `--dry-run`).
 
 Environment variables: `docs/system.md` section 7; template in `.env.example`.
 

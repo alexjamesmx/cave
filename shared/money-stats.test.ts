@@ -5,7 +5,6 @@ import {
   filterEntries,
   filterFromSearch,
   filterToSearch,
-  fixedVsVariable,
   lastTwelve,
   type MoneyFilter,
   periodSummary,
@@ -107,22 +106,11 @@ test("filters combine, and survive a trip through the URL", () => {
   expect(filterFromSearch("?from=nope&min=abc&direction=sideways")).toEqual({});
 });
 
-test("top titles and fixed versus variable", () => {
+test("top titles", () => {
   const oct = periodSummary(docs, { kind: "month", key: "2026-10" }, "2026-12-31", TRANSFERS);
   expect(topTitles(oct.expenses).map((t) => [t.title, t.amount])).toEqual([
     ["City Gym", 900],
     ["Tacos", 100],
     ["Mystery", 40],
   ]);
-  const payments: Doc[] = [
-    {
-      id: "p",
-      kind: "item",
-      collection: "payments",
-      data: { _title: "smart fit" },
-      stamps: {},
-      actor: "t",
-    },
-  ];
-  expect(fixedVsVariable(oct.expenses, payments)).toEqual({ fixed: 900, variable: 140 });
 });

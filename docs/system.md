@@ -259,7 +259,7 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 | `CAVE_DEPLOY_STATUS`, `CAVE_OFFSITE_STATUS` | the `status.json` files `cave-deploy` and `cave-offsite` write; Settings → Devices & server shows them, and the Cave alerts once when the off-box copy is over 48 hours old or its check failed |
 | `CAVE_VAPID_PUBLIC`, `CAVE_VAPID_PRIVATE`, `CAVE_VAPID_SUBJECT` | Web Push; all three or none (`bun run push-keys`) |
 | `CAVE_TELEGRAM_BOT_TOKEN`, `CAVE_DISCORD_WEBHOOK_URL` | optional channels; never logged or sent to a client |
-| `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-data`, `money-review` |
+| `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-data` |
 
 ## 8. Secrets: where each lives
 

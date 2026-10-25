@@ -19,7 +19,6 @@ import { MoneyLists } from "./MoneyLists.tsx";
 import { NotesPage } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
-import { ReviewCategories } from "./ReviewCategories.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
 import { SettingsData } from "./settings/Data.tsx";
 import { SettingsDevices } from "./settings/Devices.tsx";
@@ -31,7 +30,6 @@ import { Transactions } from "./Transactions.tsx";
 const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-month": () => <Calendar mode="month" />,
   "calendar-agenda": () => <Calendar mode="agenda" />,
-  review: () => <ReviewCategories />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
   "projects-scene": () => (

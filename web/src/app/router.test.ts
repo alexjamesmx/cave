@@ -19,7 +19,6 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/")).toEqual({ name: "redirect", to: "/projects/scene" });
   expect(parseRoute("/money")).toEqual(section("money", "overview"));
   expect(parseRoute("/money/payments")).toEqual(section("money", "payments"));
-  expect(parseRoute("/money/review")).toEqual(section("money", "review"));
   expect(parseRoute("/money/nope")).toEqual(section("money", "overview"));
   expect(parseRoute("/calendar/agenda")).toEqual(section("calendar", "agenda"));
   expect(parseRoute("/flows/flow-rent")).toEqual(section("flows", "canvas", ["flow-rent"]));

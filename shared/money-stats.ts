@@ -1,7 +1,12 @@
 import { dayOf, monthOf, shiftMonth } from "./dates.ts";
 import { type MoneyEntry, type MonthSummary, monthSummary } from "./money.ts";
-import { normTitle } from "./subscription-finder.ts";
 import type { Doc } from "./types.ts";
+
+/** A title for matching: accents and case dropped, spaces collapsed. */
+export const normTitle = (s: unknown) =>
+  typeof s === "string"
+    ? s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim()
+    : "";
 
 /**
  * Money dashboards beyond one month (M7b part 7): filters, years, trends. Every period total
@@ -142,6 +147,7 @@ interface TrendPoint {
   income: number;
   /** (income − spent) / income; `undefined` without income. */
   savingsRate: number | undefined;
+  transferred: number;
   /** Spending in one category, when one is asked for. */
   category: number;
 }
@@ -161,6 +167,7 @@ export function lastTwelve(
       spent: s.spent,
       income: s.income,
       savingsRate: s.income > 0 ? (s.income - s.spent) / s.income : undefined,
+      transferred: s.transferred,
       category:
         category === undefined
           ? 0
@@ -186,23 +193,51 @@ export function topTitles(
   return [...byTitle.values()].sort((a, b) => b.amount - a.amount).slice(0, n);
 }
 
-/**
- * Fixed spending is what a payment covers (its title matches a payment's) or a subscription;
- * everything else is variable.
- */
-export function fixedVsVariable(expenses: MoneyEntry[], payments: readonly Doc[]) {
-  const titles = new Set(
-    payments.filter((p) => p.data._deleted !== true).map((p) => normTitle(p.data._title)),
-  );
-  let fixed = 0;
-  let variable = 0;
-  for (const e of expenses) {
-    const isFixed = titles.has(normTitle(e.doc.data._title)) || e.category === "subscriptions";
-    if (isFixed) fixed += e.amount;
-    else variable += e.amount;
-  }
-  return { fixed, variable };
-}
-
 export const currentPeriod = (kind: "month" | "year", today: string) =>
   kind === "month" ? monthOf(today) : today.slice(0, 4);
+
+export interface StackedMonths {
+  /** The categories with a column each, biggest over the 12 months first; `null` is untagged. */
+  categories: (string | null)[];
+  /** Whether a last "other" value follows the categories in each month's `values`. */
+  other: boolean;
+  months: { month: string; values: number[]; total: number }[];
+}
+
+/**
+ * Spending per month for the 12 months ending with `endMonth`, split into the `top` biggest
+ * categories of those months plus everything else, for one stacked bar per month.
+ */
+export function stackedTwelve(
+  docs: Doc[],
+  endMonth: string,
+  today: string,
+  transfers: ReadonlySet<string>,
+  top = 5,
+): StackedMonths {
+  const months = Array.from({ length: 12 }, (_, i) => shiftMonth(endMonth, i - 11)).map((month) =>
+    monthSummary(docs, month, today, transfers),
+  );
+  const totals = new Map<string | null, number>();
+  for (const m of months)
+    for (const c of m.byCategory) totals.set(c.category, (totals.get(c.category) ?? 0) + c.amount);
+  const ranked = [...totals].sort((a, b) => b[1] - a[1]).map(([c]) => c);
+  const categories = ranked.slice(0, top);
+  const other = ranked.length > top;
+  return {
+    categories,
+    other,
+    months: months.map((m) => {
+      const values = categories.map((c) => m.byCategory.find((x) => x.category === c)?.amount ?? 0);
+      const rest = m.spent - values.reduce((t, v) => t + v, 0);
+      return { month: m.month, values: other ? [...values, rest] : values, total: m.spent };
+    }),
+  };
+}
+
+/** The change from `before` to `now` as the tiles say it: "+12%", "−8%", "new" or "same". */
+export function changeText(now: number, before: number): string {
+  if (before === 0) return now === 0 ? "same" : "new";
+  const pct = Math.round((Math.abs(now - before) / before) * 100);
+  return pct === 0 ? "same" : `${now > before ? "+" : "−"}${pct}%`;
+}

@@ -5,6 +5,21 @@ import type { CollectionDoc } from "../store/queries.ts";
 
 const NEW = "\u0000new";
 
+const accountField = (collections: CollectionDoc[] | undefined) =>
+  collections?.find((c) => c.id === "money")?.data.fields.find((f) => f.id === "account");
+
+/**
+ * The one live account, when the list holds exactly one (M12 part 1): forms preselect it and
+ * hide the picker, and the ledger hides its account column and filter. `undefined` before the
+ * list is loaded, or with none or several.
+ */
+export function soleAccount(collections: CollectionDoc[] | undefined): string | undefined {
+  const field = accountField(collections);
+  if (!field) return undefined;
+  const live = offeredOptions(field);
+  return live.length === 1 ? live[0]?.value : undefined;
+}
+
 /** The accounts list as a select, plus "New account…" to type one; saving adds it to the list. */
 export function AccountPicker({
   id,
@@ -17,9 +32,7 @@ export function AccountPicker({
   value: string;
   onChange(value: string): void;
 }) {
-  const field = collections
-    ?.find((c) => c.id === "money")
-    ?.data.fields.find((f) => f.id === "account");
+  const field = accountField(collections);
   const offered = field ? offeredOptions(field) : [];
   const [typing, setTyping] = useState(false);
   const known = offered.some((o) => o.value === value);

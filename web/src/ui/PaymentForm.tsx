@@ -1,5 +1,4 @@
-import { type FormEvent, type ReactNode, useId, useState } from "react";
-import { optionText } from "../../../shared/categories.ts";
+import { type FormEvent, type ReactNode, useEffect, useId, useState } from "react";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
 import { missingForPayment, PAYMENT_KINDS, PAYMENTS } from "../../../shared/payments.ts";
@@ -7,7 +6,8 @@ import { REPEATS } from "../../../shared/recurrence.ts";
 import { useCave } from "../app/context.ts";
 import { ensureAccount } from "../app/lists.ts";
 import { useCollections } from "../store/queries.ts";
-import { AccountPicker } from "./AccountPicker.tsx";
+import { AccountPicker, soleAccount } from "./AccountPicker.tsx";
+import { OptionPicker } from "./OptionPicker.tsx";
 
 function Labelled({ label, children }: { label: string; children(id: string): ReactNode }) {
   const id = useId();
@@ -28,6 +28,7 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
   const categories =
     collections?.find((c) => c.id === PAYMENTS)?.data.fields.find((f) => f.id === "category")
       ?.options ?? [];
+  const sole = soleAccount(collections);
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<string>("card");
   const [amount, setAmount] = useState("");
@@ -37,6 +38,9 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
   const [due, setDue] = useState("");
   const [repeat, setRepeat] = useState("monthly");
   const [error, setError] = useState<string>();
+  useEffect(() => {
+    if (sole) setAccount(sole);
+  }, [sole]);
   const missing = missingForPayment({ kind, amount, due, repeat, account });
 
   const submit = async (e: FormEvent) => {
@@ -149,31 +153,27 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
       <div className="quick-row">
         <Labelled label="Category">
           {(id) => (
-            <select
+            <OptionPicker
               id={id}
-              className="input"
+              label="Category"
+              options={categories}
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">Uncategorized</option>
-              {categories.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {optionText(o)}
-                </option>
-              ))}
-            </select>
-          )}
-        </Labelled>
-        <Labelled label="Account">
-          {(id) => (
-            <AccountPicker
-              id={id}
-              collections={collections}
-              value={account}
-              onChange={setAccount}
+              onChange={setCategory}
             />
           )}
         </Labelled>
+        {!sole && (
+          <Labelled label="Account">
+            {(id) => (
+              <AccountPicker
+                id={id}
+                collections={collections}
+                value={account}
+                onChange={setAccount}
+              />
+            )}
+          </Labelled>
+        )}
       </div>
       {error && (
         <p role="alert" className="error" style={{ margin: 0 }}>

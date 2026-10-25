@@ -52,54 +52,105 @@ export function BarRow({
   );
 }
 
-/** Vertical bars on a shared baseline, one per slot; each bar's title is its tooltip. */
-export function Columns({
+/** A small line over the last values, for a tile; the label carries the numbers. */
+export function Sparkline({
+  values,
+  label,
+  color,
+}: {
+  values: number[];
+  label: string;
+  color: string;
+}) {
+  const w = 96;
+  const h = 36;
+  const max = Math.max(...values, 0);
+  const x = (i: number) => (values.length < 2 ? w / 2 : (i / (values.length - 1)) * (w - 4) + 2);
+  const y = (v: number) => (max === 0 ? h - 2 : h - 2 - (v / max) * (h - 6));
+  const points = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+  const last = values[values.length - 1];
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="sparkline" role="img" aria-label={label}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" opacity="0.8" />
+      {last !== undefined && <circle cx={x(values.length - 1)} cy={y(last)} r="2.5" fill={color} />}
+    </svg>
+  );
+}
+
+/** A number with its change and a sparkline beside it (Money → Overview). */
+export function Tile({
+  label,
+  value,
+  note,
+  tone,
+  trend,
+}: {
+  label: string;
+  value: ReactNode;
+  note?: ReactNode;
+  tone?: string;
+  trend?: { values: number[]; label: string };
+}) {
+  return (
+    <section className="panel tile" aria-label={label}>
+      <span className="k">{label}</span>
+      <span className="num tile-value" style={{ color: tone }}>
+        {value}
+      </span>
+      <span className="num muted tile-note">{note}</span>
+      {trend && (
+        <Sparkline values={trend.values} label={trend.label} color={tone ?? "var(--muted)"} />
+      )}
+    </section>
+  );
+}
+
+/** One cell per day of a month, shaded by the day's spending; today is outlined. */
+export function DayStrip({
   values,
   labels,
-  color,
-  highlight,
+  today,
   label,
 }: {
   values: number[];
   labels: string[];
-  color: string;
-  highlight?: number;
+  /** The index of today, when the month is this one. */
+  today?: number;
   label: string;
 }) {
   const max = Math.max(...values, 0);
   return (
-    <div className="columns" role="img" aria-label={label}>
+    <div className="day-strip" role="img" aria-label={label}>
       {values.map((v, i) => (
         <span
-          // biome-ignore lint/suspicious/noArrayIndexKey: slots are positional (day of month)
+          // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional (day of month)
           key={i}
-          className="column"
+          className={`day-cell${i === today ? " today" : ""}`}
           title={labels[i]}
-          style={{
-            height: max === 0 ? 0 : `${(v / max) * 100}%`,
-            background: color,
-            opacity: highlight === undefined || i === highlight ? 1 : 0.55,
-          }}
-        />
+        >
+          <span
+            className="fill"
+            style={{ opacity: max === 0 ? 0 : 0.12 + (v / max) * 0.75 }}
+            aria-hidden="true"
+          />
+          <span>{i + 1}</span>
+        </span>
       ))}
     </div>
   );
 }
 
-/**
- * Two series side by side per slot on one shared axis, with a legend; each bar's title is its
- * tooltip. Colour echoes the legend; the legend's text carries the identity.
- */
-export function PairColumns({
+/** One stacked column per slot, the series in the given order from the baseline up. */
+export function StackedColumns({
   slots,
   series,
   label,
 }: {
-  slots: { label: string; values: [number, number] }[];
-  series: [{ name: string; color: string }, { name: string; color: string }];
+  slots: { label: string; values: number[]; total: number }[];
+  series: { name: string; color: string }[];
   label: string;
 }) {
-  const max = Math.max(0, ...slots.flatMap((s) => s.values));
+  const max = Math.max(0, ...slots.map((s) => s.total));
   return (
     <div style={{ display: "grid", gap: 8 }}>
       <div className="legend" aria-hidden="true">
@@ -110,14 +161,14 @@ export function PairColumns({
           </span>
         ))}
       </div>
-      <div className="columns pair-columns" role="img" aria-label={label}>
+      <div className="stacked" role="img" aria-label={label}>
         {slots.map((slot) => (
-          <span key={slot.label} className="pair-slot">
+          <span key={slot.label} className="stack" title={`${slot.label}: ${slot.total}`}>
             {slot.values.map((v, i) => (
               <span
-                // biome-ignore lint/suspicious/noArrayIndexKey: the pair is positional
+                // biome-ignore lint/suspicious/noArrayIndexKey: the series is positional
                 key={i}
-                className="column"
+                className="segment"
                 title={`${slot.label} · ${series[i]?.name}: ${v}`}
                 style={{
                   height: max === 0 ? 0 : `${(v / max) * 100}%`,
@@ -134,57 +185,5 @@ export function PairColumns({
         ))}
       </div>
     </div>
-  );
-}
-
-/** A share (0–1) over time on its own 0–100% axis; months without a value leave a gap. */
-export function RateLine({
-  values,
-  labels,
-  label,
-  color,
-}: {
-  values: (number | undefined)[];
-  labels: string[];
-  label: string;
-  color: string;
-}) {
-  // Wide enough to fill a panel without stretching the markers.
-  const w = 1000;
-  const h = 120;
-  const x = (i: number) => (values.length < 2 ? w / 2 : (i / (values.length - 1)) * (w - 12) + 6);
-  const y = (v: number) => h - 6 - Math.max(0, Math.min(1, v)) * (h - 12);
-  const runs: string[] = [];
-  let run: string[] = [];
-  values.forEach((v, i) => {
-    if (v === undefined) {
-      if (run.length) runs.push(run.join(" "));
-      run = [];
-    } else run.push(`${x(i)},${y(v)}`);
-  });
-  if (run.length) runs.push(run.join(" "));
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={label} className="rate-line">
-      <line x1="0" x2={w} y1={y(0)} y2={y(0)} stroke="var(--border)" strokeWidth="1" />
-      <line x1="0" x2={w} y1={y(0.5)} y2={y(0.5)} stroke="var(--line)" strokeWidth="1" />
-      {runs.map((points) => (
-        <polyline key={points} points={points} fill="none" stroke={color} strokeWidth="2" />
-      ))}
-      {values.map((v, i) =>
-        v === undefined ? null : (
-          <circle
-            key={labels[i] ?? i}
-            cx={x(i)}
-            cy={y(v)}
-            r="4"
-            fill={color}
-            stroke="var(--panel)"
-            strokeWidth="2"
-          >
-            <title>{`${labels[i]}: ${Math.round(v * 100)}%`}</title>
-          </circle>
-        ),
-      )}
-    </svg>
   );
 }

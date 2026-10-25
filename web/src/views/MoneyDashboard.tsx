@@ -3,54 +3,54 @@ import { optionText, transferCategories } from "../../../shared/categories.ts";
 import { monthName, shiftMonth, shortDay } from "../../../shared/dates.ts";
 import { undatedSummary } from "../../../shared/money.ts";
 import {
+  changeText,
   currentPeriod,
   filterEntries,
   filterFromSearch,
   filterToSearch,
-  fixedVsVariable,
   lastTwelve,
   type MoneyFilter,
   type PeriodSummary,
   periodSummary,
   previousPeriod,
+  stackedTwelve,
   topTitles,
 } from "../../../shared/money-stats.ts";
-import { PAYMENTS } from "../../../shared/payments.ts";
+import type { SelectOption } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
 import { useToday } from "../app/hooks.ts";
 import { setSearch, useSearch } from "../app/router.ts";
 import { formatMoney, percent, signedMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
-import { useItems } from "../store/queries.ts";
-import { BarRow, Columns, PairColumns, RateLine, Stat } from "../ui/charts.tsx";
+import { useCollections } from "../store/queries.ts";
+import { soleAccount } from "../ui/AccountPicker.tsx";
+import { BarRow, DayStrip, StackedColumns, Tile } from "../ui/charts.tsx";
 import { Icon } from "../ui/icon.tsx";
-import { MoneyForm } from "../ui/MoneyForm.tsx";
+import { OptionPicker } from "../ui/OptionPicker.tsx";
 import type { ViewProps } from "./types.ts";
 
 type Kind = "month" | "year";
 
 const periodLabel = (p: { kind: Kind; key: string }) =>
   p.kind === "month" ? monthName(p.key) : p.key;
-const change = (now: number, before: number) =>
-  before === 0
-    ? now === 0
-      ? "no change"
-      : "new"
-    : `${now >= before ? "+" : "−"}${Math.round((Math.abs(now - before) / before) * 100)}%`;
 
+/** Transfers into the seed's investment category: the one kind of transfer that is saving. */
+const INVESTMENT = "investment";
+
+/**
+ * Money → Overview (M12 part 1): the period's four numbers as tiles with their change and a
+ * 12-month line, the month day by day, where it went against last period, twelve months
+ * stacked by category, the top titles and the largest entries. One screen on a laptop.
+ */
 export function MoneyDashboard({ collection, items, open }: ViewProps) {
   const today = useToday();
-  const { local } = useCave();
-  const payments = useItems(local.db, PAYMENTS) ?? [];
+  const collections = useCollections(useCave().local.db);
   const search = useSearch();
   const filter = useMemo(() => filterFromSearch(search), [search]);
   const [period, setPeriod] = useState<{ kind: Kind; key: string }>(() => ({
     kind: "month",
     key: currentPeriod("month", today),
   }));
-  const [compare, setCompare] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [picked, setPicked] = useState<string | null>();
   const category = collection.data.fields.find((f) => f.id === "category");
   const transfers = useMemo(() => transferCategories(category), [category]);
   const filtered = useMemo(() => filterEntries(items, filter), [items, filter]);
@@ -59,25 +59,34 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
     [filtered, period, today, transfers],
   );
   const prev = useMemo(
-    () => (compare ? periodSummary(filtered, previousPeriod(period), today, transfers) : undefined),
-    [compare, filtered, period, today, transfers],
+    () => periodSummary(filtered, previousPeriod(period), today, transfers),
+    [filtered, period, today, transfers],
   );
   const endMonth = period.kind === "month" ? period.key : `${period.key}-12`;
-  const trendCategory = picked === undefined ? (s.byCategory[0]?.category ?? null) : picked;
   const trend = useMemo(
-    () => lastTwelve(filtered, endMonth, today, transfers, trendCategory),
-    [filtered, endMonth, today, transfers, trendCategory],
+    () => lastTwelve(filtered, endMonth, today, transfers),
+    [filtered, endMonth, today, transfers],
+  );
+  const stacked = useMemo(
+    () => stackedTwelve(filtered, endMonth, today, transfers),
+    [filtered, endMonth, today, transfers],
   );
   const undated = useMemo(() => undatedSummary(items), [items]);
   const labelOf = (value: string | null) => {
-    if (value === null) return "? untagged";
+    if (value === null) return "Uncategorized";
     const o = category?.options?.find((x) => x.value === value);
     return o ? optionText(o) : value;
   };
   const colorOf = (value: string | null) =>
     category?.options?.find((o) => o.value === value)?.color ?? "var(--muted)";
-  const fixed = fixedVsVariable(s.expenses, payments);
-  const titles = topTitles(s.expenses);
+  const invested = (p: PeriodSummary) =>
+    p.months.reduce(
+      (t, m) =>
+        t + m.transfers.filter((e) => e.category === INVESTMENT).reduce((a, e) => a + e.amount, 0),
+      0,
+    );
+  const saved = (p: PeriodSummary) => p.income - p.spent;
+  const titles = topTitles(s.expenses, 5);
   const step = (by: -1 | 1) =>
     setPeriod((p) =>
       p.kind === "month"
@@ -85,24 +94,25 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
         : { ...p, key: String(Number(p.key) + by) },
     );
   const active = Object.keys(filter).length;
-  const accounts = [
-    ...new Set(items.map((d) => d.data.account).filter((a) => typeof a === "string" && a)),
-  ]
-    .map(String)
-    .sort();
+  const sole = soleAccount(collections);
+  const accounts = sole
+    ? []
+    : [...new Set(items.map((d) => d.data.account).filter((a) => typeof a === "string" && a))]
+        .map(String)
+        .sort();
+  const before = period.kind === "month" ? "last month" : "last year";
+  const vs = (now: number, was: number) => `${changeText(now, was)} vs ${before}`;
+  const days = s.months[0]?.byDay ?? [];
+  const peak = days.indexOf(Math.max(...days));
+  const dayOf = (i: number) => `${period.key}-${String(i + 1).padStart(2, "0")}`;
+  const monthLink = (c: string | null) =>
+    `/money/transactions?${new URLSearchParams({
+      ...(period.kind === "month" ? { month: period.key } : { month: "all" }),
+      ...(c === null ? { chip: "uncategorized" } : { category: c }),
+    }).toString()}`;
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button type="button" className="btn primary" onClick={() => setAdding(!adding)}>
-          <Icon name="plus" size={15} /> New entry
-        </button>
-        <a className="btn" href="/money/review">
-          <Icon name="list-checks" size={15} /> Review
-        </a>
-      </div>
-      {adding && <MoneyForm onSaved={() => setAdding(false)} />}
-
+    <div style={{ display: "grid", gap: 12 }}>
       <header className="period-bar">
         <fieldset className="quick-row" style={{ border: 0, padding: 0, margin: 0 }}>
           <legend className="sr">Period</legend>
@@ -135,18 +145,13 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
         >
           <Icon name="chevron-right" size={15} />
         </button>
-        <label style={{ display: "flex", gap: 6, alignItems: "center", marginLeft: "auto" }}>
-          <input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} />
-          Compare to previous
-        </label>
+        <Filters
+          filter={filter}
+          active={active}
+          categories={category?.options ?? []}
+          accounts={accounts}
+        />
       </header>
-
-      <Filters
-        filter={filter}
-        active={active}
-        categories={category?.options ?? []}
-        accounts={accounts}
-      />
 
       {(s.incomplete > 0 || undated.count > 0) && (
         <p role="status" className="panel banner" style={{ margin: 0 }}>
@@ -158,43 +163,130 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
         </p>
       )}
 
-      <Stats s={s} prev={prev} period={period} />
+      <div className="tiles">
+        <Tile
+          label="Spent"
+          value={signedMoney(s.spent, "expense")}
+          note={`${vs(s.spent, prev.spent)} · ${s.spentCount} entries`}
+          tone="var(--expense)"
+          trend={{ values: trend.map((p) => p.spent), label: "Spent per month, 12 months" }}
+        />
+        <Tile
+          label="Income"
+          value={signedMoney(s.income, "income")}
+          note={`${vs(s.income, prev.income)} · ${s.incomeCount} entries`}
+          tone="var(--income)"
+          trend={{ values: trend.map((p) => p.income), label: "Income per month, 12 months" }}
+        />
+        <Tile
+          label="Saved"
+          value={signedMoney(saved(s), saved(s) >= 0 ? "income" : "expense")}
+          note={
+            s.income > 0
+              ? `${percent(Math.max(saved(s), 0), s.income)} of income · ${vs(saved(s), saved(prev))}`
+              : "no income in this period"
+          }
+          tone={saved(s) >= 0 ? "var(--accent)" : "var(--expense)"}
+          trend={{
+            values: trend.map((p) => Math.max(p.income - p.spent, 0)),
+            label: "Saved per month, 12 months",
+          }}
+        />
+        <Tile
+          label="Invested"
+          value={formatMoney(invested(s))}
+          note={`${vs(invested(s), invested(prev))} · ${formatMoney(s.transferred)} moved in all`}
+          tone="var(--cyan)"
+          trend={{
+            values: trend.map((p) => p.transferred),
+            label: "Transfers per month, 12 months",
+          }}
+        />
+      </div>
 
-      {period.kind === "month" ? (
-        <DailySpending month={period.key} s={s} today={today} />
-      ) : (
-        <YearTable s={s} />
-      )}
+      <div className="split">
+        {period.kind === "month" ? (
+          <section
+            className="panel"
+            aria-label="Day by day"
+            style={{ padding: 16, display: "grid", gap: 10 }}
+          >
+            <span className="k">
+              Day by day
+              {s.spent > 0 && ` · peak ${shortDay(dayOf(peak))} ${formatMoney(days[peak] ?? 0)}`}
+              {s.months[0] && s.months[0].daysElapsed > 0
+                ? ` · ${formatMoney(Math.round(s.spent / s.months[0].daysElapsed))} a day`
+                : ""}
+            </span>
+            <DayStrip
+              values={days}
+              labels={days.map((v, i) => `${shortDay(dayOf(i))}: ${formatMoney(v)}`)}
+              label={`Spending per day in ${monthName(period.key)}`}
+              {...(period.key === today.slice(0, 7) ? { today: Number(today.slice(8)) - 1 } : {})}
+            />
+          </section>
+        ) : (
+          <YearTable s={s} />
+        )}
+        <section
+          className="panel"
+          aria-label="Where it went"
+          style={{ padding: 16, display: "grid", gap: 4 }}
+        >
+          <span className="k" style={{ paddingBottom: 6 }}>
+            Where it went · against {before}
+          </span>
+          {s.byCategory.length === 0 && <span className="muted">No spending in this period.</span>}
+          {s.byCategory.slice(0, 8).map(({ category: c, amount }) => {
+            const was = prev.byCategory.find((x) => x.category === c)?.amount ?? 0;
+            return (
+              <a key={c ?? "__untagged"} className="where-row" href={monthLink(c)}>
+                <span>{labelOf(c)}</span>
+                <span className="num muted" style={{ fontSize: 12 }}>
+                  {changeText(amount, was)}
+                </span>
+                <span className="num">
+                  {formatMoney(amount)} · {percent(amount, s.spent)}
+                </span>
+                <span className="bar-track" aria-hidden="true">
+                  <span
+                    className="bar-fill"
+                    style={{
+                      width: `${s.spent === 0 ? 0 : Math.max((amount / s.spent) * 100, 1)}%`,
+                      background: colorOf(c),
+                    }}
+                  />
+                </span>
+              </a>
+            );
+          })}
+        </section>
+      </div>
 
       <div className="split">
         <section
           className="panel"
-          aria-label="Where it went"
+          aria-label="Last 12 months"
           style={{ padding: 16, display: "grid", gap: 10 }}
         >
-          <span className="k">Where it went · pick one for its 12 months</span>
-          {s.byCategory.length === 0 && <span className="muted">No spending in this period.</span>}
-          {s.byCategory.map(({ category: c, amount }) => (
-            <button
-              key={c ?? "__untagged"}
-              type="button"
-              className="bar-button"
-              aria-pressed={c === trendCategory}
-              onClick={() => setPicked(c)}
-            >
-              <BarRow
-                label={labelOf(c)}
-                value={`${formatMoney(amount)} · ${percent(amount, s.spent)}`}
-                share={s.spent === 0 ? 0 : amount / s.spent}
-                color={colorOf(c)}
-              />
-            </button>
-          ))}
+          <span className="k">Last 12 months · by category</span>
+          <StackedColumns
+            label="Spending per month by category, last 12 months"
+            series={[
+              ...stacked.categories.map((c) => ({ name: labelOf(c), color: colorOf(c) })),
+              ...(stacked.other ? [{ name: "Other", color: "var(--muted)" }] : []),
+            ]}
+            slots={stacked.months.map((m) => ({
+              label: m.month.slice(5),
+              values: m.values,
+              total: m.total,
+            }))}
+          />
         </section>
         <section
           className="panel"
           aria-label="Top titles"
-          style={{ padding: 16, display: "grid", gap: 10 }}
+          style={{ padding: 16, display: "grid", gap: 8 }}
         >
           <span className="k">Top titles</span>
           {titles.length === 0 && <span className="muted">Nothing yet.</span>}
@@ -207,157 +299,28 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
               color="var(--expense)"
             />
           ))}
-          <span className="k" style={{ marginTop: 8 }}>
-            Fixed and variable
+          <span className="k" style={{ marginTop: 6 }}>
+            {period.kind === "year" ? "Biggest expenses of the year" : "Largest"}
           </span>
-          <BarRow
-            label="Fixed (payments)"
-            value={formatMoney(fixed.fixed)}
-            share={s.spent === 0 ? 0 : fixed.fixed / s.spent}
-            color="var(--orange)"
-          />
-          <BarRow
-            label="Variable"
-            value={formatMoney(fixed.variable)}
-            share={s.spent === 0 ? 0 : fixed.variable / s.spent}
-            color="var(--cyan)"
-          />
+          <section aria-label="Largest" style={{ display: "grid", gap: 2 }}>
+            {s.expenses.slice(0, period.kind === "year" ? 8 : 5).map((e) => (
+              <button key={e.doc.id} type="button" className="entry" onClick={() => open(e.doc.id)}>
+                <span style={{ flex: 1, textAlign: "left" }}>
+                  {e.category === null && <span className="chip untagged">tag me</span>}{" "}
+                  {titleOf(e.doc)}
+                </span>
+                <span className="num muted" style={{ fontSize: 12 }}>
+                  {shortDay(e.day)}
+                </span>
+                <span className="num" style={{ color: "var(--expense)" }}>
+                  {signedMoney(e.amount, "expense")}
+                </span>
+              </button>
+            ))}
+          </section>
         </section>
       </div>
-
-      <section
-        className="panel"
-        aria-label="Last 12 months"
-        style={{ padding: 16, display: "grid", gap: 10 }}
-      >
-        <span className="k">Last 12 months</span>
-        <PairColumns
-          label="Spending and income per month, last 12 months"
-          series={[
-            { name: "Spent", color: "var(--expense)" },
-            { name: "Income", color: "var(--income)" },
-          ]}
-          slots={trend.map((p) => ({ label: p.month.slice(5), values: [p.spent, p.income] }))}
-        />
-        <span className="k">Savings rate</span>
-        {trend.some((p) => p.savingsRate !== undefined) ? (
-          <RateLine
-            label="Savings rate per month, last 12 months"
-            color="var(--lime)"
-            values={trend.map((p) => p.savingsRate)}
-            labels={trend.map((p) => p.month)}
-          />
-        ) : (
-          <span className="muted">No income in these months, so no savings rate.</span>
-        )}
-        <span className="k">{labelOf(trendCategory)} · 12 months</span>
-        <Columns
-          label={`${labelOf(trendCategory)} per month, last 12 months`}
-          values={trend.map((p) => p.category)}
-          labels={trend.map((p) => `${p.month}: ${formatMoney(p.category)}`)}
-          color={colorOf(trendCategory)}
-        />
-      </section>
-
-      <section
-        className="panel"
-        aria-label="Largest"
-        style={{ padding: 16, display: "grid", gap: 4 }}
-      >
-        <span className="k">
-          {period.kind === "year" ? "Biggest expenses of the year" : "Largest"}
-        </span>
-        {s.expenses.slice(0, period.kind === "year" ? 10 : 8).map((e) => (
-          <button key={e.doc.id} type="button" className="entry" onClick={() => open(e.doc.id)}>
-            <span style={{ flex: 1, textAlign: "left" }}>
-              {e.category === null && <span className="chip untagged">tag me</span>}{" "}
-              {titleOf(e.doc)}
-            </span>
-            <span className="num muted" style={{ fontSize: 12 }}>
-              {shortDay(e.day)}
-            </span>
-            <span className="num" style={{ color: "var(--expense)" }}>
-              {signedMoney(e.amount, "expense")}
-            </span>
-          </button>
-        ))}
-      </section>
     </div>
-  );
-}
-
-function Stats({
-  s,
-  prev,
-  period,
-}: {
-  s: PeriodSummary;
-  prev: PeriodSummary | undefined;
-  period: { kind: Kind; key: string };
-}) {
-  const vs = (now: number, before: number | undefined) =>
-    before === undefined ? undefined : `${change(now, before)} vs before`;
-  const elapsed = s.months.reduce((t, m) => t + m.daysElapsed, 0);
-  const monthsElapsed = s.months.filter((m) => m.daysElapsed > 0).length;
-  return (
-    <div className="stats">
-      <Stat
-        label="Income"
-        value={signedMoney(s.income, "income")}
-        note={vs(s.income, prev?.income) ?? `${s.incomeCount} entries`}
-        tone="var(--income)"
-      />
-      <Stat
-        label="Spent"
-        value={signedMoney(s.spent, "expense")}
-        note={vs(s.spent, prev?.spent) ?? `${s.spentCount} entries`}
-        tone="var(--expense)"
-      />
-      <Stat
-        label="Net"
-        value={signedMoney(s.net, s.net >= 0 ? "income" : "expense")}
-        note={vs(s.net, prev?.net) ?? "income − spent"}
-      />
-      <Stat
-        label="Transfers"
-        value={formatMoney(s.transferred)}
-        note="investments and moves, not spending"
-      />
-      {period.kind === "month" ? (
-        <Stat
-          label="Burn rate"
-          value={elapsed > 0 ? `${formatMoney(Math.round(s.spent / elapsed))}/day` : "—"}
-          note={elapsed > 0 ? `${elapsed} days` : "not started"}
-        />
-      ) : (
-        <Stat
-          label="Average month"
-          value={monthsElapsed > 0 ? formatMoney(Math.round(s.spent / monthsElapsed)) : "—"}
-          note={monthsElapsed > 0 ? `${monthsElapsed} months so far` : "not started"}
-        />
-      )}
-    </div>
-  );
-}
-
-function DailySpending({ month, s, today }: { month: string; s: PeriodSummary; today: string }) {
-  const days = s.months[0]?.byDay ?? [];
-  const peak = days.indexOf(Math.max(...days));
-  const day = (i: number) => `${month}-${String(i + 1).padStart(2, "0")}`;
-  return (
-    <section className="panel" style={{ padding: 16, display: "grid", gap: 10 }}>
-      <span className="k">
-        Daily spending
-        {s.spent > 0 && ` · peak ${shortDay(day(peak))} ${formatMoney(days[peak] ?? 0)}`}
-      </span>
-      <Columns
-        label={`Spending per day in ${monthName(month)}`}
-        values={days}
-        labels={days.map((v, i) => `${shortDay(day(i))}: ${formatMoney(v)}`)}
-        color="var(--expense)"
-        {...(month === today.slice(0, 7) ? { highlight: Number(today.slice(8)) - 1 } : {})}
-      />
-    </section>
   );
 }
 
@@ -400,7 +363,7 @@ function Filters({
 }: {
   filter: MoneyFilter;
   active: number;
-  categories: { value: string; label?: string; emoji?: string }[];
+  categories: SelectOption[];
   accounts: string[];
 }) {
   const set = (patch: { [K in keyof MoneyFilter]?: MoneyFilter[K] | undefined }) => {
@@ -412,12 +375,17 @@ function Filters({
     setSearch(filterToSearch(next as MoneyFilter));
   };
   const num = (v: string) => (v === "" ? undefined : Number(v));
+  const chosen = filter.categories ?? [];
+  const labelOf = (value: string) => {
+    const o = categories.find((x) => x.value === value);
+    return o ? optionText(o) : value;
+  };
   return (
-    <details className="panel">
-      <summary style={{ padding: "12px 14px", cursor: "pointer" }}>
+    <details className="panel" style={{ marginLeft: "auto", position: "relative" }}>
+      <summary style={{ padding: "7px 12px", cursor: "pointer" }}>
         Filters{active > 0 ? ` · ${active} on` : ""}
       </summary>
-      <div className="money-filters">
+      <div className="money-filters filters-pop">
         <label className="quick-field">
           <span className="k">From</span>
           <input
@@ -450,21 +418,23 @@ function Filters({
             <option value="income">Income</option>
           </select>
         </label>
-        <label className="quick-field">
-          <span className="k">Account</span>
-          <select
-            className="input"
-            value={filter.account ?? ""}
-            onChange={(e) => set({ account: e.target.value })}
-          >
-            <option value="">Any</option>
-            {accounts.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </label>
+        {accounts.length > 0 && (
+          <label className="quick-field">
+            <span className="k">Account</span>
+            <select
+              className="input"
+              value={filter.account ?? ""}
+              onChange={(e) => set({ account: e.target.value })}
+            >
+              <option value="">Any</option>
+              {accounts.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="quick-field">
           <span className="k">Text</span>
           <input
@@ -499,34 +469,35 @@ function Filters({
           />
           Uncategorized only
         </label>
-        <fieldset
-          className="category-grid"
-          style={{ gridColumn: "1 / -1", border: 0, padding: 0, margin: 0 }}
-        >
-          <legend className="k" style={{ paddingBottom: 6 }}>
-            Categories
-          </legend>
-          {categories.map((o) => {
-            const on = filter.categories?.includes(o.value) ?? false;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                className="category-pick"
-                aria-pressed={on}
-                onClick={() =>
-                  set({
-                    categories: on
-                      ? (filter.categories ?? []).filter((c) => c !== o.value)
-                      : [...(filter.categories ?? []), o.value],
-                  })
-                }
-              >
-                {optionText(o)}
-              </button>
-            );
-          })}
-        </fieldset>
+        <div className="quick-field" style={{ gridColumn: "1 / -1" }}>
+          <span className="k">Categories</span>
+          <OptionPicker
+            label="Add a category"
+            options={categories.filter((o) => !chosen.includes(o.value))}
+            value=""
+            onChange={(value) => {
+              if (value) set({ categories: [...chosen, value] });
+            }}
+            allowEmpty={false}
+            placeholder="Type to add"
+          />
+          {chosen.length > 0 && (
+            <ul className="chips" aria-label="Chosen categories">
+              {chosen.map((c) => (
+                <li key={c}>
+                  <button
+                    type="button"
+                    className="btn"
+                    aria-label={`Remove ${labelOf(c)}`}
+                    onClick={() => set({ categories: chosen.filter((x) => x !== c) })}
+                  >
+                    {labelOf(c)} ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         {active > 0 && (
           <button type="button" className="btn" onClick={() => setSearch("")}>
             Clear filters

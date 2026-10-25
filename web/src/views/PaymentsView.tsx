@@ -121,9 +121,6 @@ export function PaymentsView({ collection, items, open }: ViewProps) {
         <button type="button" className="btn primary" onClick={() => setAdding(!adding)}>
           <Icon name="plus" size={15} /> New payment
         </button>
-        <a className="btn" href="/money/review">
-          <Icon name="search" size={15} /> Review subscriptions
-        </a>
       </div>
       {adding && (
         <PaymentForm

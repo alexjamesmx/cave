@@ -656,25 +656,6 @@ textarea.input {
   border-radius: 4px;
 }
 
-.columns {
-  height: 120px;
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  border-bottom: 1px solid var(--border);
-}
-
-.column {
-  flex: 1;
-  border-radius: 4px 4px 0 0;
-  min-width: 2px;
-}
-
-.columns .column {
-  padding: 0;
-  display: block;
-}
-
 .entry {
   display: flex;
   align-items: center;
@@ -1220,18 +1201,6 @@ textarea.input {
   vertical-align: -1px;
 }
 
-.pair-columns {
-  gap: 6px;
-}
-
-.pair-slot {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-}
-
 .slot-labels {
   display: flex;
   gap: 6px;
@@ -1242,11 +1211,6 @@ textarea.input {
   flex: 1;
   text-align: center;
   overflow: hidden;
-}
-
-.rate-line {
-  width: 100%;
-  height: 120px;
 }
 
 .period-bar {
@@ -2125,4 +2089,244 @@ a.btn {
 .buckets .chip[aria-pressed="true"] {
   color: var(--on-accent);
   background: var(--accent);
+}
+
+/* Searchable selects (M12 part 1). */
+.option-picker {
+  position: relative;
+  display: grid;
+}
+
+.option-picker .input {
+  width: 100%;
+  padding-right: 28px;
+}
+
+.option-clear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.option-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 260px;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.option-row-pick {
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.option-row-pick.active {
+  background: var(--on);
+}
+
+.option-row-pick[aria-selected="true"] {
+  color: var(--accent);
+}
+
+/* The ledger (M12 part 1). */
+.ledger-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chips .btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: rgba(143, 208, 160, 0.14);
+  color: var(--text-strong);
+}
+
+.ledger-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-left: auto;
+  font-size: 13px;
+}
+
+.table .group-row td {
+  text-align: left;
+  padding: 6px 10px;
+  background: var(--on);
+  font-weight: 600;
+}
+
+.group-row button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Money → Overview tiles and charts (M12 part 1). */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 2px 10px;
+  align-items: center;
+}
+
+.tile .k {
+  grid-column: 1;
+}
+
+.tile .tile-value {
+  grid-column: 1;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.tile .tile-note {
+  grid-column: 1;
+  font-size: 11px;
+}
+
+.tile .sparkline {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  width: 96px;
+  height: 36px;
+}
+
+.day-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(26px, 1fr));
+  gap: 3px;
+}
+
+.day-cell {
+  height: 34px;
+  border-radius: 5px;
+  background: var(--on);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--muted);
+  position: relative;
+}
+
+.day-cell .fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: var(--expense);
+}
+
+.day-cell span {
+  position: relative;
+}
+
+.day-cell.today {
+  outline: 1px solid var(--accent);
+}
+
+.stacked {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 140px;
+}
+
+.stacked .stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  height: 100%;
+  justify-content: flex-start;
+}
+
+.stacked .segment {
+  width: 100%;
+}
+
+.stacked .segment:first-child {
+  border-radius: 0 0 3px 3px;
+}
+
+.where-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 3px 4px;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.where-row:hover {
+  background: var(--on);
+}
+
+.where-row .bar-track {
+  grid-column: 1 / -1;
+}
+
+.filters-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  width: min(640px, 90vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+fieldset.chips {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+ul.chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
