@@ -20,10 +20,10 @@ import { askClaude, browserAsk } from "../logic/ask-claude.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { titleOf } from "../logic/views.ts";
 import { useAllItems, useCollections, useDoc, useItems } from "../store/queries.ts";
-import { Finds } from "../ui/Finds.tsx";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { NotesInbox } from "../ui/NotesInbox.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
 function TemplatePicker({ value, onChange }: { value: string; onChange(v: string): void }) {
@@ -218,40 +218,23 @@ export function ProjectsAll() {
           );
         })}
       </div>
+      <NotesInbox />
     </div>
   );
 }
 
-const BUCKETS = [
-  ["mine", "Mine"],
-  ["finds", "Agent finds"],
-  ["all", "All"],
-] as const;
-type Bucket = (typeof BUCKETS)[number][0];
-
 /**
- * Projects → Ideas: your own ideas (capture, promote to a project, or start one with Claude),
- * what agents found for you (the radar until M11 part 8, with the interests that rank it),
- * or both.
+ * Projects → Ideas: your own ideas, newest first: capture one, promote it to a project with a
+ * template, or start one with Claude. Agents' finds left this page in M12 part 5; the `radar`
+ * collection stays under Settings → Data.
  */
 export function IdeasPage() {
   const { db } = useCave().local;
   const ideas = useItems(db, "ideas");
   const collections = useCollections(db);
-  const search = useSearch();
   const [title, setTitle] = useState("");
   const [open, setOpen] = useState<string>();
   const write = useWriteError();
-  const asked = new URLSearchParams(search).get("bucket");
-  const bucket: Bucket = BUCKETS.some(([id]) => id === asked) ? (asked as Bucket) : "mine";
-  const pickBucket = (id: Bucket) => {
-    const next = new URLSearchParams(search);
-    next.delete("tab");
-    if (id === "mine") next.delete("bucket");
-    else next.set("bucket", id);
-    const s = next.toString();
-    setSearch(s ? `?${s}` : "");
-  };
 
   if (!ideas || !collections) return null;
   const collection = collections.find((c) => c.id === "ideas");
@@ -272,48 +255,32 @@ export function IdeasPage() {
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <nav aria-label="Idea buckets" className="buckets">
-        {BUCKETS.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className="chip"
-            aria-pressed={id === bucket}
-            onClick={() => pickBucket(id)}
-          >
-            {label}
+      <>
+        <form onSubmit={(e) => void add(e)} style={{ display: "flex", gap: 8 }}>
+          <input
+            className="input"
+            style={{ flex: 1, minWidth: 0 }}
+            aria-label="New idea"
+            placeholder="New idea"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <button type="submit" className="btn">
+            Add
           </button>
-        ))}
-      </nav>
-      {bucket !== "mine" && <Finds withInterests={bucket === "finds"} />}
-      {bucket !== "finds" && (
-        <>
-          <form onSubmit={(e) => void add(e)} style={{ display: "flex", gap: 8 }}>
-            <input
-              className="input"
-              style={{ flex: 1, minWidth: 0 }}
-              aria-label="New idea"
-              placeholder="New idea"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <button type="submit" className="btn">
-              Add
-            </button>
-          </form>
-          {write.error && (
-            <p role="alert" className="error">
-              {write.error}
-            </p>
-          )}
-          {sorted.length === 0 && <p className="muted">No ideas yet.</p>}
-          <ul aria-label="Ideas" style={{ margin: 0, padding: 0, display: "grid", gap: 8 }}>
-            {sorted.map((idea) => (
-              <IdeaRow key={idea.id} idea={idea} stage={stage} onOpen={() => setOpen(idea.id)} />
-            ))}
-          </ul>
-        </>
-      )}
+        </form>
+        {write.error && (
+          <p role="alert" className="error">
+            {write.error}
+          </p>
+        )}
+        {sorted.length === 0 && <p className="muted">No ideas yet.</p>}
+        <ul aria-label="Ideas" style={{ margin: 0, padding: 0, display: "grid", gap: 8 }}>
+          {sorted.map((idea) => (
+            <IdeaRow key={idea.id} idea={idea} stage={stage} onOpen={() => setOpen(idea.id)} />
+          ))}
+        </ul>
+      </>
       {open && collection && (
         <ItemDrawer
           key={open}

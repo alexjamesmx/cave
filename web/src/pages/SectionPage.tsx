@@ -1,11 +1,10 @@
-import { type ReactNode, useMemo } from "react";
+import type { ReactNode } from "react";
 import { useCave } from "../app/context.ts";
 import { projectPath } from "../app/router.ts";
 import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections.ts";
-import { withActiveFields } from "../logic/field-edits.ts";
 import { titleOf } from "../logic/views.ts";
 import { Scene } from "../scene/Scene.tsx";
-import { useCollections, useItems } from "../store/queries.ts";
+import { useItems } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
 import { NeedsYou } from "../ui/NeedsYou.tsx";
 import { ActivityPage } from "./Activity.tsx";
@@ -16,7 +15,6 @@ import { FlowJob } from "./FlowJob.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
-import { NotesPage } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
@@ -46,7 +44,6 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   ),
   "projects-ideas": () => <IdeasPage />,
   "diary-months": () => <DiaryMonths />,
-  notes: (rest) => <NotesPage {...(rest[0] ? { noteId: rest[0] } : {})} />,
   project: (rest) => <ProjectPage rest={rest} />,
   activity: () => <ActivityPage />,
   flows: (rest) => (rest[0] === "jobs" ? <FlowJob id={rest[1]} /> : <Flows id={rest[0]} />),
@@ -127,7 +124,5 @@ function usePinnedProjects() {
 
 /** What needs the owner, above the Scene and the All list. */
 function LandingNeedsYou() {
-  const stored = useCollections(useCave().local.db);
-  const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
-  return collections ? <NeedsYou collections={collections} /> : null;
+  return <NeedsYou />;
 }

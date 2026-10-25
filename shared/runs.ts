@@ -18,6 +18,8 @@ export const STEP_STATUSES = ["running", "done", "failed", "waiting", "skipped"]
 export type StepStatus = (typeof STEP_STATUSES)[number];
 
 export const STEP_LIMITS = { steps: 200, title: 200, detail: 2000 } as const;
+/** How many runs the daily trim keeps (M12 part 5); older finished ones are marked deleted. */
+export const RUNS_KEPT = 500;
 
 export interface RunStep {
   title: string;

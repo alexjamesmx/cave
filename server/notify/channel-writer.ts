@@ -7,9 +7,13 @@ import type { Store } from "../store.ts";
  * Writes a channel makes on the owner's behalf (Telegram's Done, Snooze, `/remind`): ordinary
  * stamped writes with actor `channel:<id>`, so they sync, show in history and can be undone.
  */
-export function createChannelWriter(store: Store, channel: string, now: () => number) {
+export function createChannelWriter(
+  store: Store,
+  channel: string,
+  now: () => number,
+  actor = `channel:${channel}`,
+) {
   const clock = new Hlc(`channel-${channel}`, now);
-  const actor = `channel:${channel}`;
   const apply = (current: Doc | undefined, doc: Omit<Doc, "stamps" | "actor">) => {
     // Observing the stored stamps first orders this edit after everything the server holds.
     for (const stamp of Object.values(current?.stamps ?? {})) clock.observe(stamp);

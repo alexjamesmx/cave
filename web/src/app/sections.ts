@@ -24,7 +24,6 @@ export type PageId =
   | "projects-scene"
   | "projects-all"
   | "projects-ideas"
-  | "notes"
   | "project"
   | "activity"
   | "diary-months"
@@ -122,12 +121,11 @@ export const SECTIONS: Section[] = [
       page("scene", "Scene", "projects-scene"),
       page("all", "All", "projects-all"),
       page("ideas", "Ideas", "projects-ideas"),
-      page("notes", "Notes", "notes"),
       page("activity", "Activity", "activity"),
       // One project's page, at `/projects/<id>/<tab>`; pinned ones also show as tabs.
       page("project", "Project", "project", true),
     ],
-    owns: ["projects", "ideas", "radar", "notes", "leetcode", "parts"],
+    owns: ["projects", "ideas", "notes", "leetcode", "parts"],
   },
   {
     id: "diary",
@@ -177,7 +175,7 @@ export const SECTIONS: Section[] = [
 export const LANDING = "/projects/scene";
 
 /** Collections with no section: reached only from Settings → Data. */
-export const DATA_ONLY = ["proposals", "runs"];
+export const DATA_ONLY = ["proposals", "runs", "radar"];
 
 export const sectionById = (id: string) => SECTIONS.find((s) => s.id === id);
 

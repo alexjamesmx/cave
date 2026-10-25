@@ -42,12 +42,14 @@ export function redirectOf(pathname: string): string | undefined {
     return systemPath(first === "system" ? second : third);
   // Wealth is Net worth since M7c.
   if (first === "money" && second === "wealth") return "/money/net-worth";
-  // The Radar page is the Ideas page's "Agent finds" bucket since M11 part 8.
-  if (first === "projects" && second === "radar") return "/projects/ideas?bucket=finds";
+  // The Radar page (M9) and the "Agent finds" bucket (M11) are gone: Ideas holds the owner's own.
+  if (first === "projects" && second === "radar") return "/projects/ideas";
+  // The Notes view is gone (M12 part 5): notes are pages inside a project, or the Inbox on All.
+  if (first === "projects" && second === "notes") return "/projects/all";
   // A project's Items and Notes tabs went with M11 part 6; its Map is the Canvas.
   if (first === "projects" && second && third && !isProjectsTab(second)) {
     if (third === "items") return enc("projects", second);
-    if (third === "notes") return `/projects/notes?project=${encodeURIComponent(second)}`;
+    if (third === "notes") return `/projects/${encodeURIComponent(second)}/pages`;
     if (third === "map") return enc("projects", second, "canvas");
   }
   if (first !== "c" || !second) return undefined;

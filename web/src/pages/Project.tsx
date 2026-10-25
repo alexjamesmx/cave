@@ -518,9 +518,9 @@ function Connected({ project, of }: { project: Doc; of: (collection: string) => 
             </span>
           ))}
         {notes.length > 0 && (
-          <a className="chip" href={`/projects/notes?project=${encodeURIComponent(project.id)}`}>
+          <span className="chip" style={{ background: "var(--on)" }}>
             {notes.length} note{notes.length === 1 ? "" : "s"}
-          </a>
+          </span>
         )}
         {flows.map((f) => (
           <a key={f.id} className="chip" href={flowPath(f.id)}>

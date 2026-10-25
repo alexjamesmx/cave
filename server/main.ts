@@ -10,6 +10,7 @@ import { openDb } from "./db.ts";
 import { flowRoutes } from "./flows/api.ts";
 import { createBackupJob } from "./jobs/backup-job.ts";
 import { createOffsiteJob } from "./jobs/offsite-job.ts";
+import { createRunsTrimJob } from "./jobs/runs-trim-job.ts";
 import { createScheduler } from "./jobs/scheduler.ts";
 import { acquireLock, lockPathOf, releaseLock } from "./lock.ts";
 import { createNotificationSystem } from "./notify/system.ts";
@@ -91,6 +92,7 @@ const scheduler = createScheduler({
   jobs: [
     ...notifications.jobs,
     createBackupJob(db, backupDir),
+    createRunsTrimJob(store, db, Date.now),
     createOffsiteJob({
       statusPath: offsiteStatusPath,
       notifier: notifications.notifier,

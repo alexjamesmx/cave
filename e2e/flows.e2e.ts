@@ -85,9 +85,9 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   const editor = page.getByRole("complementary", { name: "Step settings" });
   await canvas.getByRole("button", { name: /Trigger · On a schedule/ }).click();
   await editor.getByLabel("Type").selectOption({ label: "When an item is added" });
-  await editor.getByLabel("Collection").selectOption("notes");
+  await editor.getByLabel("Collection").selectOption("ideas");
   await expect(
-    canvas.getByRole("button", { name: /When an item is added to notes/ }),
+    canvas.getByRole("button", { name: /When an item is added to ideas/ }),
   ).toBeVisible();
 
   // The first step: create a task named after the note; the canvas draws the chain.
@@ -105,13 +105,13 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(page.getByText("ON", { exact: true })).toBeVisible();
   const flowUrl = page.url();
 
-  // A note arrives; the server runs the flow and the task appears.
-  const note = `Canvas note ${Date.now()}`;
-  await page.goto("/projects/notes");
-  await page.getByLabel("New note").fill(note);
-  await page.getByLabel("New note").press("Enter");
-  // The note page opens once the write has committed; leaving earlier could lose the write.
-  await expect(page).toHaveURL(/\/projects\/notes\/[0-9A-Z]{26}$/);
+  // An idea arrives; the server runs the flow and the task appears.
+  const note = `Canvas idea ${Date.now()}`;
+  await page.goto("/projects/ideas");
+  await page.getByLabel("New idea").fill(note);
+  await page.getByLabel("New idea").press("Enter");
+  // The list shows it once the write has committed; leaving earlier could lose the write.
+  await expect(page.getByRole("list", { name: "Ideas" })).toContainText(note);
   await expect(async () => {
     await page.goto("/tasks/list");
     await expect(page.getByText(`Read ${note}`)).toBeVisible({ timeout: 2_000 });
@@ -148,4 +148,9 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await page.getByRole("button", { name: `Read ${note}` }).click();
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("button", { name: `Read ${note}` })).toHaveCount(0);
+  await page.goto("/projects/ideas");
+  const ideas = page.getByRole("list", { name: "Ideas" });
+  await ideas.getByRole("button", { name: note, exact: true }).click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(ideas.getByRole("button", { name: note, exact: true })).toHaveCount(0);
 });
