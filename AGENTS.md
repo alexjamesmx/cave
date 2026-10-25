@@ -12,7 +12,7 @@ Pre-v0.1: M1 to M12 are on `main` and live at `https://cave.alexjamesmx.dev` (a 
 
 - `docs/system.md`: what runs where, data and code flows, local dev, configuration, recreating any piece.
 - `docs/guide.md`: using the app. `docs/agents.md`: connecting agents. `docs/hosting.md`: the VPS runbook.
-- `docs/architecture.md`: the shape, data model, sync protocol, seed collections, client and visual tokens. `docs/design/*.html`: approved mockups.
+- `docs/architecture.md`: the shape, data model, sync protocol, seed collections, client and visual tokens. Mockups of a milestone live in `docs/design/` only while it is built.
 - `docs/decisions.md`: why things are the way they are.
 
 ## Commands
@@ -99,13 +99,12 @@ Claude Code cloud sessions (claude.ai/code, the Code tab in the Claude app) run 
 
 The Cave on the VPS holds the data; GitHub holds the code; every device is a client of those two, so losing one loses nothing.
 
-| Where | Tool | Can do |
-|---|---|---|
-| Laptop (Linux) | Claude Code in `~/code/jarvis` | Everything |
-| Phone, laptop awake | Remote Control into the laptop's checkout | Everything the laptop can |
-| Phone, laptop off | Claude Code cloud session | Code, `check`, `test` and e2e on seed data, push |
-| Phone, any time | Claude app plus the Cave connector | Real data |
-
+| Where               | Tool                                      | Can do                                           |
+| ------------------- | ----------------------------------------- | ------------------------------------------------ |
+| Laptop (Linux)      | Claude Code in `~/code/jarvis`            | Everything                                       |
+| Phone, laptop awake | Remote Control into the laptop's checkout | Everything the laptop can                        |
+| Phone, laptop off   | Claude Code cloud session                 | Code, `check`, `test` and e2e on seed data, push |
+| Phone, any time     | Claude app plus the Cave connector        | Real data                                        |
 - Every session starts with `bun run sync`. Stopping mid-task means `bun run wip`; another device continues with `bun run wip --resume` and lands it with `bun run wip --finish "<one-line message>"`, which runs `check` and `test` first and refuses work that needs a PR.
 - Cloud sessions use `bun run dev:seed`, never real data.
 - `CAVE_ENV` keeps every copy but the VPS quiet: a dev server on a copy of real data sends nothing, and `deploy/release.sh` refuses a release whose env file lacks `CAVE_ENV=production`.

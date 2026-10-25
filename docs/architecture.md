@@ -1,6 +1,6 @@
 # Architecture
 
-Design reference: `docs/design/*.html` (open in a browser; static copies of the approved mockups). Visual tokens are listed at the end of this file. How the pieces are hosted and how code and data move between them: `docs/system.md`.
+Visual tokens are listed at the end of this file; past milestones' approved mockups are in their `<m>-history` tags. How the pieces are hosted and how code and data move between them: `docs/system.md`.
 
 ## Shape
 

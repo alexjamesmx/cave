@@ -170,6 +170,7 @@ export function createTelegram({
         if (doc.collection !== "tasks") return "Not a task.";
         const today = localDate(new Date(now()), z.timeZone);
         const due = typeof doc.data.due === "string" ? doc.data.due.slice(0, 10) : today;
+        // biome-ignore lint/style/useMathMinMax: due and today are YYYY-MM-DD strings, compared as text
         const next = tomorrowAt(due < today ? today : due);
         writer.update(doc, { due: next });
         return `Moved to ${next}`;
