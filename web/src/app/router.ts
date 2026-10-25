@@ -36,6 +36,8 @@ export function redirectOf(pathname: string): string | undefined {
   if (first === "settings" && second === "lists") return "/money/lists";
   // Life is Diary since M11; its Diary tab is Write.
   if (first === "life") return second === "diary" ? "/diary/write" : enc("diary", ...p.slice(1));
+  // Tasks → Calendar is Calendar → Month since M12 part 9.
+  if (first === "tasks" && second === "calendar" && !third) return "/calendar/month";
   // Habits and Months are Days since M12 part 8.
   if (first === "diary" && (second === "habits" || second === "months"))
     return third ? undefined : "/diary/days";
@@ -62,6 +64,8 @@ export function redirectOf(pathname: string): string | undefined {
   if (collection === "leetcode") return "/projects/proj-leetcode";
   // The journal's Write is Diary → Today; its Habits and Gallery views are Days (M12 part 8).
   if (collection === "journal") return view && view !== "write" ? "/diary/days" : "/diary/write";
+  // Tasks → Calendar is Calendar → Month since M12 part 9.
+  if (collection === "tasks" && view === "calendar") return "/calendar/month";
   const owner = ownerOf(collection);
   const tabs = owner?.tabs.filter((t) => t.kind === "view" && t.collection === collection) ?? [];
   const tab = view

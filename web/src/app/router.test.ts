@@ -61,6 +61,8 @@ test("every old path redirects to its new home", () => {
     ["/life/habits", "/diary/habits"],
     ["/c/tasks/board", "/tasks/board"],
     ["/c/tasks/table", "/tasks/list"],
+    ["/c/tasks/calendar", "/calendar/month"],
+    ["/tasks/calendar", "/calendar/month"],
     ["/c/ideas", "/projects/ideas"],
     ["/c/projects", "/projects"],
     ["/c/leetcode", "/projects/proj-leetcode"],

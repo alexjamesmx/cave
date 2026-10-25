@@ -5,7 +5,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 ## The shape
 
 - **Unlock once per device** with the server token; without it the app shows only a lock screen. Settings → Devices & server → Lock this device, or Forget this device to also delete its copy.
-- **Six sections** on the rail at the left (icons; the name shows on hover): Money, Calendar, Flows, Projects, Diary, Tasks, and Settings at the bottom. On a phone the rail is a dock at the bottom: four sections you choose (More → Edit dock, or Settings → General), Ask in the middle, More for the rest.
+- **Six sections** on the rail at the left (icons; the name shows on hover, or always with **Show names** at the bottom of the rail, remembered on this device): Money, Calendar, Flows, Projects, Diary, Tasks, and Settings at the bottom. On a phone the rail is a dock at the bottom: four sections you choose (More → Edit dock, or Settings → General), Ask in the middle, More for the rest.
 - **Ask from anywhere:** the rail's Ask (⌘K or Ctrl+K) opens one sheet with an Ask box that opens Claude with your question (Claude reads and writes the Cave through its connector) and five quick forms: Expense, Task, Reminder, Payment, Note. **N** opens the sheet on a note. A save closes the sheet and shows what was saved for a moment.
 - **The app opens on the Scene** (Projects → Scene): you in the middle, every active project an orb around you. Size is activity this week, colour is status, a dashed ring means an agent is on it; paused projects sit on the outer ring, dim. Hover shows the agent's latest report; click enters the project. The same orbs are a list for the keyboard and screen readers. Above it, **Needs you**: questions agents asked, blocked parts and flows waiting for approval, each with its actions; it hides when there is nothing. What is due is Calendar's.
 
@@ -56,7 +56,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Tasks
 
-- **Board**, **List** and **Calendar** of every task; one New task button; drag between columns (press and hold on a phone), arrow keys move a focused card. A task with a project carries a bar in the Projects colour. A repeating task's Done brings the same task back on its next date. Questions from agents are tasks too, until answered.
+- **Board** and **List** of every task (tasks with a due date are in Calendar → Month); one New task button; drag between columns (press and hold on a phone), arrow keys move a focused card. A task with a project carries a bar in the Projects colour. A repeating task's Done brings the same task back on its next date. Questions from agents are tasks too, until answered.
 
 ## Settings
 

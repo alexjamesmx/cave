@@ -6,6 +6,7 @@ import { App } from "./App.tsx";
 import { boot } from "./app/boot.ts";
 import { CaveContext } from "./app/context.ts";
 import { hasToken } from "./app/lock.ts";
+import { applyRail } from "./app/rail.ts";
 import { interceptLinks, listenForShortcuts } from "./app/router.ts";
 import { warmShellCache } from "./app/shell-cache.ts";
 // Fonts ship with the app (SIL OFL), so the shell works offline and no request leaves the origin.
@@ -27,6 +28,7 @@ if (!hasToken()) {
     </StrictMode>,
   );
 } else {
+  applyRail();
   const cave = await boot();
   void navigator.storage?.persist?.();
   interceptLinks(document);

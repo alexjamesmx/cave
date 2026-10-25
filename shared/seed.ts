@@ -27,6 +27,7 @@ import { DEFAULT_INTERESTS, RADAR, RADAR_COLLECTION, radarMigration } from "./ra
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import { RUNS, RUNS_COLLECTION, runsMigration } from "./runs.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
+import { tasksCalendarMigration } from "./tasks.ts";
 import type { Doc, Kind } from "./types.ts";
 
 const AI = "ai";
@@ -144,7 +145,6 @@ const COLLECTIONS: Record<string, CollectionData> = {
     views: [
       view("board", "Board", "board", { groupBy: "status" }),
       view("table", "Table", "table"),
-      view("calendar", "Calendar", "calendar", { dateField: "due" }),
     ],
   },
   journal: {
@@ -473,6 +473,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 19, docs: [], update: pagesMigration },
   // M12 part 8: the diary's Habits and Gallery views retire; habit icons become a setting.
   { version: 20, docs: [], update: diaryMigration },
+  // M12 part 9: Tasks → Calendar retires; Calendar → Month shows tasks already.
+  { version: 21, docs: [], update: tasksCalendarMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

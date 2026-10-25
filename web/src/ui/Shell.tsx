@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { openAsk } from "../app/ask.ts";
+import { railWide, setRailWide } from "../app/rail.ts";
 import type { Route } from "../app/router.ts";
 import { SECTIONS, type Section } from "../app/sections.ts";
 import { AskSheet } from "./AskSheet.tsx";
@@ -10,11 +11,16 @@ import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx"
 
 /**
  * The rail (M11): the mark, Ask, one icon per section from the registry with Settings at the
- * bottom, then the sync state. Each link keeps its label for assistive tech and shows it
+ * bottom, then the sync state. Show names (M12) widens it to icons with labels, per device. Each link keeps its label for assistive tech and shows it
  * beside the icon on hover or focus; the dock reads the same registry on a phone.
  */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const active = route.name === "section" ? route.section : undefined;
+  const [wide, setWide] = useState(railWide);
+  const toggle = () => {
+    setRailWide(!wide);
+    setWide(!wide);
+  };
   const link = (s: Section) => (
     <a
       key={s.id}
@@ -44,7 +50,19 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </button>
         <nav aria-label="Main" className="rail-nav">
           {SECTIONS.filter((s) => s.id !== "settings").map(link)}
-          <div className="rail-end">{SECTIONS.filter((s) => s.id === "settings").map(link)}</div>
+          <div className="rail-end">
+            <button
+              type="button"
+              className="rail-toggle"
+              aria-pressed={wide}
+              aria-label={wide ? "Hide names" : "Show names"}
+              data-label={wide ? "Hide names" : "Show names"}
+              onClick={toggle}
+            >
+              <Icon name={wide ? "panel-left-close" : "panel-left-open"} size={16} />
+            </button>
+            {SECTIONS.filter((s) => s.id === "settings").map(link)}
+          </div>
         </nav>
         <SyncBadge />
       </aside>

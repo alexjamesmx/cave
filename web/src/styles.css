@@ -2580,3 +2580,63 @@ ul.chips {
     grid-template-columns: 1fr;
   }
 }
+
+/* The rail with names (M12 part 9): the same rail, 184 px, each label beside its icon. */
+.rail-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  margin-bottom: 4px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  position: relative;
+}
+
+.rail-toggle:hover {
+  background: var(--on);
+  color: var(--text);
+}
+
+.rail-wide .side {
+  flex-basis: 184px;
+  align-items: stretch;
+  padding: 12px 10px;
+}
+
+.rail-wide .side .rail-nav,
+.rail-wide .side .rail-end {
+  align-items: stretch;
+}
+
+.rail-wide .side a,
+.rail-wide .rail-toggle {
+  width: auto;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 10px;
+}
+
+.rail-wide .side .rail-label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.rail-wide .side [data-label]:hover::after,
+.rail-wide .side [data-label]:focus-visible::after {
+  display: none;
+}
+
+.rail-wide .brand-mark,
+.rail-wide .rail-ask {
+  align-self: center;
+}
