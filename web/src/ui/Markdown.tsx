@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { isSafeUrl } from "../../../shared/fields.ts";
+import { MarkdownDiagram } from "./DiagramSvg.tsx";
 
 /**
  * The one Markdown renderer (M9): notes, the drawer's preview, diary entries. It builds React
@@ -9,7 +10,8 @@ import { isSafeUrl } from "../../../shared/fields.ts";
  * - raw HTML in the text shows as text;
  * - only http, https and mailto URLs become links, and they open in a new tab;
  * - images are never loaded: an image shows as a link to its address;
- * - `[[Title]]` and `[[Title|label]]` link to the note with that title, found case-insensitively.
+ * - `[[Title]]` and `[[Title|label]]` link to the note with that title, found case-insensitively;
+ * - a ```mermaid code block is drawn as a diagram (SVG cleaned of styles and scripts).
  */
 
 const NOTE = "cave-note:";
@@ -53,6 +55,21 @@ export function wikilinkTitles(text: string): string[] {
 }
 
 type Node = { type: string; value?: string; children?: Node[] };
+type HastNode = {
+  type: string;
+  tagName?: string;
+  value?: string;
+  properties?: { className?: unknown };
+  children?: HastNode[];
+};
+
+/** The source of a `<pre><code class="language-mermaid">` block, if `pre` is one. */
+export function mermaidSource(pre: HastNode | undefined): string | undefined {
+  const code = pre?.children?.find((c) => c.type === "element");
+  const classes = code?.tagName === "code" ? code.properties?.className : undefined;
+  if (!Array.isArray(classes) || !classes.includes("language-mermaid")) return undefined;
+  return (code?.children ?? []).map((c) => (c.type === "text" ? (c.value ?? "") : "")).join("");
+}
 
 /** Raw HTML becomes plain text: shown as written, never interpreted. */
 function htmlAsText() {
@@ -108,6 +125,10 @@ export function MarkdownView({
           {children}
         </a>
       );
+    },
+    pre({ node, children }) {
+      const source = mermaidSource(node as HastNode | undefined);
+      return source === undefined ? <pre>{children}</pre> : <MarkdownDiagram source={source} />;
     },
     img({ src, alt }) {
       const label: ReactNode = alt || "image";

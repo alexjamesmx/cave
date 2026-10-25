@@ -34,13 +34,10 @@ export function redirectOf(pathname: string): string | undefined {
   // Flows lived under Settings from M10 to M11; Lists until M11 part 3.
   if (first === "settings" && second === "flows") return flowPath(third);
   if (first === "settings" && second === "lists") return "/money/lists";
-  // Life is Diary since M11; its Diary tab is Write.
-  if (first === "life") return second === "diary" ? "/diary/write" : enc("diary", ...p.slice(1));
+  // Life was Diary from M11, and Diary is part of Notes now.
+  if (first === "life" || first === "diary") return diaryPath(second);
   // Tasks → Calendar is Calendar → Month since M12 part 9.
   if (first === "tasks" && second === "calendar" && !third) return "/calendar/month";
-  // Habits and Months are Days since M12 part 8.
-  if (first === "diary" && (second === "habits" || second === "months"))
-    return third ? undefined : "/diary/days";
   // The System page (M9 to M11 part 3) is Settings → Devices & server; its Flows and Agents
   // tabs went to their own pages.
   if (first === "system" || (first === "settings" && second === "system"))
@@ -49,8 +46,9 @@ export function redirectOf(pathname: string): string | undefined {
   if (first === "money" && second === "wealth") return "/money/net-worth";
   // The Radar page (M9) and the "Agent finds" bucket (M11) are gone: Ideas holds the owner's own.
   if (first === "projects" && second === "radar") return "/projects/ideas";
-  // The Notes view is gone (M12 part 5): notes are pages inside a project, or the Inbox on All.
-  if (first === "projects" && second === "notes") return "/projects/all";
+  // The Notes view left Projects in M12 part 5; notes have their own section now.
+  if (first === "projects" && second === "notes")
+    return third ? enc("notes", "all", third) : "/notes/all";
   // A project's Items and Notes tabs went with M11 part 6; its Map is the Canvas.
   if (first === "projects" && second && third && !isProjectsTab(second)) {
     if (third === "items") return enc("projects", second);
@@ -63,7 +61,7 @@ export function redirectOf(pathname: string): string | undefined {
   // LeetCode is a project now (M8 part 2): its items are on that project's page.
   if (collection === "leetcode") return "/projects/proj-leetcode";
   // The journal's Write is Diary → Today; its Habits and Gallery views are Days (M12 part 8).
-  if (collection === "journal") return view && view !== "write" ? "/diary/days" : "/diary/write";
+  if (collection === "journal") return diaryPath(view && view !== "write" ? "days" : "write");
   // Tasks → Calendar is Calendar → Month since M12 part 9.
   if (collection === "tasks" && view === "calendar") return "/calendar/month";
   const owner = ownerOf(collection);
@@ -75,8 +73,14 @@ export function redirectOf(pathname: string): string | undefined {
   if (collection === "money" && view === "table") return "/money/transactions";
   if (collection === "projects") return "/projects";
   if (collection === "ideas") return "/projects/ideas";
+  if (collection === "notes") return "/notes/all";
   if (collection === "flows") return flowPath();
   return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);
+}
+
+/** A diary tab under Notes; Habits and Months are Days since M12 part 8. */
+function diaryPath(tab: string | undefined): string {
+  return tab === "days" || tab === "habits" || tab === "months" ? "/notes/days" : "/notes/write";
 }
 
 function systemPath(tab: string | undefined): string {

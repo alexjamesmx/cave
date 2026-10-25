@@ -3,7 +3,7 @@ import { type AgentWriter, MAX_BODY_BYTES, type WriteResult } from "../agent-wri
 
 /**
  * `add_note`: a new note marked as written by an agent: a page of a project when one is named,
- * else in the Inbox (Projects → All). It goes through
+ * else a note in the Notes section under the topic Inbox. It goes through
  * the agent writer like any create (title limit, allowlist, the change log and Undo); since
  * M9 nothing writes to the Obsidian vault.
  */

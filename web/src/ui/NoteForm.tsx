@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { newId } from "../../../shared/ids.ts";
-import { INBOX, NOTES, normFolder } from "../../../shared/notes.ts";
+import { NOTES, normFolder } from "../../../shared/notes.ts";
 import { isLive } from "../../../shared/project-status.ts";
 import { useCave } from "../app/context.ts";
 import { titleOf } from "../logic/views.ts";
@@ -28,7 +28,7 @@ export async function createNote(
 
 /**
  * The Ask sheet's Note form: a title, Markdown, and a project when it has one (a page of that
- * project); without one it lands in the Inbox on Projects → All.
+ * project); without one it is a note in Notes.
  */
 export function NoteForm({ onDone }: { onDone(message: string): void }) {
   const { local } = useCave();
@@ -41,7 +41,7 @@ export function NoteForm({ onDone }: { onDone(message: string): void }) {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const id = await createNote(local, title.trim(), INBOX, project || undefined);
+    const id = await createNote(local, title.trim(), "", project || undefined);
     if (text.trim())
       await local.write({ id, kind: "item", collection: NOTES }, { _body: text.trim() });
     onDone(`Saved · Note · ${title.trim()}`);
@@ -71,7 +71,7 @@ export function NoteForm({ onDone }: { onDone(message: string): void }) {
       <label className="quick-field">
         <span className="k">Project</span>
         <select className="input" value={project} onChange={(e) => setProject(e.target.value)}>
-          <option value="">Inbox (no project)</option>
+          <option value="">Notes (no project)</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {titleOf(p)}
@@ -80,7 +80,7 @@ export function NoteForm({ onDone }: { onDone(message: string): void }) {
         </select>
       </label>
       <button type="submit" className="btn primary" disabled={!title.trim()}>
-        {project ? "Save as a page" : "Save to Inbox"}
+        {project ? "Save as a page" : "Save to Notes"}
       </button>
     </form>
   );

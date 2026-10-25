@@ -23,7 +23,6 @@ import { useAllItems, useCollections, useDoc, useItems } from "../store/queries.
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
-import { NotesInbox } from "../ui/NotesInbox.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
 function TemplatePicker({ value, onChange }: { value: string; onChange(v: string): void }) {
@@ -218,7 +217,6 @@ export function ProjectsAll() {
           );
         })}
       </div>
-      <NotesInbox />
     </div>
   );
 }

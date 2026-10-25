@@ -1,4 +1,4 @@
-import { mcpClient, openAsk, ownerContext, pushed } from "./helpers.ts";
+import { mcpClient, ownerContext, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("the Scene: projects in every state as orbs and as a hidden list by what needs you first; the strip; a click enters the project", async ({
@@ -214,30 +214,14 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   await expect(page.getByRole("button", { name: "Buy seeds" })).toHaveCount(0);
 });
 
-test("the Inbox on All moves a note from the Ask sheet onto a project; LeetCode's Problems tab tracks a problem by list", async ({
-  browser,
-}) => {
+test("LeetCode's Problems tab tracks a problem by list", async ({ browser }) => {
   const page = await (
     await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
   ).newPage();
   page.on("dialog", (dialog) => void dialog.accept());
   const stamp = Date.now();
 
-  // A note from the Ask sheet with no project lands in the Inbox; Move to project makes it a page.
-  await page.goto("/projects/all");
-  await openAsk(page);
-  await page.getByRole("button", { name: "Note", exact: true }).click();
-  const form = page.getByRole("form", { name: "Note" });
-  await form.getByLabel("Title").fill(`Inbox note ${stamp}`);
-  await form.getByRole("button", { name: "Save to Inbox" }).click();
-  await expect(page.getByRole("status").filter({ hasText: `Inbox note ${stamp}` })).toBeVisible();
-  const inbox = page.getByRole("region", { name: "Inbox" });
-  await expect(inbox.getByRole("button", { name: `Inbox note ${stamp}` })).toBeVisible();
-  await inbox.getByLabel(`Move Inbox note ${stamp} to project`).selectOption({ label: "LeetCode" });
-  await expect(page).toHaveURL(/\/projects\/proj-leetcode\/pages\/[0-9A-Z]{26}$/);
-  await expect(page.getByLabel("Page title")).toHaveValue(`Inbox note ${stamp}`);
-  await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page).toHaveURL(/\/projects\/proj-leetcode\/pages$/);
+  await page.goto("/projects/proj-leetcode");
 
   // The learning template's tracker: a problem added by list, grouped and counted.
   await page

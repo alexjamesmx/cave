@@ -2,7 +2,7 @@ import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 const PHONE = { width: 390, height: 844 };
-const ALL = ["Money", "Calendar", "Flows", "Projects", "Diary", "Tasks", "Settings"];
+const ALL = ["Money", "Calendar", "Flows", "Projects", "Notes", "Tasks", "Settings"];
 const DEFAULT = ["Projects", "Money", "Tasks", "Calendar"];
 
 test("the phone dock: four sections and Ask, More with every section, and an edited dock that syncs", async ({
@@ -19,7 +19,7 @@ test("the phone dock: four sections and Ask, More with every section, and an edi
   const dock = page.getByRole("navigation", { name: "Dock" });
   await expect(dock).toBeVisible();
   await expect(
-    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Diary" }),
+    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Notes" }),
   ).toBeHidden();
   await expect(dock.getByRole("link")).toHaveText(DEFAULT);
   await expect(dock.getByRole("link", { name: "Money" })).toHaveAttribute("aria-current", "page");
@@ -55,7 +55,7 @@ test("the phone dock: four sections and Ask, More with every section, and an edi
   for (const name of DEFAULT)
     await edit.getByRole("button", { name: new RegExp(`${name}$`) }).click();
   await expect(edit.getByRole("button", { name: "Save dock" })).toBeDisabled();
-  const picked = ["Diary", "Money", "Settings", "Flows"];
+  const picked = ["Notes", "Money", "Settings", "Flows"];
   for (const name of picked)
     await edit.getByRole("button", { name: new RegExp(`${name}$`) }).click();
   await edit.getByRole("button", { name: "Save dock" }).click();
@@ -88,6 +88,6 @@ test("on a desktop the rail stays and there is no dock", async ({ browser }) => 
   await page.goto("/");
   await expect(page.getByRole("navigation", { name: "Dock" })).toBeHidden();
   await expect(
-    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Diary" }),
+    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Notes" }),
   ).toBeVisible();
 });

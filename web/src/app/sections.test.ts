@@ -8,7 +8,7 @@ test("six sections and Settings, each once; every collection belongs to exactly 
     "calendar",
     "flows",
     "projects",
-    "diary",
+    "notes",
     "tasks",
     "settings",
   ]);
@@ -39,21 +39,21 @@ test("the dock: old ids map to their section, duplicates collapse, else the defa
   expect(ids(["agents", "money", "life", "ideas"])).toEqual([
     "settings",
     "money",
-    "diary",
+    "notes",
     "projects",
   ]);
   expect(ids(["payments", "wealth", "tasks", "calendar"])).toEqual(DEFAULT_DOCK);
   expect(ids(["life", "money", "nope", "tasks"])).toEqual(DEFAULT_DOCK);
   // Home (gone in M11) and the AI section (gone in M10) were dock ids too.
   expect(ids(["home", "money", "projects", "ai"])).toEqual(DEFAULT_DOCK);
-  expect(ids(["home", "money", "diary", "ai"])).toEqual(["projects", "money", "diary", "settings"]);
+  expect(ids(["home", "money", "diary", "ai"])).toEqual(["projects", "money", "notes", "settings"]);
 });
 
 test("a path marks its section", () => {
   expect(sectionOf("/")).toBe("projects");
   expect(sectionOf("/money/payments")).toBe("money");
   expect(sectionOf("/flows/flow-rent")).toBe("flows");
-  expect(sectionOf("/diary/write")).toBe("diary");
+  expect(sectionOf("/notes/write")).toBe("notes");
   expect(sectionOf("/projects/activity")).toBe("projects");
   expect(sectionOf("/r/abc")).toBeUndefined();
 });

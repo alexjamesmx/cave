@@ -11,7 +11,7 @@ test("a diary left open past midnight shows the new day's empty habits; yesterda
 }) => {
   const page = await (await ownerContext(browser)).newPage();
   await page.clock.install({ time: BEFORE_MIDNIGHT });
-  await page.goto("/diary/write");
+  await page.goto("/notes/write");
   const label = (text: string) => page.getByText(text, { exact: true });
   await expect(label("Today Sep 1 2026")).toBeVisible();
   const habit = page.locator("button.chip[aria-pressed=false]").first();

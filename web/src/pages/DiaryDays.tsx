@@ -100,7 +100,7 @@ export function DiaryDays() {
               return (
                 <a
                   key={day}
-                  href={`/diary/days?day=${day}`}
+                  href={`/notes/days?day=${day}`}
                   aria-current={day === open ? "date" : undefined}
                   className={`day month-day${day === today ? " today" : ""}${entry ? " has-entry" : ""}`}
                   style={

@@ -52,7 +52,7 @@ test("Calendar → Week: a daily and a weekly block, the weekly one tracked as a
     "aria-pressed",
     "true",
   );
-  await page.goto("/diary/write");
+  await page.goto("/notes/write");
   await page.getByRole("button", { name: weekly, exact: true }).click();
   await expect(page.getByRole("button", { name: weekly, exact: true })).toHaveAttribute(
     "aria-pressed",
@@ -73,7 +73,7 @@ test("Calendar → Week: a daily and a weekly block, the weekly one tracked as a
       .click();
     await expect(page.getByRole("button", { name: new RegExp(title) })).toHaveCount(0);
   }
-  await page.goto("/diary/write");
+  await page.goto("/notes/write");
   for (const title of [weekly, daily]) {
     const chip = page.getByRole("button", { name: title, exact: true });
     if ((await chip.getAttribute("aria-pressed")) === "true") await chip.click();

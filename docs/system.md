@@ -42,7 +42,7 @@ flowchart LR
 | Claude Code cloud sessions | Anthropic VM | change the code from the phone or browser; push branches and open PRs, never merge; no production access |
 | Laptop repo | the laptop (Linux), `~/code/jarvis` | where code is written and tested; Remote Control and `bun run deploy` run from here |
 
-**The app's structure** (M11): six sections (Money, Calendar, Flows, Projects, Diary, Tasks) and Settings, each with tabs, all from one registry (`web/src/app/sections.ts`) that the rail, the phone dock and the router read; the app opens on the Scene (Projects). Every collection belongs to one section or is reached only from Settings → Data. A project has its own page: Overview, Board, Diagram, Canvas (React Flow) and Activity (agents' runs); Projects → Activity lists every run; Settings holds only general things (General, Devices & server, Notifications, Agents, Data).
+**The app's structure** (M11): six sections (Money, Calendar, Flows, Projects, Notes, Tasks) and Settings, each with tabs, all from one registry (`web/src/app/sections.ts`) that the rail, the phone dock and the router read; the app opens on the Scene (Projects). Every collection belongs to one section or is reached only from Settings → Data. A project has its own page: Overview, Board, Diagram, Canvas (React Flow) and Activity (agents' runs); Projects → Activity lists every run; Settings holds only general things (General, Devices & server, Notifications, Agents, Data).
 
 **Who gets in.** Every `/api` request needs the server token, and `/mcp` needs an agent token. Before any token check, the request guard refuses unknown hosts, foreign origins and non-JSON posts. The firewall lets in only 22, 80 and 443, and SSH takes keys only.
 

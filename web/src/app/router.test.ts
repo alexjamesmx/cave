@@ -26,7 +26,8 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/flows/jobs/backups")).toEqual(
     section("flows", "canvas", ["jobs", "backups"]),
   );
-  expect(parseRoute("/diary")).toEqual(section("diary", "write"));
+  expect(parseRoute("/notes")).toEqual(section("notes", "all"));
+  expect(parseRoute("/notes/all/01J9ABC")).toEqual(section("notes", "all", ["01J9ABC"]));
   expect(parseRoute("/projects/activity")).toEqual(section("projects", "activity", []));
   expect(parseRoute("/settings/data/money/untagged")).toEqual(
     section("settings", "data", ["money", "untagged"]),
@@ -36,9 +37,8 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/money/lists")).toEqual(section("money", "lists"));
   expect(parseRoute("/r/01J9ABC")).toEqual({ name: "reminder", id: "01J9ABC" });
   expect(parseRoute("/radar")).toEqual({ name: "not-found" });
-  expect(parseRoute("/diary/days")).toEqual(section("diary", "days"));
-  expect(parseRoute("/diary/months")).toEqual({ name: "redirect", to: "/diary/days" });
-  expect(parseRoute("/diary/habits")).toEqual({ name: "redirect", to: "/diary/days" });
+  expect(parseRoute("/notes/days")).toEqual(section("notes", "days"));
+  expect(parseRoute("/notes/write")).toEqual(section("notes", "write"));
 });
 
 test("every old path redirects to its new home", () => {
@@ -53,12 +53,18 @@ test("every old path redirects to its new home", () => {
     ["/money/wealth", "/money/net-worth"],
     ["/c/reminders", "/calendar/reminders"],
     ["/", "/projects/scene"],
-    ["/c/journal", "/diary/write"],
-    ["/c/journal/habits", "/diary/days"],
-    ["/c/journal/gallery", "/diary/days"],
-    ["/life", "/diary"],
-    ["/life/diary", "/diary/write"],
-    ["/life/habits", "/diary/habits"],
+    ["/c/journal", "/notes/write"],
+    ["/c/journal/habits", "/notes/days"],
+    ["/c/journal/gallery", "/notes/days"],
+    ["/life", "/notes/write"],
+    ["/life/diary", "/notes/write"],
+    ["/life/habits", "/notes/days"],
+    ["/diary", "/notes/write"],
+    ["/diary/write", "/notes/write"],
+    ["/diary/days", "/notes/days"],
+    ["/diary/months", "/notes/days"],
+    ["/diary/habits", "/notes/days"],
+    ["/c/notes", "/notes/all"],
     ["/c/tasks/board", "/tasks/board"],
     ["/c/tasks/table", "/tasks/list"],
     ["/c/tasks/calendar", "/calendar/month"],
@@ -68,8 +74,8 @@ test("every old path redirects to its new home", () => {
     ["/c/leetcode", "/projects/proj-leetcode"],
     ["/c/leetcode/table", "/projects/proj-leetcode"],
     ["/projects/radar", "/projects/ideas"],
-    ["/projects/notes", "/projects/all"],
-    ["/projects/notes/n1", "/projects/all"],
+    ["/projects/notes", "/notes/all"],
+    ["/projects/notes/n1", "/notes/all/n1"],
     ["/projects/proj-cave/items", "/projects/proj-cave"],
     ["/projects/proj-cave/notes", "/projects/proj-cave/pages"],
     ["/projects/proj-cave/map", "/projects/proj-cave/canvas"],
@@ -106,7 +112,8 @@ test("every old path redirects to its new home", () => {
     "/projects/ideas",
     "/money/overview",
     "/flows/flow-rent",
-    "/diary",
+    "/notes",
+    "/notes/all/01J9ABC",
     "/r/x",
     "/calendar",
     "/settings/devices/jobs",

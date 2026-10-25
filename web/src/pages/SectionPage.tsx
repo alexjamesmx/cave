@@ -16,6 +16,7 @@ import { FlowJob } from "./FlowJob.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
+import { Notes } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
@@ -46,6 +47,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
     </>
   ),
   "projects-ideas": () => <IdeasPage />,
+  notes: (rest) => <Notes id={rest[0]} />,
   "diary-today": () => <DiaryToday />,
   "diary-days": () => <DiaryDays />,
   project: (rest) => <ProjectPage rest={rest} />,

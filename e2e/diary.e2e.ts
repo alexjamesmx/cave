@@ -1,7 +1,7 @@
 import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Diary → Days: a day opened from the grid is written in the editor, coloured, ticked; the grid shows the tint, dot and pip; a new habit joins the streaks", async ({
+test("Notes → Days: a day opened from the grid is written in the editor, coloured, ticked; the grid shows the tint, dot and pip; a new habit joins the streaks", async ({
   browser,
 }) => {
   const page = await (
@@ -9,12 +9,14 @@ test("Diary → Days: a day opened from the grid is written in the editor, colou
   ).newPage();
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/diary");
-  await expect(page.getByRole("navigation", { name: "Diary tabs" }).getByRole("link")).toHaveText([
+  await expect(page).toHaveURL(/\/notes\/write$/);
+  await expect(page.getByRole("navigation", { name: "Notes tabs" }).getByRole("link")).toHaveText([
+    "Notes",
     "Today",
     "Days",
   ]);
   await page.goto("/diary/months");
-  await expect(page).toHaveURL(/\/diary\/days$/);
+  await expect(page).toHaveURL(/\/notes\/days$/);
 
   // Open today from the grid.
   const grid = page.getByRole("region", { name: "Days" });
@@ -22,7 +24,7 @@ test("Diary → Days: a day opened from the grid is written in the editor, colou
   const day = (await today.getAttribute("href"))?.split("day=")[1] ?? "";
   expect(day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   await today.click();
-  await expect(page).toHaveURL(new RegExp(`/diary/days\\?day=${day}$`));
+  await expect(page).toHaveURL(new RegExp(`/notes/days\\?day=${day}$`));
   const panel = page.getByRole("region", { name: `Day ${day}` });
 
   // Write with the editor (Markdown, previewed), pick a colour, tick a habit.
@@ -49,18 +51,18 @@ test("Diary → Days: a day opened from the grid is written in the editor, colou
   await expect(today).toHaveAttribute("data-color", "teal");
 
   // Today shows the same entry.
-  await page.goto("/diary/write");
+  await page.goto("/notes/write");
   await expect(page.getByLabel("Diary entry")).toHaveValue(`# ${text}\n\n**bold** day`);
 
   // Delete removes the entry (kept in the history); the grid loses its dot.
-  await page.goto(`/diary/days?day=${day}`);
+  await page.goto(`/notes/days?day=${day}`);
   await panel.getByRole("button", { name: "Delete entry" }).click();
   await expect(today.locator(".entry-dot")).toHaveCount(0);
   await expect(panel.getByRole("button", { name: "Delete entry" })).toHaveCount(0);
 
   // A new habit joins the streak list.
   await page.getByRole("button", { name: "Close day" }).click();
-  await expect(page).toHaveURL(/\/diary\/days$/);
+  await expect(page).toHaveURL(/\/notes\/days$/);
   const habits = page.getByRole("region", { name: "Habits" });
   const fresh = `Habit ${Date.now()}`;
   await habits.getByLabel("New habit").fill(fresh);

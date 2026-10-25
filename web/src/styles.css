@@ -2468,3 +2468,62 @@ ul.chips {
 .rail-wide .rail-ask {
   align-self: center;
 }
+
+/* Notes (the gallery by topic and its table). */
+.notes-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.notes-bar input[type="search"] {
+  flex: 1 1 220px;
+}
+
+.notes-bar .sub-tabs a {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.notes-topic {
+  margin: 4px 0 0;
+  font-size: 13px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.note-card {
+  display: grid;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  border-left: 3px solid var(--line);
+}
+
+.note-card-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-strong);
+}
+
+.note-card-text {
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.note-card-date {
+  font-size: 11.5px;
+  align-self: end;
+}
+
+.notes-group-row th {
+  text-align: left;
+  background: var(--on);
+  font-size: 13px;
+}

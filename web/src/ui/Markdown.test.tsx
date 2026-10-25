@@ -60,3 +60,13 @@ test("GitHub tables, task lists and fenced code render, code plainly", () => {
   expect(out).toContain("<pre><code");
   expect(out).toContain("const x = 1;");
 });
+
+test("a mermaid block is drawn as a diagram; other code stays code", () => {
+  const out = html("```mermaid\nflowchart LR\n  A --> B\n```\n\n```ts\nconst a = 1;\n```");
+  expect(out).toContain('role="img" aria-label="Diagram"');
+  expect(out).toContain("language-ts");
+  expect(out).not.toContain("language-mermaid");
+  const broken = html("```mermaid\nnot a diagram ((\n```");
+  expect(broken).toContain("not a diagram");
+  expect(broken).not.toContain('aria-label="Diagram"');
+});

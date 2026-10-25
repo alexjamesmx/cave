@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { DIAGRAM_EXAMPLE, renderDiagram } from "../logic/diagram.ts";
+import { DiagramSvg } from "./DiagramSvg.tsx";
 
 /**
  * A project's Diagram tab: Mermaid source in the project's `diagram` field, rendered beside
@@ -59,20 +60,12 @@ export function Diagram({ project }: { project: Doc }) {
         </span>
       </div>
       <section className="panel diagram" aria-label="Diagram">
-        {lastGood ? <Svg markup={lastGood} /> : <span className="muted">Nothing to draw yet.</span>}
+        {lastGood ? (
+          <DiagramSvg markup={lastGood} />
+        ) : (
+          <span className="muted">Nothing to draw yet.</span>
+        )}
       </section>
     </div>
   );
-}
-
-/** The cleaned SVG as elements; parsed as SVG, so nothing in it runs or loads. */
-function Svg({ markup }: { markup: string }) {
-  const host = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = host.current;
-    if (!el) return;
-    const doc = new DOMParser().parseFromString(markup, "image/svg+xml");
-    el.replaceChildren(document.importNode(doc.documentElement, true));
-  }, [markup]);
-  return <div ref={host} className="diagram-host" />;
 }

@@ -27,6 +27,7 @@ export type PageId =
   | "projects-ideas"
   | "project"
   | "activity"
+  | "notes"
   | "diary-today"
   | "diary-days"
   | "flows"
@@ -128,16 +129,21 @@ export const SECTIONS: Section[] = [
       // One project's page, at `/projects/<id>/<tab>`; pinned ones also show as tabs.
       page("project", "Project", "project", true),
     ],
-    owns: ["projects", "ideas", "notes", "leetcode", "parts"],
+    owns: ["projects", "ideas", "leetcode", "parts"],
   },
   {
-    id: "diary",
-    label: "Diary",
-    icon: "notebook",
-    color: "var(--wait)",
-    path: "/diary",
-    tabs: [page("write", "Today", "diary-today"), page("days", "Days", "diary-days")],
-    owns: ["journal"],
+    // Anything written down, then the diary's Today and Days: the diary is a kind of note.
+    id: "notes",
+    label: "Notes",
+    icon: "notebook-pen",
+    color: "var(--vio)",
+    path: "/notes",
+    tabs: [
+      page("all", "Notes", "notes"),
+      page("write", "Today", "diary-today"),
+      page("days", "Days", "diary-days"),
+    ],
+    owns: ["notes", "journal"],
   },
   {
     id: "tasks",
@@ -189,15 +195,15 @@ export const visibleTabs = (section: Section) => section.tabs.filter((t) => !t.h
 export const DOCK_SIZE = 4;
 export const DEFAULT_DOCK = ["projects", "money", "tasks", "calendar"];
 
-/** Dock ids from before M8, the AI section (gone in M10), Home and Life (gone in M11). */
+/** Dock ids from before M8, the AI section (gone in M10), Home and Life (gone in M11), Diary. */
 const OLD_DOCK: Record<string, string> = {
   payments: "money",
   wealth: "money",
   reminders: "calendar",
   leetcode: "projects",
   ideas: "projects",
-  diary: "diary",
-  life: "diary",
+  diary: "notes",
+  life: "notes",
   home: "projects",
   agents: "settings",
   ai: "settings",

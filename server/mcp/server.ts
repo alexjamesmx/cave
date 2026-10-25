@@ -336,7 +336,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       "add_note",
       {
         description:
-          "Save a new Markdown page, marked as written by you: on a project (its id, from query projects) when the owner should read it there, else in the Inbox. Use [[Title]] to link another page. It never changes an existing one.",
+          "Save a new Markdown page, marked as written by you: on a project (its id, from query projects) when the owner should read it there, else in Notes. Use [[Title]] to link another page. It never changes an existing one.",
         inputSchema: z.object({
           title: z.string(),
           body: z.string(),
