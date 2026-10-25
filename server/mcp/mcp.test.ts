@@ -724,3 +724,19 @@ test("every call is logged, reads and refusals included", async () => {
   ]);
   expect(logged[1]?.error).toBe("collection nope not found");
 });
+
+test("add_note with a project makes the note a page of it; an unknown project is refused", async () => {
+  const client = await connect("claude");
+  const page = await call(client, "add_note", {
+    title: "Study plan",
+    body: "# Six months\n",
+    project: "proj-leetcode",
+  });
+  expect(page.isError).toBeUndefined();
+  expect(store.get((page.structuredContent as { id: string }).id)).toMatchObject({
+    data: { _title: "Study plan", project: "proj-leetcode", source: "agent" },
+  });
+  const bad = await call(client, "add_note", { title: "Lost", body: "x", project: "nope" });
+  expect(bad.isError).toBe(true);
+  expect(textOf(bad)).toContain("project");
+});

@@ -36,13 +36,16 @@ import { Diagram } from "../ui/Diagram.tsx";
 import { DocDrawer } from "../ui/DocDrawer.tsx";
 import { OptionChip } from "../ui/fields.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { Pages } from "../ui/Pages.tsx";
 import { ProjectMap } from "../ui/ProjectMap.tsx";
 import { rowOpen } from "../ui/row-open.ts";
+import { Tracker } from "../ui/Tracker.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 
 const TABS = [
   ["overview", "Overview"],
   ["board", "Board"],
+  ["pages", "Pages"],
   ["diagram", "Diagram"],
   ["canvas", "Canvas"],
   ["activity", "Activity"],
@@ -55,7 +58,7 @@ const when = (ms: number) =>
 
 /** Every project has the same skeleton (M11 part 6): `/projects/<id>/<tab>`. */
 export function ProjectPage({ rest }: { rest: string[] }) {
-  const [id = "", tabId] = rest;
+  const [id = "", tabId, sub] = rest;
   const { db } = useCave().local;
   const project = useDoc(db, id);
   const all = useAllItems(db);
@@ -63,7 +66,12 @@ export function ProjectPage({ rest }: { rest: string[] }) {
   const settings = useDoc(db, "settings");
   const today = useToday();
   const now = useNow().getTime();
-  const tab = TABS.find(([t]) => t === tabId)?.[0] ?? "overview";
+  const template = templatesOf(settings?.data)[text(project?.data.template)];
+  const tracker = template?.tracker;
+  const tab =
+    tabId === "tracker" && tracker
+      ? "tracker"
+      : (TABS.find(([t]) => t === tabId)?.[0] ?? "overview");
 
   const linked = useMemo(() => {
     const items = all ?? [];
@@ -86,7 +94,7 @@ export function ProjectPage({ rest }: { rest: string[] }) {
       runs: linked.runs,
       others: [...linked.of("notes"), ...linked.of("ideas")],
     },
-    templatesOf(settings?.data)[text(project.data.template)]?.progress,
+    template?.progress,
     linked.of,
     today,
     now,
@@ -96,7 +104,7 @@ export function ProjectPage({ rest }: { rest: string[] }) {
     <>
       <Head project={project} summary={summary} runs={linked.runs} now={now} />
       <nav aria-label="Project tabs" className="section-tabs">
-        {TABS.map(([t, label]) => (
+        {[...TABS, ...(tracker ? [["tracker", tracker.label] as const] : [])].map(([t, label]) => (
           <a key={t} href={projectPath(id, t)} aria-current={t === tab ? "page" : undefined}>
             {label}
           </a>
@@ -106,6 +114,10 @@ export function ProjectPage({ rest }: { rest: string[] }) {
         <Overview project={project} parts={linked.parts} tasks={linked.tasks} of={linked.of} />
       )}
       {tab === "board" && <CollectionView key="board" id="tasks" viewId="board" project={id} />}
+      {tab === "pages" && <Pages project={project} noteId={sub} />}
+      {tab === "tracker" && tracker && (
+        <Tracker project={project} collection={tracker.collection} label={tracker.label} />
+      )}
       {tab === "diagram" && <Diagram project={project} />}
       {tab === "canvas" && <ProjectMap project={project} />}
       {tab === "activity" && <ProjectActivity project={project.id} />}
@@ -518,9 +530,9 @@ function Connected({ project, of }: { project: Doc; of: (collection: string) => 
             </span>
           ))}
         {notes.length > 0 && (
-          <span className="chip" style={{ background: "var(--on)" }}>
-            {notes.length} note{notes.length === 1 ? "" : "s"}
-          </span>
+          <a className="chip" href={projectPath(project.id, "pages")}>
+            {notes.length} page{notes.length === 1 ? "" : "s"}
+          </a>
         )}
         {flows.map((f) => (
           <a key={f.id} className="chip" href={flowPath(f.id)}>

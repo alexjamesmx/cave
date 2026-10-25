@@ -1,3 +1,4 @@
+import { COLOR_FIELD } from "./pages.ts";
 import { PALETTE } from "./palette.ts";
 import { PROJECTS } from "./projects.ts";
 import type { CollectionData } from "./schema.ts";
@@ -32,6 +33,7 @@ export const NOTES_COLLECTION: CollectionData = {
       ],
     },
     { id: "project", name: "Project", type: "ref", config: { collection: PROJECTS } },
+    COLOR_FIELD,
   ],
   views: [
     { id: "table", name: "Table", type: "table", config: {} },

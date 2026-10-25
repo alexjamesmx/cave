@@ -15,7 +15,7 @@ export const PARTS = "parts";
 const WIDGETS = ["progress", "budget", "board", "timeline", "runs", "counts"] as const;
 type Widget = (typeof WIDGETS)[number];
 
-interface ProjectTemplate {
+export interface ProjectTemplate {
   label: string;
   /** Parts created with a new project. */
   parts: { title: string; kind: string }[];
@@ -25,6 +25,8 @@ interface ProjectTemplate {
   widgets: Widget[];
   /** For `progress`: the collection and its status field (default: the project's parts). */
   progress?: { collection: string; field: string; done: string[] };
+  /** A tracker tab on the project page (M12 part 6): the collection and the tab's label. */
+  tracker?: { collection: string; label: string };
 }
 
 export const DEFAULT_TEMPLATES: Record<string, ProjectTemplate> = {
@@ -50,6 +52,13 @@ export const DEFAULT_TEMPLATES: Record<string, ProjectTemplate> = {
     collections: ["leetcode", "tasks"],
     widgets: ["progress", "counts", "runs"],
     progress: { collection: "leetcode", field: "status", done: ["solved"] },
+    tracker: { collection: "leetcode", label: "Problems" },
+  },
+  study: {
+    label: "Study",
+    parts: [],
+    collections: ["tasks", "ideas"],
+    widgets: ["progress", "counts", "runs"],
   },
   trip: {
     label: "Trip",
@@ -91,6 +100,11 @@ export function templatesOf(
       collections: v.collections.filter((c): c is string => typeof c === "string"),
       widgets: v.widgets.filter((w): w is Widget => WIDGETS.includes(w as Widget)),
       ...(v.progress ? { progress: v.progress } : {}),
+      ...(v.tracker &&
+      typeof v.tracker.collection === "string" &&
+      typeof v.tracker.label === "string"
+        ? { tracker: { collection: v.tracker.collection, label: v.tracker.label } }
+        : {}),
     };
   }
   return Object.keys(out).length > 0 ? out : DEFAULT_TEMPLATES;

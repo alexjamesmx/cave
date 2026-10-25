@@ -2356,3 +2356,118 @@ ul.chips {
 .job-facts dd {
   margin: 0;
 }
+
+/* The Markdown editor (M12 part 6). */
+.md-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.md-toolbar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.md-toolbar .btn {
+  padding: 4px 7px;
+}
+
+.md-state {
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.md-toggle {
+  margin-left: auto;
+}
+
+.md-panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.md-text {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.md-preview {
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--panel);
+}
+
+.md-editor[data-preview="only"] .md-text {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .md-panes {
+    grid-template-columns: 1fr;
+  }
+
+  .md-editor[data-preview="beside"] .md-preview {
+    display: none;
+  }
+}
+
+@media (min-width: 901px) {
+  .md-toggle {
+    display: none;
+  }
+}
+
+/* Pages (M12 part 6). */
+.page-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.page-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.page-row:hover {
+  background: var(--on);
+}
+
+.page-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line);
+  flex: none;
+}
+
+.page-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.page-head .title-input {
+  flex: 1 1 240px;
+}
+
+.tracker-head {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}

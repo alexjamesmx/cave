@@ -1,4 +1,4 @@
-import { mcpClient, ownerContext, pushed } from "./helpers.ts";
+import { mcpClient, openAsk, ownerContext, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("the Scene: projects in every state as orbs and as a hidden list by what needs you first; the strip; a click enters the project", async ({
@@ -90,6 +90,7 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   const page = await (
     await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
   ).newPage();
+  page.on("dialog", (dialog) => void dialog.accept());
   const name = `Garden ${Date.now()}`;
   await page.goto("/projects/ideas");
   await page.getByLabel("New idea").fill(name);
@@ -134,6 +135,7 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   await expect(tabs.getByRole("link")).toHaveText([
     "Overview",
     "Board",
+    "Pages",
     "Diagram",
     "Canvas",
     "Activity",
@@ -170,6 +172,32 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   await tabs.getByRole("link", { name: "Activity" }).click();
   await expect(page.getByRole("list", { name: "Project runs" })).toBeVisible();
 
+  // Pages (M12 part 6): a new page, renamed, written with the editor and previewed, coloured,
+  // listed, then deleted.
+  await tabs.getByRole("link", { name: "Pages" }).click();
+  await expect(page).toHaveURL(/\/pages$/);
+  await page.getByRole("button", { name: "New page" }).click();
+  await expect(page).toHaveURL(/\/pages\/[0-9A-Z]{26}$/);
+  await page.getByLabel("Page title").fill("Resources");
+  await page.getByLabel("Page title").blur();
+  await page.getByRole("textbox", { name: "Page body" }).fill("# Links\n\n- [[Plan]] and **more**");
+  await page.getByRole("textbox", { name: "Page body" }).blur();
+  await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+  const preview = page.locator(".md-preview");
+  await expect(preview.getByRole("heading", { name: "Links" })).toBeVisible();
+  await expect(preview.locator("strong")).toHaveText("more");
+  await page.getByLabel("Colour").selectOption("vio");
+  await page.getByRole("link", { name: "All pages" }).click();
+  const pages = page.getByRole("region", { name: "Pages" });
+  await expect(pages.getByRole("link", { name: /Resources/ })).toBeVisible();
+  await pages.getByRole("link", { name: /Resources/ }).click();
+  await expect(page.getByRole("textbox", { name: "Page body" })).toHaveValue(
+    "# Links\n\n- [[Plan]] and **more**",
+  );
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page).toHaveURL(/\/pages$/);
+  await expect(pages).toContainText("No pages yet");
+
   // Old paths: Items is the Overview, Map is the Canvas, LeetCode's link lands on its project.
   await page.goto(`/projects/${project}/items`);
   await expect(page).toHaveURL(new RegExp(`/projects/${project}$`));
@@ -180,9 +208,61 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   await expect(page.getByRole("heading", { name: "LeetCode" })).toBeVisible();
 
   // Leave the shared database as found: the task goes, so the Tasks board looks the same.
-  page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/tasks/list");
   await page.getByRole("button", { name: "Buy seeds" }).click();
   await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
   await expect(page.getByRole("button", { name: "Buy seeds" })).toHaveCount(0);
+});
+
+test("the Inbox on All moves a note from the Ask sheet onto a project; LeetCode's Problems tab tracks a problem by list", async ({
+  browser,
+}) => {
+  const page = await (
+    await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
+  ).newPage();
+  page.on("dialog", (dialog) => void dialog.accept());
+  const stamp = Date.now();
+
+  // A note from the Ask sheet with no project lands in the Inbox; Move to project makes it a page.
+  await page.goto("/projects/all");
+  await openAsk(page);
+  await page.getByRole("button", { name: "Note", exact: true }).click();
+  const form = page.getByRole("form", { name: "Note" });
+  await form.getByLabel("Title").fill(`Inbox note ${stamp}`);
+  await form.getByRole("button", { name: "Save to Inbox" }).click();
+  await expect(page.getByRole("status").filter({ hasText: `Inbox note ${stamp}` })).toBeVisible();
+  const inbox = page.getByRole("region", { name: "Inbox" });
+  await expect(inbox.getByRole("button", { name: `Inbox note ${stamp}` })).toBeVisible();
+  await inbox.getByLabel(`Move Inbox note ${stamp} to project`).selectOption({ label: "LeetCode" });
+  await expect(page).toHaveURL(/\/projects\/proj-leetcode\/pages\/[0-9A-Z]{26}$/);
+  await expect(page.getByLabel("Page title")).toHaveValue(`Inbox note ${stamp}`);
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page).toHaveURL(/\/projects\/proj-leetcode\/pages$/);
+
+  // The learning template's tracker: a problem added by list, grouped and counted.
+  await page
+    .getByRole("navigation", { name: "Project tabs" })
+    .getByRole("link", { name: "Problems" })
+    .click();
+  await expect(page).toHaveURL(/\/tracker$/);
+  const add = page.getByRole("form", { name: "New problem" });
+  await add.getByLabel("Number").fill("1");
+  await add.getByLabel("Title").fill(`Two Sum ${stamp}`);
+  await add.getByLabel("Difficulty").selectOption("easy");
+  await add.getByRole("combobox", { name: "List" }).fill("blind");
+  await page.getByRole("option", { name: "Blind 75" }).click();
+  await add.getByRole("button", { name: "Add" }).click();
+  const group = page.getByRole("rowgroup", { name: "Blind 75" });
+  await expect(group.getByRole("button", { name: `Two Sum ${stamp}` })).toBeVisible();
+  await expect(page.locator(".tracker-head")).toContainText(/\d+ \/ \d+/);
+  await page.getByLabel("Group by").selectOption("difficulty");
+  await expect(page.getByRole("rowgroup", { name: "easy" })).toContainText(`Two Sum ${stamp}`);
+  await page.getByRole("button", { name: "queued", exact: true }).click();
+  await expect(group.getByRole("button", { name: `Two Sum ${stamp}` })).toHaveCount(0);
+  await expect(page.getByRole("rowgroup", { name: "easy" })).toContainText(`Two Sum ${stamp}`);
+
+  // Leave the shared database as found.
+  await page.getByRole("button", { name: `Two Sum ${stamp}` }).click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByRole("button", { name: `Two Sum ${stamp}` })).toHaveCount(0);
 });

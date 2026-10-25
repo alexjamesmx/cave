@@ -5,6 +5,7 @@ import { SEED_STAMP } from "./hlc.ts";
 import { listsMigration, MONEY_ACCOUNT } from "./lists.ts";
 import { NOTES, NOTES_COLLECTION, notesMigration } from "./notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
+import { COLOR_FIELD, pagesMigration, TRACKER_FIELDS } from "./pages.ts";
 import { PALETTE, recolour } from "./palette.ts";
 import {
   MONEY_PAYMENT_REF,
@@ -153,6 +154,7 @@ const COLLECTIONS: Record<string, CollectionData> = {
     fields: [
       field("date", "Date", "date"),
       ...HABITS.map(([id, name]) => field(id, name, "checkbox")),
+      COLOR_FIELD,
     ],
     views: [
       view("write", "Write", "write"),
@@ -222,6 +224,7 @@ const COLLECTIONS: Record<string, CollectionData> = {
       ]),
       field("solved_at", "Solved", "date"),
       field("notes", "Notes", "text"),
+      ...TRACKER_FIELDS,
     ],
     views: [view("progress", "Progress", "progress"), view("table", "Table", "table")],
   },
@@ -469,6 +472,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 17, docs: [], update: recolourMigration },
   // M11 part 6: the project page's `lives_in` and `diagram` fields.
   { version: 18, docs: [], update: projectPageMigration },
+  // M12 part 6: a colour on notes and diary days, the tracker fields, the study template.
+  { version: 19, docs: [], update: pagesMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

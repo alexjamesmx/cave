@@ -255,32 +255,30 @@ export function IdeasPage() {
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <>
-        <form onSubmit={(e) => void add(e)} style={{ display: "flex", gap: 8 }}>
-          <input
-            className="input"
-            style={{ flex: 1, minWidth: 0 }}
-            aria-label="New idea"
-            placeholder="New idea"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <button type="submit" className="btn">
-            Add
-          </button>
-        </form>
-        {write.error && (
-          <p role="alert" className="error">
-            {write.error}
-          </p>
-        )}
-        {sorted.length === 0 && <p className="muted">No ideas yet.</p>}
-        <ul aria-label="Ideas" style={{ margin: 0, padding: 0, display: "grid", gap: 8 }}>
-          {sorted.map((idea) => (
-            <IdeaRow key={idea.id} idea={idea} stage={stage} onOpen={() => setOpen(idea.id)} />
-          ))}
-        </ul>
-      </>
+      <form onSubmit={(e) => void add(e)} style={{ display: "flex", gap: 8 }}>
+        <input
+          className="input"
+          style={{ flex: 1, minWidth: 0 }}
+          aria-label="New idea"
+          placeholder="New idea"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <button type="submit" className="btn">
+          Add
+        </button>
+      </form>
+      {write.error && (
+        <p role="alert" className="error">
+          {write.error}
+        </p>
+      )}
+      {sorted.length === 0 && <p className="muted">No ideas yet.</p>}
+      <ul aria-label="Ideas" style={{ margin: 0, padding: 0, display: "grid", gap: 8 }}>
+        {sorted.map((idea) => (
+          <IdeaRow key={idea.id} idea={idea} stage={stage} onOpen={() => setOpen(idea.id)} />
+        ))}
+      </ul>
       {open && collection && (
         <ItemDrawer
           key={open}

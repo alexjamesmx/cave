@@ -1,7 +1,10 @@
 import { type FormEvent, useState } from "react";
 import { newId } from "../../../shared/ids.ts";
 import { INBOX, NOTES, normFolder } from "../../../shared/notes.ts";
+import { isLive } from "../../../shared/project-status.ts";
 import { useCave } from "../app/context.ts";
+import { titleOf } from "../logic/views.ts";
+import { useItems } from "../store/queries.ts";
 
 /** Creates a note and returns its id; `folder` and `project` place it. */
 export async function createNote(
@@ -23,15 +26,22 @@ export async function createNote(
   return id;
 }
 
-/** The Ask sheet's Note form: a title and Markdown, saved to the Inbox (listed on Projects → All). */
+/**
+ * The Ask sheet's Note form: a title, Markdown, and a project when it has one (a page of that
+ * project); without one it lands in the Inbox on Projects → All.
+ */
 export function NoteForm({ onDone }: { onDone(message: string): void }) {
   const { local } = useCave();
+  const projects = (useItems(local.db, "projects") ?? []).filter(
+    (p) => isLive(p) && p.data.status !== "dropped",
+  );
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
+  const [project, setProject] = useState("");
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const id = await createNote(local, title.trim(), INBOX);
+    const id = await createNote(local, title.trim(), INBOX, project || undefined);
     if (text.trim())
       await local.write({ id, kind: "item", collection: NOTES }, { _body: text.trim() });
     onDone(`Saved · Note · ${title.trim()}`);
@@ -58,8 +68,19 @@ export function NoteForm({ onDone }: { onDone(message: string): void }) {
           onChange={(e) => setText(e.target.value)}
         />
       </label>
+      <label className="quick-field">
+        <span className="k">Project</span>
+        <select className="input" value={project} onChange={(e) => setProject(e.target.value)}>
+          <option value="">Inbox (no project)</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {titleOf(p)}
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="submit" className="btn primary" disabled={!title.trim()}>
-        Save to Inbox
+        {project ? "Save as a page" : "Save to Inbox"}
       </button>
     </form>
   );
