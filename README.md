@@ -1,35 +1,35 @@
 # Cave
 
-Open-source, local-first, multi-agent personal brain: money, tasks, habits, diary, ideas, learning and notes in one installable web app, with one API that any agent can use.
+Local-first personal brain: money, tasks, habits, diary, projects and pages in one installable web app, with one MCP API any agent can use. Every device keeps a full offline copy and syncs with one server.
 
-Status: pre-v0.1, live at `https://cave.alexjamesmx.dev`. Every device keeps a full offline copy and syncs with that server; agents connect through its MCP endpoint.
+Status: pre-v0.1, live at `https://cave.alexjamesmx.dev`.
 
-## Try it locally
+## Try it
 
-You need Linux (or WSL) with git and [Bun](https://bun.com) 1.4.3.
+Linux or WSL with git and [Bun](https://bun.com) 1.4.3:
 
 ```bash
 bun install
 bun run dev:seed
 ```
 
-Open http://127.0.0.1:3000, unlock with the token `seed`, and install the app from the browser's address bar. The data is fake (`data/seed.db`).
+Open http://127.0.0.1:3000, unlock with `seed`, install the app from the address bar. The data is fake.
 
 ## Develop
 
 ```bash
-bun run dev                          # development server on data/cave.db, or CAVE_DB_PATH
-bun run check && bun test            # before every push: a push to main deploys
-bun run e2e                          # browser checks, when the UI changes
+bun run dev                    # dev server on data/cave.db
+bun run check && bun test      # before every push: a push to main deploys
+bun run e2e                    # browser checks when the UI changes
 ```
-
-A new machine: `docs/system.md` section 6. Every command and the rules for working in this repo: [AGENTS.md](AGENTS.md).
 
 ## Docs
 
+- [docs/onboarding.md](docs/onboarding.md): how it fits together (diagrams), onboarding any machine, keys, costs.
+- [AGENTS.md](AGENTS.md): rules and commands for anyone, human or agent, working here.
 - [docs/guide.md](docs/guide.md): using the app.
-- [docs/system.md](docs/system.md): how the whole system fits together, local dev, configuration, rebuilding any piece.
-- [docs/architecture.md](docs/architecture.md): data model, sync protocol, seed collections, the client.
-- [docs/hosting.md](docs/hosting.md): the VPS runbook (Caddy, systemd, deploy on merge, off-box backups).
-- [docs/agents.md](docs/agents.md): connecting Claude Code, Codex, OpenCode and the Claude apps.
+- [docs/system.md](docs/system.md): what runs where, configuration, rebuilding any piece.
+- [docs/architecture.md](docs/architecture.md): data model, sync, the client.
+- [docs/hosting.md](docs/hosting.md): the VPS runbook.
+- [docs/agents.md](docs/agents.md): connecting Claude, Codex, OpenCode.
 - [docs/decisions.md](docs/decisions.md): why things are the way they are.

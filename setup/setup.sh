@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# One-time setup of a Linux development machine, after the tools in docs/system.md section 6.
+# One-time setup of a Linux development machine, after the tools in docs/onboarding.md.
 # Safe to run again: it keeps what is already there. On WSL it also registers Remote Control.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "== Tools"
 for tool in git bun claude; do
-  command -v "$tool" >/dev/null || { echo "$tool is missing: see docs/system.md section 6" >&2; exit 1; }
+  command -v "$tool" >/dev/null || { echo "$tool is missing: see docs/onboarding.md" >&2; exit 1; }
   echo "$tool $("$tool" --version | head -n 1)"
 done
 

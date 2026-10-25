@@ -168,28 +168,9 @@ bun run check && bun test && bun run e2e              # e2e uses its own temp da
 ## 6. Recreate from scratch
 
 ### A new development laptop
-The laptop runs Ubuntu: today inside WSL (systemd on in `/etc/wsl.conf`), later natively. Everything below is the same on both, except the two steps marked WSL.
+Install the tools and the code as `docs/onboarding.md` says; then, on Ubuntu natively or in WSL (systemd on in `/etc/wsl.conf`):
 
-1. **Tools:**
-   ```bash
-   sudo apt install git gh build-essential shellcheck   # shellcheck: CI lints deploy/ and setup/ with it
-   curl -fsSL https://bun.com/install | bash -s bun-v1.4.3
-   curl -fsSL https://claude.ai/install.sh | bash       # then run claude once to log in
-   ```
-   Google Chrome for `bun run e2e`, from Google's `.deb`, which also adds its apt repository (e2e runs headless and needs no display):
-   ```bash
-   curl -fsSLO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-   sudo apt install ./google-chrome-stable_current_amd64.deb && rm google-chrome-stable_current_amd64.deb
-   ```
-2. **Code:**
-   ```bash
-   gh auth login
-   gh repo clone alexjamesmx/cave ~/code/jarvis
-   cd ~/code/jarvis
-   setup/setup.sh                                      # hooks, bun install, Claude rules, Playwright MCP, plugins
-   bun run check && bun test && bun run e2e
-   ```
-3. **SSH to the VPS:**
+1. **SSH to the VPS:**
    - Run `ssh-keygen -t ed25519`. The key has no passphrase by the owner's choice (`docs/decisions.md`, 2026-10-21); `ssh-keygen -p -f ~/.ssh/id_ed25519` adds one later. The same key can serve GitHub.
    - Add the public key to `/root/.ssh/authorized_keys` on the VPS, in hPanel's browser terminal or from a machine that already gets in.
    - Add to `~/.ssh/config`:
@@ -202,22 +183,20 @@ The laptop runs Ubuntu: today inside WSL (systemd on in `/etc/wsl.conf`), later 
        AddKeysToAgent yes
      ```
    - Run `ssh cave-vps true`, and check that the host key fingerprint matches `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` in the browser terminal.
-4. **`.env`:** copy it from `.env.example` and set `CAVE_DB_PATH=data/dev.db`, `CAVE_REMOTE_URL=https://cave.alexjamesmx.dev`, `CAVE_REMOTE_TOKEN` (the server token, from your password manager) and `BACKUP_PULL_DIR=data/vps-backups`.
-5. **Agent token and MCP keys:** mint one agent token per machine in the browser terminal (`bun run agent add claude-code-<machine> --scopes read,write`, `docs/agents.md`), and revoke the old machine's with `bun run agent revoke <name>`. `.mcp.json` reads `CAVE_AGENT_TOKEN`, `CONTEXT7_API_KEY`, `EXA_API_KEY`, `FIRECRAWL_API_KEY` and `GITHUB_PAT` from the environment, never from a file in the repo.
+2. **`.env`:** copy it from `.env.example` and set `CAVE_DB_PATH=data/dev.db`, `CAVE_REMOTE_URL=https://cave.alexjamesmx.dev`, `CAVE_REMOTE_TOKEN` (the server token, from your password manager) and `BACKUP_PULL_DIR=data/vps-backups`.
+3. **Agent token and MCP keys:** mint one agent token per machine in the browser terminal (`bun run agent add claude-code-<machine> --scopes read,write`, `docs/agents.md`), and revoke the old machine's with `bun run agent revoke <name>`. `.mcp.json` reads `CAVE_AGENT_TOKEN`, `CONTEXT7_API_KEY`, `EXA_API_KEY`, `FIRECRAWL_API_KEY` and `GITHUB_PAT` from the environment, never from a file in the repo.
    - **WSL:** keep them as Windows user environment variables, and pass them into WSL with `WSLENV` (PowerShell, then restart the Claude app and open a new Ubuntu terminal):
      ```powershell
      [Environment]::SetEnvironmentVariable('WSLENV', 'CAVE_AGENT_TOKEN/u:CONTEXT7_API_KEY/u:EXA_API_KEY/u:FIRECRAWL_API_KEY/u:GITHUB_PAT/u', 'User')
      ```
    - **Native Linux:** put them in `~/.config/environment.d/cave.conf` (`chmod 600`), which systemd gives every process of the user session.
-6. **Claude Code:** start `claude` in `~/code/jarvis`, approve the project MCP servers, check `/mcp`, then make the dev copy (section 5).
-7. **Remote Control** (the phone's Code tab reaches this checkout; `setup/remote-control.sh` runs `claude remote-control` in a restart loop, log in `~/.local/state/cave/remote-control.log`, shown in the Claude app as "cave · laptop"):
+4. **Claude Code:** start `claude` in `~/code/jarvis`, approve the project MCP servers, check `/mcp`, then make the dev copy (section 5).
+5. **Remote Control** (the phone's Code tab reaches this checkout; `setup/remote-control.sh` runs `claude remote-control` in a restart loop, log in `~/.local/state/cave/remote-control.log`, shown in the Claude app as "cave · laptop"):
    - **WSL:** `setup/setup.sh` registers the per-user Windows task "Cave Remote Control", which at logon keeps `wsl.exe` running the loop, and so keeps WSL up. Start it now with `powershell.exe -NoProfile -Command "Start-ScheduledTask -TaskName 'Cave Remote Control'"`. It restarts WSL 30 seconds after `wsl --shutdown`; stop the task first to keep WSL down. `setup/remote-control-task.ps1 -Remove` unregisters it.
    - **Native Linux:** run `setup/remote-control.sh` from a systemd user service (not set up yet).
 
 ### A new phone, tablet or browser
-1. **The app:** open `https://cave.alexjamesmx.dev`, unlock it with the server token, and install the app. The first sync downloads everything.
-2. **Claude:** sign in to the Claude app. The Cave connector is part of the account, so it is already there; if not, add it as `docs/agents.md` "Claude apps" says.
-3. **Code:** the Code tab of the Claude app starts cloud sessions on `alexjamesmx/cave` in the `cave` environment. Nothing to install on the phone.
+`docs/onboarding.md`.
 
 ### A lost device
 1. Replace the server token on the VPS:
