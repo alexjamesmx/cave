@@ -8,6 +8,7 @@ import { createFlowEngine } from "../flows/engine.ts";
 import type { Job } from "../jobs/scheduler.ts";
 import type { Store } from "../store.ts";
 import { notificationRoutes } from "./api.ts";
+import { createBudgetSweep } from "./budget-sweep.ts";
 import { createChannelState } from "./channel-state.ts";
 import { createChannelWriter } from "./channel-writer.ts";
 import { createDiscordChannel } from "./discord.ts";
@@ -104,8 +105,14 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
   approvals = createApprovals({ store: o.store, notifier, writer: telegramWriter, log });
   const sweep = createReminderSweep({ store: o.store, notifier, sent, zone });
   const payments = createPaymentSweep({ store: o.store, notifier, sent, zone });
+  const budget = createBudgetSweep({
+    store: o.store,
+    notifier,
+    sent,
+    timeZone: () => zone().timeZone,
+  });
   const flows = createFlowEngine({ store: o.store, db: o.db, notifier, now: o.now, zone, log });
-  const jobs: Job[] = [sweep, payments, flows.job, telegram.job];
+  const jobs: Job[] = [sweep, payments, budget, flows.job, telegram.job];
   const routes = notificationRoutes({
     notifier,
     sent,

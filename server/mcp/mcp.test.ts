@@ -594,7 +594,13 @@ test("an agent write reaches a device with actor agent:<name> and shows in histo
     .structuredContent as { items: { id: string }[] };
   expect(found.items.map((i) => i.id)).toContain(id);
   const month = (await call(client, "money_month", { month: "2026-10" })).structuredContent;
-  expect(month).toMatchObject({ spent: 87.5, spentCount: 1, incomplete: 0, undated: 0 });
+  expect(month).toMatchObject({
+    spent: 87.5,
+    spentCount: 1,
+    incomplete: 0,
+    undated: 0,
+    budget: null,
+  });
 
   // A transaction without a date is in no month: reported apart, with its amount.
   const undated = await call(client, "create", {
@@ -605,6 +611,26 @@ test("an agent write reaches a device with actor agent:<name> and shows in histo
   expect(undated.isError).toBeUndefined();
   const after = (await call(client, "money_month", { month: "2026-10" })).structuredContent;
   expect(after).toMatchObject({ spent: 87.5, undated: 1, undatedAmount: 300 });
+
+  // Once the owner sets a limit, the month carries the budget line; agents only read it.
+  store.applyChanges(
+    [
+      {
+        id: "settings",
+        kind: "setting",
+        collection: null,
+        data: { budget: { monthlyLimit: 1000, savingTarget: 200 } },
+        stamps: { budget: formatStamp(Date.now(), 9998, "test") },
+        actor: "test",
+      },
+    ],
+    "test",
+    Date.now(),
+  );
+  const budgeted = (await call(client, "money_month", { month: "2026-10" })).structuredContent;
+  expect(budgeted).toMatchObject({
+    budget: { limit: 1000, spent: 87.5, left: 912.5, savingTarget: 200, saved: -87.5 },
+  });
 });
 
 test("propose_delete, then the owner approves on a device", async () => {

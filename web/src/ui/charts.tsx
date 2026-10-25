@@ -9,7 +9,7 @@ export function Stat({
   label: string;
   value: ReactNode;
   note?: ReactNode;
-  tone?: string;
+  tone?: string | undefined;
 }) {
   return (
     <div className="panel stat">
@@ -84,12 +84,15 @@ export function Tile({
   note,
   tone,
   trend,
+  action,
 }: {
   label: string;
   value: ReactNode;
   note?: ReactNode;
-  tone?: string;
+  tone?: string | undefined;
   trend?: { values: number[]; label: string };
+  /** A control in the corner, Edit for the budget. */
+  action?: ReactNode;
 }) {
   return (
     <section className="panel tile" aria-label={label}>
@@ -98,6 +101,7 @@ export function Tile({
         {value}
       </span>
       <span className="num muted tile-note">{note}</span>
+      {action && <span className="tile-action">{action}</span>}
       {trend && (
         <Sparkline values={trend.values} label={trend.label} color={tone ?? "var(--muted)"} />
       )}

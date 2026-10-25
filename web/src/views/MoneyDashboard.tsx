@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { budgetLine, budgetOf } from "../../../shared/budget.ts";
 import { optionText, transferCategories } from "../../../shared/categories.ts";
-import { monthName, shiftMonth, shortDay } from "../../../shared/dates.ts";
+import { daysInMonth, monthName, shiftMonth, shortDay } from "../../../shared/dates.ts";
 import { undatedSummary } from "../../../shared/money.ts";
 import {
   changeText,
@@ -22,8 +23,9 @@ import { useToday } from "../app/hooks.ts";
 import { setSearch, useSearch } from "../app/router.ts";
 import { formatMoney, percent, signedMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
-import { useCollections } from "../store/queries.ts";
+import { useCollections, useDoc } from "../store/queries.ts";
 import { soleAccount } from "../ui/AccountPicker.tsx";
+import { BudgetFields } from "../ui/BudgetFields.tsx";
 import { BarRow, DayStrip, StackedColumns, Tile } from "../ui/charts.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { OptionPicker } from "../ui/OptionPicker.tsx";
@@ -44,7 +46,10 @@ const INVESTMENT = "investment";
  */
 export function MoneyDashboard({ collection, items, open }: ViewProps) {
   const today = useToday();
-  const collections = useCollections(useCave().local.db);
+  const db = useCave().local.db;
+  const collections = useCollections(db);
+  const budget = budgetOf(useDoc(db, "settings")?.data);
+  const [editingBudget, setEditingBudget] = useState(false);
   const search = useSearch();
   const filter = useMemo(() => filterFromSearch(search), [search]);
   const [period, setPeriod] = useState<{ kind: Kind; key: string }>(() => ({
@@ -86,6 +91,20 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
       0,
     );
   const saved = (p: PeriodSummary) => p.income - p.spent;
+  // The year's limit is twelve months of the monthly one, measured over the days elapsed.
+  const line =
+    budget.monthlyLimit === undefined
+      ? undefined
+      : budgetLine(
+          budget.monthlyLimit * (period.kind === "month" ? 1 : 12),
+          s.spent,
+          s.months.reduce((t, m) => t + m.daysElapsed, 0),
+          s.months.reduce((t, m) => t + daysInMonth(m.month), 0),
+        );
+  const target =
+    budget.savingTarget === undefined
+      ? undefined
+      : budget.savingTarget * (period.kind === "month" ? 1 : 12);
   const titles = topTitles(s.expenses, 5);
   const step = (by: -1 | 1) =>
     setPeriod((p) =>
@@ -183,10 +202,16 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
           value={signedMoney(saved(s), saved(s) >= 0 ? "income" : "expense")}
           note={
             s.income > 0
-              ? `${percent(Math.max(saved(s), 0), s.income)} of income · ${vs(saved(s), saved(prev))}`
+              ? `${percent(Math.max(saved(s), 0), s.income)} of income · ${vs(saved(s), saved(prev))}${
+                  target === undefined ? "" : ` · target ${formatMoney(target)}`
+                }`
               : "no income in this period"
           }
-          tone={saved(s) >= 0 ? "var(--accent)" : "var(--expense)"}
+          tone={
+            saved(s) < 0 || (target !== undefined && saved(s) < target)
+              ? "var(--expense)"
+              : "var(--accent)"
+          }
           trend={{
             values: trend.map((p) => Math.max(p.income - p.spent, 0)),
             label: "Saved per month, 12 months",
@@ -202,7 +227,48 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
             label: "Transfers per month, 12 months",
           }}
         />
+        <Tile
+          label="Budget"
+          value={
+            line === undefined
+              ? "—"
+              : line.left >= 0
+                ? `${formatMoney(line.left)} left`
+                : `${formatMoney(-line.left)} over`
+          }
+          note={
+            line === undefined
+              ? "Set a monthly limit"
+              : `${formatMoney(line.spent)} of ${formatMoney(line.limit)}${
+                  line.pace === undefined ? "" : ` · at this rate ${formatMoney(line.pace)}`
+                }`
+          }
+          tone={
+            line === undefined
+              ? undefined
+              : line.share >= 1
+                ? "var(--expense)"
+                : line.share >= 0.8
+                  ? "var(--warn)"
+                  : "var(--accent)"
+          }
+          action={
+            <button
+              type="button"
+              className="link"
+              aria-expanded={editingBudget}
+              onClick={() => setEditingBudget(!editingBudget)}
+            >
+              Edit
+            </button>
+          }
+        />
       </div>
+      {editingBudget && (
+        <section className="panel" aria-label="Budget settings" style={{ padding: 16 }}>
+          <BudgetFields />
+        </section>
+      )}
 
       <div className="split">
         {period.kind === "month" ? (

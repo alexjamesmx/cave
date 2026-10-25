@@ -3,6 +3,7 @@ import { useCave } from "../../app/context.ts";
 import { useReminderZone } from "../../app/hooks.ts";
 import { dockOf, LANDING, SECTIONS } from "../../app/sections.ts";
 import { useDoc } from "../../store/queries.ts";
+import { BudgetFields } from "../../ui/BudgetFields.tsx";
 import { EditDock } from "../../ui/Dock.tsx";
 import { SETTINGS } from "./shared.tsx";
 
@@ -21,6 +22,14 @@ export function SettingsGeneral() {
     <>
       <OwnerName />
       <Goal />
+      <Panel>
+        <span className="k">Budget</span>
+        <BudgetFields />
+        <span className="muted" style={{ fontSize: 13 }}>
+          Money → Overview shows what is left and the pace; crossing 80 % and 100 % of the limit
+          notifies you once each a month. Both are amounts; empty means none.
+        </span>
+      </Panel>
       <TimeZone />
       <ReminderTime />
       <Look />

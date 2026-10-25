@@ -182,7 +182,13 @@ test("the report has jobs, runs, deploy, devices, agents, flows and the notifica
   expect(report.deployNextAt).toBe(NOW - 30_000 + 2 * 60_000);
   expect(report.env).toBe("production");
   expect(report.offsite).toMatchObject({ backup: { ok: true, snapshot: "01ebed8a" }, check: null });
-  expect(report.jobs.map((j) => j.id)).toEqual(["reminders", "payments", "flows", "telegram"]);
+  expect(report.jobs.map((j) => j.id)).toEqual([
+    "reminders",
+    "payments",
+    "budget",
+    "flows",
+    "telegram",
+  ]);
   expect(report.jobs.every((j) => j.lastRun === NOW)).toBe(true);
   expect(report.jobRuns[0]).toMatchObject({ job: "reminders", summary: "1 sent, 0 missed" });
   expect(report.flowRuns).toEqual([{ flowId: "flow-rent", lastAt: NOW - 3000, result: "stopped" }]);

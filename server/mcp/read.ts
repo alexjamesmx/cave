@@ -1,5 +1,6 @@
+import { budgetLine, budgetOf } from "../../shared/budget.ts";
 import { transferCategories } from "../../shared/categories.ts";
-import { dayOf, localDate } from "../../shared/dates.ts";
+import { dayOf, daysInMonth, localDate } from "../../shared/dates.ts";
 import { activeFields, fieldsOf, offeredOptions, resolvedFieldsOf } from "../../shared/fields.ts";
 import { monthSummary, undatedSummary } from "../../shared/money.ts";
 import type { CollectionData, Field } from "../../shared/schema.ts";
@@ -145,6 +146,7 @@ export function moneyMonth(store: Store, agent: Agent, month: string, now: numbe
   const categories = fieldsOf(store.get("money")).find((f) => f.id === "category");
   const s = monthSummary(entries, month, today, transferCategories(categories));
   const undated = undatedSummary(entries);
+  const budget = budgetFor(store, month, s);
   const brief = (e: (typeof s.expenses)[number]) => ({
     id: e.doc.id,
     title: text(e.doc.data._title),
@@ -170,6 +172,22 @@ export function moneyMonth(store: Store, agent: Agent, month: string, now: numbe
       undatedAmount: undated.amount,
       transferred: s.transferred,
       transferCount: s.transfers.length,
+      // The owner's limit against this month (M12 part 2); null until one is set.
+      budget: budget ? { ...budget, saved: s.income - s.spent } : null,
     },
+  };
+}
+
+/** The budget line for a month, with the saving target beside it; `undefined` without a limit. */
+function budgetFor(store: Store, month: string, s: { spent: number; daysElapsed: number }) {
+  const b = budgetOf(store.get("settings")?.data);
+  if (b.monthlyLimit === undefined) return undefined;
+  const line = budgetLine(b.monthlyLimit, s.spent, s.daysElapsed, daysInMonth(month));
+  return {
+    limit: line.limit,
+    spent: line.spent,
+    left: line.left,
+    pace: line.pace ?? null,
+    savingTarget: b.savingTarget ?? null,
   };
 }

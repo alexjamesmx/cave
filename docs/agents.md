@@ -13,7 +13,7 @@ bun run agent revoke codex
 
 - The token (`cave_…`) is printed once. Only its SHA-256 is stored, so it can't be shown again. A lost token means revoking the agent and adding a new one.
 - Scopes:
-  - `read`: `list_collections`, `query`, `get`, `money_month`, `get_project`, `list_flows`.
+  - `read`: `list_collections`, `query`, `get`, `money_month` (a month's totals, and the owner's `budget`: `limit`, `spent`, `left`, `pace`, `savingTarget`, `saved`, or `null` until the owner sets a limit; agents never set the budget), `get_project`, `list_flows`.
   - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `start_run`, `log_step` (with `question: true`, a question for the owner), `finish_run`, and `add_note`.
 - `--collections` limits what the agent can see. Other collections don't appear in its lists, and anything in them answers "not found".
 - Keep the token in an environment variable, `CAVE_AGENT_TOKEN` below. Never put it in a committed file.

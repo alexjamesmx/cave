@@ -20,6 +20,19 @@ test("Overview: tiles with their change, where it went into the ledger, the year
   );
   await expect(page.getByRole("region", { name: "Saved", exact: true })).toContainText(/of income/);
   await expect(page.getByRole("img", { name: /Spent per month, 12 months/ })).toBeVisible();
+
+  // A monthly limit typed on the Budget tile: what is left and the pace, then cleared again.
+  const budget = page.getByRole("region", { name: "Budget", exact: true });
+  await expect(budget).toContainText("Set a monthly limit");
+  await budget.getByRole("button", { name: "Edit" }).click();
+  const limit = page.getByRole("region", { name: "Budget settings" }).getByLabel("Monthly limit");
+  await limit.fill("1000000");
+  await limit.blur();
+  await expect(budget).toContainText(/\$[\d,]+ left/);
+  await expect(budget).toContainText(/of \$1,000,000 · at this rate/);
+  await limit.fill("");
+  await limit.blur();
+  await expect(budget).toContainText("Set a monthly limit");
   await expect(page.getByRole("img", { name: /Spending per day in/ })).toBeVisible();
   await expect(page.getByRole("img", { name: /Spending per month by category/ })).toBeVisible();
   const where = page.getByRole("region", { name: "Where it went" });

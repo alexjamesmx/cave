@@ -4,8 +4,8 @@ import type { ChannelId } from "../../shared/notifications.ts";
 export interface Notification {
   /** Names the send for "already sent" and the log, e.g. `reminder:<id>:<due>`; never a title. */
   key: string;
-  /** `payment`: one coming due (M7c); `flow`: a flow waiting for approval; `message`: what a flow's notify step sends. */
-  kind: "reminder" | "payment" | "test" | "flow" | "message";
+  /** `payment`: one coming due (M7c); `flow`: a flow waiting for approval; `message`: what a flow's notify step sends. `budget`: a share of the monthly limit crossed (M12). */
+  kind: "reminder" | "payment" | "test" | "flow" | "message" | "budget";
   itemId?: string;
   title: string;
   /** Shown only at `full` detail: the due time, "Repeats monthly", the fields shown. */
