@@ -58,11 +58,14 @@ test("Devices & server renders each sub-section with a reminder and a job run; A
     page.getByRole("region", { name: "Notification log" }).getByText(/\d+ missed reminders?/),
   ).toBeVisible();
 
-  // Flows → List: every flow with its last run and next slot.
-  await page.goto("/flows/list");
-  const flows = page.getByRole("region", { name: "Flows" });
-  await expect(flows.getByRole("link", { name: "Rent reminder" })).toBeVisible();
-  await expect(flows.getByText(/next /)).toBeVisible();
+  // Flows → Runs holds the jobs' runs too (M12 part 4): the start-up backup is there.
+  await page.goto("/flows/runs");
+  await expect(
+    page
+      .getByRole("region", { name: "Flow runs" })
+      .getByRole("link", { name: "Daily backup" })
+      .first(),
+  ).toBeVisible();
 
   // Agents: tokens and use; other specs may have added agents (runs.e2e mints one).
   await page.goto("/settings/agents");

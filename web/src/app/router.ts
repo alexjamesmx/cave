@@ -69,7 +69,7 @@ export function redirectOf(pathname: string): string | undefined {
 }
 
 function systemPath(tab: string | undefined): string {
-  if (tab === "flows") return "/flows/list";
+  if (tab === "flows") return "/flows";
   if (tab === "agents") return "/settings/agents";
   if (tab === "schedules" || tab === "jobs" || tab === "notifications")
     return `/settings/devices/${tab}`;
@@ -86,9 +86,11 @@ export function parseRoute(pathname: string): Route {
   // `/projects/<id>/<tab>`: anything after Projects that is not a tab is a project.
   if (section.id === "projects" && p[1] && !section.tabs.some((t) => t.id === p[1]))
     return { name: "section", section: "projects", tab: "project", rest: p.slice(1) };
-  // `/flows/<id>`: anything after Flows that is not a tab is a flow, open on the canvas.
+  // `/flows/<id>`: anything after Flows that is not a tab is a flow, open on the canvas;
+  // `/flows/jobs/<id>` is a built-in job's card (M12 part 4). The List tab is gone.
+  if (section.id === "flows" && p[1] === "list") return { name: "redirect", to: "/flows" };
   if (section.id === "flows" && p[1] && !section.tabs.some((t) => t.id === p[1]))
-    return { name: "section", section: "flows", tab: "canvas", rest: [p[1]] };
+    return { name: "section", section: "flows", tab: "canvas", rest: p.slice(1, 3) };
   // An unknown tab falls back to the section's first.
   const tab = section.tabs.find((t) => t.id === p[1]) ?? (section.tabs[0] as Tab);
   const rest = section.tabs.some((t) => t.id === p[1]) ? p.slice(2) : [];

@@ -72,7 +72,6 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(page).toHaveURL(/\/flows$/);
   await expect(page.getByRole("navigation", { name: "Flows tabs" }).getByRole("link")).toHaveText([
     "Canvas",
-    "List",
     "Runs",
   ]);
   await page.getByRole("button", { name: "New flow" }).click();
@@ -111,6 +110,8 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await page.goto("/projects/notes");
   await page.getByLabel("New note").fill(note);
   await page.getByLabel("New note").press("Enter");
+  // The note page opens once the write has committed; leaving earlier could lose the write.
+  await expect(page).toHaveURL(/\/projects\/notes\/[0-9A-Z]{26}$/);
   await expect(async () => {
     await page.goto("/tasks/list");
     await expect(page.getByText(`Read ${note}`)).toBeVisible({ timeout: 2_000 });
@@ -124,10 +125,19 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(runs.getByRole("link", { name: `Read ${note}` })).toBeVisible();
   await expect(runs.getByText("ok", { exact: true }).first()).toBeVisible();
 
-  // List: the flow with its status and author.
+  // The picker lists the built-in jobs too; a job opens as a read-only card, and its runs sit
+  // beside the flows' under Runs. The old List path lands on the canvas.
+  await page.goto("/flows");
+  await page.getByLabel("Flow", { exact: true }).selectOption({ label: "Daily backup" });
+  await expect(page).toHaveURL(/\/flows\/jobs\/backups$/);
+  const card = page.getByRole("region", { name: "Daily backup" });
+  await expect(card).toContainText("BUILT IN");
+  await expect(card).toContainText("Schedule");
+  await page.goto("/flows/runs?source=job");
+  await expect(runs.getByRole("link", { name: "Daily backup" }).first()).toBeVisible();
+  await expect(runs.getByRole("link", { name })).toHaveCount(0);
   await page.goto("/flows/list");
-  const list = page.getByRole("region", { name: "Flows" });
-  await expect(list.getByRole("link", { name })).toBeVisible();
+  await expect(page).toHaveURL(/\/flows$/);
 
   // Leave the shared database as found: the flow off, the task and the note gone.
   await page.goto(flowUrl);

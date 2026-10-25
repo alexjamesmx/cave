@@ -12,7 +12,7 @@ import { ActivityPage } from "./Activity.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { DiaryMonths } from "./DiaryMonths.tsx";
-import { FlowList } from "./FlowList.tsx";
+import { FlowJob } from "./FlowJob.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
@@ -49,8 +49,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   notes: (rest) => <NotesPage {...(rest[0] ? { noteId: rest[0] } : {})} />,
   project: (rest) => <ProjectPage rest={rest} />,
   activity: () => <ActivityPage />,
-  flows: (rest) => <Flows id={rest[0]} />,
-  "flows-list": () => <FlowList />,
+  flows: (rest) => (rest[0] === "jobs" ? <FlowJob id={rest[1]} /> : <Flows id={rest[0]} />),
   "flows-runs": () => <FlowRuns />,
   "settings-general": () => <SettingsGeneral />,
   "settings-devices": (rest) => <SettingsDevices tab={rest[0]} />,

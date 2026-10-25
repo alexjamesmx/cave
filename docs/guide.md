@@ -11,7 +11,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Projects
 
-- **Scene**, **All** (cards: a status dot, "72% · on track · agent working", the next due part; Needs you on top), **Ideas**, **Notes**, **Activity** (every run: agents', flows' and jobs', filtered by source and status), and a tab per pinned project.
+- **Scene**, **All** (cards: a status dot, "72% · on track · agent working", the next due part; Needs you on top), **Ideas**, **Notes**, **Activity** (agents' runs, filtered by status; flows' and jobs' runs are under Flows → Runs, a source filter away here), and a tab per pinned project.
 - **A project's status** is computed, never typed: done, dropped or paused from its own status; **blocked** when a part is blocked; **waiting on you** when an agent asked a question; **slipping** when its review date passed, a part is overdue, or progress is more than 15 % behind the schedule between its creation and its latest part due date; else **on track**. Progress is the template's rule (LeetCode: problems solved), else parts done, else tasks done.
 - **Every project has the same page:** a status ring, the goal and a meta line (where it lives, agents in the last 30 days, parts done, the last report, the next review), then
   - **Overview:** the Plan (parts as a checklist in order, the current one marked, a blocked one with its reason), the latest from the agent (its last step, and its open question with Answer), Connected (where it lives, notes, flows, and every collection with items of the project), open tasks, Add task, Ask about this project.
@@ -42,9 +42,9 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Flows
 
-- **Canvas:** one flow as a graph: the trigger on the left, its steps to the right, "else stop" under an if. Click a node to edit it in the inspector; the forms come from the same registry that validates flows and gives agents their schema. Text can use `{{item.amount|pct:20}}`, `{{today}}` and the like from a picker. Pick a flow at the top, or New flow; Duplicate copies one as a draft.
+- **Canvas:** one flow as a graph: the trigger on the left, its steps to the right, "else stop" under an if. Click a node to edit it in the inspector; the forms come from the same registry that validates flows and gives agents their schema. Text can use `{{item.amount|pct:20}}`, `{{today}}` and the like from a picker. Pick a flow at the top, or New flow; Duplicate copies one as a draft. The same picker lists what the Cave runs on its own under **Built in** (reminders, payments, the budget, the digest, scheduled flows, Telegram, backups, the off-box copy): each opens as a card with what it does, its schedule and its last and next run; nothing there is editable.
 - A trigger is a schedule, an item added, or a field changed; steps are if, create an item, change the trigger item, and notify. **Test run** shows what each step would do and writes and sends nothing. Turn on when it is right.
-- **List:** every flow with its status, author, last run and next run, and Approve for ones waiting. **Runs:** the newest runs across every flow with each step's outcome; anything a run wrote links to the item and has Undo. A flow's own page keeps its run history too.
+- **Runs:** everything the Cave ran on its own, newest first: each flow run with its steps' outcomes (anything it wrote links to the item and has Undo) and each built-in job's run with its result; filter to flows or built in. A flow's own page keeps its run history too. Flows waiting for approval show in the picker, under Needs you and in Settings → Agents. Agents' runs are under Projects → Activity.
 - **Two drafts to start from:** "Rent reminder" and "Salary → save". **Agents build flows** through `save_flow`; one that changes existing items waits for your Approve (Flows, Settings → Agents, Needs you, or Telegram if you allow it); see `docs/agents.md`.
 
 ## Diary

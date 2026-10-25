@@ -2336,3 +2336,23 @@ ul.chips {
   grid-row: 1;
   font-size: 12px;
 }
+
+/* A built-in job's card (M12 part 4). */
+.job-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin: 0;
+}
+
+.job-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  align-self: center;
+}
+
+.job-facts dd {
+  margin: 0;
+}

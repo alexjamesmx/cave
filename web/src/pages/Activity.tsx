@@ -5,16 +5,19 @@ import { ActivityList } from "../ui/Activity.tsx";
 const SOURCES = ["agent", "flow", "job"] as const;
 const STATUSES = ["running", "waiting", "done", "failed", "cancelled", "skipped"] as const;
 
-/** Projects → Activity: every run, agents', flows' and jobs', filterable by source and status. */
+/**
+ * Projects → Activity: agents' runs by default (M12 part 4), with flows' and jobs' a filter
+ * away; Flows → Runs is the other way round.
+ */
 export function ActivityPage() {
   const { entries, server } = useActivity();
   const search = useSearch();
   const params = new URLSearchParams(search);
-  const source = params.get("source") ?? "";
+  const source = params.get("source") ?? "agent";
   const status = params.get("status") ?? "";
   const filter = (key: string, value: string) => {
     const next = new URLSearchParams(search);
-    if (value) next.set(key, value);
+    if (value || key === "source") next.set(key, value);
     else next.delete(key);
     const q = next.toString();
     setSearch(q ? `?${q}` : "");

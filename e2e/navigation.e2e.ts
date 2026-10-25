@@ -39,7 +39,7 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
     ["/ai/flows/flow-salary", /\/flows\/flow-salary$/],
     ["/ai/activity", /\/projects\/activity$/],
     ["/system/jobs", /\/settings\/devices\/jobs$/],
-    ["/settings/system/flows", /\/flows\/list$/],
+    ["/settings/system/flows", /\/flows$/],
     ["/settings/lists", /\/money\/lists$/],
     ["/c/proposals", /\/settings\/data\/proposals$/],
   ] as const) {

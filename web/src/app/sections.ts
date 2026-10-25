@@ -29,7 +29,6 @@ export type PageId =
   | "activity"
   | "diary-months"
   | "flows"
-  | "flows-list"
   | "flows-runs"
   | "money-lists"
   | "settings-general"
@@ -109,12 +108,8 @@ export const SECTIONS: Section[] = [
     color: "var(--warn)",
     path: "/flows",
     // One flow's page is `/flows/<id>`: anything after Flows that is not a tab is a flow, open
-    // on the canvas.
-    tabs: [
-      page("canvas", "Canvas", "flows"),
-      page("list", "List", "flows-list"),
-      page("runs", "Runs", "flows-runs"),
-    ],
+    // on the canvas; `/flows/jobs/<id>` is a built-in job's card (M12 part 4).
+    tabs: [page("canvas", "Canvas", "flows"), page("runs", "Runs", "flows-runs")],
     owns: ["flows"],
   },
   {

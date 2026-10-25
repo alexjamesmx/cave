@@ -11,6 +11,7 @@ import { addStep, blankFlow, blankPart, copyData, type Selection } from "../logi
 import { titleOf } from "../logic/views.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { FlowCanvas } from "../ui/flows/FlowCanvas.tsx";
+import { FlowPicker } from "../ui/flows/FlowPicker.tsx";
 import { PartEditor } from "../ui/flows/PartEditor.tsx";
 import { ApproveButtons } from "../ui/flows/PendingFlows.tsx";
 import {
@@ -35,36 +36,9 @@ export function Flows({ id }: { id: string | undefined }) {
   const flows = (useItems(local.db, FLOWS) ?? []).filter((d) => d.data._deleted !== true);
   const selected = flows.find((d) => d.id === id) ?? (id ? undefined : flows[0]);
 
-  const create = async () => {
-    const flowId = newId();
-    await local.write(
-      { id: flowId, kind: "item", collection: FLOWS },
-      { _title: "New flow", status: "draft", definition: blankFlow(), author: "owner" },
-    );
-    navigate(flowPath(flowId));
-  };
-
   return (
     <div className="flow-detail">
-      <div className="flow-picker">
-        <select
-          className="input"
-          aria-label="Flow"
-          value={selected?.id ?? ""}
-          onChange={(e) => navigate(flowPath(e.target.value || undefined))}
-          style={{ width: "auto", maxWidth: 320 }}
-        >
-          {flows.length === 0 && <option value="">No flows yet</option>}
-          {flows.map((f) => (
-            <option key={f.id} value={f.id}>
-              {titleOf(f)} · {statusText(f.data.status)}
-            </option>
-          ))}
-        </select>
-        <button type="button" className="btn" onClick={() => void create()}>
-          <Icon name="plus" size={15} /> New flow
-        </button>
-      </div>
+      <FlowPicker {...(selected ? { flowId: selected.id } : {})} />
       {selected ? (
         <FlowDetail key={selected.id} flow={selected} />
       ) : (
