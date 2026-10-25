@@ -38,6 +38,7 @@ const {
   push,
   telegramToken,
   discordWebhook,
+  email,
 } = config.value;
 
 if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
@@ -71,6 +72,7 @@ const notifications = createNotificationSystem({
   push,
   telegramToken,
   discordWebhook,
+  email,
   env,
 });
 if (!push) console.log("Web Push is off: no VAPID keys (bun run push-keys)");

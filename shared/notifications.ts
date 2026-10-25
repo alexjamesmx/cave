@@ -1,5 +1,5 @@
 /** Channels a notification can go through; each is a `NotificationChannel` on the server. */
-export const CHANNELS = ["webpush", "telegram", "discord"] as const;
+export const CHANNELS = ["webpush", "telegram", "discord", "email"] as const;
 export type ChannelId = (typeof CHANNELS)[number];
 
 /**
@@ -14,15 +14,18 @@ export interface NotificationSettings {
   detail: Record<ChannelId, Detail>;
   /** Telegram's Approve button for flows; off, since a hijacked account could then approve. */
   telegramApprovals: boolean;
+  /** `HH:MM` in the owner's zone for the daily digest email (M12 part 3); unset means none. */
+  digest?: string;
 }
 
 /**
  * Web Push is the private default. Telegram and Discord can read what they carry, so they get
- * titles only unless the owner says otherwise.
+ * titles only unless the owner says otherwise; email goes to the owner's own inbox, so it gets
+ * full detail.
  */
 export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
   channels: ["webpush"],
-  detail: { webpush: "full", telegram: "titles", discord: "titles" },
+  detail: { webpush: "full", telegram: "titles", discord: "titles", email: "full" },
   telegramApprovals: false,
 };
 
@@ -45,5 +48,11 @@ export function notificationSettings(
         : DEFAULT_NOTIFICATIONS.detail[c],
     ]),
   ) as Record<ChannelId, Detail>;
-  return { channels, detail, telegramApprovals: raw?.telegramApprovals === true };
+  const digest = raw?.digest;
+  return {
+    channels,
+    detail,
+    telegramApprovals: raw?.telegramApprovals === true,
+    ...(typeof digest === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(digest) ? { digest } : {}),
+  };
 }

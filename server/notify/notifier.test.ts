@@ -68,10 +68,12 @@ test("the defaults send to Web Push only, with full detail and absolute links", 
   expect(telegram.sent).toEqual([]);
   expect(webpush.sent).toEqual([
     {
+      key: "reminder:r1:2026-10-22T09:00",
       kind: "reminder",
       itemId: "r1",
       title: "Pay rent",
       body: "Thu Oct 22, 09:00 · Repeats monthly · $16,842",
+      lines: ["Thu Oct 22, 09:00", "Repeats monthly", "$16,842"],
       url: "https://cave.example.dev/r/r1",
       tag: "reminder:r1",
       actions: [

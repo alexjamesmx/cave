@@ -10,7 +10,7 @@ web (PWA, React) ──IndexedDB (Dexie, full copy)──┐
 server (Bun.serve) ── bun:sqlite data/cave.db ◄──┘
    ├── /api/*   owner API (status, export, history, activity, system, flows, notifications, push, money review, agents)
    ├── /mcp     MCP server for agents (per-agent tokens)
-   └── jobs     30-second loop: reminder and payment sweeps, flows, Telegram polling, the backup check
+   └── jobs     30-second loop: reminder, payment and budget sweeps, the digest, flows, Telegram polling, the backup check
 ```
 
 Single owner, a few devices. No hosted sync engine.

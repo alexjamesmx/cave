@@ -26,6 +26,7 @@ beforeAll(async () => {
     push: vapid,
     telegramToken: TELEGRAM,
     discordWebhook: DISCORD,
+    email: undefined,
     env: "production",
     fetch: (async (url: string) => {
       pushed.push(url);
@@ -125,6 +126,7 @@ test("no answer ever carries an endpoint, a private key, a token, a webhook or a
     ["webpush", "1 device"],
     ["telegram", "needs linking"],
     ["discord", "ready"],
+    ["email", "needs CAVE_RESEND_API_KEY, CAVE_EMAIL_FROM and CAVE_EMAIL_TO"],
   ]);
 });
 

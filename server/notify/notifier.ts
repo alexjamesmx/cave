@@ -15,10 +15,12 @@ import type {
 export function render(n: Notification, detail: Detail, origin: string): Message {
   const url = (path: string) => new URL(path, origin).href;
   return {
+    key: n.key,
     kind: n.kind,
     ...(n.itemId ? { itemId: n.itemId } : {}),
     title: n.title,
     ...(detail === "full" && n.details.length > 0 ? { body: n.details.join(" · ") } : {}),
+    lines: detail === "full" ? n.details : [],
     url: url(n.path),
     ...(n.tag ? { tag: n.tag } : {}),
     actions: (n.actions ?? []).map((a) => ({ id: a.id, label: a.label, url: url(a.path) })),

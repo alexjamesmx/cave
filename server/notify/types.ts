@@ -5,7 +5,7 @@ export interface Notification {
   /** Names the send for "already sent" and the log, e.g. `reminder:<id>:<due>`; never a title. */
   key: string;
   /** `payment`: one coming due (M7c); `flow`: a flow waiting for approval; `message`: what a flow's notify step sends. `budget`: a share of the monthly limit crossed (M12). */
-  kind: "reminder" | "payment" | "test" | "flow" | "message" | "budget";
+  kind: "reminder" | "payment" | "test" | "flow" | "message" | "budget" | "digest";
   itemId?: string;
   title: string;
   /** Shown only at `full` detail: the due time, "Repeats monthly", the fields shown. */
@@ -25,10 +25,14 @@ interface NotificationAction {
 
 /** A notification as one channel sends it: absolute links, and a body only at `full`. */
 export interface Message {
+  /** The notification's key, for a channel's own idempotency. */
+  key: string;
   kind: Notification["kind"];
   itemId?: string;
   title: string;
   body?: string;
+  /** The details one per line at `full`, for channels that keep lines (email); empty at `titles`. */
+  lines: string[];
   url: string;
   tag?: string;
   actions: { id: NotificationAction["id"]; label: string; url: string }[];

@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { notificationSettings } from "../../shared/notifications.ts";
 import { zoneOf } from "../../shared/reminders.ts";
-import type { VapidKeys } from "../config.ts";
+import type { EmailConfig, VapidKeys } from "../config.ts";
 import { type CaveEnv, delivers } from "../env.ts";
 import { approvalRef, createApprovals } from "../flows/approvals.ts";
 import { createFlowEngine } from "../flows/engine.ts";
@@ -11,7 +11,9 @@ import { notificationRoutes } from "./api.ts";
 import { createBudgetSweep } from "./budget-sweep.ts";
 import { createChannelState } from "./channel-state.ts";
 import { createChannelWriter } from "./channel-writer.ts";
+import { createDigestJob } from "./digest.ts";
 import { createDiscordChannel } from "./discord.ts";
+import { createEmailChannel } from "./email.ts";
 import { createNotifier, createSentLog } from "./notifier.ts";
 import { createPaymentSweep } from "./payment-sweep.ts";
 import { createReminderSweep } from "./reminder-sweep.ts";
@@ -28,6 +30,7 @@ interface NotificationSystemOptions {
   push: VapidKeys | undefined;
   telegramToken: string | undefined;
   discordWebhook: string | undefined;
+  email: EmailConfig | undefined;
   /** Only `production` lets anything leave the Cave. */
   env: CaveEnv;
   fetch?: typeof fetch;
@@ -73,6 +76,7 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     fetch: fetchFn,
     log,
   });
+  const email = createEmailChannel({ config: o.email, now: o.now, fetch: fetchFn, log });
   const telegramWriter = createChannelWriter(o.store, "telegram", o.now);
   // Telegram asks for approvals before the notifier exists; it only calls them on a tap.
   let approvals: Approvals | undefined;
@@ -94,7 +98,7 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     log,
   });
   const notifier = createNotifier({
-    channels: [webpush, telegram.channel, discord],
+    channels: [webpush, telegram.channel, discord, email],
     settings,
     db: o.db,
     now: o.now,
@@ -111,8 +115,9 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     sent,
     timeZone: () => zone().timeZone,
   });
+  const digest = createDigestJob({ store: o.store, notifier, sent, zone, settings });
   const flows = createFlowEngine({ store: o.store, db: o.db, notifier, now: o.now, zone, log });
-  const jobs: Job[] = [sweep, payments, budget, flows.job, telegram.job];
+  const jobs: Job[] = [sweep, payments, budget, digest, flows.job, telegram.job];
   const routes = notificationRoutes({
     notifier,
     sent,

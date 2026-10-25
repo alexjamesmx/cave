@@ -235,7 +235,7 @@ The service runs under `ProtectSystem=strict`, which makes `/var/lib/cave-deploy
 A change to `deploy/cave-deploy` or its units is a reviewed template change: after the merge, repeat the install lines above.
 
 ## 12. Notifications
-Web Push, Telegram and Discord are each optional: a channel without its settings shows what it needs in Settings → Notifications. Every secret goes into `/etc/cave/cave.env` without being shown on screen. Run these in **hPanel's browser terminal**, as root.
+Web Push, Telegram, Discord and email are each optional: a channel without its settings shows what it needs in Settings → Notifications. Every secret goes into `/etc/cave/cave.env` without being shown on screen. Run these in **hPanel's browser terminal**, as root.
 
 **Web Push.** `bun run push-keys` prints three env lines (the subject is `CAVE_PUBLIC_ORIGIN`); appending them keeps the private key off the screen. It refuses when keys already exist: new keys unsubscribe every device.
 ```bash
@@ -260,9 +260,21 @@ sed -i -e '$a\' /etc/cave/cave.env
 read -rs DW && printf 'CAVE_DISCORD_WEBHOOK_URL=%s\n' "$DW" >> /etc/cave/cave.env; unset DW
 systemctl restart cave
 ```
+**Email (M12).** Through Resend's HTTP API, free for 3,000 emails a month and 100 a day (checked 2026-10-24). In Resend: Domains → add a domain you own (a subdomain such as `cave.example.dev` keeps the root's mail untouched) and add the DNS records it shows at your registrar, then API Keys → Create (Sending access). All three settings are needed together; the sender is on the verified domain, the recipient is your inbox:
+```bash
+sed -i -e '$a\x27 /etc/cave/cave.env
+read -rs RK && printf 'CAVE_RESEND_API_KEY=%s
+' "$RK" >> /etc/cave/cave.env; unset RK
+printf 'CAVE_EMAIL_FROM=Cave <cave@cave.example.dev>
+CAVE_EMAIL_TO=you@example.dev
+' >> /etc/cave/cave.env
+systemctl restart cave
+```
+Then Settings → Notifications → Email → **Send test**. Email gets full detail by default (it is your own inbox) and is the only channel the **daily digest** uses: set its time there, and once a day you get questions and blocked parts, what is due, payments due today and the budget line.
+
 The server refuses to start with a malformed token or webhook URL, naming the setting but never its value.
 
-**Egress.** The firewall allows outgoing traffic (step 6). The server reaches the push services (`*.push.apple.com`, `fcm.googleapis.com`, Mozilla's `*.push.services.mozilla.com`), `api.telegram.org` and `discord.com` with Bun's `fetch` and a 10-second timeout; nothing else on the server sends anything.
+**Egress.** The firewall allows outgoing traffic (step 6). The server reaches the push services (`*.push.apple.com`, `fcm.googleapis.com`, Mozilla's `*.push.services.mozilla.com`), `api.telegram.org`, `discord.com` and `api.resend.com` with Bun's `fetch` and a 10-second timeout; nothing else on the server sends anything.
 
 ## 12b. The Content-Security-Policy (M9)
 Caddy sends a strict `Content-Security-Policy` with every response (`deploy/Caddyfile`): only this origin's scripts, styles, images, fonts and connections, no eval, no inline script, no plugins, no framing. The timer deploys the app, not Caddy's configuration, so **after the PR that adds it merges**, install it once in hPanel's terminal (step 5's two commands, then a reload):

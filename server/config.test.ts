@@ -21,6 +21,7 @@ describe("resolveConfig", () => {
         push: undefined,
         telegramToken: undefined,
         discordWebhook: undefined,
+        email: undefined,
       },
     });
   });
@@ -75,6 +76,7 @@ describe("resolveConfig", () => {
         push: undefined,
         telegramToken: undefined,
         discordWebhook: undefined,
+        email: undefined,
       },
     });
   });

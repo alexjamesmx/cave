@@ -6,9 +6,11 @@ import type { Message } from "./types.ts";
 
 const WEBHOOK = "https://discord.com/api/webhooks/123/secret-token";
 const message: Message = {
+  key: "reminder:r1:x",
   kind: "reminder",
   itemId: "r1",
   title: "Pay rent @everyone",
+  lines: [],
   url: "https://cave.example.dev/r/r1",
   actions: [],
 };

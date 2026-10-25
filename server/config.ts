@@ -28,6 +28,14 @@ export interface ServerConfig {
   telegramToken: string | undefined;
   /** The Discord channel webhook; anyone holding it can post, so it is a secret too. */
   discordWebhook: string | undefined;
+  /** Email through Resend (M12 part 3): all three settings, or none and the channel is off. */
+  email: EmailConfig | undefined;
+}
+
+export interface EmailConfig {
+  apiKey: string;
+  from: string;
+  to: string;
 }
 
 export interface VapidKeys {
@@ -186,6 +194,8 @@ export function resolveConfig(
       error: "CAVE_DISCORD_WEBHOOK_URL must be a https://discord.com/api/webhooks/… URL",
     };
   }
+  const email = readEmail(env);
+  if (!email.ok) return email;
   const dbPath = env.CAVE_DB_PATH || "data/cave.db";
   return {
     ok: true,
@@ -203,6 +213,30 @@ export function resolveConfig(
       push: push.value,
       telegramToken,
       discordWebhook,
+      email: email.value,
     },
   };
+}
+
+// A bare address, or `Name <address>` for the sender; the host needs a dot.
+const BARE_ADDRESS_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+const NAMED_ADDRESS_RE = /^[^<>\n]+ <[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>$/;
+
+/** The three email settings together, or none; a partial or malformed set refuses to start. */
+function readEmail(
+  env: Env,
+): { ok: true; value: EmailConfig | undefined } | { ok: false; error: string } {
+  const apiKey = env.CAVE_RESEND_API_KEY || undefined;
+  const from = env.CAVE_EMAIL_FROM || undefined;
+  const to = env.CAVE_EMAIL_TO || undefined;
+  if (!apiKey && !from && !to) return { ok: true, value: undefined };
+  if (!apiKey || !from || !to)
+    return {
+      ok: false,
+      error: "email needs CAVE_RESEND_API_KEY, CAVE_EMAIL_FROM and CAVE_EMAIL_TO together",
+    };
+  if (!BARE_ADDRESS_RE.test(from) && !NAMED_ADDRESS_RE.test(from))
+    return { ok: false, error: "CAVE_EMAIL_FROM must be an address, or Name <address>" };
+  if (!BARE_ADDRESS_RE.test(to)) return { ok: false, error: "CAVE_EMAIL_TO must be one address" };
+  return { ok: true, value: { apiKey, from, to } };
 }

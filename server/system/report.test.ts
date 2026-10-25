@@ -131,6 +131,7 @@ beforeAll(async () => {
     push: vapid,
     telegramToken: TELEGRAM,
     discordWebhook: DISCORD,
+    email: undefined,
     env: "production",
     fetch: (async () => Response.json({ ok: true, result: [] })) as unknown as typeof fetch,
     log: () => {},
@@ -186,6 +187,7 @@ test("the report has jobs, runs, deploy, devices, agents, flows and the notifica
     "reminders",
     "payments",
     "budget",
+    "digest",
     "flows",
     "telegram",
   ]);
@@ -221,6 +223,7 @@ test("the report has jobs, runs, deploy, devices, agents, flows and the notifica
     ["webpush", true],
     ["telegram", true],
     ["discord", true],
+    ["email", false],
   ]);
 });
 

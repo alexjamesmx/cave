@@ -59,13 +59,13 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 - **General:** your name and goal (the Scene's centre), time zone, reminder time, theme, what the app opens on, motion (on, or follow the system's reduced-motion setting), the phone dock.
 - **Devices & server:** this device (lock, forget), the devices that synced in the last 30 days, the server (version, last deploy, backups, off-box copy), integrations; sub-sections for Schedules (the next 7 days: reminders, flow slots, jobs, the deploy check), Jobs (and their runs) and Notifications (the log by channel and key, titles never stored; the Dev outbox outside production).
-- **Notifications:** Web Push on this device (on iPhone, from the Home Screen app), and the channels: Telegram once linked, Discord with a webhook. Web Push is private and the default; the others get titles only unless you choose full detail.
+- **Notifications:** Web Push on this device (on iPhone, from the Home Screen app), and the channels: Telegram once linked, Discord with a webhook, Email through Resend (`docs/hosting.md` step 12). Web Push is private and the default; Telegram and Discord get titles only unless you choose full detail; email goes to your own inbox, so it gets full detail. The **daily digest** is one email at the time you set here: questions and blocked parts, what is due, payments due today and the budget line.
 - **Agents:** flows waiting for approval, delete proposals, and each agent token with its permissions and use. Agents' runs are under Projects → Activity.
 - **Data:** Download export (every record as JSON; `bun run export` does the same on the server), Import (an export file back in: compared with this device first, then only what differs is written, as edits from here, so it syncs and can be undone; nothing is removed), every collection raw with its views and the field editor, and the undo history of agents' writes.
 
 ## Notifications
 
-- **Reminders and payments reach you when they're due**, within a minute, on every channel that is ready. **Act from the notification:** Done and Snooze 1h open the Cave and apply there; in Telegram the buttons work in the chat, and `/remind`, `/due` and `/help` work too.
+- **Reminders and payments reach you when they're due**, within a minute, on every channel that is ready; the budget tells you at 80 % and 100 % of the limit. **Act from the notification:** Done and Snooze 1h open the Cave and apply there (in an email they are links); in Telegram the buttons work in the chat, and `/remind`, `/due` and `/help` work too.
 - Setup: `docs/hosting.md` step 12.
 
 ## Backups

@@ -259,6 +259,7 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 | `CAVE_DEPLOY_STATUS`, `CAVE_OFFSITE_STATUS` | the `status.json` files `cave-deploy` and `cave-offsite` write; Settings → Devices & server shows them, and the Cave alerts once when the off-box copy is over 48 hours old or its check failed |
 | `CAVE_VAPID_PUBLIC`, `CAVE_VAPID_PRIVATE`, `CAVE_VAPID_SUBJECT` | Web Push; all three or none (`bun run push-keys`) |
 | `CAVE_TELEGRAM_BOT_TOKEN`, `CAVE_DISCORD_WEBHOOK_URL` | optional channels; never logged or sent to a client |
+| `CAVE_RESEND_API_KEY`, `CAVE_EMAIL_FROM`, `CAVE_EMAIL_TO` | the email channel through Resend (M12): all three or none; the key is never logged or sent to a client |
 | `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-data` |
 
 ## 8. Secrets: where each lives
@@ -274,6 +275,7 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 | Web Push private key `CAVE_VAPID_PRIVATE` | `/etc/cave/cave.env` only (`bun run push-keys` appends it) | logs, API answers, the client, docs |
 | Telegram bot token `CAVE_TELEGRAM_BOT_TOKEN` | `/etc/cave/cave.env`; @BotFather can reissue it | logs, API answers, the client |
 | Discord webhook `CAVE_DISCORD_WEBHOOK_URL` | `/etc/cave/cave.env`: anyone holding it can post | logs, API answers, the client |
+| Resend API key `CAVE_RESEND_API_KEY` | `/etc/cave/cave.env`; Resend can revoke and reissue it | logs, API answers, the client |
 
 ## 9. Where to look next
 - `docs/guide.md`: using the app.

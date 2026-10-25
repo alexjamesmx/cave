@@ -144,6 +144,23 @@ export function NotificationChannels() {
             </p>
           )}
           <div className="channel-row">
+            <strong>Daily digest</strong>
+            <span className="muted">
+              One email a day: questions and blocked parts, what is due, payments, the budget.
+            </span>
+            <input
+              className="input"
+              type="time"
+              aria-label="Digest time"
+              value={config.digest ?? ""}
+              onChange={(e) => {
+                const { digest: _, ...rest } = config;
+                save(e.target.value ? { ...rest, digest: e.target.value } : rest);
+              }}
+              style={{ width: "auto" }}
+            />
+          </div>
+          <div className="channel-row">
             <strong>Calendar</strong>
             <span className="muted">Reminders and Tasks are built in; flows arrive later.</span>
           </div>
@@ -153,10 +170,10 @@ export function NotificationChannels() {
               so they weren't sent.
             </span>
           )}
-          {config.channels.some((c) => c !== "webpush") && (
+          {config.channels.some((c) => c === "telegram" || c === "discord") && (
             <span className="muted" style={{ fontSize: 13 }}>
               Telegram and Discord can read what they carry; “Titles only” keeps amounts, times and
-              notes out of them.
+              notes out of them. Email goes to your own inbox.
             </span>
           )}
           {note && <span className="muted">{note}</span>}

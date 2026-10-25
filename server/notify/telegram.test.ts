@@ -208,8 +208,10 @@ test("a 429 waits retry_after and tries once more", async () => {
   const t = await link();
   busyOnce = true;
   await t.channel.send({
+    key: "test:1",
     kind: "test",
     title: "Test",
+    lines: [],
     url: "https://cave.example.dev/",
     actions: [],
   });
@@ -220,9 +222,11 @@ test("a 429 waits retry_after and tries once more", async () => {
 test("a reminder goes out with Done, Snooze and Open; titles detail sends the title only", async () => {
   const t = await link();
   await t.channel.send({
+    key: "reminder:rent:x",
     kind: "reminder",
     itemId: "rent",
     title: "Pay rent",
+    lines: [],
     url: "https://cave.example.dev/r/rent",
     actions: [],
   });

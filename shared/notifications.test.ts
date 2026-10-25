@@ -8,6 +8,7 @@ test("missing or malformed settings fall back to the private defaults", () => {
     webpush: "full",
     telegram: "titles",
     discord: "titles",
+    email: "full",
   });
 });
 
@@ -15,14 +16,18 @@ test("the owner's choices are read, unknown channels and values are dropped", ()
   expect(
     notificationSettings({
       notifications: {
-        channels: ["telegram", "email", "telegram", "webpush"],
+        channels: ["telegram", "ntfy", "telegram", "webpush"],
         detail: { telegram: "full", discord: "everything" },
         telegramApprovals: true,
+        digest: "25:00",
       },
     }),
   ).toEqual({
     channels: ["telegram", "webpush"],
-    detail: { webpush: "full", telegram: "full", discord: "titles" },
+    detail: { webpush: "full", telegram: "full", discord: "titles", email: "full" },
     telegramApprovals: true,
   });
+  expect(
+    notificationSettings({ notifications: { channels: ["email"], digest: "07:30" } }),
+  ).toMatchObject({ channels: ["email"], digest: "07:30" });
 });

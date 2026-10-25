@@ -214,10 +214,12 @@ describe("subscriptions", () => {
 
 describe("the Web Push channel", () => {
   const message: Message = {
+    key: "reminder:r1:x",
     kind: "reminder",
     itemId: "r1",
     title: "Pay rent",
     body: "Thu Oct 22, 09:00",
+    lines: ["Thu Oct 22, 09:00"],
     url: "https://cave.example.dev/r/r1",
     tag: "reminder:r1",
     actions: [{ id: "done", label: "Done", url: "https://cave.example.dev/r/r1?do=done" }],
