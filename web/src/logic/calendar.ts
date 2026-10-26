@@ -9,6 +9,7 @@ import {
   repeatOf,
   upcoming,
   type Zone,
+  zonedInstant,
 } from "../../../shared/reminders.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { titleOf } from "./views.ts";
@@ -140,6 +141,18 @@ export function paymentSource(docs: Doc[], zone: Zone, now: number): CalendarSou
 }
 
 /** Every source's entries in time order; within a moment, open before done. */
+/** The instant a local day starts in `timeZone`. */
+export function dayStart(day: string, timeZone: string): number {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  return zonedInstant(Date.UTC(y, m - 1, d), timeZone);
+}
+
+/** `day` moved by `n` days, `YYYY-MM-DD`. */
+export function addDays(day: string, n: number): string {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
 export function mergeEvents(sources: CalendarSource[], range: Range): CalendarEvent[] {
   return sources
     .flatMap((s) => s.events(range))

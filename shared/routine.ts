@@ -27,7 +27,7 @@ export interface RoutineBlock {
 
 export interface Routine {
   version: 1;
-  /** The waking window free time is counted in. */
+  /** A waking window, kept from M12 for stored routines; nothing reads it since M13. */
   day: { start: string; end: string };
   blocks: RoutineBlock[];
 }
@@ -149,13 +149,6 @@ export function blocksForDay(routine: Routine, weekday: number): RoutineBlock[] 
       if (sb !== undefined) return 1;
       return a.title.localeCompare(b.title);
     });
-}
-
-/** The waking window minus the day's fixed and daily blocks; never below zero. */
-export function freeMinutes(routine: Routine, weekday: number): number {
-  const window = minutesOfTime(routine.day.end) - minutesOfTime(routine.day.start);
-  const used = blocksForDay(routine, weekday).reduce((t, b) => t + b.minutes, 0);
-  return Math.max(window - used, 0);
 }
 
 /** The end time of a timed block, `HH:MM`. */

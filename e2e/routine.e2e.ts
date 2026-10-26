@@ -45,7 +45,7 @@ test("Calendar → Week: a daily and a weekly block, the weekly one tracked as a
   // The habit is linked once the button goes; leaving earlier could cut the write off.
   await expect(edit.getByRole("button", { name: "Track as a habit" })).toHaveCount(0);
   await page.goto("/calendar/agenda");
-  const today = page.getByRole("region", { name: "Routine today" });
+  const today = page.getByRole("region", { name: "Agenda" }).getByRole("list", { name: "Today" });
   await expect(today).toContainText(daily);
   await today.getByRole("button", { name: `${daily} done` }).click();
   await expect(today.getByRole("button", { name: `${daily} done` })).toHaveAttribute(

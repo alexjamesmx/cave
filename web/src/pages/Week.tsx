@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { habitId } from "../../../shared/diary.ts";
 import { newId } from "../../../shared/ids.ts";
 import {
@@ -7,7 +7,6 @@ import {
   DAY_NAMES,
   duration,
   endOf,
-  freeMinutes,
   KINDS,
   MAX_BLOCKS,
   parseRoutine,
@@ -19,11 +18,14 @@ import {
   withoutBlock,
 } from "../../../shared/routine.ts";
 import { useCave } from "../app/context.ts";
-import { useToday } from "../app/hooks.ts";
+import { useNow, useReminderZone, useToday } from "../app/hooks.ts";
 import { editFields } from "../app/lists.ts";
+import { addDays, byDay, dayStart, mergeEvents, reminderSource } from "../logic/calendar.ts";
+import { dayPlan } from "../logic/day-plan.ts";
 import { entriesByDay } from "../logic/habits.ts";
 import { useCollections, useDoc, useItems } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
+import { ReminderSheet } from "../ui/ReminderForm.tsx";
 
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 const KIND_LABEL: Record<BlockKind, string> = {
@@ -34,8 +36,8 @@ const KIND_LABEL: Record<BlockKind, string> = {
 
 /**
  * Calendar → Week (M12 part 7): the shape of a week as a list per day (fixed and daily blocks
- * in time order, the free time left), a "This week" pool for the weekly blocks with their
- * counters from the diary's habits, and a block editor beside it. Nothing here notifies.
+ * and that day's reminders, in time order; a day's + adds a reminder on it), a "This week" pool
+ * for the weekly blocks with their counters from the diary's habits, and a block editor.
  */
 export function Week() {
   const { local } = useCave();
@@ -50,6 +52,21 @@ export function Week() {
   const [editing, setEditing] = useState<string | "new">();
   const [error, setError] = useState<string>();
   const days = weekDays(today);
+  const zone = useReminderZone();
+  const now = useNow().getTime();
+  const reminders = useItems(local.db, "reminders");
+  const [reminder, setReminder] = useState<{ day?: string; id?: string }>();
+  const byDayEvents = useMemo(
+    () =>
+      byDay(
+        mergeEvents([reminderSource(reminders ?? [], zone, now)], {
+          from: dayStart(days[0] as string, zone.timeZone),
+          to: dayStart(addDays(days[6] as string, 1), zone.timeZone),
+        }),
+      ),
+    [reminders, zone, now, days[0]],
+  );
+  const editingReminder = reminder?.id ? reminders?.find((r) => r.id === reminder.id) : undefined;
   const counts = weeklyCounts(routine, entriesByDay(journal ?? []), days);
 
   const save = async (next: typeof routine) => {
@@ -86,10 +103,12 @@ export function Week() {
               {block.title} · {block.habit ? `${done} of ${of}` : `${of} a week`}
             </button>
           ))}
-          <span className="muted" style={{ marginLeft: "auto", fontSize: 13 }}>
-            Awake {routine.day.start} to {routine.day.end}
-          </span>
-          <button type="button" className="btn primary" onClick={() => setEditing("new")}>
+          <button
+            type="button"
+            className="btn primary"
+            style={{ marginLeft: "auto" }}
+            onClick={() => setEditing("new")}
+          >
             <Icon name="plus" size={15} /> Add block
           </button>
         </section>
@@ -107,28 +126,51 @@ export function Week() {
                   <span className="num muted" style={{ fontSize: 12 }}>
                     {Number(day.slice(8))}
                   </span>
+                  <button
+                    type="button"
+                    className="btn week-add"
+                    aria-label={`New reminder on ${DAY_NAMES[i]}`}
+                    onClick={() => setReminder({ day })}
+                  >
+                    <Icon name="plus" size={13} />
+                  </button>
                 </header>
                 <ul className="week-blocks">
-                  {blocks.map((b) => (
-                    <li key={b.id}>
-                      <button
-                        type="button"
-                        className={`week-block${b.kind === "fixed" ? " fixed" : ""}`}
-                        aria-pressed={editing === b.id}
-                        onClick={() => setEditing(b.id)}
-                      >
-                        <span className="num muted">
-                          {b.start ? `${b.start}–${endOf(b)}` : duration(b.minutes)}
-                        </span>
-                        <span>{b.title}</span>
-                        {b.habit && <Icon name="circle-check" size={12} aria-label="tracked" />}
-                      </button>
-                    </li>
-                  ))}
+                  {dayPlan(blocks, byDayEvents.get(day) ?? []).map((p) =>
+                    p.kind === "block" ? (
+                      <li key={p.key}>
+                        <button
+                          type="button"
+                          className={`week-block${p.block.kind === "fixed" ? " fixed" : ""}`}
+                          aria-pressed={editing === p.block.id}
+                          onClick={() => setEditing(p.block.id)}
+                        >
+                          <span className="num muted">
+                            {p.block.start
+                              ? `${p.block.start}–${endOf(p.block)}`
+                              : duration(p.block.minutes)}
+                          </span>
+                          <span>{p.block.title}</span>
+                          {p.block.habit && (
+                            <Icon name="circle-check" size={12} aria-label="tracked" />
+                          )}
+                        </button>
+                      </li>
+                    ) : (
+                      <li key={p.key}>
+                        <button
+                          type="button"
+                          className={`week-block reminder${p.event.done ? " done" : ""}`}
+                          onClick={() => setReminder({ id: p.event.itemId })}
+                        >
+                          <span className="num muted">{p.event.time ?? "all day"}</span>
+                          <span>{p.event.title}</span>
+                          <Icon name="bell" size={12} aria-label="reminder" />
+                        </button>
+                      </li>
+                    ),
+                  )}
                 </ul>
-                <span className="num muted" style={{ fontSize: 12 }}>
-                  free {duration(freeMinutes(routine, i))}
-                </span>
               </section>
             );
           })}
@@ -168,23 +210,6 @@ export function Week() {
           />
         ) : (
           <>
-            <span className="k">Day window</span>
-            <div className="quick-row">
-              {(["start", "end"] as const).map((k) => (
-                <label key={k} className="quick-field">
-                  <span className="k">{k === "start" ? "Awake from" : "Until"}</span>
-                  <input
-                    className="input"
-                    type="time"
-                    aria-label={k === "start" ? "Awake from" : "Until"}
-                    value={routine.day[k]}
-                    onChange={(e) =>
-                      void save({ ...routine, day: { ...routine.day, [k]: e.target.value } })
-                    }
-                  />
-                </label>
-              ))}
-            </div>
             {error && (
               <p role="alert" className="error" style={{ margin: 0 }}>
                 {error}
@@ -197,6 +222,14 @@ export function Week() {
           </>
         )}
       </aside>
+      {reminder && (!reminder.id || editingReminder) && (
+        <ReminderSheet
+          key={reminder.id ?? reminder.day}
+          doc={editingReminder}
+          day={reminder.day}
+          onClose={() => setReminder(undefined)}
+        />
+      )}
     </div>
   );
 }

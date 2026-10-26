@@ -5,6 +5,7 @@ import {
   duration,
   endOf,
   isBlockDone,
+  type RoutineBlock,
   routineOf,
   weekdayOf,
 } from "../../../shared/routine.ts";
@@ -15,11 +16,67 @@ import { useDoc, useItems } from "../store/queries.ts";
 import { Icon } from "./icon.tsx";
 
 /**
- * A day's routine (M12 part 7): its fixed and daily blocks in time order, on the Agenda and
- * in the diary's day panel. A block with a habit is that habit's toggle for the day. `toggle`
- * lets the diary write through its own entry; without it the day's entry is written here,
- * created on the first tick.
+ * A day's routine blocks and their habit ticks. `toggle` lets the diary write through its own
+ * entry; without it the day's entry is written here, created on the first tick.
  */
+export function useRoutineDay(date: string, toggle?: (habit: string, done: boolean) => void) {
+  const { db } = useCave().local;
+  const routine = routineOf(useDoc(db, "settings")?.data);
+  const journal = useItems(db, "journal");
+  const saver = useSaver("journal");
+  const created = useRef<string>(undefined);
+  const entry = entriesByDay(journal ?? []).get(date);
+  const mark = (habit: string, done: boolean) => {
+    if (toggle) return toggle(habit, done);
+    const id = entry?.id ?? created.current ?? newId();
+    created.current = entry?.id ?? id;
+    void saver.save(id, entry ? { [habit]: !done } : { date, _title: date, [habit]: !done });
+  };
+  return {
+    blocks: blocksForDay(routine, weekdayOf(date)),
+    isDone: (b: RoutineBlock) => isBlockDone(b, entry),
+    mark,
+    error: saver.error,
+  };
+}
+
+/** One routine block as a row: its time, title and, with a habit, the day's tick. */
+export function BlockRow({
+  block,
+  done,
+  onMark,
+}: {
+  block: RoutineBlock;
+  done: boolean;
+  onMark(habit: string, done: boolean): void;
+}) {
+  return (
+    <li className={`agenda-row routine-row${done ? " done" : ""}`}>
+      <span
+        className="mark"
+        style={{ background: block.kind === "fixed" ? "var(--line)" : "var(--wait)" }}
+      />
+      <span className="num muted agenda-time">
+        {block.start ? `${block.start}–${endOf(block)}` : duration(block.minutes)}
+      </span>
+      <span>{block.title}</span>
+      {block.habit && (
+        <button
+          type="button"
+          className="btn"
+          aria-pressed={done}
+          aria-label={`${block.title} done`}
+          style={{ marginLeft: "auto" }}
+          onClick={() => onMark(block.habit as string, done)}
+        >
+          <Icon name="check" size={14} /> {done ? "Done" : "Mark done"}
+        </button>
+      )}
+    </li>
+  );
+}
+
+/** A day's routine (M12 part 7) in the diary's day panel. */
 export function RoutineToday({
   day,
   toggle,
@@ -27,22 +84,10 @@ export function RoutineToday({
   day?: string;
   toggle?: (habit: string, done: boolean) => void;
 }) {
-  const { db } = useCave().local;
   const today = useToday();
   const date = day ?? today;
-  const routine = routineOf(useDoc(db, "settings")?.data);
-  const journal = useItems(db, "journal");
-  const saver = useSaver("journal");
-  const created = useRef<string>(undefined);
-  const blocks = blocksForDay(routine, weekdayOf(date));
+  const { blocks, isDone, mark, error } = useRoutineDay(date, toggle);
   if (blocks.length === 0) return null;
-  const entry = entriesByDay(journal ?? []).get(date);
-  const write = (habit: string, done: boolean) => {
-    if (toggle) return toggle(habit, done);
-    const id = entry?.id ?? created.current ?? newId();
-    created.current = entry?.id ?? id;
-    void saver.save(id, entry ? { [habit]: !done } : { date, _title: date, [habit]: !done });
-  };
   return (
     <section
       className="panel"
@@ -56,37 +101,13 @@ export function RoutineToday({
         </a>
       </span>
       <ul className="agenda-list">
-        {blocks.map((b) => {
-          const done = isBlockDone(b, entry);
-          return (
-            <li key={b.id} className={`agenda-row${done ? " done" : ""}`}>
-              <span
-                className="mark"
-                style={{ background: b.kind === "fixed" ? "var(--line)" : "var(--wait)" }}
-              />
-              <span className="num muted agenda-time">
-                {b.start ? `${b.start}–${endOf(b)}` : duration(b.minutes)}
-              </span>
-              <span>{b.title}</span>
-              {b.habit && (
-                <button
-                  type="button"
-                  className="btn"
-                  aria-pressed={done}
-                  aria-label={`${b.title} done`}
-                  style={{ marginLeft: "auto" }}
-                  onClick={() => write(b.habit as string, done)}
-                >
-                  <Icon name="check" size={14} /> {done ? "Done" : "Mark done"}
-                </button>
-              )}
-            </li>
-          );
-        })}
+        {blocks.map((b) => (
+          <BlockRow key={b.id} block={b} done={isDone(b)} onMark={mark} />
+        ))}
       </ul>
-      {saver.error && (
+      {error && (
         <p role="alert" className="error" style={{ margin: 0 }}>
-          {saver.error}
+          {error}
         </p>
       )}
     </section>

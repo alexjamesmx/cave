@@ -2,40 +2,33 @@ import { type CSSProperties, useMemo, useState } from "react";
 import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../../../shared/dates.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
 import { PAYMENTS } from "../../../shared/payments.ts";
-import { zonedInstant } from "../../../shared/reminders.ts";
 import { useCave } from "../app/context.ts";
 import { useFollowing, useNow, useReminderZone, useToday } from "../app/hooks.ts";
 import { flowPath, navigate } from "../app/router.ts";
 import {
+  addDays,
   byDay,
   type CalendarEvent,
   type CalendarSource,
+  dayStart,
   flowSource,
   mergeEvents,
   paymentSource,
   reminderSource,
   taskSource,
 } from "../logic/calendar.ts";
+import { dayPlan } from "../logic/day-plan.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { ReminderActions } from "../ui/ReminderActions.tsx";
 import { ReminderSheet } from "../ui/ReminderForm.tsx";
-import { RoutineToday } from "../ui/RoutineToday.tsx";
+import { BlockRow, useRoutineDay } from "../ui/RoutineToday.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const AGENDA_DAYS = 14;
-
-const dayStart = (day: string, timeZone: string) => {
-  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
-  return zonedInstant(Date.UTC(y, m - 1, d), timeZone);
-};
-const addDays = (day: string, n: number) => {
-  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
-};
 
 /** Every source's entries: the month grid and the agenda read only through these. */
 function useSources(): CalendarSource[] | undefined {
@@ -167,7 +160,6 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
             </div>
           </section>
         )}
-        {mode === "agenda" && <RoutineToday />}
         {agenda && (
           <Agenda
             events={agenda}
@@ -215,6 +207,10 @@ function Agenda({
   const reminders = useItems(db, "reminders");
   const overdue = events.filter((e) => e.overdue);
   const days = byDay(events.filter((e) => !e.overdue));
+  // Today is the owner's routine and what is due today, as one timeline.
+  const routine = useRoutineDay(today);
+  const todayPlan = dayPlan(routine.blocks, days.get(today) ?? []);
+  days.delete(today);
   const doc = (id: string) => reminders?.find((d) => d.id === id);
 
   const row = (e: CalendarEvent) => {
@@ -253,13 +249,39 @@ function Agenda({
           <ul className="agenda-list">{overdue.map(row)}</ul>
         </div>
       )}
+      {todayPlan.length > 0 && (
+        <div>
+          <span className="k">Today</span>
+          <ul className="agenda-list" aria-label="Today">
+            {todayPlan.map((p) =>
+              p.kind === "event" ? (
+                row(p.event)
+              ) : (
+                <BlockRow
+                  key={p.key}
+                  block={p.block}
+                  done={routine.isDone(p.block)}
+                  onMark={routine.mark}
+                />
+              ),
+            )}
+          </ul>
+        </div>
+      )}
+      {routine.error && (
+        <p role="alert" className="error" style={{ margin: 0 }}>
+          {routine.error}
+        </p>
+      )}
       {[...days.entries()].map(([day, list]) => (
         <div key={day}>
-          <span className="k">{day === today ? "Today" : `${shortDay(day)}`}</span>
+          <span className="k">{shortDay(day)}</span>
           <ul className="agenda-list">{list.map(row)}</ul>
         </div>
       ))}
-      {events.length === 0 && <span className="muted">Nothing due in the next two weeks.</span>}
+      {events.length === 0 && todayPlan.length === 0 && (
+        <span className="muted">Nothing due in the next two weeks.</span>
+      )}
     </section>
   );
 }

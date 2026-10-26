@@ -4,7 +4,6 @@ import {
   DEFAULT_ROUTINE,
   duration,
   endOf,
-  freeMinutes,
   parseRoutine,
   type Routine,
   routineOf,
@@ -58,7 +57,7 @@ test("the setting is checked field by field and falls back to the empty routine"
   ).toMatchObject({ ok: false, error: "block Gym: a weekly block needs 1 to 7 times a week" });
 });
 
-test("a day's blocks: fixed ones on their days plus the daily ones, timed first; free time is the rest of the window", () => {
+test("a day's blocks: fixed ones on their days plus the daily ones, timed first", () => {
   // 2026-10-26 is a Monday.
   expect(weekdayOf("2026-10-26")).toBe(0);
   expect(weekdayOf("2026-10-31")).toBe(5);
@@ -74,9 +73,6 @@ test("a day's blocks: fixed ones on their days plus the daily ones, timed first;
   expect(blocksForDay(routine, 0).map((b) => b.id)).toEqual(["work", "lc", "zh"]);
   expect(blocksForDay(routine, 5).map((b) => b.id)).toEqual(["shop", "lc", "zh"]);
   expect(blocksForDay(routine, 6).map((b) => b.id)).toEqual(["lc", "zh"]);
-  // 16 h window − 9 h work − 1 h − 30 m.
-  expect(freeMinutes(routine, 0)).toBe(16 * 60 - 540 - 90);
-  expect(freeMinutes(routine, 6)).toBe(16 * 60 - 90);
   expect(endOf(routine.blocks[0] as (typeof routine.blocks)[number])).toBe("18:00");
   expect(duration(90)).toBe("1h 30m");
   expect(duration(45)).toBe("45m");

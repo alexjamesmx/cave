@@ -36,6 +36,17 @@ test("reminders: added from New, edited, added and deleted from a day in Month, 
   await expect(sheet).toHaveCount(0);
   await expect(page.getByRole("button", { name: "10:30 Test edited" })).toBeVisible();
 
+  // Week lists a day's reminders beside its routine; a day's + adds one on that day.
+  await page.goto("/calendar/week");
+  await expect(page.getByRole("region", { name: "Fri" })).toContainText("10:30Test edited");
+  await expect(page.getByText(/^free /)).toHaveCount(0);
+  await page.getByRole("button", { name: "New reminder on Sat" }).click();
+  await expect(page.getByRole("dialog", { name: "New reminder" }).getByLabel("Date")).toHaveValue(
+    "2026-10-17",
+  );
+  await page.keyboard.press("Escape");
+  await page.goto("/calendar/month");
+
   // A click on a day's number adds one on that day; Delete removes it (kept in the history).
   await page.getByRole("button", { name: /New reminder on .*Oct 20/ }).click();
   sheet = page.getByRole("dialog", { name: "New reminder" });
