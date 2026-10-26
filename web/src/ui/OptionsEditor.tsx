@@ -20,6 +20,7 @@ export function OptionsEditor({
   name,
   options,
   kinds = false,
+  section,
   onChange,
 }: {
   /** The list's name, for labels: "Category", "Account". */
@@ -27,14 +28,21 @@ export function OptionsEditor({
   options: SelectOption[];
   /** Whether options have a kind (money categories). */
   kinds?: boolean;
+  /**
+   * Show only the options of this kind (expense also takes the kindless ones); a new option is
+   * created with it. The kind picker still moves an option to another section.
+   */
+  section?: OptionKind;
   /** Gets a change to apply to the options as stored now, so quick edits never undo each other. */
   onChange(update: (current: SelectOption[]) => SelectOption[]): void;
 }) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
   const [dragging, setDragging] = useState<string>();
-  const live = options.filter((o) => !o.archived);
-  const archived = options.filter((o) => o.archived);
+  const inSection = (o: SelectOption) =>
+    !section || o.kind === section || (section === "expense" && o.kind === undefined);
+  const live = options.filter((o) => !o.archived && inSection(o));
+  const archived = options.filter((o) => o.archived && inSection(o));
   const at = (list: SelectOption[], value: string) => list.findIndex((o) => o.value === value);
   const moveTo = (from: string, to: string) =>
     onChange((cur) => moveOption(cur, at(cur, from), at(cur, to)));
@@ -158,7 +166,10 @@ export function OptionsEditor({
           setDraft("");
           onChange((cur) => {
             const added = addOption(cur, draft);
-            return "error" in added ? cur : added.options;
+            if ("error" in added) return cur;
+            return section
+              ? patchOption(added.options, draft.trim(), { kind: section })
+              : added.options;
           });
         }}
       >

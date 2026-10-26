@@ -8,11 +8,21 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
     await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
   ).newPage();
   await page.goto("/money/lists");
-  const categories = page.getByRole("region", { name: "Category list" });
-  const list = categories.getByRole("list", { name: "Category options" });
+  // Categories in three lists by what the money does.
+  const categories = page.getByRole("region", { name: "Expense categories list" });
+  const list = categories.getByRole("list", { name: "Expense category options" });
+  const income = page
+    .getByRole("region", { name: "Income categories list" })
+    .getByRole("list", { name: "Income category options" });
+  const transfers = page
+    .getByRole("region", { name: "Transfers list" })
+    .getByRole("list", { name: "Transfer category options" });
   await expect(list.getByRole("listitem").first()).toContainText("🍔 Food");
+  await expect(income).toContainText("Salary");
+  await expect(income).not.toContainText("Food");
+  await expect(list).not.toContainText("Salary");
   const count = await list.getByRole("listitem").count();
-  expect(count).toBeGreaterThanOrEqual(20);
+  expect(count).toBeGreaterThanOrEqual(10);
 
   // Rename and an emoji: the value stays, only what shows changes.
   await list.getByLabel("Name for food").fill("Takeout");
@@ -28,13 +38,14 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   await list.getByLabel("Colour for food as hex").press("Enter");
   await expect(list.locator(".swatch").first()).toHaveCSS("background-color", "rgb(18, 52, 86)");
 
-  // A kind change survives a reload (M12 part 1: it used to save the kind it replaced).
-  await list.getByLabel("Kind for transfer", { exact: true }).selectOption("expense");
+  // A kind change moves the category to that list and survives a reload (M12 part 1: it used
+  // to save the kind it replaced).
+  await transfers.getByLabel("Kind for transfer", { exact: true }).selectOption("expense");
   await expect(list.getByLabel("Kind for transfer", { exact: true })).toHaveValue("expense");
   await page.reload();
   await expect(list.getByLabel("Kind for transfer", { exact: true })).toHaveValue("expense");
   await list.getByLabel("Kind for transfer", { exact: true }).selectOption("transfer");
-  await expect(list.getByLabel("Kind for transfer", { exact: true })).toHaveValue("transfer");
+  await expect(transfers.getByLabel("Kind for transfer", { exact: true })).toHaveValue("transfer");
 
   // Reorder, archive and restore, on whichever category is second (the stored order is the
   // owner's).
