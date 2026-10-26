@@ -91,6 +91,23 @@ export const categoriesFor = (options: readonly SelectOption[], direction: "expe
       (o.kind === undefined || o.kind === direction || o.kind === "transfer"),
   );
 
+/**
+ * What a money item's category picker offers: the categories of its direction (see
+ * `categoriesFor`) and the one it already has, so editing never hides or loses it. Without a
+ * direction every live category shows.
+ */
+export function categoryChoices(
+  options: readonly SelectOption[],
+  direction: unknown,
+  current: unknown,
+): SelectOption[] {
+  if (direction !== "expense" && direction !== "income")
+    return options.filter((o) => o.archived !== true || o.value === current);
+  const shown = categoriesFor(options, direction);
+  const held = options.find((o) => o.value === current && !shown.includes(o));
+  return held ? [...shown, held] : shown;
+}
+
 /** Category values that move money between the owner's own accounts. */
 export function transferCategories(field: Field | undefined): Set<string> {
   return new Set((field?.options ?? []).filter((o) => o.kind === "transfer").map((o) => o.value));

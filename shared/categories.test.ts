@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import {
   CATEGORY_SET,
   categoriesFor,
+  categoryChoices,
   mergeCategoryOptions,
   optionText,
   transferCategories,
@@ -21,6 +22,18 @@ test("categories for a direction: its own kind, transfers and the owner's kindle
     "💪 Health & gym",
   );
   expect(optionText({ value: "pets" })).toBe("pets");
+});
+
+test("an item's category choices follow its direction and keep the category it has", () => {
+  const values = (direction: unknown, current?: string) =>
+    categoryChoices(CATEGORY_SET, direction, current).map((o) => o.value);
+  expect(values("income")).toContain("salary");
+  expect(values("income")).not.toContain("food");
+  expect(values("expense")).not.toContain("salary");
+  // A wrongly filed entry keeps showing what it has until the owner changes it.
+  expect(values("income", "food")).toContain("food");
+  expect(values(undefined)).toContain("food");
+  expect(values(undefined)).toContain("salary");
 });
 
 test("merging never removes an option and never overwrites the owner's label", () => {

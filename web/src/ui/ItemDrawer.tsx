@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { categoryChoices } from "../../../shared/categories.ts";
 import { fieldsOf } from "../../../shared/fields.ts";
+import type { Field } from "../../../shared/schema.ts";
 import type { Change } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useSaver } from "../app/hooks.ts";
@@ -62,6 +64,14 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
   const save = (key: string, value: unknown) => {
     if (doc.data[key] !== value) void saver.save(id, { [key]: value });
   };
+  // A money item's categories follow its direction, chosen first (the field above it).
+  const shown = (field: Field): Field =>
+    collection.id === "money" && field.id === "category"
+      ? {
+          ...field,
+          options: categoryChoices(field.options ?? [], doc.data.direction, doc.data.category),
+        }
+      : field;
   const remove = () => {
     if (confirm(`Delete “${titleOf(doc)}”? It stays in the history and can be restored.`)) {
       void saver.save(id, { _deleted: true }).then((ok) => ok && onClose());
@@ -112,7 +122,7 @@ export function ItemDrawer({ collection, id, onClose }: Props) {
             <dd>
               <FieldInput
                 id={`f-${field.id}`}
-                field={field}
+                field={shown(field)}
                 value={doc.data[field.id]}
                 onChange={(value) => save(field.id, value)}
               />

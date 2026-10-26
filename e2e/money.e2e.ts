@@ -78,6 +78,19 @@ test("Transactions: entries from the page itself, chips, group by category, the 
   await expect(page).toHaveURL(/month=all/);
   await expect(mezcal).toHaveCount(1);
 
+  // Editing an expense offers expense categories only; turning it into income swaps them.
+  await page.getByRole("button", { name: `Mezcal ${stamp}`, exact: true }).click();
+  const drawer = page.getByRole("complementary", { name: "Money item" });
+  const choices = () => drawer.getByLabel("Category", { exact: true }).locator("option");
+  await expect(choices().filter({ hasText: "Gula" })).toHaveCount(1);
+  await expect(choices().filter({ hasText: "Salary" })).toHaveCount(0);
+  await drawer.getByLabel("Direction").selectOption("income");
+  await expect(choices().filter({ hasText: "Salary" })).toHaveCount(1);
+  // The category it already has stays offered until it is changed.
+  await expect(choices().filter({ hasText: "Gula" })).toHaveCount(1);
+  await drawer.getByLabel("Direction").selectOption("expense");
+  await drawer.getByRole("button", { name: "Close" }).click();
+
   // Leave the shared database as found.
   page.on("dialog", (dialog) => void dialog.accept());
   for (const title of [`Mezcal ${stamp}`, `Mystery ${stamp}`]) {

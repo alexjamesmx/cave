@@ -2,7 +2,7 @@
 
 The owner's ask (2026-10-25): notes fresh and only notes; tasks focused on the work in flight; any calendar day editable; a reminders table as complete as Transactions; an agenda built from the owner's own routine; no "chat with an agent" anywhere in the UI; no text shortcuts where a short form does better; income and expense categories apart; fewer fields everywhere; visual and simple.
 
-Ships as parts, each committed on `main` once `check`, `test` and its e2e pass. Part 6 changes a collection's schema, so it goes through a PR.
+Ships as parts, each committed on `main` once `check`, `test` and its e2e pass.
 
 ## Part 1: New, not Ask
 
@@ -35,12 +35,11 @@ Ships as parts, each committed on `main` once `check`, `test` and its e2e pass. 
 - List is a table like Transactions: chips Open (default), Done, Dropped, All; search; sort by due.
 - Check: e2e for the toggle and the chips.
 
-## Part 6: Money categories by direction (PR)
+## Part 6: Money categories by direction
 
-- A category option carries `direction` (`expense` or `income`). Seed migration 23 tags the five income categories the ledger uses (`income`, `rent_income`, `salary`, `transfers_in`, `other_income`) and leaves the rest expense.
-- The money form asks Expense or Income first, then shows only that direction's categories. Lists → Categories shows two groups; a new category is created in one.
-- Transactions' text quick-add (`+19,070 paycheck`) gives way to the form.
-- Check: unit tests for the migration and the filtered options; e2e for the form.
+- Category options already carry a `kind` (expense, income, transfer) since M7b, and the New form already asks Expense or Income first. The leak is the item drawer: editing a transaction offered every category. It now offers the item's direction's categories, plus the one it already has.
+- No migration, no PR. No text quick-add for money remains.
+- Check: unit test for the choices; e2e for the drawer.
 
 ## Part 7: Notes fresh, and a pass for less
 
