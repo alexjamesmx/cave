@@ -4,9 +4,9 @@ import type { Selection } from "./flow-edit.ts";
 
 /**
  * A flow as a graph (M11 part 7): the trigger on the left, its steps to the right in order,
- * an edge between each pair, and an "else stop" branch under every `if`. The graph only shows
- * and selects; every edit goes through the inspector (`PartEditor`) into the same definition,
- * so what the canvas saves is byte for byte what the form editor saves.
+ * an edge between each pair, an "else stop" branch under every `if`, and a + after the last
+ * step while there is room for one (M13). The graph only shows and selects; every edit goes
+ * through the inspector (`PartEditor`) into the same definition.
  */
 
 /** A type alias, not an interface: React Flow's node data needs an index signature. */
@@ -21,12 +21,16 @@ export type PartData = {
   position: number;
 };
 
-export type FlowNode = Node<PartData, "part"> | Node<Record<string, never>, "stop">;
+export type FlowNode =
+  | Node<PartData, "part">
+  | Node<Record<string, never>, "stop">
+  | Node<Record<string, never>, "add">;
 
 export const COLUMN = 260;
 const STOP_DROP = 120;
 
 export const TRIGGER_ID = "trigger";
+export const ADD_ID = "add";
 export const stepId = (index: number) => `step-${index}`;
 
 /** The selection a node id stands for; a stop node and unknown ids select nothing. */
@@ -39,6 +43,7 @@ export function selectionOf(id: string): Selection | undefined {
 export function flowGraph(
   def: FlowDefinition,
   selected: Selection,
+  canAdd = false,
 ): { nodes: FlowNode[]; edges: Edge[] } {
   const part = (
     id: string,
@@ -97,5 +102,23 @@ export function flowGraph(
       });
     }
   });
+  if (canAdd) {
+    const last = def.steps.length;
+    nodes.push({
+      id: ADD_ID,
+      type: "add",
+      position: { x: (last + 1) * COLUMN, y: 0 },
+      draggable: false,
+      deletable: false,
+      selectable: false,
+      data: {},
+    });
+    edges.push({
+      id: "e-add",
+      source: last === 0 ? TRIGGER_ID : stepId(last - 1),
+      target: ADD_ID,
+      className: "flow-edge flow-edge-add",
+    });
+  }
   return { nodes, edges };
 }

@@ -5,21 +5,12 @@ import type { Selection } from "../../logic/flow-edit.ts";
 import { type FlowNode, flowGraph, type PartData, selectionOf } from "../../logic/flow-graph.ts";
 import { Icon } from "../icon.tsx";
 import { MapCanvas } from "../MapCanvas.tsx";
-
-const LOOK: Record<string, { icon: string; color: string }> = {
-  schedule: { icon: "clock", color: "var(--ok)" },
-  "item-added": { icon: "circle-plus", color: "var(--ok)" },
-  "item-changed": { icon: "pencil", color: "var(--teal)" },
-  if: { icon: "split", color: "var(--warn)" },
-  create: { icon: "square-plus", color: "var(--teal)" },
-  "update-trigger-item": { icon: "pen-line", color: "var(--orange)" },
-  notify: { icon: "bell", color: "var(--bad)" },
-};
+import { lookOf } from "./look.ts";
 
 /** One trigger or step: a button, so the keyboard and the e2e reach it like a card. */
 function PartNode({ data }: NodeProps<Extract<FlowNode, { type: "part" }>>) {
   const d = data as PartData;
-  const look = LOOK[d.type] ?? { icon: "circle", color: "var(--muted)" };
+  const look = lookOf(d.type);
   return (
     <div className={`flow-node${d.selected ? " on" : ""}`}>
       {d.kind === "step" && <Handle type="target" position={Position.Left} isConnectable={false} />}
@@ -58,23 +49,52 @@ function StopNode() {
   );
 }
 
-const NODE_TYPES = { part: PartNode, stop: StopNode };
+// The + after the last step; the step types open in the inspector beside the canvas.
+let requestAdd: () => void = () => {};
+
+function AddNode() {
+  return (
+    <div className="flow-add">
+      <Handle type="target" position={Position.Left} isConnectable={false} />
+      <button
+        type="button"
+        className="flow-add-button nodrag nopan"
+        aria-label="Add a step"
+        onClick={(e) => {
+          e.stopPropagation();
+          requestAdd();
+        }}
+      >
+        <Icon name="plus" size={20} />
+      </button>
+    </div>
+  );
+}
+
+const NODE_TYPES = { part: PartNode, stop: StopNode, add: AddNode };
 
 /**
  * The flow as a graph on React Flow: the trigger on the left, the steps to the right, an
- * "else stop" under each `if`. Clicking a node opens it in the inspector; the inspector is
- * the only thing that edits the definition.
+ * "else stop" under each `if`, and a + to add a step. Clicking a node opens it in the
+ * inspector; the inspector is the only thing that edits a part.
  */
 export function FlowCanvas({
   def,
   selected,
   onSelect,
+  onAdd,
 }: {
   def: FlowDefinition;
   selected: Selection;
   onSelect(selection: Selection): void;
+  /** The + was pressed; without it there is no +. */
+  onAdd?: () => void;
 }) {
-  const graph = useMemo(() => flowGraph(def, selected), [def, selected]);
+  requestAdd = onAdd ?? (() => {});
+  const graph = useMemo(
+    () => flowGraph(def, selected, onAdd !== undefined),
+    [def, selected, onAdd],
+  );
   return (
     <MapCanvas<FlowNode, Edge>
       label="Flow canvas"

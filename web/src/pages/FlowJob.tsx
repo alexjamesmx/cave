@@ -1,21 +1,7 @@
-import { FlowPicker } from "../ui/flows/FlowPicker.tsx";
+import { flowPath } from "../app/router.ts";
+import { JOB_ABOUT } from "../ui/flows/look.ts";
 import { Icon } from "../ui/icon.tsx";
 import { Offline, useSystemReport, when } from "./settings/shared.tsx";
-
-/** One line on what each built-in job does; the schedule comes from the server. */
-const ABOUT: Record<string, string> = {
-  reminders: "Sends each reminder's notification when it is due, once per due date.",
-  payments: "Tells you before a payment is due and on the day, once per due date.",
-  budget: "Checks the month's spending against your limit and tells you at 80 % and 100 %.",
-  digest: "One email a day with what needs you, what is due, payments and the budget.",
-  flows: "Runs every flow that is on when its schedule or its trigger says so.",
-  telegram: "Listens for your messages and button taps in the Telegram chat.",
-  backups:
-    "Takes a full copy of the database when the newest is more than a day old, checked hourly.",
-  offsite: "Checks the off-box copy and reports its last result.",
-  "runs-trim":
-    "Keeps the newest 500 runs in Activity and the newest 500 flow and job runs; older ones go.",
-};
 
 /**
  * A built-in job's card (M12 part 4): what it does, its schedule, its last and next run.
@@ -26,7 +12,9 @@ export function FlowJob({ id }: { id: string | undefined }) {
   const job = typeof server === "object" ? server.jobs.find((j) => j.id === id) : undefined;
   return (
     <div className="flow-detail">
-      <FlowPicker {...(id ? { jobId: id } : {})} />
+      <a className="link back-link" href={flowPath()}>
+        <Icon name="chevron-left" size={15} /> All flows
+      </a>
       {server === "offline" && <Offline what="Built-in jobs" />}
       {server === undefined && <span className="muted">Checking…</span>}
       {typeof server === "object" && !job && <p className="muted">No such job.</p>}
@@ -43,7 +31,7 @@ export function FlowJob({ id }: { id: string | undefined }) {
               BUILT IN
             </span>
           </header>
-          <p style={{ margin: 0 }}>{ABOUT[job.id] ?? "A job the server runs on its own."}</p>
+          <p style={{ margin: 0 }}>{JOB_ABOUT[job.id] ?? "A job the server runs on its own."}</p>
           <dl className="job-facts">
             <dt>Schedule</dt>
             <dd>{job.schedule}</dd>

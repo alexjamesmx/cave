@@ -1785,13 +1785,7 @@ a.btn {
   }
 }
 
-/* Flows on a canvas (M11 part 7): the picker, the nodes and the else branch. */
-.flow-picker {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+/* Flows on a canvas (M11 part 7): the nodes and the else branch. */
 
 .flow-node {
   position: relative;
@@ -2571,4 +2565,130 @@ ul.chips {
 .habit-edit .input {
   flex: 1;
   min-width: 0;
+}
+
+/* Flows (M13): every flow as a card, and the canvas's + with its menu of step types. */
+.flow-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.flow-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  color: inherit;
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  min-height: 140px;
+  align-content: start;
+}
+
+.flow-card:hover {
+  border-color: var(--muted);
+}
+
+.flow-card-new {
+  place-items: center;
+  align-content: center;
+  border-style: dashed;
+  color: var(--muted);
+  background: transparent;
+}
+
+.flow-card-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-strong);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.flow-chain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.flow-chain-part {
+  display: inline-flex;
+  align-items: center;
+}
+
+.flow-chain-part .ico {
+  width: 28px;
+  height: 28px;
+}
+
+.flow-chain-line {
+  width: 14px;
+  height: 1px;
+  background: var(--line);
+}
+
+.flow-card-text {
+  font-size: 13px;
+}
+
+.flow-card-foot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: auto;
+}
+
+.back-link {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-self: start;
+}
+
+.flow-add {
+  position: relative;
+}
+
+.flow-add-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px dashed var(--muted);
+  background: var(--panel);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.flow-add-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.flow-step-types {
+  display: grid;
+  gap: 4px;
+}
+
+.flow-add-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flow-add-item:hover {
+  background: var(--on);
 }

@@ -71,10 +71,13 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await page.goto("/flows");
   await expect(page).toHaveURL(/\/flows$/);
   await expect(page.getByRole("navigation", { name: "Flows tabs" }).getByRole("link")).toHaveText([
-    "Canvas",
+    "Flows",
     "Runs",
   ]);
-  await page.getByRole("button", { name: "New flow" }).click();
+  // Every flow is a card; Salary → save shows its chain and opens its canvas.
+  const yours = page.getByRole("region", { name: "Your flows" });
+  await expect(yours.getByRole("link", { name: /^Salary → save/ })).toBeVisible();
+  await yours.getByRole("button", { name: "New flow" }).click();
   await expect(page).toHaveURL(/\/flows\/[0-9A-Z]{26}$/);
   const name = `Canvas e2e ${Date.now()}`;
   await page.getByLabel("Flow name").fill(name);
@@ -99,6 +102,14 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(
     canvas.getByRole("button", { name: /Create “Read \{\{item.title\}\}” in tasks/ }),
   ).toBeVisible();
+
+  // The + after the last step adds one of the picked type and opens it; Remove takes it out.
+  await canvas.getByRole("button", { name: "Add a step" }).click();
+  await editor.getByRole("menuitem", { name: "Notify" }).click();
+  await expect(canvas.getByRole("button", { name: /Step 2 · Notify/ })).toBeVisible();
+  await expect(editor.getByLabel("Type")).toHaveValue("notify");
+  await editor.getByRole("button", { name: "Remove step" }).click();
+  await expect(canvas.getByRole("button", { name: /Step 2/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Turn on" }).click();
@@ -125,10 +136,14 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(runs.getByRole("link", { name: `Read ${note}` })).toBeVisible();
   await expect(runs.getByText("ok", { exact: true }).first()).toBeVisible();
 
-  // The picker lists the built-in jobs too; a job opens as a read-only card, and its runs sit
-  // beside the flows' under Runs. The old List path lands on the canvas.
+  // The overview lists the built-in jobs too; a job opens as a read-only card, and its runs
+  // sit beside the flows' under Runs. The old List path lands on the overview.
   await page.goto("/flows");
-  await page.getByLabel("Flow", { exact: true }).selectOption({ label: "Daily backup" });
+  await expect(page.getByRole("region", { name: "Your flows" })).toContainText(name);
+  await page
+    .getByRole("region", { name: "Built in" })
+    .getByRole("link", { name: /Daily backup/ })
+    .click();
   await expect(page).toHaveURL(/\/flows\/jobs\/backups$/);
   const card = page.getByRole("region", { name: "Daily backup" });
   await expect(card).toContainText("BUILT IN");

@@ -7,11 +7,18 @@ import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { ownerGet, ownerPost } from "../app/owner-api.ts";
 import { flowPath, navigate } from "../app/router.ts";
-import { addStep, blankFlow, blankPart, copyData, type Selection } from "../logic/flow-edit.ts";
+import {
+  addStep,
+  blankFlow,
+  blankPart,
+  copyData,
+  type Selection,
+  triggerCollection,
+} from "../logic/flow-edit.ts";
 import { titleOf } from "../logic/views.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { FlowCanvas } from "../ui/flows/FlowCanvas.tsx";
-import { FlowPicker } from "../ui/flows/FlowPicker.tsx";
+import { FlowsOverview } from "../ui/flows/FlowsOverview.tsx";
 import { PartEditor } from "../ui/flows/PartEditor.tsx";
 import { ApproveButtons } from "../ui/flows/PendingFlows.tsx";
 import {
@@ -21,6 +28,7 @@ import {
   type RunLog,
   StepList,
 } from "../ui/flows/RunHistory.tsx";
+import { StepPicker } from "../ui/flows/StepPicker.tsx";
 import { Icon } from "../ui/icon.tsx";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -31,18 +39,21 @@ const STATUS_COLORS: Record<string, string> = {
 };
 const statusText = (s: unknown) => (s === "pending-approval" ? "pending approval" : String(s));
 
+/** Flows → Flows: every flow as a card; `/flows/<id>` opens one on its canvas. */
 export function Flows({ id }: { id: string | undefined }) {
   const { local } = useCave();
   const flows = (useItems(local.db, FLOWS) ?? []).filter((d) => d.data._deleted !== true);
-  const selected = flows.find((d) => d.id === id) ?? (id ? undefined : flows[0]);
-
+  if (!id) return <FlowsOverview />;
+  const selected = flows.find((d) => d.id === id);
   return (
     <div className="flow-detail">
-      <FlowPicker {...(selected ? { flowId: selected.id } : {})} />
+      <a className="link back-link" href={flowPath()}>
+        <Icon name="chevron-left" size={15} /> All flows
+      </a>
       {selected ? (
         <FlowDetail key={selected.id} flow={selected} />
       ) : (
-        <p className="muted">{id ? "This flow isn't on this device." : "No flows yet."}</p>
+        <p className="muted">This flow isn't on this device.</p>
       )}
     </div>
   );
@@ -59,6 +70,8 @@ function FlowDetail({ flow }: { flow: Doc }) {
     stored.ok ? stored.value : blankFlow(),
   );
   const [selection, setSelection] = useState<Selection>("trigger");
+  // The + was pressed: the inspector offers the step types until one is picked.
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string>();
   const [test, setTest] = useState<RunLog | { error: string } | "offline" | "running">();
   const [runs, setRuns] = useState<FlowRun[] | "offline">();
@@ -182,34 +195,36 @@ function FlowDetail({ flow }: { flow: Doc }) {
         </p>
       )}
       <div className="flow-workspace">
-        <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="btn"
-              disabled={draft.steps.length >= MAX_STEPS}
-              onClick={() => {
-                const next = addStep(draft, blankPart("step", "notify", "tasks"));
+        <FlowCanvas
+          def={draft}
+          selected={selection}
+          onSelect={(s) => {
+            setAdding(false);
+            setSelection(s);
+          }}
+          {...(draft.steps.length < MAX_STEPS ? { onAdd: () => setAdding(true) } : {})}
+        />
+        <aside aria-label="Step settings" className="panel flow-editor">
+          {adding ? (
+            <StepPicker
+              onCancel={() => setAdding(false)}
+              onPick={(type) => {
+                const collection = triggerCollection(draft) ?? "tasks";
+                const next = addStep(draft, blankPart("step", type, collection));
                 setDraft(next);
                 setSelection(next.steps.length - 1);
+                setAdding(false);
               }}
-            >
-              <Icon name="plus" size={15} /> Add a step
-            </button>
-            <span className="muted" style={{ fontSize: 13 }}>
-              Click a node to edit it; an if stops the flow when its conditions fail.
-            </span>
-          </div>
-          <FlowCanvas def={draft} selected={selection} onSelect={setSelection} />
-        </div>
-        <aside aria-label="Step settings" className="panel flow-editor">
-          <PartEditor
-            def={draft}
-            selection={selection}
-            collections={collections}
-            onChange={setDraft}
-            onSelect={setSelection}
-          />
+            />
+          ) : (
+            <PartEditor
+              def={draft}
+              selection={selection}
+              collections={collections}
+              onChange={setDraft}
+              onSelect={setSelection}
+            />
+          )}
         </aside>
       </div>
       {test && (

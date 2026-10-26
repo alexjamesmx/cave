@@ -114,7 +114,7 @@ export const SECTIONS: Section[] = [
     path: "/flows",
     // One flow's page is `/flows/<id>`: anything after Flows that is not a tab is a flow, open
     // on the canvas; `/flows/jobs/<id>` is a built-in job's card (M12 part 4).
-    tabs: [page("canvas", "Canvas", "flows"), page("runs", "Runs", "flows-runs")],
+    tabs: [page("canvas", "Flows", "flows"), page("runs", "Runs", "flows-runs")],
     owns: ["flows"],
   },
   {

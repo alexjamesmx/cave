@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { type FlowDefinition, parseDefinition } from "../../../shared/flows/registry.ts";
 import { addStep, blankPart, replaceStep, withParam } from "./flow-edit.ts";
-import { COLUMN, flowGraph, selectionOf, stepId, TRIGGER_ID } from "./flow-graph.ts";
+import { ADD_ID, COLUMN, flowGraph, selectionOf, stepId, TRIGGER_ID } from "./flow-graph.ts";
 
 const salary: FlowDefinition = {
   version: 1,
@@ -67,4 +67,16 @@ test("the canvas never touches the definition: an edit through the inspector rou
     "step-1",
     "step-2",
   ]);
+});
+
+test("a + follows the last step while a step can be added, joined to it", () => {
+  const graph = flowGraph(salary, "trigger", true);
+  const add = graph.nodes.find((n) => n.id === ADD_ID);
+  expect(add?.type).toBe("add");
+  expect(add?.position.x).toBe((salary.steps.length + 1) * COLUMN);
+  expect(graph.edges.find((e) => e.target === ADD_ID)?.source).toBe(
+    `step-${salary.steps.length - 1}`,
+  );
+  expect(flowGraph(salary, "trigger").nodes.some((n) => n.id === ADD_ID)).toBe(false);
+  expect(selectionOf(ADD_ID)).toBeUndefined();
 });

@@ -5,7 +5,7 @@ import { ownerGet } from "../app/owner-api.ts";
 import { flowPath, setSearch, useSearch } from "../app/router.ts";
 import { titleOf } from "../logic/views.ts";
 import { useItems } from "../store/queries.ts";
-import { jobPath } from "../ui/flows/FlowPicker.tsx";
+import { jobPath } from "../ui/flows/look.ts";
 import { type FlowRun, ResultChip, StepList } from "../ui/flows/RunHistory.tsx";
 import { useSystemReport, when } from "./settings/shared.tsx";
 
