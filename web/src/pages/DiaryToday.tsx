@@ -3,15 +3,9 @@ import { shortDay } from "../../../shared/dates.ts";
 import { useToday } from "../app/hooks.ts";
 import { useSearch } from "../app/router.ts";
 import { pick, shown } from "../logic/follow.ts";
-import { previousDay } from "../logic/habits.ts";
+import { nextDay, previousDay } from "../logic/habits.ts";
 import { DiaryDay } from "../ui/DiaryDay.tsx";
 import { Icon } from "../ui/icon.tsx";
-
-const nextDay = (day: string) => {
-  const d = new Date(`${day}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-};
 
 /**
  * Diary → Today (M12 part 8, Write until then): one day full width, following today until

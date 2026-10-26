@@ -9,7 +9,7 @@ import { setSearch, useSearch } from "../app/router.ts";
 import { doneInLast, entriesByDay, habitsDone, streak } from "../logic/habits.ts";
 import { useCollections, useDoc, useItems } from "../store/queries.ts";
 import { BarRow } from "../ui/charts.tsx";
-import { DiaryDay } from "../ui/DiaryDay.tsx";
+import { DayReader } from "../ui/DayReader.tsx";
 import { HabitEditor } from "../ui/HabitEditor.tsx";
 import { Icon } from "../ui/icon.tsx";
 
@@ -18,8 +18,8 @@ const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Diary → Days (M12 part 8, Habits and Months until then): the month as a grid (a dot for a
- * written day, a strip of the habits logged, the day's colour as its tint) beside either the
- * habits' 30 days and streaks with Add habit, or one day opened in the panel (`?day=`).
+ * written day, a strip of the habits logged, the day's colour as its tint) beside the habits'
+ * 30 days and streaks with Add habit. A day (`?day=`) opens to be read, and edited on demand.
  */
 export function DiaryDays() {
   const { local } = useCave();
@@ -136,77 +136,64 @@ export function DiaryDays() {
           Click a day to open it.
         </span>
       </section>
-      {open ? (
-        <DiaryDay
-          day={open}
-          header={
-            <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="k" style={{ flex: 1 }}>
-                {open === today ? "Today " : ""}
-                {shortDay(open)} {open.slice(0, 4)}
-              </span>
-              <button
-                type="button"
-                className="btn"
-                aria-label="Close day"
-                onClick={() => setSearch("")}
-              >
-                <Icon name="x" size={15} />
-              </button>
-            </header>
-          }
-        />
-      ) : (
-        <section
-          className="panel"
-          aria-label="Habits"
-          style={{ padding: 16, display: "grid", gap: 10 }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span className="k" style={{ flex: 1 }}>
-              {editing ? "Edit habits" : "Last 30 days · streak"}
-            </span>
-            {!editing && (
-              <button type="button" className="btn" onClick={() => setEditing(true)}>
-                <Icon name="pencil" size={14} /> Edit habits
-              </button>
-            )}
-          </div>
-          {editing && (
-            <HabitEditor fields={journal?.data.fields ?? []} onDone={() => setEditing(false)} />
-          )}
-          {!editing && habits.length === 0 && <span className="muted">No habits yet.</span>}
-          {(editing ? [] : habits).map((h) => {
-            const n = doneInLast(byDay, h.id, today, 30);
-            return (
-              <BarRow
-                key={h.id}
-                label={
-                  <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-                    <Icon name={icons[h.id] ?? "circle-check"} size={14} />
-                    {h.name}
-                  </span>
-                }
-                value={`${n}/30 · ${streak(byDay, h.id, today)}d`}
-                share={n / 30}
-                color="var(--lime)"
-              />
-            );
-          })}
-          <form onSubmit={(e) => void addHabit(e)} style={{ display: "flex", gap: 8 }}>
-            <input
-              className="input"
-              aria-label="New habit"
-              placeholder="New habit"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              style={{ flex: 1, minWidth: 0 }}
-            />
-            <button type="submit" className="btn" disabled={!name.trim()}>
-              Add habit
+      <section
+        className="panel"
+        aria-label="Habits"
+        style={{ padding: 16, display: "grid", gap: 10 }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="k" style={{ flex: 1 }}>
+            {editing ? "Edit habits" : "Last 30 days · streak"}
+          </span>
+          {!editing && (
+            <button type="button" className="btn" onClick={() => setEditing(true)}>
+              <Icon name="pencil" size={14} /> Edit habits
             </button>
-          </form>
-        </section>
+          )}
+        </div>
+        {editing && (
+          <HabitEditor fields={journal?.data.fields ?? []} onDone={() => setEditing(false)} />
+        )}
+        {!editing && habits.length === 0 && <span className="muted">No habits yet.</span>}
+        {(editing ? [] : habits).map((h) => {
+          const n = doneInLast(byDay, h.id, today, 30);
+          return (
+            <BarRow
+              key={h.id}
+              label={
+                <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                  <Icon name={icons[h.id] ?? "circle-check"} size={14} />
+                  {h.name}
+                </span>
+              }
+              value={`${n}/30 · ${streak(byDay, h.id, today)}d`}
+              share={n / 30}
+              color="var(--lime)"
+            />
+          );
+        })}
+        <form onSubmit={(e) => void addHabit(e)} style={{ display: "flex", gap: 8 }}>
+          <input
+            className="input"
+            aria-label="New habit"
+            placeholder="New habit"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+          <button type="submit" className="btn" disabled={!name.trim()}>
+            Add habit
+          </button>
+        </form>
+      </section>
+      {open && (
+        <DayReader
+          key={open}
+          day={open}
+          today={today}
+          onDay={(day) => setSearch(`?day=${day}`)}
+          onClose={() => setSearch("")}
+        />
       )}
     </div>
   );

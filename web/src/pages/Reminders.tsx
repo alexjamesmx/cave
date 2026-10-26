@@ -59,17 +59,15 @@ export function Reminders() {
         className={d.data.done === true ? "done" : undefined}
         {...rowOpen(() => setSheet({ id: d.id }))}
       >
-        <td className="num muted">{timeOf(d.data.due)}</td>
+        <td className="num muted reminder-time">{timeOf(d.data.due)}</td>
         <td>
           <button type="button" className="link" onClick={() => setSheet({ id: d.id })}>
             {titleOf(d)}
           </button>
-        </td>
-        <td className="muted">
           {repeat !== "none" && (
-            <>
-              <Icon name="repeat" size={12} aria-hidden="true" /> {REPEAT_LABEL[repeat]}
-            </>
+            <span className="chip repeat-chip">
+              <Icon name="repeat" size={11} aria-hidden="true" /> {REPEAT_LABEL[repeat]}
+            </span>
           )}
         </td>
         <td style={{ textAlign: "right" }}>
@@ -127,12 +125,11 @@ export function Reminders() {
         {message}
       </p>
       <section className="panel" style={{ padding: 4, overflowX: "auto" }}>
-        <table className="table" aria-label="Reminders">
+        <table className="table reminder-table" aria-label="Reminders">
           <thead>
             <tr>
               <th>Time</th>
-              <th>Title</th>
-              <th>Repeat</th>
+              <th>Reminder</th>
               <th aria-label="Actions" />
             </tr>
           </thead>
@@ -140,7 +137,7 @@ export function Reminders() {
           <tbody>
             {list.groups.flatMap((g) => [
               <tr key={`day-${g.key}`} className="group-row">
-                <th colSpan={4} scope="rowgroup">
+                <th colSpan={3} scope="rowgroup">
                   {dayLabel(g.key, today)} <span className="num muted">{g.rows.length}</span>
                 </th>
               </tr>,

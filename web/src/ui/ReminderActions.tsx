@@ -9,7 +9,7 @@ import { Icon } from "./icon.tsx";
 type Patch = Record<string, unknown>;
 
 /**
- * Done and Snooze for one reminder. Each is an ordinary stamped write, so it syncs and shows
+ * Done and Snooze for one reminder, as two icon buttons beside its row. Each is an ordinary stamped write, so it syncs and shows
  * in the history; Undo right after puts the previous values back the same way.
  */
 export function ReminderActions({ doc }: { doc: Doc }) {
@@ -56,15 +56,22 @@ export function ReminderActions({ doc }: { doc: Doc }) {
     <span className="reminder-actions">
       <button
         type="button"
-        className="btn"
+        className="btn icon-btn"
+        aria-label="Done"
+        title="Done"
         onClick={() => void write(complete(doc, now(), zone), "Done")}
       >
         <Icon name="check" size={14} />
-        Done
       </button>
-      <button type="button" className="btn" aria-expanded={menu} onClick={() => setMenu(!menu)}>
+      <button
+        type="button"
+        className="btn icon-btn"
+        aria-label="Snooze"
+        title="Snooze"
+        aria-expanded={menu}
+        onClick={() => setMenu(!menu)}
+      >
         <Icon name="alarm-clock" size={14} />
-        Snooze
       </button>
       {menu && (
         <span className="snooze-menu">

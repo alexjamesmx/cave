@@ -1,7 +1,7 @@
 import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Calendar → Week: a daily and a weekly block, the weekly one tracked as a habit, ticked from Agenda, counted on Week", async ({
+test("Calendar → Routine: a daily block on every day, a block on one day from its +, a weekly one under Any day; the areas add up the hours", async ({
   browser,
 }) => {
   const page = await (
@@ -9,60 +9,51 @@ test("Calendar → Week: a daily and a weekly block, the weekly one tracked as a
   ).newPage();
   const stamp = Date.now();
   const daily = `Chinese ${stamp}`;
-  const weekly = `Gym ${stamp}`;
+  const saturday = `Climb ${stamp}`;
+  const weekly = `Movie ${stamp}`;
   await page.goto("/calendar/week");
+  await expect(page).toHaveURL(/\/calendar\/routine$/);
   await expect(
-    page.getByRole("navigation", { name: "Calendar tabs" }).getByRole("link", { name: "Week" }),
-  ).toHaveAttribute("aria-current", "page");
+    page.getByRole("navigation", { name: "Calendar tabs" }).getByRole("link"),
+  ).toHaveText(["Month", "Reminders", "Routine"]);
 
-  // A daily block shows on every day, with the free time under it.
+  // A daily block, to learn: on every day, and Learn counts its seven half hours.
   await page.getByRole("button", { name: "Add block" }).click();
   const form = page.getByRole("form", { name: "New block" });
   await form.getByLabel("Title").fill(daily);
+  await form.getByRole("button", { name: "Learn" }).click();
+  await form.getByRole("button", { name: "Every day" }).click();
   await form.getByLabel("Minutes").fill("30");
   await form.getByRole("button", { name: "Add" }).click();
   for (const day of ["Mon", "Sun"])
     await expect(page.getByRole("region", { name: day })).toContainText(daily);
+  const areas = page.getByRole("list", { name: "Hours a week by area" });
+  await expect(areas).toContainText("Learn");
 
-  // A weekly block, tracked as a new diary habit, sits in the This week pool with its counter.
+  // A day's + adds a block on that day only.
+  await page.getByRole("button", { name: "Add a block on Sat" }).click();
+  const one = page.getByRole("form", { name: "New block" });
+  await one.getByLabel("Title").fill(saturday);
+  await one.getByLabel("Start").fill("10:00");
+  await one.getByRole("button", { name: "Add" }).click();
+  await expect(page.getByRole("region", { name: "Sat" })).toContainText(saturday);
+  await expect(page.getByRole("region", { name: "Fri" })).not.toContainText(saturday);
+  await expect(areas).toContainText("Body");
+
+  // Some times a week: under Any day, with its count.
   await page.getByRole("button", { name: "Add block" }).click();
-  const second = page.getByRole("form", { name: "New block" });
-  await second.getByLabel("Title").fill(weekly);
-  await second.getByLabel("Kind").selectOption("weekly");
-  await second.getByRole("spinbutton", { name: "Times a week" }).fill("2");
-  await second.getByRole("button", { name: "Track as a habit" }).click();
-  const pool = page.getByRole("region", { name: "This week" });
-  await expect(pool.getByRole("button", { name: `${weekly} · 0 of 2` })).toBeVisible();
-
-  // The daily block is a habit too, so Agenda can tick it; ticking the weekly one's habit in the
-  // Diary moves the counter.
-  await page
-    .getByRole("button", { name: new RegExp(daily) })
-    .first()
-    .click();
-  const edit = page.getByRole("form", { name: "Edit block" });
-  await edit.getByRole("button", { name: "Track as a habit" }).click();
-  // The habit is linked once the button goes; leaving earlier could cut the write off.
-  await expect(edit.getByRole("button", { name: "Track as a habit" })).toHaveCount(0);
-  await page.goto("/calendar/agenda");
-  const today = page.getByRole("region", { name: "Agenda" }).getByRole("list", { name: "Today" });
-  await expect(today).toContainText(daily);
-  await today.getByRole("button", { name: `${daily} done` }).click();
-  await expect(today.getByRole("button", { name: `${daily} done` })).toHaveAttribute(
-    "aria-pressed",
-    "true",
+  const some = page.getByRole("form", { name: "New block" });
+  await some.getByLabel("Title").fill(weekly);
+  await some.getByRole("button", { name: "Fun" }).click();
+  await some.getByRole("button", { name: "Some times a week" }).click();
+  await some.getByRole("spinbutton", { name: "Times a week" }).fill("2");
+  await some.getByRole("button", { name: "Add" }).click();
+  await expect(page.getByRole("region", { name: "Some times a week" })).toContainText(
+    `${weekly}2×`,
   );
-  await page.goto("/notes/write");
-  await page.getByRole("button", { name: weekly, exact: true }).click();
-  await expect(page.getByRole("button", { name: weekly, exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await page.goto("/calendar/week");
-  await expect(pool.getByRole("button", { name: `${weekly} · 1 of 2` })).toBeVisible();
 
-  // Leave the shared database as found: both blocks deleted, today's ticks undone.
-  for (const title of [weekly, daily]) {
+  // Leave the shared database as found: every block deleted.
+  for (const title of [weekly, saturday, daily]) {
     await page
       .getByRole("button", { name: new RegExp(title) })
       .first()
@@ -72,10 +63,5 @@ test("Calendar → Week: a daily and a weekly block, the weekly one tracked as a
       .getByRole("button", { name: "Delete" })
       .click();
     await expect(page.getByRole("button", { name: new RegExp(title) })).toHaveCount(0);
-  }
-  await page.goto("/notes/write");
-  for (const title of [weekly, daily]) {
-    const chip = page.getByRole("button", { name: title, exact: true });
-    if ((await chip.getAttribute("aria-pressed")) === "true") await chip.click();
   }
 });
