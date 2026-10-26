@@ -37,7 +37,7 @@ test("Notes: a new note with a topic, Markdown and a diagram; the gallery groups
   await expect(preview.getByRole("img", { name: "Diagram" }).locator("svg")).toContainText(
     "Router",
   );
-  await page.getByLabel("Colour").selectOption("teal");
+  await page.getByLabel("Colour", { exact: true }).selectOption("teal");
 
   // The gallery: a group per topic, the card with the start of the text.
   await page.getByRole("link", { name: "All notes" }).click();

@@ -11,17 +11,39 @@ import { MarkdownDiagram } from "./DiagramSvg.tsx";
  * - only http, https and mailto URLs become links, and they open in a new tab;
  * - images are never loaded: an image shows as a link to its address;
  * - `[[Title]]` and `[[Title|label]]` link to the note with that title, found case-insensitively;
- * - a ```mermaid code block is drawn as a diagram (SVG cleaned of styles and scripts).
+ * - a ```mermaid code block is drawn as a diagram (SVG cleaned of styles and scripts);
+ * - `:red[text]` colours text with one of `TEXT_COLORS`, `==text==` highlights it.
  */
 
 const NOTE = "cave-note:";
+const COLOR = "cave-color:";
+const MARK = "cave-mark:";
 const WIKILINK = /\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g;
+
+/** The colours text can take, each one of the palette's tokens. */
+export const TEXT_COLORS = {
+  red: "bad",
+  orange: "orange",
+  yellow: "warn",
+  green: "ok",
+  teal: "teal",
+  blue: "wait",
+  purple: "vio",
+  grey: "muted",
+} as const;
+export type TextColor = keyof typeof TEXT_COLORS;
+const COLORED = new RegExp(`:(${Object.keys(TEXT_COLORS).join("|")})\\[([^\\]\\n]+)\\]`, "g");
+const HIGHLIGHT = /==([^=\n]+)==/g;
 
 const escapeLabel = (s: string) => s.replace(/[\\[\]]/g, (c) => `\\${c}`);
 const encodeTitle = (s: string) =>
   encodeURIComponent(s.trim()).replace(/\(/g, "%28").replace(/\)/g, "%29");
 
-/** `[[Title|label]]` as an ordinary Markdown link to `cave-note:Title`; code is left alone. */
+/**
+ * The Cave's own inline marks as ordinary Markdown links, so the label keeps its formatting:
+ * `[[Title|label]]` to `cave-note:Title`, `:red[text]` to `cave-color:red`, `==text==` to
+ * `cave-mark:`. Code, inline or fenced, is left alone.
+ */
 export function wikilinksToMarkdown(text: string): string {
   let fenced = false;
   return text
@@ -37,11 +59,17 @@ export function wikilinksToMarkdown(text: string): string {
         .map((part, i) =>
           i % 2 === 1
             ? part
-            : part.replace(
-                WIKILINK,
-                (_, title: string, label?: string) =>
-                  `[${escapeLabel((label ?? title).trim())}](${NOTE}${encodeTitle(title)})`,
-              ),
+            : part
+                .replace(
+                  WIKILINK,
+                  (_, title: string, label?: string) =>
+                    `[${escapeLabel((label ?? title).trim())}](${NOTE}${encodeTitle(title)})`,
+                )
+                .replace(
+                  COLORED,
+                  (_, color: string, inner: string) => `[${inner}](${COLOR}${color})`,
+                )
+                .replace(HIGHLIGHT, (_, inner: string) => `[${inner}](${MARK})`),
         )
         .join("");
     })
@@ -80,7 +108,9 @@ function htmlAsText() {
   return (tree: Node) => walk(tree);
 }
 
-const urlTransform = (url: string) => (url.startsWith(NOTE) || isSafeUrl(url) ? url : "");
+const OWN = [NOTE, COLOR, MARK];
+const urlTransform = (url: string) =>
+  OWN.some((p) => url.startsWith(p)) || isSafeUrl(url) ? url : "";
 
 interface WikiTarget {
   href: string;
@@ -99,6 +129,17 @@ export function MarkdownView({
 }) {
   const components: Components = {
     a({ href, children }) {
+      if (href?.startsWith(COLOR)) {
+        const color = href.slice(COLOR.length) as TextColor;
+        return TEXT_COLORS[color] ? (
+          <span className="md-color" style={{ color: `var(--${TEXT_COLORS[color]})` }}>
+            {children}
+          </span>
+        ) : (
+          <span>{children}</span>
+        );
+      }
+      if (href === MARK) return <mark className="md-mark">{children}</mark>;
       if (href?.startsWith(NOTE)) {
         const title = decodeURIComponent(href.slice(NOTE.length));
         const target = resolve?.(title);

@@ -70,3 +70,14 @@ test("a mermaid block is drawn as a diagram; other code stays code", () => {
   expect(broken).toContain("not a diagram");
   expect(broken).not.toContain('aria-label="Diagram"');
 });
+
+test("coloured and highlighted text; unknown colours and code stay as written", () => {
+  const out = html("A :red[**late** bill] and ==this== matter; :pink[no] `:red[code]`");
+  expect(out).toContain(
+    '<span class="md-color" style="color:var(--bad)"><strong>late</strong> bill</span>',
+  );
+  expect(out).toContain('<mark class="md-mark">this</mark>');
+  expect(out).toContain(":pink[no]");
+  expect(out).toContain("<code>:red[code]</code>");
+  expect(wikilinksToMarkdown("```\n==x==\n```")).toBe("```\n==x==\n```");
+});

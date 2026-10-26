@@ -60,7 +60,6 @@ function FlowDetail({ flow }: { flow: Doc }) {
   );
   const [selection, setSelection] = useState<Selection>("trigger");
   const [error, setError] = useState<string>();
-  const [hint, setHint] = useState<string>();
   const [test, setTest] = useState<RunLog | { error: string } | "offline" | "running">();
   const [runs, setRuns] = useState<FlowRun[] | "offline">();
   // Parsed on both sides: validation puts keys in schema order, which a raw compare would see.
@@ -105,15 +104,6 @@ function FlowDetail({ flow }: { flow: Doc }) {
     const result = await ownerPost<RunLog | { error: string }>(`/api/flows/${flow.id}/test`, {});
     setTest(result ?? "offline");
   };
-  const askAgent = async () => {
-    const text = `Change my Cave flow "${titleOf(flow)}" (id ${flow.id}) with save_flow: `;
-    try {
-      await navigator.clipboard.writeText(text);
-      setHint("Copied. Paste it to Claude and say what to change.");
-    } catch {
-      setHint(text);
-    }
-  };
   const duplicate = async () => {
     const copyId = newId();
     await local.write({ id: copyId, kind: "item", collection: FLOWS }, copyData(flow.data));
@@ -139,9 +129,6 @@ function FlowDetail({ flow }: { flow: Doc }) {
           by {String(flow.data.author ?? "owner")}
         </span>
         <div className="flow-actions">
-          <button type="button" className="btn" onClick={() => void askAgent()}>
-            <Icon name="message-square" size={15} color="var(--violet)" /> Change via agent
-          </button>
           <button type="button" className="btn" onClick={() => void duplicate()}>
             <Icon name="copy" size={15} /> Duplicate
           </button>
@@ -183,11 +170,6 @@ function FlowDetail({ flow }: { flow: Doc }) {
           {asked === "approve" ? "Approve" : "Reject"} this flow? Check its steps, then use the
           buttons above.
         </div>
-      )}
-      {hint && (
-        <p className="muted" role="status" style={{ margin: 0 }}>
-          {hint}
-        </p>
       )}
       {(error || !stored.ok) && (
         <p role="alert" className="error" style={{ margin: 0 }}>

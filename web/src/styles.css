@@ -2526,3 +2526,49 @@ ul.chips {
 .week-block.reminder.done {
   opacity: 0.55;
 }
+
+/* Markdown's own marks: coloured text and a highlight. */
+.md-mark {
+  background: rgba(217, 181, 111, 0.28);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.md-colors {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.md-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Edit habits (M13). */
+.habit-edit {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.habit-edit li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.habit-edit .input {
+  flex: 1;
+  min-width: 0;
+}

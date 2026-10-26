@@ -186,7 +186,7 @@ test("an idea becomes a project; a part and a task show on its Overview and Boar
   const preview = page.locator(".md-preview");
   await expect(preview.getByRole("heading", { name: "Links" })).toBeVisible();
   await expect(preview.locator("strong")).toHaveText("more");
-  await page.getByLabel("Colour").selectOption("vio");
+  await page.getByLabel("Colour", { exact: true }).selectOption("vio");
   await page.getByRole("link", { name: "All pages" }).click();
   const pages = page.getByRole("region", { name: "Pages" });
   await expect(pages.getByRole("link", { name: /Resources/ })).toBeVisible();

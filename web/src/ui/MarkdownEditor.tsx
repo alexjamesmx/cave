@@ -1,7 +1,7 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import { type Action, apply, SHORTCUTS } from "../logic/markdown-edit.ts";
+import { type Action, apply, type Edit, SHORTCUTS, wrap } from "../logic/markdown-edit.ts";
 import { Icon } from "./icon.tsx";
-import { MarkdownView } from "./Markdown.tsx";
+import { MarkdownView, TEXT_COLORS, type TextColor } from "./Markdown.tsx";
 
 const IDLE_MS = 2000;
 
@@ -76,15 +76,21 @@ export function MarkdownEditor({
   };
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  const run = (action: Action) => {
+  const [colors, setColors] = useState(false);
+  const edit = (make: (text: string, start: number, end: number) => Edit) => {
     const el = box.current;
     if (!el) return;
-    const edit = apply(action, el.value, el.selectionStart, el.selectionEnd);
+    const edit = make(el.value, el.selectionStart, el.selectionEnd);
     change(edit.text);
     requestAnimationFrame(() => {
       el.focus();
       el.setSelectionRange(edit.start, edit.end);
     });
+  };
+  const run = (action: Action) => edit((t, s, e) => apply(action, t, s, e));
+  const paint = (color: TextColor) => {
+    setColors(false);
+    edit((t, s, e) => wrap(t, s, e, `:${color}[`, "]"));
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (!(e.ctrlKey || e.metaKey)) return;
@@ -110,6 +116,43 @@ export function MarkdownEditor({
             <Icon name={icon} size={14} />
           </button>
         ))}
+        <button
+          type="button"
+          className="btn"
+          title="Highlight"
+          aria-label="Highlight"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => edit((t, s, e) => wrap(t, s, e, "==", "=="))}
+        >
+          <Icon name="highlighter" size={14} />
+        </button>
+        <button
+          type="button"
+          className="btn"
+          title="Text colour"
+          aria-label="Text colour"
+          aria-expanded={colors}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setColors(!colors)}
+        >
+          <Icon name="palette" size={14} />
+        </button>
+        {colors && (
+          <fieldset className="md-colors" aria-label="Colours">
+            {(Object.keys(TEXT_COLORS) as TextColor[]).map((c) => (
+              <button
+                key={c}
+                type="button"
+                className="md-swatch"
+                title={c}
+                aria-label={c}
+                style={{ background: `var(--${TEXT_COLORS[c]})` }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => paint(c)}
+              />
+            ))}
+          </fieldset>
+        )}
         <span className="muted md-state" role="status">
           {state === "saved" ? "Saved" : state === "editing" ? "Editing…" : ""}
         </span>

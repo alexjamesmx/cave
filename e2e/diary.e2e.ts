@@ -69,4 +69,34 @@ test("Notes → Days: a day opened from the grid is written in the editor, colou
   await habits.getByRole("button", { name: "Add habit" }).click();
   await expect(habits).toContainText(fresh);
   await expect(habits).toContainText("0/30 · 0d");
+
+  // Edit habits: rename it, archive it (it leaves the streaks), restore it, then archive it
+  // again so the shared diary looks as found.
+  await habits.getByRole("button", { name: "Edit habits" }).click();
+  await habits.getByLabel(`Name of ${fresh}`).fill(`${fresh} renamed`);
+  await habits.getByLabel(`Name of ${fresh}`).blur();
+  await expect(habits.getByLabel(`Name of ${fresh} renamed`)).toBeVisible();
+  await habits.getByRole("button", { name: `Archive ${fresh} renamed` }).click();
+  await expect(habits.getByRole("list", { name: "Archived habits" })).toContainText(
+    `${fresh} renamed`,
+  );
+  await habits.getByRole("button", { name: `Restore ${fresh} renamed` }).click();
+  await expect(habits.getByLabel(`Name of ${fresh} renamed`)).toBeVisible();
+  await habits.getByRole("button", { name: `Archive ${fresh} renamed` }).click();
+  await habits.getByRole("button", { name: "Done" }).click();
+  await expect(habits).not.toContainText(fresh);
+
+  // Text colour and highlight from the toolbar, shown in the preview.
+  await page.goto("/notes/write");
+  const entry = page.getByLabel("Diary entry");
+  await entry.fill("late bill");
+  await entry.selectText();
+  await page.getByRole("button", { name: "Text colour" }).click();
+  await page.getByRole("button", { name: "red", exact: true }).click();
+  await expect(entry).toHaveValue(":red[late bill]");
+  await expect(page.locator(".md-preview .md-color")).toHaveText("late bill");
+  await entry.fill("==mark==");
+  await expect(page.locator(".md-preview mark")).toHaveText("mark");
+  await entry.fill("");
+  await entry.blur();
 });
