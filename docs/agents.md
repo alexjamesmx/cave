@@ -38,7 +38,7 @@ bun run agent revoke codex
 
 ## Flows
 
-A flow is a trigger and up to 10 steps, stored as one definition (`version: 1`). Triggers: `schedule` (every day, week, month or year at a time), `item-added` (with optional conditions) and `item-changed` (a field, optionally to a value). Steps: `if` (all conditions hold, else stop), `create`, `update-trigger-item` and `notify`. Text may use `{{item.title}}`, `{{item.<field>}}`, `{{item.<field>|pct:N}}`, `{{today}}` and `{{month}}`, nothing else.
+A flow is a trigger and up to 10 steps, stored as one definition (`version: 1`). Triggers: `schedule` (every day, week, month or year at a time), `item-added` (with optional conditions) and `item-changed` (a field, optionally to a value). Steps: `if` (all conditions hold, else stop), `create`, `update-trigger-item`, `notify` and `email` (`subject`, `body` up to 4,000 characters, optional `to`: up to 5 addresses separated by commas, else the owner; optional `fromName`). Text may use `{{item.title}}`, `{{item.<field>}}`, `{{item.<field>|pct:N}}`, `{{today}}` and `{{month}}`, nothing else.
 
 **A reminder or a flow?** A reminder only notifies. Use a flow when something must also be created or changed. "Remind me every month to pay rent on the 22nd" as a reminder:
 
@@ -59,7 +59,7 @@ As a flow, which also puts a task on the list:
 ```
 
 **What needs the owner's approval, and why:**
-- A flow with a step that changes existing items (`update-trigger-item`, and every future step that reaches outside the Cave) is saved as `pending-approval`, whatever status was asked for. It runs only after the owner approves it on the Flows page, the Agents page or, if the owner turned it on, Telegram. A flow that only creates items and notifies can be saved `on` and runs at once.
+- A flow with a step that changes existing items or reaches outside the Cave (`update-trigger-item`, `email`) is saved as `pending-approval`, whatever status was asked for. It runs only after the owner approves it on the Flows page, the Agents page or, if the owner turned it on, Telegram. A flow that only creates items and notifies can be saved `on` and runs at once.
 - An agent can never approve: re-saving a waiting flow as `on` keeps it waiting.
 - A flow may name only collections and fields the agent can see; one that names others is refused, and an allowlisted agent neither lists nor replaces flows outside its collections.
 - Limits per agent: 20 flows `on` and 10 saves a day.

@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import type { ChannelId, Detail, NotificationSettings } from "../../shared/notifications.ts";
+import { parseRecipients } from "../../shared/notifications.ts";
 import type {
   ChannelStatus,
   Message,
@@ -20,10 +21,23 @@ export function render(n: Notification, detail: Detail, origin: string): Message
     ...(n.itemId ? { itemId: n.itemId } : {}),
     title: n.title,
     ...(detail === "full" && n.details.length > 0 ? { body: n.details.join(" · ") } : {}),
-    lines: detail === "full" ? n.details : [],
+    // A flow's own email keeps its whole message whatever the detail level.
+    lines: detail === "full" || n.email ? n.details : [],
     url: url(n.path),
     ...(n.tag ? { tag: n.tag } : {}),
     actions: (n.actions ?? []).map((a) => ({ id: a.id, label: a.label, url: url(a.path) })),
+    ...(n.email ? { email: n.email } : {}),
+  };
+}
+
+/** Settings' recipient and sender name under what the notification itself names. */
+function withEmailDefaults(message: Message, config: NotificationSettings): Message {
+  const to = message.email?.to ?? (config.emailTo ? parseRecipients(config.emailTo) : undefined);
+  const fromName = message.email?.fromName ?? config.emailFromName;
+  if (!to && !fromName) return message;
+  return {
+    ...message,
+    email: { ...message.email, ...(to ? { to } : {}), ...(fromName ? { fromName } : {}) },
   };
 }
 
@@ -93,7 +107,9 @@ export function createNotifier({
           result = `skipped: ${status.summary}`;
         } else {
           try {
-            const sent = await channel.send(render(n, config.detail[id], origin), target);
+            const rendered = render(n, config.detail[id], origin);
+            const message = id === "email" ? withEmailDefaults(rendered, config) : rendered;
+            const sent = await channel.send(message, target);
             total.delivered += sent.delivered;
             total.failed += sent.failed;
             result = sent.failed === 0 ? "ok" : sent.delivered > 0 ? "partial" : "failed";

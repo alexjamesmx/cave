@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isSenderName, MAX_RECIPIENTS, parseRecipients } from "../notifications.ts";
 import { templateErrors } from "./templates.ts";
 
 /**
@@ -18,6 +19,8 @@ type ParamKind =
   | "field"
   | "value"
   | "template"
+  | "recipients"
+  | "name"
   | "time"
   | "int"
   | "enum"
@@ -31,9 +34,11 @@ export interface ParamSpec {
   optional?: boolean;
   /** For `enum`. */
   options?: readonly string[];
-  /** For `int`. */
+  /** For `int`; for `template`, the longest text (500 by default). */
   min?: number;
   max?: number;
+  /** For `template`: a multi-line text, such as an email's message. */
+  long?: boolean;
 }
 
 interface TypeSpec {
@@ -47,12 +52,14 @@ interface TypeSpec {
 
 const ID = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "an id");
 const SCALAR = z.union([z.string().max(500), z.number().finite(), z.boolean(), z.null()]);
-const TEMPLATE = z
-  .string()
-  .max(500)
-  .superRefine((value, ctx) => {
-    for (const error of templateErrors(value)) ctx.addIssue({ code: "custom", message: error });
-  });
+const template = (max = 500) =>
+  z
+    .string()
+    .max(max)
+    .superRefine((value, ctx) => {
+      for (const error of templateErrors(value)) ctx.addIssue({ code: "custom", message: error });
+    });
+const TEMPLATE = template();
 const CONDITION = z
   .object({ field: ID, op: z.enum(OPS), value: SCALAR.optional() })
   .strict()
@@ -69,7 +76,16 @@ function paramSchema(p: ParamSpec): z.ZodType {
     case "value":
       return SCALAR;
     case "template":
-      return TEMPLATE;
+      return template(p.max);
+    case "recipients":
+      return z
+        .string()
+        .max(400)
+        .refine((v) => parseRecipients(v) !== undefined, {
+          message: `up to ${MAX_RECIPIENTS} email addresses, separated by commas`,
+        });
+    case "name":
+      return z.string().refine(isSenderName, { message: "a short name, one line" });
     case "time":
       return z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "HH:mm");
     case "int":
@@ -186,6 +202,19 @@ export const STEPS: TypeSpec[] = [
     ],
     describe: (p) => `Notify “${p.title}”`,
   },
+  {
+    type: "email",
+    label: "Send an email",
+    // It can write to anyone, so an agent's flow with it waits for the owner.
+    sensitive: true,
+    params: [
+      { key: "to", label: "To", kind: "recipients", optional: true },
+      { key: "fromName", label: "From name", kind: "name", optional: true },
+      { key: "subject", label: "Subject", kind: "template" },
+      { key: "body", label: "Message", kind: "template", max: 4000, long: true },
+    ],
+    describe: (p) => `Email “${p.subject}” to ${typeof p.to === "string" && p.to ? p.to : "you"}`,
+  },
 ];
 
 const union = (specs: TypeSpec[]) =>
@@ -251,7 +280,8 @@ export type Step =
   | { type: "if"; all: Condition[] }
   | { type: "create"; collection: string; title: string; fields?: FieldValues }
   | { type: "update-trigger-item"; fields: FieldValues }
-  | { type: "notify"; title: string; body?: string; open: (typeof OPEN)[number] };
+  | { type: "notify"; title: string; body?: string; open: (typeof OPEN)[number] }
+  | { type: "email"; to?: string; fromName?: string; subject: string; body: string };
 export interface FlowDefinition {
   version: 1;
   trigger: Trigger;

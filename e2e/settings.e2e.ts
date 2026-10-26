@@ -35,6 +35,27 @@ test("Settings: five pages; the name and goal sync; Data exports a file and impo
     "3. Tasks",
   ]);
 
+  // Notifications: who emails go to and the name they come from; a bad address is refused.
+  await page.goto("/settings/notifications");
+  const to = page.getByLabel("Send emails to");
+  await to.fill("not an address");
+  await to.blur();
+  await expect(page.getByRole("alert")).toHaveText("Up to 5 email addresses, separated by commas.");
+  const kept = pushed("emailTo");
+  await to.fill("me@example.test, you@example.test");
+  await to.blur();
+  expect((await kept).ok()).toBe(true);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  const named = pushed("emailFromName");
+  await page.getByLabel("From name").fill("Alex");
+  await page.getByLabel("From name").blur();
+  expect((await named).ok()).toBe(true);
+  // Back to the server's defaults for the other specs.
+  await to.fill("");
+  await to.blur();
+  await page.getByLabel("From name").fill("");
+  await page.getByLabel("From name").blur();
+
   // Data: the export downloads; fed back in, it is compared first and changes nothing.
   await page.goto("/settings/data");
   await expect(

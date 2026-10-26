@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createEmailChannel, emailText } from "./email.ts";
+import { createEmailChannel, emailText, senderOf } from "./email.ts";
 import type { Message } from "./types.ts";
 
 const CONFIG = { apiKey: "re_secret", from: "Cave <cave@example.dev>", to: "alex@example.dev" };
@@ -86,4 +86,20 @@ test("a 429 waits retry-after and tries once more; a 5xx is a failed delivery", 
   const failed = setup([500]);
   expect(await failed.channel.send(message)).toEqual({ delivered: 0, failed: 1 });
   expect(failed.calls).toHaveLength(1);
+});
+
+test("a message's own recipients and sender name; a plain email carries no links", () => {
+  expect(senderOf("Cave <cave@mail.example.dev>", "Alex")).toBe("Alex <cave@mail.example.dev>");
+  expect(senderOf("cave@mail.example.dev", "Alex")).toBe("Alex <cave@mail.example.dev>");
+  expect(senderOf("Cave <cave@mail.example.dev>", undefined)).toBe("Cave <cave@mail.example.dev>");
+  const message = {
+    key: "k",
+    kind: "message" as const,
+    title: "Hi",
+    lines: ["Line one", "Line two"],
+    url: "https://cave.example.dev/",
+    actions: [],
+  };
+  expect(emailText({ ...message, email: { plain: true } })).toBe("Line one\nLine two");
+  expect(emailText(message)).toContain("Open: https://cave.example.dev/");
 });

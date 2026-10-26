@@ -7,6 +7,7 @@ export const LOOK: Record<string, { icon: string; color: string }> = {
   create: { icon: "square-plus", color: "var(--teal)" },
   "update-trigger-item": { icon: "pen-line", color: "var(--orange)" },
   notify: { icon: "bell", color: "var(--bad)" },
+  email: { icon: "mail", color: "var(--wait)" },
 };
 
 export const lookOf = (type: string) => LOOK[type] ?? { icon: "circle", color: "var(--muted)" };

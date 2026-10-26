@@ -74,7 +74,7 @@ describe("definition validation", () => {
     for (const def of bad) expect({ def, ok: parseDefinition(def).ok }).toEqual({ def, ok: false });
   });
 
-  test("a flow is sensitive when any step changes existing items", () => {
+  test("a flow is sensitive when any step changes existing items or emails", () => {
     const parsed = parseDefinition(rent);
     expect(parsed.ok && isSensitive(parsed.value)).toBe(false);
     expect(
@@ -84,7 +84,25 @@ describe("definition validation", () => {
         steps: [{ type: "update-trigger-item", fields: { category: "food" } }],
       }),
     ).toBe(true);
-    expect(STEPS.filter((s) => s.sensitive).map((s) => s.type)).toEqual(["update-trigger-item"]);
+    expect(STEPS.filter((s) => s.sensitive).map((s) => s.type)).toEqual([
+      "update-trigger-item",
+      "email",
+    ]);
+  });
+
+  test("an email step: up to 5 recipients, a one-line sender name, a long message", () => {
+    const def = (step: Record<string, unknown>) =>
+      parseDefinition({
+        version: 1,
+        trigger: { type: "schedule", every: "day", at: "09:00" },
+        steps: [{ type: "email", subject: "Hi", body: "x".repeat(3000), ...step }],
+      });
+    expect(def({}).ok).toBe(true);
+    expect(def({ to: "a@x.com, b@y.org", fromName: "Alex" }).ok).toBe(true);
+    expect(def({ to: "not an address" }).ok).toBe(false);
+    expect(def({ to: "a@x.com,b@x.com,c@x.com,d@x.com,e@x.com,f@x.com" }).ok).toBe(false);
+    expect(def({ fromName: "Evil <x@y.com>" }).ok).toBe(false);
+    expect(def({ body: "x".repeat(4001) }).ok).toBe(false);
   });
 
   test("the registry is the one source: every listed type has a schema branch", () => {

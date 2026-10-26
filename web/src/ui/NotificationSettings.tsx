@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   type ChannelId,
   type Detail,
+  isSenderName,
   type NotificationSettings,
   notificationSettings,
+  parseRecipients,
 } from "../../../shared/notifications.ts";
 import { useCave } from "../app/context.ts";
 import { ownerGet, ownerPost } from "../app/owner-api.ts";
@@ -143,6 +145,7 @@ export function NotificationChannels() {
               {link.bot ? `@${link.bot}` : "your bot"} within 10 minutes, then reload this page.
             </p>
           )}
+          <EmailIdentity config={config} save={save} />
           <div className="channel-row">
             <strong>Daily digest</strong>
             <span className="muted">
@@ -303,5 +306,57 @@ export function DeviceNotifications() {
       )}
       {note && <span className="muted">{note}</span>}
     </section>
+  );
+}
+
+/** Who every email goes to and the name it comes from, unless a flow's email names its own. */
+function EmailIdentity({
+  config,
+  save,
+}: {
+  config: NotificationSettings;
+  save(next: NotificationSettings): void;
+}) {
+  const [error, setError] = useState<string>();
+  const set = (key: "emailTo" | "emailFromName", raw: string) => {
+    const value = raw.trim();
+    const { [key]: _, ...rest } = config;
+    if (!value) {
+      setError(undefined);
+      return save(rest);
+    }
+    const ok = key === "emailTo" ? parseRecipients(value) !== undefined : isSenderName(value);
+    if (!ok)
+      return setError(
+        key === "emailTo" ? "Up to 5 email addresses, separated by commas." : "A short name.",
+      );
+    setError(undefined);
+    save({ ...rest, [key]: value });
+  };
+  return (
+    <div className="channel-row">
+      <strong>Email</strong>
+      <input
+        className="input"
+        aria-label="Send emails to"
+        placeholder="Your inbox (from the server)"
+        defaultValue={config.emailTo ?? ""}
+        onBlur={(e) => set("emailTo", e.target.value)}
+        style={{ flex: "1 1 220px" }}
+      />
+      <input
+        className="input"
+        aria-label="From name"
+        placeholder="Cave"
+        defaultValue={config.emailFromName ?? ""}
+        onBlur={(e) => set("emailFromName", e.target.value)}
+        style={{ flex: "0 1 160px" }}
+      />
+      {error && (
+        <span role="alert" className="error">
+          {error}
+        </span>
+      )}
+    </div>
   );
 }

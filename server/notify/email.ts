@@ -13,8 +13,20 @@ interface EmailOptions {
   log?: (line: string) => void;
 }
 
-/** Plain text: the title, the lines at full detail, then every link on its own line. */
+/** The verified address in `Name <address>` or a bare address. */
+const addressOf = (from: string) => /<([^>]+)>/.exec(from)?.[1] ?? from.trim();
+
+/** The sender: the server's verified address, under the message's own name when it has one. */
+export function senderOf(from: string, name: string | undefined): string {
+  return name ? `${name.trim()} <${addressOf(from)}>` : from;
+}
+
+/**
+ * Plain text: the title, the lines at full detail, then every link on its own line. A plain
+ * email (to someone else) is the message alone.
+ */
 export function emailText(message: Message): string {
+  if (message.email?.plain) return message.lines.join("\n");
   return [
     ...message.lines,
     ...(message.lines.length ? [""] : []),
@@ -50,8 +62,8 @@ export function createEmailChannel({
     async send(message): Promise<SendResult> {
       if (!config) return { delivered: 0, failed: 0 };
       const body = JSON.stringify({
-        from: config.from,
-        to: [config.to],
+        from: senderOf(config.from, message.email?.fromName),
+        to: message.email?.to ?? [config.to],
         subject: message.title,
         text: emailText(message),
       });

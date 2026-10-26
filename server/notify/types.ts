@@ -15,6 +15,15 @@ export interface Notification {
   /** Replaces an earlier notification with the same tag, e.g. `reminder:<id>`. */
   tag?: string;
   actions?: NotificationAction[];
+  /** An email's own recipients and sender name (a flow's Send an email); else the defaults. */
+  email?: EmailParts;
+}
+
+export interface EmailParts {
+  to?: string[];
+  fromName?: string;
+  /** Its text is the message alone: no links into the Cave, for someone else's inbox. */
+  plain?: boolean;
 }
 
 interface NotificationAction {
@@ -36,6 +45,7 @@ export interface Message {
   url: string;
   tag?: string;
   actions: { id: NotificationAction["id"]; label: string; url: string }[];
+  email?: EmailParts;
 }
 
 export interface SendResult {

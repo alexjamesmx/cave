@@ -1,3 +1,20 @@
+/** At most this many addresses in one "To". */
+export const MAX_RECIPIENTS = 5;
+const EMAIL_RE = /^[^\s@<>",;]+@[^\s@<>",;]+\.[^\s@<>",;]+$/;
+
+/** A comma-separated "To" as addresses; `undefined` when any part isn't one or there are too many. */
+export function parseRecipients(raw: string): string[] | undefined {
+  const all = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (all.length === 0 || all.length > MAX_RECIPIENTS) return undefined;
+  return all.every((a) => EMAIL_RE.test(a)) ? all : undefined;
+}
+
+/** A sender's display name: one short line with nothing that could break the header. */
+export const isSenderName = (raw: string) => /^[^\r\n<>"]{1,60}$/.test(raw.trim());
+
 /** Channels a notification can go through; each is a `NotificationChannel` on the server. */
 export const CHANNELS = ["webpush", "telegram", "discord", "email"] as const;
 export type ChannelId = (typeof CHANNELS)[number];
@@ -16,6 +33,10 @@ export interface NotificationSettings {
   telegramApprovals: boolean;
   /** `HH:MM` in the owner's zone for the daily digest email (M12 part 3); unset means none. */
   digest?: string;
+  /** Who every email goes to unless a flow names someone; unset means the server's inbox. */
+  emailTo?: string;
+  /** The name emails come from; the address stays the server's verified one. */
+  emailFromName?: string;
 }
 
 /**
@@ -49,10 +70,14 @@ export function notificationSettings(
     ]),
   ) as Record<ChannelId, Detail>;
   const digest = raw?.digest;
+  const to = typeof raw?.emailTo === "string" ? raw.emailTo.trim() : "";
+  const name = typeof raw?.emailFromName === "string" ? raw.emailFromName.trim() : "";
   return {
     channels,
     detail,
     telegramApprovals: raw?.telegramApprovals === true,
     ...(typeof digest === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(digest) ? { digest } : {}),
+    ...(to && parseRecipients(to) ? { emailTo: to } : {}),
+    ...(name && isSenderName(name) ? { emailFromName: name } : {}),
   };
 }

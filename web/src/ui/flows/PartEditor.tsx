@@ -198,7 +198,34 @@ function Param({ spec, value, onChange, collections, fields, tokens, valueField 
     case "template":
       return (
         <Row label={label}>
-          {(id) => <TemplateInput id={id} value={text} tokens={tokens} onChange={onChange} />}
+          {(id) => (
+            <TemplateInput
+              id={id}
+              value={text}
+              tokens={tokens}
+              onChange={onChange}
+              long={spec.long === true}
+            />
+          )}
+        </Row>
+      );
+    case "recipients":
+    case "name":
+      return (
+        <Row label={label}>
+          {(id) => (
+            <input
+              id={id}
+              className="input"
+              placeholder={
+                spec.kind === "recipients"
+                  ? "You (Settings → Notifications), or a@x.com, b@y.com"
+                  : "Cave"
+              }
+              value={text}
+              onChange={(e) => onChange(e.target.value || undefined)}
+            />
+          )}
         </Row>
       );
     case "time":
@@ -350,23 +377,37 @@ function TemplateInput({
   tokens,
   onChange,
   label,
+  long = false,
 }: {
   id?: string;
   value: string;
   tokens: string[];
   onChange(value: string): void;
   label?: string;
+  long?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", gap: 6 }}>
-      <input
-        id={id}
-        aria-label={label}
-        className="input"
-        style={{ flex: 1 }}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
+    <div style={{ display: "flex", gap: 6, alignItems: "start" }}>
+      {long ? (
+        <textarea
+          id={id}
+          aria-label={label}
+          className="input"
+          rows={6}
+          style={{ flex: 1, height: "auto", resize: "vertical" }}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : (
+        <input
+          id={id}
+          aria-label={label}
+          className="input"
+          style={{ flex: 1 }}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
       <select
         className="input"
         aria-label="Insert a value"

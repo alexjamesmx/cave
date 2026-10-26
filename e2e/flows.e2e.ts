@@ -110,6 +110,20 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(editor.getByLabel("Type")).toHaveValue("notify");
   await editor.getByRole("button", { name: "Remove step" }).click();
   await expect(canvas.getByRole("button", { name: /Step 2/ })).toHaveCount(0);
+
+  // Send an email: who to, the sender's name, subject and message; it needs approval if an
+  // agent makes it.
+  await canvas.getByRole("button", { name: "Add a step" }).click();
+  await editor.getByRole("menuitem", { name: "Send an email" }).click();
+  await editor.getByLabel("To").fill("friend@example.test");
+  await editor.getByLabel("From name").fill("Alex");
+  await editor.getByLabel("Subject").fill("New idea: {{item.title}}");
+  await editor.getByLabel("Message").fill("Look at this one.\nMore tomorrow.");
+  const mail = canvas.getByRole("button", { name: /Step 2 · Send an email/ });
+  await expect(mail).toContainText("Email “New idea: {{item.title}}” to friend@example.test");
+  await expect(mail).toContainText("needs approval");
+  await editor.getByRole("button", { name: "Remove step" }).click();
+  await expect(canvas.getByRole("button", { name: /Step 2/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Turn on" }).click();

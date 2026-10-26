@@ -32,6 +32,8 @@ export function blankPart(
       return { type, fields: {} };
     case "notify":
       return { type, title: "Cave", open: kind === "step" ? "trigger-item" : "calendar" };
+    case "email":
+      return { type, subject: "From the Cave", body: "" };
     default:
       throw new Error(`unknown ${kind} type ${type}`);
   }

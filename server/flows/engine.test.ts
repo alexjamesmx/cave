@@ -19,15 +19,19 @@ const NOW = Date.parse("2026-10-15T16:00:00Z");
 
 let store: Store;
 let engine: FlowEngine;
-let notified: Notification[];
+let notified: { n: Notification; only: string[] | undefined }[];
 let ready: boolean;
+let emailReady: boolean;
 let clock: number;
 let tick = 1;
 
 const notifier: Notifier = {
-  statuses: () => [{ id: "webpush", label: "Web Push", status: { ready, summary: "" } }],
-  async notify(n) {
-    notified.push(n);
+  statuses: () => [
+    { id: "webpush", label: "Web Push", status: { ready, summary: "" } },
+    { id: "email", label: "Email", status: { ready: emailReady, summary: "" } },
+  ],
+  async notify(n, only) {
+    notified.push({ n, only });
     return { delivered: 1, failed: 0 };
   },
 };
@@ -38,6 +42,7 @@ beforeEach(() => {
   store.seedIfEmpty(seedDocs(), 1);
   notified = [];
   ready = true;
+  emailReady = true;
   clock = NOW;
   engine = createFlowEngine({
     store,
@@ -158,7 +163,9 @@ test("a schedule runs its slot once, after it was turned on, and records a late 
   expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
   expect(await engine.job.run({ now: NOW + 30_000 })).toMatchObject({ didSomething: false });
   expect(tasks().map((t) => [t.data._title, t.data.priority])).toEqual([["Pay rent", "high"]]);
-  expect(notified).toMatchObject([{ kind: "message", title: "Pay rent", path: "/c/tasks" }]);
+  expect(notified.map((x) => x.n)).toMatchObject([
+    { kind: "message", title: "Pay rent", path: "/c/tasks" },
+  ]);
 
   flow("f-late", rent, Date.parse("2026-10-01T12:00:00Z"));
   expect(await engine.job.run({ now: NOW + 7 * 3600_000 })).toMatchObject({
@@ -174,6 +181,7 @@ test("turning a flow on after today's slot waits for the next one", async () => 
 
 test("notify is skipped when no channel is ready, and more than 3 notifications fail the run", async () => {
   ready = false;
+  emailReady = false;
   flow("f-rent", rent, Date.parse("2026-10-01T12:00:00Z"));
   await engine.job.run({ now: NOW });
   expect(notified).toHaveLength(0);
@@ -249,4 +257,50 @@ test("run keys survive a restart: a slot or change that ran never runs again", a
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("an email step sends through email only, to its own recipients as a plain message; a test run sends nothing", async () => {
+  const mail: FlowDefinition = {
+    version: 1,
+    trigger: { type: "item-added", collection: "tasks" },
+    steps: [
+      {
+        type: "email",
+        to: "a@x.com, b@y.org",
+        fromName: "Alex",
+        subject: "New: {{item.title}}",
+        body: "Line one\nLine two",
+      },
+    ],
+  };
+  flow("f-mail", mail);
+  write("t1", "tasks", { _title: "Ship" });
+  await engine.settled();
+  expect(notified).toHaveLength(1);
+  expect(notified[0]?.only).toEqual(["email"]);
+  expect(notified[0]?.n).toMatchObject({
+    title: "New: Ship",
+    details: ["Line one", "Line two"],
+    email: { to: ["a@x.com", "b@y.org"], fromName: "Alex", plain: true },
+  });
+  expect(engine.runs("f-mail")[0]?.steps[0]?.outcome).toBe(
+    "emailed a@x.com, b@y.org: 1 delivered, 0 failed",
+  );
+
+  // Without a "To" it goes to the owner, with the Cave's links.
+  write("f-mine", "flows", {
+    _title: "m",
+    status: "draft",
+    definition: { ...mail, steps: [{ type: "email", subject: "Hi", body: "x" }] },
+  });
+  expect(await engine.dryRun("f-mine")).toEqual({
+    result: "ok",
+    steps: [{ step: 0, type: "email", outcome: "would email “Hi” to you" }],
+  });
+  expect(notified).toHaveLength(1);
+
+  emailReady = false;
+  expect(await engine.dryRun("f-mine")).toMatchObject({
+    steps: [{ outcome: "email skipped: email not set up" }],
+  });
 });

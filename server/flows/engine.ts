@@ -7,6 +7,7 @@ import { latestSlot } from "../../shared/flows/schedule.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import { renderTemplate, type TemplateContext } from "../../shared/flows/templates.ts";
 import { parseStamp } from "../../shared/hlc.ts";
+import { parseRecipients } from "../../shared/notifications.ts";
 import type { Zone } from "../../shared/reminders.ts";
 import type { Doc } from "../../shared/types.ts";
 import { every, type Job } from "../jobs/scheduler.ts";
@@ -209,6 +210,42 @@ export function createFlowEngine({
             step: i,
             type: step.type,
             outcome: `notified: ${sent.delivered} delivered, ${sent.failed} failed`,
+          });
+          break;
+        }
+        case "email": {
+          if (++notes > MAX_NOTIFICATIONS)
+            return fail(i, step.type, `more than ${MAX_NOTIFICATIONS} notifications`);
+          const subject = renderTemplate(step.subject, ctx);
+          const to = step.to ? parseRecipients(step.to) : undefined;
+          const who = to ? to.join(", ") : "you";
+          const ready = notifier.statuses().find((s) => s.id === "email")?.status.ready === true;
+          if (!ready) {
+            steps.push({ step: i, type: step.type, outcome: "email skipped: email not set up" });
+            break;
+          }
+          if (dryRun) {
+            steps.push({ step: i, type: step.type, outcome: `would email “${subject}” to ${who}` });
+            break;
+          }
+          const sent = await notifier.notify(
+            {
+              key: `${key}:email:${i}`,
+              kind: "message",
+              title: subject,
+              details: renderTemplate(step.body, ctx).split("\n"),
+              path: "/",
+              email: {
+                ...(to ? { to, plain: true } : {}),
+                ...(step.fromName ? { fromName: step.fromName } : {}),
+              },
+            },
+            ["email"],
+          );
+          steps.push({
+            step: i,
+            type: step.type,
+            outcome: `emailed ${who}: ${sent.delivered} delivered, ${sent.failed} failed`,
           });
           break;
         }
