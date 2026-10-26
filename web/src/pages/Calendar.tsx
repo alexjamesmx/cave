@@ -1,7 +1,6 @@
-import { type CSSProperties, type FormEvent, useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../../../shared/dates.ts";
 import { FLOWS } from "../../../shared/flows/seed.ts";
-import { newId } from "../../../shared/ids.ts";
 import { PAYMENTS } from "../../../shared/payments.ts";
 import { zonedInstant } from "../../../shared/reminders.ts";
 import { useCave } from "../app/context.ts";
@@ -22,6 +21,7 @@ import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { ReminderActions } from "../ui/ReminderActions.tsx";
+import { ReminderSheet } from "../ui/ReminderForm.tsx";
 import { RoutineToday } from "../ui/RoutineToday.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
@@ -69,7 +69,9 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
   const zone = useReminderZone();
   const [month, setMonth] = useFollowing(monthOf(today));
   const [open, setOpen] = useState<{ id: string; collection: string }>();
-  const [adding, setAdding] = useState<string>();
+  // A reminder in the sheet: a new one on a day, or an existing one by id.
+  const [reminder, setReminder] = useState<{ day?: string; id?: string }>();
+  const reminders = useItems(db, "reminders");
 
   const color = (collection: string) =>
     collections?.find((c) => c.id === collection)?.data.color ?? "var(--muted)";
@@ -94,7 +96,10 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
   const show = (e: CalendarEvent) =>
     e.collection === FLOWS
       ? navigate(flowPath(e.itemId))
-      : setOpen({ id: e.itemId, collection: e.collection });
+      : e.collection === "reminders"
+        ? setReminder({ id: e.itemId })
+        : setOpen({ id: e.itemId, collection: e.collection });
+  const editing = reminder?.id ? reminders?.find((r) => r.id === reminder.id) : undefined;
 
   return (
     <>
@@ -136,7 +141,7 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
                       type="button"
                       className="day-add num muted"
                       aria-label={`New reminder on ${shortDay(day)}`}
-                      onClick={() => setAdding(day)}
+                      onClick={() => setReminder({ day })}
                     >
                       {Number(day.slice(8))}
                     </button>
@@ -160,12 +165,27 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
                 ),
               )}
             </div>
-            {adding && <NewReminder day={adding} onDone={() => setAdding(undefined)} />}
           </section>
         )}
         {mode === "agenda" && <RoutineToday />}
-        {agenda && <Agenda events={agenda} today={today} color={color} open={show} />}
+        {agenda && (
+          <Agenda
+            events={agenda}
+            today={today}
+            color={color}
+            open={show}
+            onNew={() => setReminder({ day: today })}
+          />
+        )}
       </div>
+      {reminder && (!reminder.id || editing) && (
+        <ReminderSheet
+          key={reminder.id ?? reminder.day}
+          doc={editing}
+          day={reminder.day}
+          onClose={() => setReminder(undefined)}
+        />
+      )}
       {open && openCollection && (
         <ItemDrawer
           key={open.id}
@@ -183,11 +203,13 @@ function Agenda({
   today,
   color,
   open,
+  onNew,
 }: {
   events: CalendarEvent[];
   today: string;
   color(collection: string): string;
   open(event: CalendarEvent): void;
+  onNew(): void;
 }) {
   const { db } = useCave().local;
   const reminders = useItems(db, "reminders");
@@ -219,7 +241,12 @@ function Agenda({
       aria-label="Agenda"
       style={{ padding: 16, display: "grid", gap: 12 }}
     >
-      <h2 style={{ margin: 0, fontSize: 18 }}>Next {AGENDA_DAYS} days</h2>
+      <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>Next {AGENDA_DAYS} days</h2>
+        <button type="button" className="btn primary" onClick={onNew}>
+          <Icon name="plus" size={15} /> New reminder
+        </button>
+      </header>
       {overdue.length > 0 && (
         <div>
           <span className="k error">Overdue</span>
@@ -234,54 +261,5 @@ function Agenda({
       ))}
       {events.length === 0 && <span className="muted">Nothing due in the next two weeks.</span>}
     </section>
-  );
-}
-
-function NewReminder({ day, onDone }: { day: string; onDone(): void }) {
-  const { local } = useCave();
-  const zone = useReminderZone();
-  const [title, setTitle] = useState("");
-  const [time, setTime] = useState(zone.defaultTime);
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    await local.write(
-      { id: newId(), kind: "item", collection: "reminders" },
-      { _title: title.trim(), due: time ? `${day}T${time}` : day, repeat: "none", done: false },
-    );
-    onDone();
-  };
-
-  return (
-    <form
-      className="new-reminder"
-      onSubmit={submit}
-      aria-label={`New reminder on ${shortDay(day)}`}
-    >
-      <span className="k">New reminder · {shortDay(day)}</span>
-      <input
-        className="input"
-        placeholder="Remind me to…"
-        aria-label="Reminder"
-        // biome-ignore lint/a11y/noAutofocus: the form opens from a click on the day
-        autoFocus
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <input
-        className="input"
-        type="time"
-        aria-label="Time"
-        value={time}
-        onChange={(e) => setTime(e.target.value)}
-      />
-      <button type="submit" className="btn primary" disabled={!title.trim()}>
-        Add
-      </button>
-      <button type="button" className="btn" onClick={onDone} aria-label="Cancel">
-        <Icon name="x" size={15} />
-      </button>
-    </form>
   );
 }

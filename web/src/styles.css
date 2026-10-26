@@ -761,21 +761,6 @@ textarea.input {
   font-size: 12px;
   width: auto;
 }
-.new-reminder {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
-}
-.new-reminder .k {
-  width: 100%;
-}
-.new-reminder .input:first-of-type {
-  flex: 1;
-  min-width: 160px;
-}
 .due-card {
   padding: 16px 18px;
   display: grid;
@@ -1116,6 +1101,20 @@ textarea.input {
   gap: 6px;
   flex: 1 1 180px;
   min-width: 0;
+}
+
+.sheet .quick-form {
+  padding: 0;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.danger-text {
+  color: var(--bad);
 }
 
 /* The money form's category grid (M7b part 5). */

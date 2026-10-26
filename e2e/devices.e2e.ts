@@ -1,4 +1,4 @@
-import { fillReminder, offOriginRequests, ownerContext } from "./helpers.ts";
+import { addReminder, offOriginRequests, ownerContext, wallIn } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("Devices & server renders each sub-section with a reminder and a job run; Agents and Flows → Runs hold what System had", async ({
@@ -11,9 +11,7 @@ test("Devices & server renders each sub-section with a reminder and a job run; A
 
   // A reminder for the schedule, and the seeded rent flow turned on for a flow slot.
   await page.goto("/");
-  const form = await fillReminder(page, "system check", "tomorrow 9am");
-  await form.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved · Reminder" })).toBeVisible();
+  await addReminder(page, { title: "system check", date: wallIn(24 * 60).date, time: "09:00" });
   await page.goto("/flows/flow-rent");
   await page.getByRole("button", { name: "Turn on" }).click();
   await expect(page.getByText("ON", { exact: true })).toBeVisible();

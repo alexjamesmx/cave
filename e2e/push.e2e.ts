@@ -1,6 +1,6 @@
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import type { AddressInfo } from "node:net";
-import { fillReminder, ownerContext } from "./helpers.ts";
+import { addReminder, ownerContext, wallIn } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 // A local stand-in for a push service: under CAVE_ENV=test it must receive nothing.
@@ -71,11 +71,7 @@ test("CAVE_ENV=test: a reminder due in a minute lands in the outbox and never re
     await expect(page.getByText("E2E · Browser")).toBeVisible();
 
     await page.goto("/");
-    const form = await fillReminder(page, "Push check", "in 1 min");
-    await form.getByRole("button", { name: "Save" }).click();
-    await expect(
-      page.getByRole("status").filter({ hasText: "Saved · Reminder · Push check" }),
-    ).toBeVisible();
+    await addReminder(page, { title: "Push check", ...wallIn(1) });
 
     // The outbox row is written where a send would happen: same sweep, same key.
     const outbox = () =>

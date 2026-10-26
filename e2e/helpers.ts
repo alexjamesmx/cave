@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import type { Browser, BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
-import { violations } from "./test.ts";
+import { expect, violations } from "./test.ts";
 
 /** The e2e server's token, set by `playwright.config.ts`. */
 export const E2E_TOKEN = process.env.CAVE_E2E_TOKEN as string;
@@ -76,14 +76,46 @@ export async function openNew(page: Page) {
   return sheet;
 }
 
-/** Ask → Reminder: title and plain-language "When"; returns the form for its preview. */
-export async function fillReminder(page: Page, title: string, when: string) {
+/** The e2e database's timezone (seeded), for a reminder's wall-clock date and time. */
+export const SEED_ZONE = "America/Mexico_City";
+
+/** A wall-clock date and time `minutes` from `now` in the seeded timezone. */
+export function wallIn(minutes: number, now = new Date()): { date: string; time: string } {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: SEED_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(now.getTime() + minutes * 60_000))
+      .map((p) => [p.type, p.value]),
+  );
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
+  };
+}
+
+/** New → Reminder: title, date, time and repeat as given, then Save. */
+export async function addReminder(
+  page: Page,
+  r: { title: string; date?: string; time?: string; repeat?: string },
+) {
   const sheet = await openNew(page);
+  await sheet.getByRole("button", { name: "Reminder", exact: true }).click();
   const form = sheet.getByRole("form", { name: "Reminder" });
-  if ((await form.count()) === 0) await sheet.getByRole("button", { name: "Reminder" }).click();
-  await form.getByLabel("Title").fill(title);
-  await form.getByLabel("When").fill(when);
-  return form;
+  await form.getByLabel("Title").fill(r.title);
+  if (r.date) await form.getByLabel("Date").fill(r.date);
+  if (r.time !== undefined) await form.getByLabel("Time").fill(r.time);
+  if (r.repeat) await form.getByLabel("Repeat").selectOption({ label: r.repeat });
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: `Saved · Reminder · ${r.title}` }),
+  ).toBeVisible();
 }
 
 /**

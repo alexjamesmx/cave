@@ -9,7 +9,8 @@ import { Icon } from "./icon.tsx";
 import { MoneyForm } from "./MoneyForm.tsx";
 import { NoteForm } from "./NoteForm.tsx";
 import { PaymentForm } from "./PaymentForm.tsx";
-import { ReminderForm, TaskForm } from "./QuickForms.tsx";
+import { TaskForm } from "./QuickForms.tsx";
+import { ReminderForm } from "./ReminderForm.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
@@ -83,9 +84,7 @@ export function NewSheet() {
           {collections && quick === "task" && <TaskForm collections={collections} onDone={done} />}
           {quick === "payment" && <PaymentForm onSaved={done} />}
           {quick === "note" && <NoteForm onDone={done} />}
-          {collections && quick === "reminder" && (
-            <ReminderForm collections={collections} onDone={done} />
-          )}
+          {quick === "reminder" && <ReminderForm onDone={done} />}
         </Sheet>
       )}
       {saved && (

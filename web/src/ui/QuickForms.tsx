@@ -2,10 +2,7 @@ import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
 import { REPEATS } from "../../../shared/recurrence.ts";
-import { preview, type WhenContext } from "../../../shared/when.ts";
 import { useCave } from "../app/context.ts";
-import { useNow, useReminderZone } from "../app/hooks.ts";
-import { parseWhen } from "../logic/when-field.ts";
 import type { CollectionDoc } from "../store/queries.ts";
 
 interface FormProps {
@@ -132,73 +129,6 @@ export function TaskForm({ onDone }: FormProps) {
         </span>
       )}
       <button type="submit" className="btn primary" disabled={!title.trim()}>
-        Save
-      </button>
-    </Shell>
-  );
-}
-
-export function ReminderForm({ onDone }: FormProps) {
-  const { write, error } = useWrite();
-  const zone = useReminderZone();
-  const minute = useNow();
-  const [title, setTitle] = useState("");
-  const [when, setWhen] = useState("");
-  const ctx = (now: Date): WhenContext => ({
-    now,
-    timeZone: zone.timeZone,
-    reminderTime: zone.defaultTime,
-  });
-  const parsed = parseWhen(when, ctx(minute));
-  const shown = parsed.ok
-    ? preview({ ...parsed, title: title.trim() || "…" }, ctx(minute))
-    : when.trim()
-      ? parsed.hint
-      : "";
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    const now = parseWhen(when, ctx(new Date()));
-    if (!title.trim() || !now.ok) return;
-    const saved = await write("reminders", {
-      _title: title.trim(),
-      due: now.due,
-      repeat: now.repeat,
-      done: false,
-    });
-    if (saved) onDone(`Saved · ${preview({ ...now, title: title.trim() }, ctx(new Date()))}`);
-  };
-
-  return (
-    <Shell label="Reminder" error={error} onSubmit={(e) => void submit(e)}>
-      <div className="quick-row">
-        <Field label="Title">
-          {(id) => (
-            <input
-              id={id}
-              className="input"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="When">
-          {(id) => (
-            <input
-              id={id}
-              className="input"
-              placeholder="tomorrow 9am · cada mes 22 9:00"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-            />
-          )}
-        </Field>
-      </div>
-      <p className="muted" aria-live="polite" style={{ margin: 0, minHeight: 20 }}>
-        {shown}
-      </p>
-      <button type="submit" className="btn primary" disabled={!title.trim() || !parsed.ok}>
         Save
       </button>
     </Shell>
