@@ -54,8 +54,8 @@ export async function addMoney(
     yesterday?: boolean;
   },
 ) {
-  const sheet = await openAsk(page);
-  await sheet.getByRole("button", { name: "Expense" }).click();
+  const sheet = await openNew(page);
+  await sheet.getByRole("button", { name: "Money", exact: true }).click();
   const form = sheet.getByRole("form", { name: /Expense|Income/ });
   if (entry.income) await form.getByRole("button", { name: "Income", exact: true }).click();
   await form.getByLabel("Amount").fill(String(entry.amount));
@@ -68,17 +68,17 @@ export async function addMoney(
   await form.getByRole("button", { name: "Save" }).click();
 }
 
-/** Opens the Ask sheet (the rail.s or the dock.s Ask), unless it is already open. */
-export async function openAsk(page: Page) {
-  const sheet = page.getByRole("dialog", { name: "Ask" });
+/** Opens the New sheet (the rail's or the dock's New), unless it is already open. */
+export async function openNew(page: Page) {
+  const sheet = page.getByRole("dialog", { name: "New" });
   if ((await sheet.count()) === 0)
-    await page.getByRole("button", { name: "Ask", exact: true }).first().click();
+    await page.getByRole("button", { name: "New", exact: true }).first().click();
   return sheet;
 }
 
 /** Ask → Reminder: title and plain-language "When"; returns the form for its preview. */
 export async function fillReminder(page: Page, title: string, when: string) {
-  const sheet = await openAsk(page);
+  const sheet = await openNew(page);
   const form = sheet.getByRole("form", { name: "Reminder" });
   if ((await form.count()) === 0) await sheet.getByRole("button", { name: "Reminder" }).click();
   await form.getByLabel("Title").fill(title);

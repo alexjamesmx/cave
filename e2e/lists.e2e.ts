@@ -1,4 +1,4 @@
-import { openAsk, ownerContext } from "./helpers.ts";
+import { openNew, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("Money → Categories & accounts: rename, emoji, colour, reorder, archive and restore; payments share the lists", async ({
@@ -64,8 +64,8 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   // none, so it is then the only live one: the payment form takes it without a picker.
   const account = `E2E bank ${Date.now()}`;
   await page.goto("/");
-  await openAsk(page);
-  await page.getByRole("button", { name: "Expense" }).click();
+  await openNew(page);
+  await page.getByRole("button", { name: "Money", exact: true }).click();
   const form = page.getByRole("form", { name: /Expense/ });
   await form.getByLabel("Amount").fill("10");
   await form.getByLabel("Title").fill("Lists e2e");
@@ -73,7 +73,7 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   await form.getByLabel("New account").fill(account);
   await form.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Lists e2e" })).toBeVisible();
-  await openAsk(page);
+  await openNew(page);
   await page.getByRole("button", { name: "Payment", exact: true }).click();
   const pay = page.getByRole("form", { name: "Payment" });
   await expect(pay.getByLabel("Title")).toBeVisible();

@@ -27,7 +27,7 @@ export async function createNote(
 }
 
 /**
- * The Ask sheet's Note form: a title, Markdown, and a project when it has one (a page of that
+ * The New sheet's Note form: a title, Markdown, and a project when it has one (a page of that
  * project); without one it is a note in Notes.
  */
 export function NoteForm({ onDone }: { onDone(message: string): void }) {

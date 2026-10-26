@@ -28,7 +28,7 @@ Pre-v0.1: M1 to M12 are on `main` and live at `https://cave.alexjamesmx.dev`; a 
 - Agents only through `/mcp` or the HTTP API, never the database file.
 - Owner keeps the data: SQLite, full JSON export.
 - Nothing hard-deleted; every change names its actor and can be undone. Exception: runs trimmed to 500 (`docs/decisions.md`).
-- Not an AI tool: the Cave runs no model. Ask opens Claude (`web/src/logic/ask-claude.ts`).
+- Not an AI tool: the Cave runs no model and has no chat. Agents come in through MCP; the UI is forms.
 
 ## Stack
 

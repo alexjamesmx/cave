@@ -3,7 +3,6 @@ import { fieldsOf } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
 import { STATE_TOKEN, summarize, summaryLine } from "../../../shared/project-status.ts";
 import {
-  ideaPrompt,
   linkedTo,
   newProjectWrites,
   PARTS,
@@ -16,7 +15,6 @@ import { useCave } from "../app/context.ts";
 import { useNow, useToday } from "../app/hooks.ts";
 import { useWriteError } from "../app/project-actions.ts";
 import { navigate, projectPath, setSearch, useSearch } from "../app/router.ts";
-import { askClaude, browserAsk } from "../logic/ask-claude.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { titleOf } from "../logic/views.ts";
 import { useAllItems, useCollections, useDoc, useItems } from "../store/queries.ts";
@@ -308,7 +306,6 @@ function IdeaRow({
     const writes = promoteIdeaWrites(idea, template, templatesOf(settings?.data), () => newId());
     if (await write.run(writes)) navigate(projectPath((writes[0] as { id: string }).id));
   };
-  const start = () => askClaude(ideaPrompt(idea), browserAsk);
 
   return (
     <li
@@ -331,14 +328,9 @@ function IdeaRow({
             Project
           </a>
         ) : (
-          <>
-            <button type="button" className="btn" onClick={() => setPromoting((v) => !v)}>
-              Promote to project
-            </button>
-            <button type="button" className="btn" onClick={() => void start()}>
-              <Icon name="sparkles" size={15} /> Start with Claude
-            </button>
-          </>
+          <button type="button" className="btn" onClick={() => setPromoting((v) => !v)}>
+            Promote to project
+          </button>
         )}
       </div>
       {promoting && !project && (

@@ -1,4 +1,4 @@
-import { addMoney, openAsk, ownerContext, pushed } from "./helpers.ts";
+import { addMoney, openNew, ownerContext, pushed } from "./helpers.ts";
 import { expect, type Locator, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
@@ -32,7 +32,7 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
   await page.goto("/");
 
   // A payment due tomorrow (Calendar, Money → Payments), a task and an expense.
-  await openAsk(page);
+  await openNew(page);
   await page.getByRole("button", { name: "Payment", exact: true }).click();
   const pay = page.getByRole("form", { name: "Payment" });
   await pay.getByLabel("Title").fill("Rows e2e bill");
@@ -41,7 +41,7 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
   await pay.getByLabel("Due").fill(await localAt(page, 1));
   await pay.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Saved · Payment" })).toBeVisible();
-  await openAsk(page);
+  await openNew(page);
   await page.getByRole("button", { name: "Task", exact: true }).click();
   const task = page.getByRole("form", { name: "Task" });
   await task.getByLabel("Title").fill("Rows e2e task");

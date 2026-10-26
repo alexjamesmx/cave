@@ -1,7 +1,7 @@
-import { openAsk, ownerContext } from "./helpers.ts";
+import { openNew, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Notes: a new note with a topic, Markdown and a diagram; the gallery groups by topic, search and the table find it; an Ask note lands here; Delete", async ({
+test("Notes: a new note with a topic, Markdown and a diagram; the gallery groups by topic, search and the table find it; a note from New lands here; Delete", async ({
   browser,
 }) => {
   const page = await (
@@ -64,8 +64,8 @@ test("Notes: a new note with a topic, Markdown and a diagram; the gallery groups
   await expect(table.getByRole("columnheader", { name: new RegExp(topic) })).toBeVisible();
   await expect(table.getByRole("link", { name: title })).toBeVisible();
 
-  // A note from the Ask sheet with no project is a note here.
-  await openAsk(page);
+  // A note from the New sheet with no project is a note here.
+  await openNew(page);
   await page.getByRole("button", { name: "Note", exact: true }).click();
   const form = page.getByRole("form", { name: "Note" });
   await form.getByLabel("Title").fill(`Quick ${stamp}`);

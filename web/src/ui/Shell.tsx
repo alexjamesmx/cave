@@ -1,16 +1,16 @@
 import { type ReactNode, useState } from "react";
-import { openAsk } from "../app/ask.ts";
+import { openNew } from "../app/quick.ts";
 import { railWide, setRailWide } from "../app/rail.ts";
 import type { Route } from "../app/router.ts";
 import { SECTIONS, type Section } from "../app/sections.ts";
-import { AskSheet } from "./AskSheet.tsx";
 import { Dock } from "./Dock.tsx";
 import { EnvBadge } from "./EnvBadge.tsx";
 import { Icon } from "./icon.tsx";
+import { NewSheet } from "./NewSheet.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
 /**
- * The rail (M11): the mark, Ask, one icon per section from the registry with Settings at the
+ * The rail (M11): the mark, New, one icon per section from the registry with Settings at the
  * bottom, then the sync state. Show names (M12) widens it to icons with labels, per device. Each link keeps its label for assistive tech and shows it
  * beside the icon on hover or focus; the dock reads the same registry on a phone.
  */
@@ -41,12 +41,12 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </a>
         <button
           type="button"
-          className="rail-ask"
-          aria-label="Ask"
-          data-label="Ask · ⌘K"
-          onClick={() => openAsk()}
+          className="rail-new"
+          aria-label="New"
+          data-label="New · ⌘K"
+          onClick={() => openNew()}
         >
-          <Icon name="message-circle" size={18} />
+          <Icon name="plus" size={18} />
         </button>
         <nav aria-label="Main" className="rail-nav">
           {SECTIONS.filter((s) => s.id !== "settings").map(link)}
@@ -74,7 +74,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         </div>
       </main>
       <Dock />
-      <AskSheet />
+      <NewSheet />
       <EnvBadge />
     </div>
   );

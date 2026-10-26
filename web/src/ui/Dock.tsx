@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { openAsk } from "../app/ask.ts";
 import { useCave } from "../app/context.ts";
+import { openNew } from "../app/quick.ts";
 import { usePathname } from "../app/router.ts";
 import { DOCK_SIZE, dockOf, SECTIONS, type Section, sectionOf } from "../app/sections.ts";
 import { useDoc } from "../store/queries.ts";
@@ -10,7 +10,7 @@ import { Sheet } from "./Sheet.tsx";
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 type Panel = "more" | "edit" | undefined;
 
-/** The phone's navigation (CSS shows it under 768 px): four sections and a raised Ask. */
+/** The phone's navigation (CSS shows it under 768 px): four sections and a raised New. */
 export function Dock() {
   const { local } = useCave();
   const settings = useDoc(local.db, "settings");
@@ -39,8 +39,8 @@ export function Dock() {
     <>
       <nav aria-label="Dock" className="dock">
         {dock.slice(0, 2).map(link)}
-        <button type="button" className="dock-ask" aria-label="Ask" onClick={() => openAsk()}>
-          <Icon name="message-circle" size={24} strokeWidth={2.2} />
+        <button type="button" className="dock-new" aria-label="New" onClick={() => openNew()}>
+          <Icon name="plus" size={26} strokeWidth={2.2} />
         </button>
         {dock.slice(2).map(link)}
         <button

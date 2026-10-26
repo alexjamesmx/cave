@@ -296,16 +296,3 @@ export function promoteIdeaWrites(
 /** Items of one collection linked to a project. */
 export const linkedTo = (items: Doc[], project: string) =>
   items.filter((d) => d.data._deleted !== true && d.data.project === project);
-
-/** What Claude is asked about a project; ids let an agent call `get_project`. */
-export function projectPrompt(project: Doc, question: string): string {
-  const title = String(project.data._title ?? "Untitled");
-  return `About my Cave project "${title}" (id ${project.id}; call get_project for its parts, tasks and items): ${question}`;
-}
-
-/** What Claude is asked to start an idea. */
-export function ideaPrompt(idea: Doc): string {
-  const title = String(idea.data._title ?? "Untitled");
-  const body = typeof idea.data._body === "string" ? idea.data._body.trim() : "";
-  return `Help me start my idea "${title}" (Cave item ${idea.id})${body ? `:\n\n${body}\n\n` : ". "}Suggest a goal, the first parts and the first three tasks.`;
-}

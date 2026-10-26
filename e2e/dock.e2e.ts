@@ -5,14 +5,10 @@ const PHONE = { width: 390, height: 844 };
 const ALL = ["Money", "Calendar", "Flows", "Projects", "Notes", "Tasks", "Settings"];
 const DEFAULT = ["Projects", "Money", "Tasks", "Calendar"];
 
-test("the phone dock: four sections and Ask, More with every section, and an edited dock that syncs", async ({
+test("the phone dock: four sections and New, More with every section, and an edited dock that syncs", async ({
   browser,
 }) => {
   const context = await ownerContext(browser, { viewport: PHONE });
-  // Ask opens Claude; answer locally so nothing leaves the machine.
-  await context.route("https://claude.ai/**", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: "<title>Claude</title>" }),
-  );
   const page = await context.newPage();
   await page.goto("/c/money");
 
@@ -30,20 +26,12 @@ test("the phone dock: four sections and Ask, More with every section, and an edi
     .evaluate((el) => Number.parseFloat(getComputedStyle(el).paddingBottom));
   expect(padding).toBeGreaterThanOrEqual(100);
 
-  // Ask: the same sheet as the rail's, from any screen; it opens Claude with the question.
-  await dock.getByRole("button", { name: "Ask" }).click();
-  const ask = page.getByRole("dialog", { name: "Ask" });
-  await expect(ask.getByText("Opens in Claude")).toBeVisible();
-  await ask.getByLabel("Ask or tell the Cave").fill("How much did I spend this week?");
-  const popup = context.waitForEvent("page");
-  await ask.getByRole("button", { name: "Ask", exact: true }).click();
-  const claude = await popup;
-  const q = new URL(claude.url()).searchParams.get("q") ?? "";
-  expect(claude.url()).toMatch(/^https:\/\/claude\.ai\/new\?q=/);
-  expect(q).toContain("cave connector");
-  expect(q).toContain("How much did I spend this week?");
-  await claude.close();
-  await expect(ask).toHaveCount(0);
+  // New: the same sheet as the rail's, from any screen.
+  await dock.getByRole("button", { name: "New" }).click();
+  const sheet = page.getByRole("dialog", { name: "New" });
+  await expect(sheet.getByRole("button", { name: "Reminder" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
 
   // More: every section, and Edit dock.
   await dock.getByRole("button", { name: "More" }).click();

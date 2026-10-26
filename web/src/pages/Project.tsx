@@ -18,7 +18,6 @@ import {
   PARTS,
   type PartNode,
   partsTree,
-  projectPrompt,
   templatesOf,
 } from "../../../shared/projects.ts";
 import { parseSteps, RUNS } from "../../../shared/runs.ts";
@@ -28,7 +27,6 @@ import { useCave } from "../app/context.ts";
 import { useNow, useToday } from "../app/hooks.ts";
 import { useWriteError } from "../app/project-actions.ts";
 import { collectionPath, flowPath, projectPath } from "../app/router.ts";
-import { ASK_WHERE, askClaude, browserAsk } from "../logic/ask-claude.ts";
 import { titleOf } from "../logic/views.ts";
 import { useAllItems, useCollections, useDoc } from "../store/queries.ts";
 import { ActivityList } from "../ui/Activity.tsx";
@@ -300,7 +298,6 @@ function Overview({
         </a>
       </section>
       <AddTask project={project.id} parts={parts} />
-      <AskProject project={project} />
       {drawer && (
         <DocDrawer
           id={drawer.id}
@@ -626,43 +623,6 @@ function AddTask({ project, parts }: { project: string; parts: Doc[] }) {
           {write.error}
         </span>
       )}
-    </form>
-  );
-}
-
-function AskProject({ project }: { project: Doc }) {
-  const [text, setText] = useState("");
-  const ask = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!text.trim()) return;
-    await askClaude(projectPrompt(project, text.trim()), browserAsk);
-    setText("");
-  };
-  return (
-    <form
-      className="panel"
-      onSubmit={(e) => void ask(e)}
-      style={{ padding: 16, display: "grid", gap: 8 }}
-    >
-      <label className="k" htmlFor="ask-project">
-        Ask about this project
-      </label>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          id="ask-project"
-          className="input"
-          style={{ flex: 1 }}
-          placeholder="What should I do next?"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <button type="submit" className="btn primary" disabled={!text.trim()}>
-          Ask
-        </button>
-      </div>
-      <span className="muted" style={{ fontSize: 13 }}>
-        {ASK_WHERE}; the question is also copied.
-      </span>
     </form>
   );
 }
