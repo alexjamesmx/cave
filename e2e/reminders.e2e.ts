@@ -64,12 +64,35 @@ test("reminders: added from New, edited, added and deleted from a day in Month, 
     repeat: "Every month",
   });
   await page.goto("/c/reminders");
-  const row = page.getByRole("row").filter({ hasText: "Rent" });
-  await expect(row.getByText("Nov 15 09:00")).toBeVisible();
+  await expect(page).toHaveURL(/\/calendar\/reminders$/);
+  const table = page.getByRole("table", { name: "Reminders" });
+  const row = table.getByRole("row").filter({ hasText: "Rent" });
+  const heading = (day: string) => table.getByRole("rowheader", { name: new RegExp(`^${day} `) });
+  await expect(heading("Nov 15")).toBeVisible();
+  await expect(row).toContainText("Every month");
   await row.getByRole("button", { name: "Done" }).click();
-  await expect(row.getByText("Dec 15 09:00")).toBeVisible();
+  await expect(heading("Dec 15")).toBeVisible();
+  await expect(heading("Nov 15")).toHaveCount(0);
   await row.getByRole("button", { name: "Undo" }).click();
-  await expect(row.getByText("Nov 15 09:00")).toBeVisible();
+  await expect(heading("Nov 15")).toBeVisible();
+
+  // The table: chips with counts, search, the repeat filter; a row opens the form.
+  await page.getByRole("button", { name: /^Overdue/ }).click();
+  await expect(page).toHaveURL(/chip=overdue/);
+  await page.getByRole("button", { name: /^Upcoming/ }).click();
+  await page.getByLabel("Search reminders").fill("rent");
+  await expect(table.getByRole("row").filter({ hasText: "Test edited" })).toHaveCount(0);
+  await page.getByLabel("Repeat filter").selectOption({ label: "Every month" });
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: "Rent" }).click();
+  await expect(page.getByRole("dialog", { name: "Reminder" }).getByLabel("Title")).toHaveValue(
+    "Rent",
+  );
+  await page
+    .getByRole("dialog", { name: "Reminder" })
+    .getByRole("button", { name: "Delete" })
+    .click();
+  await expect(row).toHaveCount(0);
 
   expect(foreign).toEqual([]);
 });

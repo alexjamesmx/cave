@@ -21,6 +21,7 @@ export type PageId =
   | "calendar-month"
   | "calendar-agenda"
   | "calendar-week"
+  | "calendar-reminders"
   | "money-transactions"
   | "projects-scene"
   | "projects-all"
@@ -100,7 +101,7 @@ export const SECTIONS: Section[] = [
       page("month", "Month", "calendar-month"),
       page("agenda", "Agenda", "calendar-agenda"),
       page("week", "Week", "calendar-week"),
-      view("reminders", "Reminders", "reminders", "table"),
+      page("reminders", "Reminders", "calendar-reminders"),
     ],
     owns: ["reminders"],
   },

@@ -52,6 +52,7 @@ test("every old path redirects to its new home", () => {
     ["/c/wealth", "/money/net-worth"],
     ["/money/wealth", "/money/net-worth"],
     ["/c/reminders", "/calendar/reminders"],
+    ["/c/reminders/table", "/calendar/reminders"],
     ["/", "/projects/scene"],
     ["/c/journal", "/notes/write"],
     ["/c/journal/habits", "/notes/days"],
