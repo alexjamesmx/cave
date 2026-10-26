@@ -29,6 +29,7 @@ export type PageId =
   | "project"
   | "activity"
   | "notes"
+  | "tasks-list"
   | "diary-today"
   | "diary-days"
   | "flows"
@@ -152,11 +153,7 @@ export const SECTIONS: Section[] = [
     icon: "square-check",
     color: "var(--teal)",
     path: "/tasks",
-    tabs: [
-      view("board", "Board", "tasks", "board"),
-      view("list", "List", "tasks", "table"),
-      view("calendar", "Calendar", "tasks", "calendar"),
-    ],
+    tabs: [view("board", "Board", "tasks", "board"), page("list", "List", "tasks-list")],
     owns: ["tasks"],
   },
   {

@@ -51,7 +51,9 @@ test("one New task button, drag and drop between and within columns, arrow keys,
   await page.keyboard.press("ArrowRight");
   await expect(column(page, "waiting").getByText("Call the bank")).toBeVisible();
 
-  // A drop on done stamps completed (the drawer shows it).
+  // Done and Dropped wait behind Show done; a drop on done stamps completed (the drawer shows it).
+  await expect(column(page, "done")).toHaveCount(0);
+  await page.getByRole("button", { name: /^Show done/ }).click();
   await dragTo(page, card("Write report"), column(page, "done"), "bottom");
   await expect(column(page, "done").getByText("Write report")).toBeVisible();
   await card("Write report").click();
@@ -79,6 +81,24 @@ test("one New task button, drag and drop between and within columns, arrow keys,
   await expect(page.locator(".board")).toHaveScreenshot("board-1360.png");
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".board")).toHaveScreenshot("board-390.png");
+
+  // The choice is per device and survives a reload; hiding again leaves the work in flight.
+  await page.reload();
+  await expect(column(page, "done")).toBeVisible();
+  await page.getByRole("button", { name: /^Hide done/ }).click();
+  await expect(column(page, "done")).toHaveCount(0);
+
+  // Tasks → List: Open by default; Done shows the finished one; search narrows.
+  await page.goto("/tasks/list");
+  const table = page.getByRole("table", { name: "Tasks" });
+  await expect(table.getByRole("button", { name: "Call the bank" })).toBeVisible();
+  await expect(table.getByRole("button", { name: "Write report" })).toHaveCount(0);
+  await page.getByRole("button", { name: /^Done/ }).click();
+  await expect(page).toHaveURL(/chip=done/);
+  await expect(table.getByRole("button", { name: "Write report" })).toBeVisible();
+  await page.getByRole("button", { name: /^All/ }).click();
+  await page.getByLabel("Search tasks").fill("bank");
+  await expect(table.getByRole("button")).toHaveText(["Call the bank"]);
 
   expect(foreign).toEqual([]);
 });

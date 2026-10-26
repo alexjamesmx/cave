@@ -25,6 +25,7 @@ import { SettingsData } from "./settings/Data.tsx";
 import { SettingsDevices } from "./settings/Devices.tsx";
 import { SettingsGeneral } from "./settings/General.tsx";
 import { SettingsNotifications } from "./settings/Notifications.tsx";
+import { TasksList } from "./TasksList.tsx";
 import { Transactions } from "./Transactions.tsx";
 import { Week } from "./Week.tsx";
 
@@ -50,6 +51,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   ),
   "projects-ideas": () => <IdeasPage />,
   notes: (rest) => <Notes id={rest[0]} />,
+  "tasks-list": () => <TasksList />,
   "diary-today": () => <DiaryToday />,
   "diary-days": () => <DiaryDays />,
   project: (rest) => <ProjectPage rest={rest} />,

@@ -124,7 +124,7 @@ test("a run an agent starts shows in the project's Activity, on its Map and in P
   // Leave the shared database as found: the answered question goes, so the Tasks board looks
   // the same for the other specs.
   page.on("dialog", (dialog) => void dialog.accept());
-  await page.goto("/tasks/list");
+  await page.goto("/tasks/list?chip=all");
   await page.getByRole("button", { name: "Answer: Which database?" }).click();
   await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
   await expect(page.getByRole("button", { name: "Answer: Which database?" })).toHaveCount(0);

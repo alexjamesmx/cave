@@ -75,6 +75,7 @@ export function redirectOf(pathname: string): string | undefined {
   if (collection === "ideas") return "/projects/ideas";
   if (collection === "notes") return "/notes/all";
   if (collection === "reminders") return "/calendar/reminders";
+  if (collection === "tasks") return view === "board" ? "/tasks/board" : "/tasks/list";
   if (collection === "flows") return flowPath();
   return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);
 }

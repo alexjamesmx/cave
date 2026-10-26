@@ -2,8 +2,10 @@ import { type CSSProperties, type KeyboardEvent, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
 import { repeatOf } from "../../../shared/reminders.ts";
 import { completeTask } from "../../../shared/tasks.ts";
+import { setShowClosed, showClosed } from "../app/board-closed.ts";
 import { useReminderZone, useSaver, useTimeZone } from "../app/hooks.ts";
 import { byRank, dropPatch } from "../logic/board.ts";
+import { CLOSED } from "../logic/task-list.ts";
 import { groupBy, titleOf } from "../logic/views.ts";
 import { FieldValue, OptionChip } from "../ui/fields.tsx";
 import { Icon } from "../ui/icon.tsx";
@@ -22,11 +24,20 @@ export function BoardView({ collection, view, items, open, preset }: ViewProps) 
   const zone = useReminderZone();
   const [adding, setAdding] = useState(false);
   const isTasks = collection.id === "tasks";
+  const [closedShown, setClosedShown] = useState(showClosed);
 
-  const groups = field ? groupBy(items, field).map((g) => ({ ...g, docs: byRank(g.docs) })) : [];
+  const all = field ? groupBy(items, field).map((g) => ({ ...g, docs: byRank(g.docs) })) : [];
+  // The tasks board is for the work in flight: Done and Dropped wait behind Show done.
+  const isClosed = (value: string | null) => isTasks && value !== null && CLOSED.has(value);
+  const closedCount = all.filter((g) => isClosed(g.value)).reduce((n, g) => n + g.docs.length, 0);
+  const groups = closedShown ? all : all.filter((g) => !isClosed(g.value));
+  const toggleClosed = () => {
+    setShowClosed(!closedShown);
+    setClosedShown(!closedShown);
+  };
   const move = (id: string, column: string, index: number) => {
     const doc = items.find((d) => d.id === id);
-    const group = groups.find((g) => (g.value ?? NONE) === column);
+    const group = all.find((g) => (g.value ?? NONE) === column);
     if (!doc || !group || !field) return;
     const repeating = isTasks && group.value === "done" && repeatOf(doc.data) !== "none";
     if (repeating) {
@@ -56,10 +67,10 @@ export function BoardView({ collection, view, items, open, preset }: ViewProps) 
       : undefined;
   const first = field.options?.[0]?.value;
 
-  // Left and right move a focused card to the end of the next column.
-  const onKey = (e: KeyboardEvent, id: string, at: number) => {
+  // Left and right move a focused card to the end of the next column, a hidden one included.
+  const onKey = (e: KeyboardEvent, id: string, value: string | null) => {
     const step = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0;
-    const next = groups[at + step];
+    const next = all[all.findIndex((g) => g.value === value) + step];
     if (!step || !next) return;
     e.preventDefault();
     move(id, next.value ?? NONE, next.docs.filter((d) => d.id !== id).length);
@@ -86,9 +97,19 @@ export function BoardView({ collection, view, items, open, preset }: ViewProps) 
             />
           </div>
         )}
-        <span className="muted" style={{ fontSize: 13 }}>
-          Drag cards to move them; on a phone, press and hold first. Arrow keys move a focused card.
-        </span>
+        {isTasks && (
+          <button
+            type="button"
+            className="btn"
+            aria-pressed={closedShown}
+            onClick={toggleClosed}
+            style={{ marginLeft: "auto" }}
+          >
+            <Icon name={closedShown ? "eye-off" : "eye"} size={15} />{" "}
+            {closedShown ? "Hide done" : "Show done"}{" "}
+            <span className="num muted">{closedCount}</span>
+          </button>
+        )}
       </div>
       {saver.error && (
         <p role="alert" className="error">
@@ -96,7 +117,7 @@ export function BoardView({ collection, view, items, open, preset }: ViewProps) 
         </p>
       )}
       <div className="board">
-        {groups.map((group, at) => {
+        {groups.map((group) => {
           const column = group.value ?? NONE;
           const target = drag && drag.column === column ? drag.index : undefined;
           // Slots count the cards other than the dragged one, as the drop does.
@@ -133,7 +154,7 @@ export function BoardView({ collection, view, items, open, preset }: ViewProps) 
                         : undefined
                     }
                     onClick={() => open(doc.id)}
-                    onKeyDown={(e) => onKey(e, doc.id, at)}
+                    onKeyDown={(e) => onKey(e, doc.id, group.value)}
                     {...handlers(doc.id)}
                   >
                     <span className="board-title">{titleOf(doc)}</span>
