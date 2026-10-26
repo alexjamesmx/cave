@@ -12,7 +12,7 @@ export async function ownerContext(
   browser: Browser,
   options: BrowserContextOptions = {},
 ): Promise<BrowserContext> {
-  const context = await browser.newContext(options);
+  const context = await browser.newContext({ timezoneId: SEED_ZONE, ...options });
   // The browser reports a CSP violation on the console; the guard in test.ts fails the spec.
   context.on("console", (message) => {
     if (message.type() === "error" && /Content Security Policy/i.test(message.text()))

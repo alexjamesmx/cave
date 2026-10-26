@@ -32,6 +32,8 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
+    // The seeded timezone, so "today" is the same day for the browser and the Cave.
+    timezoneId: "America/Mexico_City",
     ...browserUse(browser),
   },
   webServer: [
