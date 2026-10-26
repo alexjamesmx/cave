@@ -30,7 +30,9 @@ export function BoardView({ collection, view, items, open, preset }: ViewProps) 
   // The tasks board is for the work in flight: Done and Dropped wait behind Show done.
   const isClosed = (value: string | null) => isTasks && value !== null && CLOSED.has(value);
   const closedCount = all.filter((g) => isClosed(g.value)).reduce((n, g) => n + g.docs.length, 0);
-  const groups = closedShown ? all : all.filter((g) => !isClosed(g.value));
+  const groups = all.filter(
+    (g) => (closedShown || !isClosed(g.value)) && (g.value !== null || g.docs.length > 0),
+  );
   const toggleClosed = () => {
     setShowClosed(!closedShown);
     setClosedShown(!closedShown);

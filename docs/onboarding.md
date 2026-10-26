@@ -29,7 +29,7 @@ flowchart LR
 - **Data:** SQLite on the VPS is the hub. Every device syncs a full copy (`docs/architecture.md`, "Sync protocol"); offline works.
 - **Code:** GitHub. A push to `main` deploys within minutes if `check` and `test` pass on the VPS; a failed health check rolls back.
 - **Agents:** only through `/mcp` with their own token. Every write is logged and undoable.
-- **No model runs in the Cave.** Ask opens Claude with the question (`docs/decisions.md`, M10).
+- **No model runs in the Cave, and no chat.** Agents come in through MCP (`docs/decisions.md`, M10, M13).
 
 ## Onboard a machine
 

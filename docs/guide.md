@@ -6,7 +6,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 - **Unlock once per device** with the server token; without it the app shows only a lock screen. Settings → Devices & server → Lock this device, or Forget this device to also delete its copy.
 - **Six sections** on the rail at the left (icons; the name shows on hover, or always with **Show names** at the bottom of the rail, remembered on this device): Money, Calendar, Flows, Projects, Notes, Tasks, and Settings at the bottom. On a phone the rail is a dock at the bottom: four sections you choose (More → Edit dock, or Settings → General), Ask in the middle, More for the rest.
-- **Ask from anywhere:** the rail's Ask (⌘K or Ctrl+K) opens one sheet with an Ask box that opens Claude with your question (Claude reads and writes the Cave through its connector) and five quick forms: Expense, Task, Reminder, Payment, Note. **N** opens the sheet on a note. A save closes the sheet and shows what was saved for a moment.
+- **New from anywhere:** the rail's + (⌘K or Ctrl+K, the dock's middle button on a phone) opens one sheet of short forms: Money, Task, Reminder, Payment, Note. **N** opens it on a note. A save closes the sheet and shows what was saved for a moment. There is no chat in the app: agents read and write the Cave through the connector.
 - **The app opens on the Scene** (Projects → Scene): you in the middle, every active project an orb around you. Size is activity this week, colour is status, a dashed ring means an agent is on it; paused projects sit on the outer ring, dim. Hover shows the agent's latest report; click enters the project. The same orbs are a list for the keyboard and screen readers. Above it, **Needs you**: questions agents asked, blocked parts and flows waiting for approval, each with its actions; it hides when there is nothing. What is due is Calendar's.
 
 ## Projects
@@ -26,7 +26,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Money
 
-- **Add** an expense or income from Transactions (New entry: the form stays open for the next receipt) or the Ask sheet, for any day and time (Today, Yesterday). The category is a searchable select that offers the direction's categories; transfers (investments) count as neither spending nor income. With one account in the list it is taken without asking; add another under Categories & accounts and the account picker returns.
+- **Add** an expense or income from Transactions (New entry: the form stays open for the next receipt) or the New sheet, for any day and time (Today, Yesterday). Pick Expense or Income first: the category is a searchable select that offers only that direction's categories, here and when you edit an entry; transfers (investments) count as neither spending nor income. With one account in the list it is taken without asking; add another under Categories & accounts and the account picker returns.
 - **Transactions:** one month at a time (arrows, or All time) with its in, out and net on top; chips All, Expenses, Income, Transfers and Uncategorized (no category, or one that is no longer in the list); search; Group by day, category or account, each group with its subtotal, collapsible. Undated entries are listed and counted apart, never filled in.
 - **Overview:** month or year. Spent, Income, Saved and Invested (transfers into Investment) with their change against the previous period and a 12-month line; the month day by day; where it went against last period, each row opening the ledger on that category; the last 12 months stacked by category; top titles and the largest entries. Filters are kept in the URL.
 - **Budget:** two amounts you type (Overview → Budget → Edit, or Settings → General): a monthly limit and a saving target. The Budget tile shows what is left (or how far over) and where the month ends at the current pace; the year uses twelve times the limit. Crossing 80 % and 100 % of the limit notifies you once each a month, on every channel that is ready. Claude reads the same numbers through `money_month`.
@@ -36,9 +36,9 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Calendar and reminders
 
-- **Reminder** (Ask sheet): a title and a "When" in plain English or Spanish: `tomorrow 9am`, `vie 18:00`, `in 2h`, `every month 22 9:00`, `cada mes 22 9:00`. The form shows what it will save, and won't save without a date.
-- **Done and Snooze** on every reminder (the drawer, the table, the agenda, Needs you). A repeating reminder moves to its next occurrence and stays open; the 31st becomes the 30th in shorter months and returns to the 31st. Undo puts the previous values back.
-- **Month** (or `C`): a grid with repeats shown ahead; **Agenda**: 14 days with anything overdue on top; **Reminders**: the table. **Week**: the shape of your week (M12): fixed blocks (work, Monday to Friday at 09:00), daily ones (Chinese, 30 minutes; LeetCode at 19:30) and weekly ones (gym twice a week), one column per day with the free time left in your waking window, and a This week pool with each weekly block's counter. Click a block to edit it; Track as a habit adds a diary habit and links it, so ticking it counts. The Agenda shows today's blocks on top, each tracked one a Done toggle. The routine never notifies; a reminder does that. Click a day to add a reminder. Scheduled flows show their next run.
+- **Reminder:** one form everywhere (New, a day in Month or Week, the agenda, the table): Title, Date, Time (empty for the whole day) and Repeat. Open a reminder to change it, mark it Done or Delete it.
+- **Done and Snooze** on every reminder (the form, the table, the agenda, Needs you). A repeating reminder moves to its next occurrence and stays open; the 31st becomes the 30th in shorter months and returns to the 31st. Undo puts the previous values back.
+- **Month** (or `C`): a grid with repeats shown ahead; click a day's number to add a reminder on it, a reminder to edit it. **Agenda**: overdue on top, then Today as one timeline of your routine blocks and what is due, then the next 14 days; New reminder. **Reminders**: a table like Transactions: Upcoming, Overdue, Done and All with counts, search, a repeat filter, grouped by day, Done and Snooze on each row. **Week**: your routine, which only you set: fixed blocks (work, Monday to Friday at 09:00), daily ones (Chinese, 30 minutes) and weekly ones (gym twice a week), one column per day with that day's reminders in time order, a + per day to add one, and a This week pool with each weekly block's counter. Click a block to edit it; Track as a habit adds a diary habit and links it, so ticking it counts. The routine never notifies; a reminder does that. Scheduled flows show their next run.
 - A reminder with a date and no time is due at the reminder time in Settings → General (09:00 by default).
 
 ## Flows
@@ -56,7 +56,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Tasks
 
-- **Board** and **List** of every task (tasks with a due date are in Calendar → Month); one New task button; drag between columns (press and hold on a phone), arrow keys move a focused card. A task with a project carries a bar in the Projects colour. A repeating task's Done brings the same task back on its next date. Questions from agents are tasks too, until answered.
+- **Board** for the work in flight: To do, Doing, Waiting; **Show done** adds Done and Dropped back (remembered on this device). **List**: a table with Open, Done, Dropped and All, search, open tasks by due date. Tasks with a due date are in Calendar → Month too. One New task button; drag between columns (press and hold on a phone), arrow keys move a focused card. A task with a project carries a bar in the Projects colour. A repeating task's Done brings the same task back on its next date. Questions from agents are tasks too, until answered.
 
 ## Settings
 

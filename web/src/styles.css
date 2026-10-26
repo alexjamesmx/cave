@@ -2309,8 +2309,8 @@ ul.chips {
 
 .week-day header {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  gap: 6px;
+  align-items: center;
 }
 
 .week-day.today {
