@@ -262,12 +262,10 @@ systemctl restart cave
 ```
 **Email (M12).** Through Resend's HTTP API, free for 3,000 emails a month and 100 a day (checked 2026-10-24). In Resend: Domains → add a domain you own (a subdomain such as `cave.example.dev` keeps the root's mail untouched) and add the DNS records it shows at your registrar, then API Keys → Create (Sending access). All three settings are needed together; the sender is on the verified domain, the recipient is your inbox:
 ```bash
-sed -i -e '$a\x27 /etc/cave/cave.env
-read -rs RK && printf 'CAVE_RESEND_API_KEY=%s
-' "$RK" >> /etc/cave/cave.env; unset RK
-printf 'CAVE_EMAIL_FROM=Cave <cave@cave.example.dev>
-CAVE_EMAIL_TO=you@example.dev
-' >> /etc/cave/cave.env
+# The key, typed without echo, never on screen:
+read -rs RK && printf 'CAVE_RESEND_API_KEY=%s\n' "$RK" >> /etc/cave/cave.env; unset RK
+# The sender (on the verified domain) and your inbox:
+printf 'CAVE_EMAIL_FROM=Cave <cave@cave.example.dev>\nCAVE_EMAIL_TO=you@example.dev\n' >> /etc/cave/cave.env
 systemctl restart cave
 ```
 Then Settings → Notifications → Email → **Send test**. Email gets full detail by default (it is your own inbox) and is the only channel the **daily digest** uses: set its time there, and once a day you get questions and blocked parts, what is due, payments due today and the budget line.

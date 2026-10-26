@@ -91,10 +91,10 @@ export function FlowCanvas({
   onAdd?: () => void;
 }) {
   requestAdd = onAdd ?? (() => {});
-  const graph = useMemo(
-    () => flowGraph(def, selected, onAdd !== undefined),
-    [def, selected, onAdd],
-  );
+  // On whether there is a +, never on the handler: a new graph each render re-measures every
+  // node, and React Flow keeps them hidden until it has.
+  const canAdd = onAdd !== undefined;
+  const graph = useMemo(() => flowGraph(def, selected, canAdd), [def, selected, canAdd]);
   return (
     <MapCanvas<FlowNode, Edge>
       label="Flow canvas"
