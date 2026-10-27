@@ -10,7 +10,7 @@ import type { CallLog } from "../agent-calls.ts";
 import { AgentWriter, type WriteResult } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
 import type { Store } from "../store.ts";
-import { listFlows, MAX_ON_FLOWS, MAX_SAVES_PER_DAY, saveFlow } from "./flows.ts";
+import { listFlows, MAX_ON_FLOWS, saveFlow } from "./flows.ts";
 import { addNote } from "./note.ts";
 import { getProject } from "./project.ts";
 import {
@@ -271,7 +271,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
     server.registerTool(
       "save_flow",
       {
-        description: `Create or replace a flow. It runs as soon as it is on. Flows that change existing items, or that use a sensitive step, wait for the owner's approval (status pending-approval), and only the owner can approve. Pass id to replace a flow from list_flows. Templates: {{item.title}}, {{item.<field>}}, {{item.<field>|pct:N}}, {{today}}, {{month}}. At most ${MAX_ON_FLOWS} flows on per agent and ${MAX_SAVES_PER_DAY} saves a day. A reminder only notifies; use a flow when something must also be created or changed. ${DATA_RULE}`,
+        description: `Create or replace a flow. It runs as soon as it is on. Flows that change existing items, or that use a sensitive step, wait for the owner's approval (status pending-approval), and only the owner can approve. Pass id to replace a flow from list_flows. Templates: {{item.title}}, {{item.<field>}}, {{item.<field>|pct:N}}, {{today}}, {{month}}. At most ${MAX_ON_FLOWS} flows on per agent. A reminder only notifies; use a flow when something must also be created or changed. ${DATA_RULE}`,
         inputSchema: z.object({
           id: z.string().optional(),
           title: z.string(),
@@ -283,7 +283,7 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       (args) =>
         run("save_flow", args, () => {
-          const result = saveFlow(store, agent, writer(), deps.calls, args, deps.now());
+          const result = saveFlow(store, agent, writer(), args);
           return result.ok
             ? { ok: true, value: { id: result.id, status: result.status }, seqs: result.seqs }
             : result;
