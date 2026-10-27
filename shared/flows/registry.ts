@@ -163,6 +163,24 @@ export const TRIGGERS: TypeSpec[] = [
     describe: (p) =>
       `When ${p.field} changes in ${p.collection}${p.to === undefined ? "" : ` to ${String(p.to)}`}`,
   },
+  {
+    // Knows dates, not what they mean: a subscription's charge, a task's due, a birthday.
+    type: "date-arrives",
+    label: "When a date arrives",
+    sensitive: false,
+    params: [
+      { key: "collection", label: "Collection", kind: "collection" },
+      { key: "field", label: "Date field", kind: "field" },
+      { key: "before", label: "Days before", kind: "int", min: 0, max: 60, optional: true },
+      { key: "where", label: "Where", kind: "conditions", optional: true },
+    ],
+    describe: (p) =>
+      `When ${p.field} in ${p.collection} arrives${
+        typeof p.before === "number" && p.before > 0
+          ? `, ${p.before} day${p.before === 1 ? "" : "s"} before`
+          : ""
+      }${p.where ? ` where ${conditionsText(p.where)}` : ""}`,
+  },
 ];
 
 export const STEPS: TypeSpec[] = [
@@ -274,6 +292,13 @@ export type Trigger =
       collection: string;
       field: string;
       to?: string | number | boolean | null;
+    }
+  | {
+      type: "date-arrives";
+      collection: string;
+      field: string;
+      before?: number;
+      where?: Condition[];
     };
 export type FieldValues = Record<string, string | number | boolean | null>;
 export type Step =

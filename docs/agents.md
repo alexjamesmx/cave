@@ -38,7 +38,7 @@ bun run agent revoke codex
 
 ## Flows
 
-A flow is a trigger and up to 10 steps, stored as one definition (`version: 1`). Triggers: `schedule` (every day, week, month or year at a time), `item-added` (with optional conditions) and `item-changed` (a field, optionally to a value). Steps: `if` (all conditions hold, else stop), `create`, `update-trigger-item`, `notify` and `email` (`subject`, `body` up to 4,000 characters, optional `to`: up to 5 addresses separated by commas, else the owner; optional `fromName`). Text may use `{{item.title}}`, `{{item.<field>}}`, `{{item.<field>|pct:N}}`, `{{today}}` and `{{month}}`, nothing else.
+A flow is a trigger and up to 10 steps, stored as one definition (`version: 1`). Triggers: `schedule` (every day, week, month or year at a time), `item-added` (with optional conditions), `item-changed` (a field, optionally to a value) and `date-arrives` (a date `field` of a `collection`, optional `before` days and conditions; a repeating date arrives on each date of its series, once per date; items with `active` false or `done` true are skipped). Steps: `if` (all conditions hold, else stop), `create`, `update-trigger-item`, `notify` and `email` (`subject`, `body` up to 4,000 characters, optional `to`: up to 5 addresses separated by commas, else the owner; optional `fromName`). Text may use `{{item.title}}`, `{{item.<field>}}`, `{{item.<field>|pct:N}}`, `{{today}}` and `{{month}}`, nothing else.
 
 **A reminder or a flow?** A reminder only notifies. Use a flow when something must also be created or changed. "Remind me every month to pay rent on the 22nd" as a reminder:
 

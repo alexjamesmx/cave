@@ -2,12 +2,14 @@ import type { Database } from "bun:sqlite";
 import { localDate } from "../../shared/dates.ts";
 import { fieldsOf } from "../../shared/fields.ts";
 import { allHold, holds } from "../../shared/flows/conditions.ts";
+import { latestArrival } from "../../shared/flows/date-trigger.ts";
 import { type FlowDefinition, parseDefinition, type Step } from "../../shared/flows/registry.ts";
 import { latestSlot } from "../../shared/flows/schedule.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import { renderTemplate, type TemplateContext } from "../../shared/flows/templates.ts";
 import { parseStamp } from "../../shared/hlc.ts";
 import { parseRecipients } from "../../shared/notifications.ts";
+import { repeatOf } from "../../shared/recurrence.ts";
 import type { Zone } from "../../shared/reminders.ts";
 import type { Doc } from "../../shared/types.ts";
 import { every, type Job } from "../jobs/scheduler.ts";
@@ -291,7 +293,8 @@ export function createFlowEngine({
       for (const flow of store.itemsOf(FLOWS).filter(isOn)) {
         const def = definitionOf(flow);
         const t = def?.trigger;
-        if (!def || !t || t.type === "schedule" || t.collection !== doc.collection) continue;
+        if (!def || !t || t.type === "schedule" || t.type === "date-arrives") continue;
+        if (t.collection !== doc.collection) continue;
         if (t.type === "item-added") {
           const isNew = store.changesFor(doc.id, 2).length === 1;
           if (!isNew || !allHold(t.where, doc.data)) continue;
@@ -308,6 +311,37 @@ export function createFlowEngine({
   }
   store.onApplied(onChanges);
 
+  /**
+   * "When a date arrives": each item whose date (or the newest date of its repeating series)
+   * came due since the flow was turned on runs the flow once for that date. A paused item
+   * (`active` false) or a finished one (`done`) is skipped; one seen more than 6 hours late is
+   * recorded as missed.
+   */
+  async function arrivals(flow: Doc, def: FlowDefinition, at: number) {
+    const t = def.trigger;
+    let ran = 0;
+    let missed = 0;
+    if (t.type !== "date-arrives") return { ran, missed };
+    const field = t.field === "title" ? "_title" : t.field;
+    for (const item of store.itemsOf(t.collection)) {
+      const data = item.data;
+      if (data._deleted === true || data.active === false || data.done === true) continue;
+      if (!allHold(t.where, data)) continue;
+      const arrival = latestArrival(data[field], repeatOf(data), t.before ?? 0, at, zone());
+      if (!arrival || arrival.at < switchedAt(flow)) continue;
+      const key = `flow:${flow.id}:${item.id}:${arrival.date}`;
+      if (hasRun.get(key)) continue;
+      if (at - arrival.at > CATCH_UP_MS) {
+        insertRun.run(key, flow.id, at, "missed", "[]");
+        missed += 1;
+        continue;
+      }
+      await run(flow, def, item, key);
+      ran += 1;
+    }
+    return { ran, missed };
+  }
+
   const job: Job = {
     id: "flows",
     label: "Scheduled flows",
@@ -319,6 +353,12 @@ export function createFlowEngine({
       const tz = zone().timeZone;
       for (const flow of store.itemsOf(FLOWS).filter(isOn)) {
         const def = definitionOf(flow);
+        if (def?.trigger.type === "date-arrives") {
+          const done = await arrivals(flow, def, at);
+          ran += done.ran;
+          missed += done.missed;
+          continue;
+        }
         if (def?.trigger.type !== "schedule") continue;
         const slot = latestSlot(def.trigger, at, tz);
         if (slot === undefined || slot < switchedAt(flow)) continue;
@@ -356,7 +396,7 @@ export function createFlowEngine({
         const t = def.trigger;
         item = store
           .itemsOf(t.collection)
-          .filter((d) => t.type !== "item-added" || allHold(t.where, d.data))
+          .filter((d) => t.type === "item-changed" || allHold(t.where, d.data))
           .sort((a, b) => (store.seqOf(b.id) ?? 0) - (store.seqOf(a.id) ?? 0))[0];
         if (!item) return { error: `no item in ${t.collection} matches yet` };
       }

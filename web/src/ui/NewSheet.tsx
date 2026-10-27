@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { SUBSCRIPTION_CATEGORY } from "../../../shared/subscriptions.ts";
 import { useCave } from "../app/context.ts";
 import { closeNew, newSheet, newShortcut, openNew, type QuickKind } from "../app/quick.ts";
 import { usePathname } from "../app/router.ts";
@@ -9,10 +8,10 @@ import { useCollections } from "../store/queries.ts";
 import { Icon } from "./icon.tsx";
 import { MoneyForm } from "./MoneyForm.tsx";
 import { NoteForm } from "./NoteForm.tsx";
-import { PaymentForm } from "./PaymentForm.tsx";
 import { TaskForm } from "./QuickForms.tsx";
 import { ReminderForm } from "./ReminderForm.tsx";
 import { Sheet } from "./Sheet.tsx";
+import { SubscriptionForm } from "./SubscriptionForm.tsx";
 
 const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
   { kind: "expense", label: "Money", icon: "wallet" },
@@ -23,7 +22,6 @@ const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
 ];
 
 const TOAST_MS = 8000;
-const NEW_SUBSCRIPTION = { kind: "subscription", category: SUBSCRIPTION_CATEGORY };
 
 /**
  * Add anything from any screen: five short forms in one sheet.
@@ -84,7 +82,7 @@ export function NewSheet() {
           </fieldset>
           {quick === "expense" && <MoneyForm onSaved={(_id, message) => done(message)} />}
           {collections && quick === "task" && <TaskForm collections={collections} onDone={done} />}
-          {quick === "subscription" && <PaymentForm start={NEW_SUBSCRIPTION} onSaved={done} />}
+          {quick === "subscription" && <SubscriptionForm onDone={done} />}
           {quick === "note" && <NoteForm onDone={done} />}
           {quick === "reminder" && <ReminderForm onDone={done} />}
         </Sheet>

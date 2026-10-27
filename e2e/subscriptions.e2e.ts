@@ -1,7 +1,7 @@
 import { addMoney, archiveAccount, newAccount, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Money → Subscriptions: a charge under Subscriptions is offered to set up from its last charge; set up, it is active with its charges; Cancel and Restore", async ({
+test("Money → Subscriptions: one table; a new one adds to the month and year, its real charge fills Spent and Since; a row opens it to pause, resume and delete", async ({
   browser,
 }) => {
   const page = await (
@@ -9,61 +9,50 @@ test("Money → Subscriptions: a charge under Subscriptions is offered to set up
   ).newPage();
   page.on("dialog", (dialog) => void dialog.accept());
   const name = `Streaming ${Date.now()}`;
+  const account = `E2E card ${Date.now()}`;
+
+  // A charge already paid, under Subscriptions with the same name.
   await page.goto("/");
   await addMoney(page, { amount: 149, title: name, category: "Subscriptions" });
   await expect(page.getByRole("status").filter({ hasText: name })).toBeVisible();
 
   await page.goto("/money/subscriptions");
-  await expect(page.getByText("What you pay for every month or year")).toBeVisible();
-  const found = page.getByRole("region", { name: "Found in your transactions" });
-  await expect(found).toContainText(name);
-
-  // Set up opens the form from the last charge: its name, amount and the subscription kind.
-  await found.getByRole("button", { name: `Set up ${name}` }).click();
-  const form = page.getByRole("form", { name: "Subscription" });
-  await expect(form.getByLabel("Title")).toHaveValue(name);
-  await expect(form.getByLabel("Amount (expected)")).toHaveValue("149");
-  await expect(form.getByLabel("Due")).not.toHaveValue("");
-  // The charge had no account, so the form asks for one before it saves.
-  const account = `E2E card ${Date.now()}`;
-  await expect(form).toContainText("A subscription needs: account.");
+  const totals = page.locator(".subs-totals");
+  const before = await totals.textContent();
+  await page.getByRole("button", { name: "New subscription" }).click();
+  const form = page.getByRole("form", { name: "New subscription" });
+  await form.getByLabel("Name").fill(name);
+  await form.getByLabel("Amount").fill("1200");
+  await form.getByLabel("Every").selectOption("yearly");
+  await form.getByLabel("Charged on").fill("2026-11-05");
   await newAccount(form, account);
   await form.getByRole("button", { name: "Save" }).click();
 
-  // Now it is active, with its charge counted, and no longer offered.
-  const active = page.getByRole("region", { name: "Active subscriptions" });
-  const row = active.getByRole("listitem").filter({ hasText: name });
-  await expect(row).toContainText("1 charge");
-  await expect(row).toContainText("/ month");
-  await expect(page.getByRole("button", { name: `Set up ${name}` })).toHaveCount(0);
+  // One row: a year's amount is $100 a month, and the charge fills Spent and Since.
+  const row = page.getByRole("row").filter({ hasText: name });
+  await expect(row).toContainText("$1,200");
+  await expect(row).toContainText("year");
+  await expect(row).toContainText("$100");
+  await expect(row).toContainText("$149");
+  await expect(totals).not.toHaveText(before ?? "");
 
-  // Paid logs a charge linked to it and moves it a month on; Undo reverses both.
-  await row.getByRole("button", { name: "Paid" }).click();
-  const charge = page.getByRole("form", { name: /Expense/ });
-  await expect(charge.getByLabel("Amount")).toHaveValue("149");
-  await charge.getByRole("button", { name: "Save charge and mark paid" }).click();
-  await expect(page.getByText(`Paid · ${name}: charge saved, next date set.`)).toBeVisible();
-  await expect(row).toContainText("2 charges");
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.getByRole("status").filter({ hasText: `Undone · ${name}` })).toBeVisible();
-  await expect(row).toContainText("1 charge");
-
-  // Cancel moves it to Cancelled; Restore brings it back.
-  await row.getByRole("button", { name: "Cancel" }).click();
-  const cancelled = page.getByRole("region", { name: "Cancelled subscriptions" });
-  await expect(cancelled).toContainText(name);
-  await cancelled
-    .getByRole("listitem")
-    .filter({ hasText: name })
-    .getByRole("button", { name: "Restore" })
-    .click();
-  await expect(row).toBeVisible();
+  // A click on the row opens it; Pause moves it to Paused, Resume brings it back.
+  await row.locator("td").nth(2).click();
+  const sheet = page.getByRole("dialog", { name });
+  await sheet.getByRole("button", { name: "Pause" }).click();
+  await expect(row).toHaveCount(0);
+  await page.getByRole("button", { name: /^Paused/ }).click();
+  await expect(row).toContainText("Paused");
+  await row.click();
+  await sheet.getByRole("button", { name: "Resume" }).click();
+  await page.getByRole("button", { name: /^Active/ }).click();
+  await expect(row).toContainText("$100");
 
   // Leave the shared database as found: the subscription and its charge deleted, the account
   // archived.
-  await row.getByRole("button", { name, exact: true }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
-  await expect(active).not.toContainText(name);
+  await row.click();
+  await sheet.getByRole("button", { name: "Delete" }).click();
+  await expect(row).toHaveCount(0);
   await page.goto("/money/transactions");
   await page.getByRole("button", { name, exact: true }).click();
   await page.getByRole("button", { name: "Delete" }).click();

@@ -44,7 +44,7 @@ function paymentNotification(doc: Doc, when: When, zone: Zone): Notification {
         ? [`${doc.data.approx === true ? "About " : ""}$${amount.toLocaleString("en-US")}`]
         : []),
     ],
-    path: "/money/subscriptions",
+    path: "/settings/data/payments/upcoming",
     tag: `payment:${doc.id}`,
   };
 }
@@ -70,7 +70,8 @@ interface PaymentSweepOptions {
 }
 
 /**
- * Every 30 seconds, like the reminder sweep: each active payment with a due date notifies
+ * Every 30 seconds, like the reminder sweep: each active payment with a due date, other than a
+ * subscription, notifies
  * `notify_days` before it (default 1) and on the day, each once per due date. A send more than
  * 6 hours late is recorded as missed, and a "before" that is only seen after the due time is
  * dropped, since the day's own notification says it.
@@ -86,6 +87,8 @@ export function createPaymentSweep({ store, notifier, sent, zone }: PaymentSweep
       let delivered = 0;
       let missed = 0;
       for (const doc of store.itemsOf(PAYMENTS)) {
+        // A subscription reminds only through a flow the owner attaches ("When a date arrives").
+        if (doc.data.kind === "subscription") continue;
         const sends = paymentSends(doc, z);
         const dueAt = sends.at(-1)?.at;
         for (const { when, at } of sends) {

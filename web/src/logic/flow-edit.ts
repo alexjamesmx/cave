@@ -24,6 +24,8 @@ export function blankPart(
       return { type, collection };
     case "item-changed":
       return { type, collection, field: "title" };
+    case "date-arrives":
+      return { type, collection, field: "due" };
     case "if":
       return { type, all: [{ field: "title", op: "not-empty" }] };
     case "create":

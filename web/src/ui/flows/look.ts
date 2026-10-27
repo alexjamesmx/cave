@@ -3,6 +3,7 @@ export const LOOK: Record<string, { icon: string; color: string }> = {
   schedule: { icon: "clock", color: "var(--ok)" },
   "item-added": { icon: "circle-plus", color: "var(--ok)" },
   "item-changed": { icon: "pencil", color: "var(--teal)" },
+  "date-arrives": { icon: "calendar-clock", color: "var(--warn)" },
   if: { icon: "split", color: "var(--warn)" },
   create: { icon: "square-plus", color: "var(--teal)" },
   "update-trigger-item": { icon: "pen-line", color: "var(--orange)" },
