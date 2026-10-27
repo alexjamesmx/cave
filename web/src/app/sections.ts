@@ -77,11 +77,6 @@ export const SECTIONS: Section[] = [
         description: "Money that moved. Every expense, income and transfer.",
       },
       {
-        ...view("payments", "Payments", "payments", "upcoming"),
-        description:
-          "What's coming due. Marking one paid logs the transaction and moves it to its next date.",
-      },
-      {
         ...page("subscriptions", "Subscriptions", "money-subscriptions"),
         description:
           "What you pay for every month or year, what it costs, and what you've cancelled.",

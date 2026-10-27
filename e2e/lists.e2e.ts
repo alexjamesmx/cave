@@ -85,8 +85,8 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   await form.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Lists e2e" })).toBeVisible();
   await openNew(page);
-  await page.getByRole("button", { name: "Payment", exact: true }).click();
-  const pay = page.getByRole("form", { name: "Payment" });
+  await page.getByRole("button", { name: "Subscription", exact: true }).click();
+  const pay = page.getByRole("form", { name: "Subscription" });
   await expect(pay.getByLabel("Title")).toBeVisible();
   await expect(pay.getByLabel("Account")).toHaveCount(0);
 

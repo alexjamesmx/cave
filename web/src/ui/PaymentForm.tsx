@@ -31,7 +31,10 @@ export interface PaymentStart {
   due?: string;
 }
 
-/** A payment: a card statement, a subscription, a bill. It repeats monthly unless changed. */
+/**
+ * A payment: a card statement, a subscription, a bill. It repeats monthly unless changed.
+ * Started as a subscription, it asks no kind.
+ */
 export function PaymentForm({
   onSaved,
   start = {},
@@ -57,6 +60,8 @@ export function PaymentForm({
   useEffect(() => {
     if (sole && !start.account) setAccount(sole);
   }, [sole, start.account]);
+  // Started as a subscription (Money → Subscriptions, New): the kind is fixed, so not asked.
+  const subscription = start.kind === "subscription";
   const missing = missingForPayment({ kind, amount, due, repeat, account });
 
   const submit = async (e: FormEvent) => {
@@ -82,11 +87,15 @@ export function PaymentForm({
       if (!(err instanceof FieldValueError)) throw err;
       return setError(err.message);
     }
-    onSaved(`Saved · Payment · ${title.trim()}`);
+    onSaved(`Saved · ${subscription ? "Subscription" : "Payment"} · ${title.trim()}`);
   };
 
   return (
-    <form className="panel quick-form" aria-label="Payment" onSubmit={(e) => void submit(e)}>
+    <form
+      className="panel quick-form"
+      aria-label={subscription ? "Subscription" : "Payment"}
+      onSubmit={(e) => void submit(e)}
+    >
       <div className="quick-row">
         <Labelled label="Title">
           {(id) => (
@@ -99,22 +108,24 @@ export function PaymentForm({
             />
           )}
         </Labelled>
-        <Labelled label="Kind">
-          {(id) => (
-            <select
-              id={id}
-              className="input"
-              value={kind}
-              onChange={(e) => setKind(e.target.value)}
-            >
-              {PAYMENT_KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </select>
-          )}
-        </Labelled>
+        {!subscription && (
+          <Labelled label="Kind">
+            {(id) => (
+              <select
+                id={id}
+                className="input"
+                value={kind}
+                onChange={(e) => setKind(e.target.value)}
+              >
+                {PAYMENT_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Labelled>
+        )}
       </div>
       <div className="quick-row" style={{ alignItems: "end" }}>
         <Labelled label="Amount (expected)">

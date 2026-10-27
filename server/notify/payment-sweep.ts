@@ -44,7 +44,7 @@ function paymentNotification(doc: Doc, when: When, zone: Zone): Notification {
         ? [`${doc.data.approx === true ? "About " : ""}$${amount.toLocaleString("en-US")}`]
         : []),
     ],
-    path: "/money/payments",
+    path: "/money/subscriptions",
     tag: `payment:${doc.id}`,
   };
 }

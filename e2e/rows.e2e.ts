@@ -1,4 +1,4 @@
-import { addMoney, openNew, ownerContext, pushed } from "./helpers.ts";
+import { addMoney, archiveAccount, newAccount, openNew, ownerContext, pushed } from "./helpers.ts";
 import { expect, type Locator, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
@@ -31,16 +31,17 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/");
 
-  // A payment due tomorrow (Calendar, Money → Payments), a task and an expense.
+  // A subscription due tomorrow (Calendar, Money → Subscriptions), a task and an expense.
+  const account = `Rows e2e card ${Date.now()}`;
   await openNew(page);
-  await page.getByRole("button", { name: "Payment", exact: true }).click();
-  const pay = page.getByRole("form", { name: "Payment" });
+  await page.getByRole("button", { name: "Subscription", exact: true }).click();
+  const pay = page.getByRole("form", { name: "Subscription" });
   await pay.getByLabel("Title").fill("Rows e2e bill");
-  await pay.getByLabel("Kind").selectOption("bill");
   await pay.getByLabel("Amount (expected)").fill("120");
   await pay.getByLabel("Due").fill(await localAt(page, 1));
+  await newAccount(pay, account);
   await pay.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved · Payment" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Saved · Subscription" })).toBeVisible();
   await openNew(page);
   await page.getByRole("button", { name: "Task", exact: true }).click();
   const task = page.getByRole("form", { name: "Task" });
@@ -57,13 +58,14 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
     .locator("li", { hasText: "Rows e2e bill" });
   await opensByClickAndKey(page, agenda, agenda.locator(".agenda-time"), "Payments item");
 
-  // Money → Payments; Paid opens the money form, not the drawer.
-  await page.goto("/money/payments");
-  const payment = page.locator(".sub-row", { hasText: "Rows e2e bill" });
-  await opensByClickAndKey(page, payment, payment.locator(".num").first(), "Payments item");
+  // Money → Subscriptions; Paid opens the money form, not the drawer.
+  await page.goto("/money/subscriptions");
+  const payment = page.locator(".sub-card", { hasText: "Rows e2e bill" });
+  await opensByClickAndKey(page, payment, payment.locator(".sub-card-amount"), "Payments item");
   await payment.getByRole("button", { name: "Paid" }).click();
   await expect(page.getByRole("complementary", { name: "Payments item" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Save expense and mark paid" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save charge and mark paid" })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   // Money → Transactions and Tasks → List: a table cell that isn't the title.
   await page.goto("/money/transactions");
@@ -85,7 +87,7 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
     ["/projects/ideas", "Rows e2e idea", "Ideas item"],
     ["/tasks/list", "Rows e2e task", "Tasks item"],
     ["/money/transactions", "Rows e2e coffee", "Money item"],
-    ["/money/payments", "Rows e2e bill", "Payments item"],
+    ["/money/subscriptions", "Rows e2e bill", "Payments item"],
   ] as const) {
     await page.goto(path);
     await page.getByRole("button", { name, exact: true }).first().click();
@@ -97,4 +99,5 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
     );
     await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
   }
+  await archiveAccount(page, account);
 });

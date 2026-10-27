@@ -1,4 +1,4 @@
-import { addMoney, ownerContext } from "./helpers.ts";
+import { addMoney, archiveAccount, newAccount, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("Money → Subscriptions: a charge under Subscriptions is offered to set up from its last charge; set up, it is active with its charges; Cancel and Restore", async ({
@@ -20,16 +20,14 @@ test("Money → Subscriptions: a charge under Subscriptions is offered to set up
 
   // Set up opens the form from the last charge: its name, amount and the subscription kind.
   await found.getByRole("button", { name: `Set up ${name}` }).click();
-  const form = page.getByRole("form", { name: "Payment" });
+  const form = page.getByRole("form", { name: "Subscription" });
   await expect(form.getByLabel("Title")).toHaveValue(name);
   await expect(form.getByLabel("Amount (expected)")).toHaveValue("149");
-  await expect(form.getByLabel("Kind")).toHaveValue("subscription");
   await expect(form.getByLabel("Due")).not.toHaveValue("");
   // The charge had no account, so the form asks for one before it saves.
   const account = `E2E card ${Date.now()}`;
   await expect(form).toContainText("A subscription needs: account.");
-  await form.getByLabel("Account").selectOption("New account…");
-  await form.getByLabel("New account").fill(account);
+  await newAccount(form, account);
   await form.getByRole("button", { name: "Save" }).click();
 
   // Now it is active, with its charge counted, and no longer offered.
@@ -38,6 +36,17 @@ test("Money → Subscriptions: a charge under Subscriptions is offered to set up
   await expect(row).toContainText("1 charge");
   await expect(row).toContainText("/ month");
   await expect(page.getByRole("button", { name: `Set up ${name}` })).toHaveCount(0);
+
+  // Paid logs a charge linked to it and moves it a month on; Undo reverses both.
+  await row.getByRole("button", { name: "Paid" }).click();
+  const charge = page.getByRole("form", { name: /Expense/ });
+  await expect(charge.getByLabel("Amount")).toHaveValue("149");
+  await charge.getByRole("button", { name: "Save charge and mark paid" }).click();
+  await expect(page.getByText(`Paid · ${name}: charge saved, next date set.`)).toBeVisible();
+  await expect(row).toContainText("2 charges");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByRole("status").filter({ hasText: `Undone · ${name}` })).toBeVisible();
+  await expect(row).toContainText("1 charge");
 
   // Cancel moves it to Cancelled; Restore brings it back.
   await row.getByRole("button", { name: "Cancel" }).click();
@@ -59,8 +68,5 @@ test("Money → Subscriptions: a charge under Subscriptions is offered to set up
   await page.getByRole("button", { name, exact: true }).click();
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
-  await page.goto("/money/lists");
-  const accounts = page.getByRole("list", { name: "Account options" });
-  await accounts.getByRole("button", { name: `Archive ${account}` }).click();
-  await expect(accounts.getByText(account)).toHaveCount(0);
+  await archiveAccount(page, account);
 });

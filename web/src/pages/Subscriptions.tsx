@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { shortDay } from "../../../shared/dates.ts";
-import { PAYMENTS } from "../../../shared/payments.ts";
+import { expenseFrom, PAYMENTS, paidPatch } from "../../../shared/payments.ts";
 import {
   type Candidate,
   candidatesOf,
@@ -13,13 +13,14 @@ import {
 } from "../../../shared/subscriptions.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
-import { useToday } from "../app/hooks.ts";
+import { useReminderZone, useToday } from "../app/hooks.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { formatMoney } from "../logic/format.ts";
 import { titleOf } from "../logic/views.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
+import { MoneyForm } from "../ui/MoneyForm.tsx";
 import { PaymentForm, type PaymentStart } from "../ui/PaymentForm.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 import { Sheet } from "../ui/Sheet.tsx";
@@ -38,7 +39,9 @@ const dayOfDue = (due: unknown) => str(due).slice(0, 10);
  * Money → Subscriptions: every payment of kind subscription, active and cancelled, with what
  * the active ones cost a month, each one's next charge and what it has cost so far. Names
  * already charged under the subscriptions category but not set up are offered to set up,
- * starting from their last charge; the owner confirms the amount and the date.
+ * starting from their last charge; the owner confirms the amount and the date. Paid logs the
+ * charge, linked to its subscription, and moves the subscription to its next date; Undo
+ * reverses both.
  */
 export function Subscriptions() {
   const { local } = useCave();
@@ -49,6 +52,13 @@ export function Subscriptions() {
   const [form, setForm] = useState<PaymentStart>();
   const [open, setOpen] = useState<string>();
   const [message, setMessage] = useState<string>();
+  const [paying, setPaying] = useState<Doc>();
+  const [undo, setUndo] = useState<{
+    sub: Doc;
+    expense: string;
+    before: Record<string, unknown>;
+  }>();
+  const zone = useReminderZone();
 
   const { active, cancelled } = useMemo(() => subscriptionsOf(payments ?? []), [payments]);
   const candidates = useMemo(
@@ -62,6 +72,21 @@ export function Subscriptions() {
     .sort((a, b) => str(a.data.due).localeCompare(str(b.data.due)))[0];
   const setActive = (s: Doc, on: boolean) =>
     void local.write({ id: s.id, kind: "item", collection: PAYMENTS }, { active: on });
+  const paid = async (sub: Doc, expense: string) => {
+    const patch = paidPatch(sub, Date.now(), zone);
+    const before = Object.fromEntries(Object.keys(patch).map((k) => [k, sub.data[k] ?? null]));
+    await local.write({ id: expense, kind: "item", collection: "money" }, { payment: sub.id });
+    await local.write({ id: sub.id, kind: "item", collection: PAYMENTS }, patch);
+    setPaying(undefined);
+    setUndo({ sub, expense, before });
+    setMessage(undefined);
+  };
+  const reverse = async (u: NonNullable<typeof undo>) => {
+    await local.write({ id: u.expense, kind: "item", collection: "money" }, { _deleted: true });
+    await local.write({ id: u.sub.id, kind: "item", collection: PAYMENTS }, u.before);
+    setUndo(undefined);
+    setMessage(`Undone · ${titleOf(u.sub)}`);
+  };
   const fromCharge = (c: Candidate): PaymentStart => ({
     title: titleOf(c.last),
     kind: "subscription",
@@ -73,12 +98,14 @@ export function Subscriptions() {
 
   const row = (s: Doc, on: boolean) => {
     const charges = chargesOf(s, money);
-    const paid = charges.reduce(
+    const spent = charges.reduce(
       (sum, c) => sum + (typeof c.data.amount === "number" ? c.data.amount : 0),
       0,
     );
     const every = EVERY[str(s.data.repeat)];
     const amount = typeof s.data.amount === "number" ? s.data.amount : undefined;
+    const due = dayOfDue(s.data.due);
+    const overdue = on && due !== "" && due < today;
     return (
       <li
         key={s.id}
@@ -89,15 +116,17 @@ export function Subscriptions() {
           <button type="button" className="link sub-card-title" onClick={() => setOpen(s.id)}>
             {titleOf(s)}
           </button>
-          <span className="muted sub-card-meta">
-            {on && dayOfDue(s.data.due)
-              ? `Next ${shortDay(dayOfDue(s.data.due))}`
-              : on
-                ? "Needs a date"
-                : "Cancelled"}
+          <span className={`sub-card-meta${overdue ? " error" : " muted"}`}>
+            {overdue
+              ? `Overdue since ${shortDay(due)}`
+              : on && due
+                ? `Next ${shortDay(due)}`
+                : on
+                  ? "Needs a date"
+                  : "Cancelled"}
             {str(s.data.account) && ` · ${str(s.data.account)}`}
             {charges.length > 0 &&
-              ` · ${charges.length} charge${charges.length === 1 ? "" : "s"}, ${formatMoney(paid)} so far`}
+              ` · ${charges.length} charge${charges.length === 1 ? "" : "s"}, ${formatMoney(spent)} so far`}
           </span>
         </div>
         <span className="num sub-card-amount">
@@ -111,6 +140,11 @@ export function Subscriptions() {
             <span className="muted sub-card-monthly">{formatMoney(monthlyCost(s))} a month</span>
           )}
         </span>
+        {on && due && (
+          <button type="button" className="btn" onClick={() => setPaying(s)}>
+            <Icon name="check" size={14} /> Paid
+          </button>
+        )}
         <button type="button" className="btn" onClick={() => setActive(s, !on)}>
           {on ? "Cancel" : "Restore"}
         </button>
@@ -152,6 +186,14 @@ export function Subscriptions() {
           {message}
         </p>
       </div>
+      {undo && (
+        <div className="panel banner">
+          <span>Paid · {titleOf(undo.sub)}: charge saved, next date set.</span>
+          <button type="button" className="btn" onClick={() => void reverse(undo)}>
+            Undo
+          </button>
+        </div>
+      )}
       {candidates.length > 0 && (
         <section className="panel subs-found" aria-label="Found in your transactions">
           <span className="k">Found in your transactions · not set up yet</span>
@@ -199,6 +241,15 @@ export function Subscriptions() {
               setForm(undefined);
               setMessage(m);
             }}
+          />
+        </Sheet>
+      )}
+      {paying && (
+        <Sheet title={`Paid · ${titleOf(paying)}`} onClose={() => setPaying(undefined)}>
+          <MoneyForm
+            prefill={expenseFrom(paying)}
+            submitLabel="Save charge and mark paid"
+            onSaved={(expense) => void paid(paying, expense)}
           />
         </Sheet>
       )}

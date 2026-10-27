@@ -1,7 +1,7 @@
 import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Money has six described tabs; an undated transaction saves, shows under Undated and is left out of totals", async ({
+test("Money has five described tabs; an undated transaction saves, shows under Undated and is left out of totals", async ({
   browser,
 }) => {
   const page = await (
@@ -13,7 +13,6 @@ test("Money has six described tabs; an undated transaction saves, shows under Un
   await expect(tabs.getByRole("link")).toHaveText([
     "Overview",
     "Transactions",
-    "Payments",
     "Subscriptions",
     "Net worth",
     "Categories & accounts",
@@ -78,13 +77,13 @@ test("Money has six described tabs; an undated transaction saves, shows under Un
 
 test("a subscription can't be saved without amount, repeat and account", async ({ browser }) => {
   const page = await (await ownerContext(browser)).newPage();
+  // The old Payments tab lands on Subscriptions.
   await page.goto("/money/payments");
-  await page.getByRole("button", { name: "New payment" }).click();
-  const form = page.getByRole("form", { name: "Payment" });
+  await expect(page).toHaveURL(/\/money\/subscriptions$/);
+  await page.getByRole("button", { name: "New subscription" }).click();
+  const form = page.getByRole("form", { name: "Subscription" });
   await form.getByLabel("Title").fill("Strict e2e");
-  await form.getByLabel("Kind").selectOption("subscription");
+  await expect(form.getByLabel("Kind")).toHaveCount(0);
   await expect(form.getByText(/A subscription needs: amount, due date(, account)?./)).toBeVisible();
   await expect(form.getByRole("button", { name: "Save" })).toBeDisabled();
-  await form.getByLabel("Kind").selectOption("bill");
-  await expect(form.getByText("Still needs: due date.")).toBeVisible();
 });

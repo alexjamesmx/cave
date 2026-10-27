@@ -2,7 +2,7 @@ import { isTyping } from "./router.ts";
 import { createSignal } from "./signal.ts";
 
 /** The forms the New sheet offers. */
-export type QuickKind = "expense" | "task" | "reminder" | "payment" | "note";
+export type QuickKind = "expense" | "task" | "reminder" | "subscription" | "note";
 
 /** The New sheet: closed, open on its choices, or open on one form. Any screen opens it. */
 export const newSheet = createSignal<{ open: boolean; form?: QuickKind }>({ open: false });
