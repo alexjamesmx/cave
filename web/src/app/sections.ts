@@ -34,6 +34,7 @@ export type PageId =
   | "flows"
   | "flows-runs"
   | "money-lists"
+  | "money-subscriptions"
   | "settings-general"
   | "settings-devices"
   | "settings-notifications"
@@ -79,6 +80,11 @@ export const SECTIONS: Section[] = [
         ...view("payments", "Payments", "payments", "upcoming"),
         description:
           "What's coming due. Marking one paid logs the transaction and moves it to its next date.",
+      },
+      {
+        ...page("subscriptions", "Subscriptions", "money-subscriptions"),
+        description:
+          "What you pay for every month or year, what it costs, and what you've cancelled.",
       },
       {
         ...view("net-worth", "Net worth", "wealth"),

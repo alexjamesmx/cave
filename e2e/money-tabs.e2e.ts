@@ -1,7 +1,7 @@
 import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Money has five described tabs; an undated transaction saves, shows under Undated and is left out of totals", async ({
+test("Money has six described tabs; an undated transaction saves, shows under Undated and is left out of totals", async ({
   browser,
 }) => {
   const page = await (
@@ -14,6 +14,7 @@ test("Money has five described tabs; an undated transaction saves, shows under U
     "Overview",
     "Transactions",
     "Payments",
+    "Subscriptions",
     "Net worth",
     "Categories & accounts",
   ]);

@@ -21,26 +21,42 @@ function Labelled({ label, children }: { label: string; children(id: string): Re
   );
 }
 
+/** What a new payment starts from, such as a subscription set up from a past charge. */
+export interface PaymentStart {
+  title?: string;
+  kind?: string;
+  amount?: number;
+  category?: string;
+  account?: string;
+  due?: string;
+}
+
 /** A payment: a card statement, a subscription, a bill. It repeats monthly unless changed. */
-export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
+export function PaymentForm({
+  onSaved,
+  start = {},
+}: {
+  onSaved(message: string): void;
+  start?: PaymentStart;
+}) {
   const { local } = useCave();
   const collections = useCollections(local.db);
   const categories =
     collections?.find((c) => c.id === PAYMENTS)?.data.fields.find((f) => f.id === "category")
       ?.options ?? [];
   const sole = soleAccount(collections);
-  const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<string>("card");
-  const [amount, setAmount] = useState("");
+  const [title, setTitle] = useState(start.title ?? "");
+  const [kind, setKind] = useState<string>(start.kind ?? "card");
+  const [amount, setAmount] = useState(start.amount === undefined ? "" : String(start.amount));
   const [approx, setApprox] = useState(false);
-  const [category, setCategory] = useState("");
-  const [account, setAccount] = useState("");
-  const [due, setDue] = useState("");
+  const [category, setCategory] = useState(start.category ?? "");
+  const [account, setAccount] = useState(start.account ?? "");
+  const [due, setDue] = useState(start.due ?? "");
   const [repeat, setRepeat] = useState("monthly");
   const [error, setError] = useState<string>();
   useEffect(() => {
-    if (sole) setAccount(sole);
-  }, [sole]);
+    if (sole && !start.account) setAccount(sole);
+  }, [sole, start.account]);
   const missing = missingForPayment({ kind, amount, due, repeat, account });
 
   const submit = async (e: FormEvent) => {
