@@ -51,7 +51,7 @@ test("the dock: old ids map to their section, duplicates collapse, else the defa
 
 test("a path marks its section", () => {
   expect(sectionOf("/")).toBe("projects");
-  expect(sectionOf("/money/payments")).toBe("money");
+  expect(sectionOf("/money/subscriptions")).toBe("money");
   expect(sectionOf("/flows/flow-rent")).toBe("flows");
   expect(sectionOf("/notes/write")).toBe("notes");
   expect(sectionOf("/projects/activity")).toBe("projects");

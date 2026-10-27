@@ -37,14 +37,14 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
 
   await main.getByRole("link", { name: "Money" }).click();
   const tabs = page.getByRole("navigation", { name: "Money tabs" });
-  await tabs.getByRole("link", { name: "Payments" }).click();
-  await expect(page).toHaveURL(/\/money\/payments$/);
+  await tabs.getByRole("link", { name: "Subscriptions" }).click();
+  await expect(page).toHaveURL(/\/money\/subscriptions$/);
   await page.reload();
-  await expect(tabs.getByRole("link", { name: "Payments" })).toHaveAttribute(
+  await expect(tabs.getByRole("link", { name: "Subscriptions" })).toHaveAttribute(
     "aria-current",
     "page",
   );
-  await expect(page.getByRole("region", { name: "Payments by due date" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Active subscriptions" })).toBeVisible();
 
   for (const [from, to] of [
     ["/", /\/projects\/scene$/],

@@ -45,8 +45,9 @@ export function redirectOf(pathname: string): string | undefined {
   // tabs went to their own pages.
   if (first === "system" || (first === "settings" && second === "system"))
     return systemPath(first === "system" ? second : third);
-  // Wealth is Net worth since M7c.
+  // Wealth is Net worth since M7c; Payments is Subscriptions since the owner set bills aside.
   if (first === "money" && second === "wealth") return "/money/net-worth";
+  if (first === "money" && second === "payments") return "/money/subscriptions";
   // The Radar page (M9) and the "Agent finds" bucket (M11) are gone: Ideas holds the owner's own.
   if (first === "projects" && second === "radar") return "/projects/ideas";
   // The Notes view left Projects in M12 part 5; notes have their own section now.
@@ -78,6 +79,8 @@ export function redirectOf(pathname: string): string | undefined {
   if (collection === "ideas") return "/projects/ideas";
   if (collection === "notes") return "/notes/all";
   if (collection === "reminders") return "/calendar/reminders";
+  if (collection === "payments")
+    return view === "table" ? enc("settings", "data", collection, view) : "/money/subscriptions";
   if (collection === "tasks") return view === "board" ? "/tasks/board" : "/tasks/list";
   if (collection === "flows") return flowPath();
   return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);

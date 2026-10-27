@@ -1,4 +1,4 @@
-import { openNew, ownerContext } from "./helpers.ts";
+import { archiveAccount, newAccount, openNew, ownerContext } from "./helpers.ts";
 import { expect, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
@@ -9,7 +9,7 @@ const localAt = (page: Page, days: number) =>
     return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T09:00`;
   }, days);
 
-test("a card payment marked paid logs the expense and moves to next month; Undo reverses both", async ({
+test("a subscription marked paid logs the charge and moves to next month; Undo reverses both", async ({
   browser,
 }) => {
   const page = await (await ownerContext(browser)).newPage();
@@ -21,25 +21,35 @@ test("a card payment marked paid logs the expense and moves to next month; Undo 
   )
     .toISOString()
     .slice(0, 10);
+  const short = (day: string) =>
+    new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  const account = `Nu e2e ${Date.now()}`;
 
   await openNew(page);
-  await page.getByRole("button", { name: "Payment", exact: true }).click();
-  const form = page.getByRole("form", { name: "Payment" });
+  await page.getByRole("button", { name: "Subscription", exact: true }).click();
+  const form = page.getByRole("form", { name: "Subscription" });
   await form.getByLabel("Title").fill("Nu card e2e");
-  await form.getByLabel("Kind").selectOption("card");
   await form.getByLabel("Amount (expected)").fill("3000");
   await form.getByLabel("Amount varies").check();
   await form.getByLabel("Due").fill(due);
   await form.getByLabel("Repeat").selectOption("monthly");
+  await newAccount(form, account);
   await form.getByRole("button", { name: "Save" }).click();
   await expect(
-    page.getByRole("status").filter({ hasText: "Saved · Payment · Nu card e2e" }),
+    page.getByRole("status").filter({ hasText: "Saved · Subscription · Nu card e2e" }),
   ).toBeVisible();
 
   await page.goto("/c/payments");
-  const list = page.getByRole("region", { name: "Payments by due date" });
-  const row = list.locator(".sub-row", { hasText: "Nu card e2e" });
-  await expect(row).toContainText(due.slice(0, 10));
+  await expect(page).toHaveURL(/\/money\/subscriptions$/);
+  const row = page
+    .getByRole("region", { name: "Active subscriptions" })
+    .getByRole("listitem")
+    .filter({ hasText: "Nu card e2e" });
+  await expect(row).toContainText(`Next ${short(due.slice(0, 10))}`);
   await expect(row).toContainText("≈ $3,000");
   const pay = async (amount: string) => {
     await row.getByRole("button", { name: "Paid" }).click();
@@ -48,32 +58,37 @@ test("a card payment marked paid logs the expense and moves to next month; Undo 
     await expect(expense.getByLabel("Title")).toHaveValue("Nu card e2e");
     await expect(expense.getByLabel("Amount")).toHaveValue("");
     await expense.getByLabel("Amount").fill(amount);
-    await expense.getByRole("button", { name: "Save expense and mark paid" }).click();
-    await expect(page.getByText("Paid · Nu card e2e: expense saved, next date set.")).toBeVisible();
+    await expense.getByRole("button", { name: "Save charge and mark paid" }).click();
+    await expect(page.getByText("Paid · Nu card e2e: charge saved, next date set.")).toBeVisible();
   };
 
-  // Paid, then Undo: the payment is back on its date and the expense is gone.
+  // Paid, then Undo: the subscription is back on its date and the charge is gone.
   await pay("1");
-  // Every payment stays listed; this one now sits under Later, on next month's date.
-  await expect(row).toContainText(nextMonth);
+  await expect(row).toContainText(`Next ${short(nextMonth)}`);
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Undone · Nu card e2e" })).toBeVisible();
-  await expect(row).toContainText(due.slice(0, 10));
-  await page.goto("/c/money/table");
+  await expect(row).toContainText(`Next ${short(due.slice(0, 10))}`);
+  await page.goto("/money/transactions");
   await expect(page.getByRole("row").filter({ hasText: "Nu card e2e" })).toHaveCount(0);
 
-  // Paid for real: the expense is logged and the same payment moves to next month.
-  await page.goto("/c/payments");
+  // Paid for real: the charge is logged and the same subscription moves to next month.
+  await page.goto("/money/subscriptions");
   await pay("2875.5");
-  await page.goto("/c/payments/table");
-  await expect(page.getByRole("row").filter({ hasText: "Nu card e2e" })).toContainText(
-    new Date(`${nextMonth}T12:00:00Z`).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-  );
-  await page.goto("/c/money/table");
+  await expect(row).toContainText(`Next ${short(nextMonth)}`);
+  await expect(row).toContainText("1 charge");
+  await page.goto("/money/transactions");
   await expect(page.getByRole("row").filter({ hasText: "Nu card e2e" })).toContainText("$2,875.5");
+
+  // Leave the shared database as found: the charge and the subscription deleted, the account
+  // archived.
+  page.on("dialog", (dialog) => void dialog.accept());
+  await page.getByRole("button", { name: "Nu card e2e", exact: true }).click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await page.goto("/money/subscriptions");
+  await row.getByRole("button", { name: "Nu card e2e", exact: true }).click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(row).toHaveCount(0);
+  await archiveAccount(page, account);
 });
 
 test("a repeating task marked done comes back on its next date instead of piling up", async ({

@@ -69,7 +69,7 @@ test("a payment due tomorrow notifies once the day before and once on the day", 
   expect(notified[0]).toMatchObject({
     key: `payment:nu:${DUE}:before`,
     kind: "payment",
-    path: "/money/payments",
+    path: "/money/subscriptions",
     details: ["Fri Oct 16, 09:00", "$3,000"],
   });
 });

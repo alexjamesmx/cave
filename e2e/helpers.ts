@@ -1,7 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import type { Browser, BrowserContext, BrowserContextOptions, Page } from "@playwright/test";
+import type {
+  Browser,
+  BrowserContext,
+  BrowserContextOptions,
+  Locator,
+  Page,
+} from "@playwright/test";
 import { expect, violations } from "./test.ts";
 
 /** The e2e server's token, set by `playwright.config.ts`. */
@@ -66,6 +72,22 @@ export async function addMoney(
   }
   if (entry.yesterday) await form.getByRole("button", { name: "Yesterday" }).click();
   await form.getByRole("button", { name: "Save" }).click();
+}
+
+/**
+ * Types a new account into a form's account picker. A subscription needs one, and the shared
+ * e2e database keeps none live; `archiveAccount` puts the list back as found.
+ */
+export async function newAccount(form: Locator, name: string) {
+  await form.getByLabel("Account").selectOption("New account…");
+  await form.getByLabel("New account").fill(name);
+}
+
+export async function archiveAccount(page: Page, name: string) {
+  await page.goto("/money/lists");
+  const accounts = page.getByRole("list", { name: "Account options" });
+  await accounts.getByRole("button", { name: `Archive ${name}` }).click();
+  await expect(accounts.getByText(name)).toHaveCount(0);
 }
 
 /** Opens the New sheet (the rail's or the dock's New), unless it is already open. */

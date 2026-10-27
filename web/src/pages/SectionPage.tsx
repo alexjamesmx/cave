@@ -20,6 +20,7 @@ import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { Reminders } from "./Reminders.tsx";
 import { Routine } from "./Routine.tsx";
+import { Subscriptions } from "./Subscriptions.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
 import { SettingsData } from "./settings/Data.tsx";
 import { SettingsDevices } from "./settings/Devices.tsx";
@@ -35,6 +36,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-routine": () => <Routine />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
+  "money-subscriptions": () => <Subscriptions />,
   "projects-scene": () => (
     <>
       <LandingNeedsYou />

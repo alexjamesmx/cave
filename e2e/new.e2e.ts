@@ -22,7 +22,7 @@ test("New from anywhere: ⌘K opens the sheet of forms, a task saves and the she
     "Money",
     "Task",
     "Reminder",
-    "Payment",
+    "Subscription",
     "Note",
   ]);
   await expect(sheet.getByRole("textbox")).toHaveCount(0);
