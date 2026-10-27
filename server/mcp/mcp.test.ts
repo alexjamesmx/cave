@@ -173,11 +173,14 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "money_month",
     "get_project",
     "list_flows",
+    "get_routine",
     "create",
     "update",
     "propose_delete",
     "mark_paid",
     "save_flow",
+    "set_routine",
+    "add_habit",
     "start_run",
     "log_step",
     "finish_run",
@@ -195,6 +198,7 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     "money_month",
     "get_project",
     "list_flows",
+    "get_routine",
   ]);
   const tools = (await (await connect("reader")).listTools()).tools;
   expect(tools.every((t) => t.annotations?.readOnlyHint === true)).toBe(true);
@@ -208,6 +212,8 @@ test("tools are listed in a fixed order and follow the agent's scopes", async ()
     ["propose_delete", false],
     ["mark_paid", false],
     ["save_flow", true],
+    ["set_routine", true],
+    ["add_habit", false],
     ["start_run", false],
     ["log_step", false],
     ["finish_run", false],
@@ -739,4 +745,41 @@ test("add_note with a project makes the note a page of it; an unknown project is
   const bad = await call(client, "add_note", { title: "Lost", body: "x", project: "nope" });
   expect(bad.isError).toBe(true);
   expect(textOf(bad)).toContain("project");
+});
+
+test("routine and habits: set_routine replaces the week, checked like the app; add_habit adds a diary checkbox once; a restricted agent writes neither routine nor sees it", async () => {
+  const client = await connect("claude");
+  const set = (blocks: unknown[]) => call(client, "set_routine", { blocks });
+  const gym = {
+    title: "Gym",
+    area: "body",
+    kind: "fixed",
+    minutes: 75,
+    days: [1, 3],
+    start: "07:15",
+  };
+  const chinese = { title: "Chino", area: "learn", kind: "weekly", minutes: 60, perWeek: 4 };
+  expect((await set([gym, chinese])).isError).toBeFalsy();
+  const read = JSON.parse(textOf(await call(client, "get_routine")));
+  expect(read.blocks.map((b: { title: string; area: string }) => [b.title, b.area])).toEqual([
+    ["Gym", "body"],
+    ["Chino", "learn"],
+  ]);
+  expect(read.days[0]).toBe("Mon");
+  // The app's checks: a fixed block needs a start.
+  const refused = await set([{ ...gym, start: undefined }]);
+  expect(refused.isError).toBe(true);
+  expect(textOf(refused)).toBe("block Gym: a fixed block needs a start");
+
+  const habit = JSON.parse(textOf(await call(client, "add_habit", { name: "Sin refresco" })));
+  expect(habit.id).toBe("sin_refresco");
+  await call(client, "add_habit", { name: "Sin refresco" });
+  const habits = JSON.parse(textOf(await call(client, "get_routine"))).habits;
+  expect(habits.filter((h: { id: string }) => h.id === "sin_refresco")).toHaveLength(1);
+
+  const restricted = await connect("money-only");
+  expect(textOf(await call(restricted, "set_routine", { blocks: [] }))).toBe(
+    "the routine is for agents that can see every collection",
+  );
+  expect(JSON.parse(textOf(await call(restricted, "get_routine")))).toEqual({ habits: [] });
 });

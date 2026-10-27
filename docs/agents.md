@@ -13,8 +13,8 @@ bun run agent revoke codex
 
 - The token (`cave_…`) is printed once. Only its SHA-256 is stored, so it can't be shown again. A lost token means revoking the agent and adding a new one.
 - Scopes:
-  - `read`: `list_collections`, `query`, `get`, `money_month` (a month's totals, and the owner's `budget`: `limit`, `spent`, `left`, `pace`, `savingTarget`, `saved`, or `null` until the owner sets a limit; agents never set the budget), `get_project`, `list_flows`.
-  - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `start_run`, `log_step` (with `question: true`, a question for the owner), `finish_run`, and `add_note`.
+  - `read`: `list_collections`, `query`, `get`, `money_month` (a month's totals, and the owner's `budget`: `limit`, `spent`, `left`, `pace`, `savingTarget`, `saved`, or `null` until the owner sets a limit; agents never set the budget), `get_project`, `list_flows`, `get_routine` (the weekly routine's blocks and the diary's habits; the blocks only for an agent that sees every collection).
+  - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `set_routine` (replaces the whole week, checked like the app; only for an agent that sees every collection), `add_habit` (a diary checkbox; an archived one comes back), `start_run`, `log_step` (with `question: true`, a question for the owner), `finish_run`, and `add_note`.
 - `--collections` limits what the agent can see. Other collections don't appear in its lists, and anything in them answers "not found".
 - Keep the token in an environment variable, `CAVE_AGENT_TOKEN` below. Never put it in a committed file.
 
@@ -164,7 +164,7 @@ Claude's apps reach custom connectors from Anthropic's cloud, so they use the ho
    - URL: `https://cave.alexjamesmx.dev/mcp`;
    - sign-in: **No sign-in**;
    - request header: name `authorization`, value `Bearer <token>`, **Required**.
-3. **Set the write tools to ask first:** `create`, `update`, `propose_delete`, `mark_paid`, `save_flow` and `add_note`. Read tools can stay allowed.
+3. **Set the write tools to ask first:** `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `set_routine`, `add_habit` and `add_note`. Read tools can stay allowed.
 
 - The connector belongs to the Claude account, so every device signed in to it has the Cave.
 - **Changing the token** (lost, leaked, rotated) means revoking `claude-apps`, minting a new one, then removing and re-adding the connector: the header value can't be edited in place.
