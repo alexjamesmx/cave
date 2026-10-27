@@ -3,6 +3,8 @@ import * as z from "zod/v4";
 import { localDateTime } from "../../shared/dates.ts";
 import { FlowDefinitionSchema } from "../../shared/flows/registry.ts";
 import type { Hlc } from "../../shared/hlc.ts";
+import { newId } from "../../shared/ids.ts";
+import { AREAS, KINDS, MAX_BLOCKS } from "../../shared/routine.ts";
 import { STEP_LIMITS, STEP_STATUSES } from "../../shared/runs.ts";
 import type { CallLog } from "../agent-calls.ts";
 import { AgentWriter, type WriteResult } from "../agent-writer.ts";
@@ -19,6 +21,7 @@ import {
   query,
   type ToolOutcome,
 } from "./read.ts";
+import { getRoutine } from "./routine.ts";
 import { finishRun, logStep, startRun } from "./runs.ts";
 
 export interface McpDeps {
@@ -162,6 +165,14 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       () => run("list_flows", {}, () => listFlows(store, agent)),
     );
+    server.registerTool(
+      "get_routine",
+      {
+        description: `The owner's weekly routine, a guide and not a schedule: blocks with a title, an area (${AREAS.join(", ")}), a kind (fixed: on set days at a start; daily: every day, optional start; weekly: some times a week), minutes, and days (0 Monday … 6 Sunday). Also the diary's habits (checkboxes ticked per day).`,
+        annotations: READ,
+      },
+      () => run("get_routine", {}, () => getRoutine(store, agent)),
+    );
   }
 
   if (agent.scopes.includes("write")) {
@@ -277,6 +288,47 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
             ? { ok: true, value: { id: result.id, status: result.status }, seqs: result.seqs }
             : result;
         }),
+    );
+    server.registerTool(
+      "set_routine",
+      {
+        description: `Replace the owner's whole weekly routine (read it first with get_routine and keep what should stay). At most ${MAX_BLOCKS} blocks. A fixed block needs days and a start; a weekly one perWeek (1-7); minutes 5 to 960; start HH:MM; days 0 Monday … 6 Sunday. Only for agents that can see every collection.`,
+        inputSchema: z.object({
+          blocks: z
+            .array(
+              z.object({
+                id: z.string().optional(),
+                title: z.string(),
+                area: z.enum(AREAS),
+                kind: z.enum(KINDS),
+                minutes: z.number().int(),
+                start: z.string().optional(),
+                days: z.array(z.number().int()).optional(),
+                perWeek: z.number().int().optional(),
+              }),
+            )
+            .max(MAX_BLOCKS),
+        }),
+        annotations: { ...WRITE, destructiveHint: true, idempotentHint: true },
+      },
+      (args) =>
+        run("set_routine", { blocks: args.blocks.length }, () =>
+          fromWrite(
+            writer().setRoutine({
+              blocks: args.blocks.map((b) => ({ ...b, id: b.id ?? newId(deps.now()) })),
+            }),
+          ),
+        ),
+    );
+    server.registerTool(
+      "add_habit",
+      {
+        description:
+          "Add a habit to the owner's diary: a checkbox ticked per day (Notes → Today and Days). A habit that was archived comes back with its history; one that exists is left as it is. Returns its field id.",
+        inputSchema: z.object({ name: z.string().min(1).max(60) }),
+        annotations: WRITE,
+      },
+      (args) => run("add_habit", args, () => fromWrite(writer().addHabit(args.name))),
     );
     const runDeps = { store, agent, writer, now: deps.now, timeZone };
     // `question: true` writes a task for the owner, which is also how the answer comes back.

@@ -1,4 +1,5 @@
 import { localDateTime } from "../shared/dates.ts";
+import { habitId } from "../shared/diary.ts";
 import {
   activeFields,
   fieldsOf,
@@ -13,6 +14,7 @@ import { newId } from "../shared/ids.ts";
 import { PAYMENTS, paidPatch } from "../shared/payments.ts";
 import { RADAR, RADAR_PER_DAY, sameUrl } from "../shared/radar.ts";
 import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
+import { parseRoutine, routineOf } from "../shared/routine.ts";
 import { RUNS } from "../shared/runs.ts";
 import type { CollectionData } from "../shared/schema.ts";
 import { completeTask } from "../shared/tasks.ts";
@@ -351,6 +353,55 @@ export class AgentWriter {
     const errors = validateFields(active, data, { refTarget: (id) => this.store.get(id) });
     if (errors.length > 0) return fail(formatFieldErrors(errors));
     return { ok: true, value: data };
+  }
+
+  /**
+   * The owner's weekly routine (`settings.routine`), replaced whole. It is the owner's own
+   * plan, not a collection, so only an agent that may see every collection writes it.
+   */
+  setRoutine(raw: unknown): WriteResult {
+    if (this.agent.collections !== null)
+      return fail("the routine is for agents that can see every collection");
+    const current = routineOf(this.store.get("settings")?.data);
+    const parsed = parseRoutine({ ...current, ...(raw as object) });
+    if (!parsed.ok) return fail(parsed.error);
+    const settings = this.store.get("settings");
+    return this.apply(settings, {
+      id: "settings",
+      kind: "setting",
+      collection: null,
+      data: { routine: parsed.value },
+    });
+  }
+
+  /**
+   * A diary habit: a checkbox field on `journal`, ticked per day. A name that was archived
+   * comes back with its ticks; one that is live is left as it is.
+   */
+  addHabit(name: string): WriteResult {
+    const title = name.trim();
+    if (!title) return fail("a habit needs a name");
+    const journal = visibleCollectionDoc(this.store, this.agent, "journal");
+    if (!journal) return fail("collection journal not found");
+    const id = habitId(title);
+    const fields = fieldsOf(journal);
+    const existing = fields.find((f) => f.id === id);
+    if (existing && existing.archived !== true) return { ok: true, id, seqs: [] };
+    if (existing && existing.type !== "checkbox") return fail(`journal already has a field ${id}`);
+    const next = existing
+      ? fields.map((f) => {
+          if (f.id !== id) return f;
+          const { archived: _, ...back } = f;
+          return back;
+        })
+      : [...fields, { id, name: title, type: "checkbox" as const }];
+    const result = this.apply(journal, {
+      id: "journal",
+      kind: "collection",
+      collection: null,
+      data: { fields: next },
+    });
+    return result.ok ? { ...result, id } : result;
   }
 
   // Observing the stored stamps first orders this edit after everything the server holds.
