@@ -79,6 +79,11 @@ function reachError(store: Store, agent: Agent, def: FlowDefinition): string | u
     );
   if (t.type === "item-changed")
     return check(t.collection, [t.field]) ?? stepsError(def, triggerCollection, check);
+  if (t.type === "date-arrives")
+    return (
+      check(t.collection, [t.field, ...(t.where ?? []).map((c) => c.field)]) ??
+      stepsError(def, triggerCollection, check)
+    );
   return stepsError(def, undefined, check);
 }
 

@@ -1,11 +1,11 @@
-import { daysInMonth, shiftMonth } from "./dates.ts";
-import { isActive } from "./payments.ts";
+import { anchorOf, dueInstant, nextDue, repeatOf, type Zone } from "./recurrence.ts";
 import type { Doc } from "./types.ts";
 
 /**
- * Subscriptions: payments of kind `subscription`, read for Money → Subscriptions. What they
- * cost a month, the charges already paid for each, and the names charged as subscriptions that
- * have no payment yet. Pure, so the page and its tests read the same numbers.
+ * Subscriptions: payments of kind `subscription`, read for Money → Subscriptions. Two kinds of
+ * number, kept apart: the plan (what the active ones cost a month and a year, from their
+ * amount and repeat) and the history (what was really paid: the expenses that belong to one).
+ * A month a subscription was paused has no charge, so it never counts.
  */
 
 export const SUBSCRIPTION_CATEGORY = "subscriptions";
@@ -28,12 +28,11 @@ const PER_MONTH: Record<string, number> = {
 /** What a subscription costs a month at its repeat. */
 export const monthlyCost = (sub: Doc) => amountOf(sub) * (PER_MONTH[text(sub.data.repeat)] ?? 0);
 
-export function subscriptionsOf(payments: Doc[]): { active: Doc[]; cancelled: Doc[] } {
-  const subs = payments
+/** Every live subscription, A to Z. */
+export const subscriptionsOf = (payments: Doc[]) =>
+  payments
     .filter((d) => live(d) && d.data.kind === "subscription")
     .sort((a, b) => text(a.data._title).localeCompare(text(b.data._title)));
-  return { active: subs.filter(isActive), cancelled: subs.filter((d) => !isActive(d)) };
-}
 
 /** The active ones' cost a month, and whether any amount only estimates. */
 export function monthlyTotal(active: Doc[]): { total: number; approx: boolean } {
@@ -44,7 +43,20 @@ export function monthlyTotal(active: Doc[]): { total: number; approx: boolean } 
 }
 
 /**
- * A subscription's past charges, newest first: the expenses linked to it, and the ones under
+ * The next charge on or after `now`, from the stored date and its repeat, so it moves on by
+ * itself; a one-off date stays as it is, even once past. Nothing is written.
+ */
+export function nextCharge(sub: Doc, now: number, zone: Zone): string | undefined {
+  const due = text(sub.data.due);
+  if (!due) return undefined;
+  const repeat = repeatOf(sub.data);
+  const at = dueInstant(due, zone);
+  if (repeat === "none" || at === undefined || at >= now) return due;
+  return nextDue(anchorOf(sub) ?? due, repeat, now - 1, zone);
+}
+
+/**
+ * A subscription's real charges, newest first: the expenses linked to it, and the ones under
  * the subscriptions category with its name.
  */
 export function chargesOf(sub: Doc, money: Doc[]): Doc[] {
@@ -60,55 +72,11 @@ export function chargesOf(sub: Doc, money: Doc[]): Doc[] {
     .sort((a, b) => text(b.data.date).localeCompare(text(a.data.date)));
 }
 
-export interface Candidate {
-  key: string;
-  /** The newest charge: its title, amount, account and date start the form. */
-  last: Doc;
-  count: number;
-  total: number;
-}
-
-/**
- * Names charged under the subscriptions category that no subscription covers yet (by name or
- * by link), newest charge first.
- */
-export function candidatesOf(money: Doc[], subs: Doc[]): Candidate[] {
-  const covered = new Set(subs.map((s) => nameKey(text(s.data._title))));
-  const linked = new Set(subs.map((s) => s.id));
-  const groups = new Map<string, Doc[]>();
-  for (const m of money) {
-    if (!live(m) || m.data.direction !== "expense" || m.data.category !== SUBSCRIPTION_CATEGORY)
-      continue;
-    const key = nameKey(text(m.data._title));
-    if (!key || covered.has(key) || linked.has(text(m.data.payment))) continue;
-    groups.set(key, [...(groups.get(key) ?? []), m]);
-  }
-  return [...groups.entries()]
-    .map(([key, docs]) => {
-      const sorted = docs.sort((a, b) => text(b.data.date).localeCompare(text(a.data.date)));
-      return {
-        key,
-        last: sorted[0] as Doc,
-        count: docs.length,
-        total: docs.reduce((sum, d) => sum + amountOf(d), 0),
-      };
-    })
-    .sort((a, b) => text(b.last.data.date).localeCompare(text(a.last.data.date)));
-}
-
-/**
- * The first monthly date after `today` on the day of a past charge (`YYYY-MM-DD[THH:mm]`), the
- * day clamped in shorter months; the time is kept, 09:00 when the charge had none. Only a
- * suggestion: the owner confirms it in the form.
- */
-export function nextMonthlyAfter(charged: string, today: string): string {
-  const day = Number(charged.slice(8, 10));
-  const time = /T(\d{2}:\d{2})/.exec(charged)?.[1] ?? "09:00";
-  let month = charged.slice(0, 7);
-  let date = charged.slice(0, 10);
-  while (date <= today) {
-    month = shiftMonth(month, 1);
-    date = `${month}-${String(Math.min(day, daysInMonth(month))).padStart(2, "0")}`;
-  }
-  return `${date}T${time}`;
+/** What was really paid and since when: the first charge's day, if any. */
+export function historyOf(charges: Doc[]): { spent: number; since: string | undefined } {
+  const first = charges.at(-1);
+  return {
+    spent: charges.reduce((sum, c) => sum + amountOf(c), 0),
+    since: first ? text(first.data.date).slice(0, 10) || undefined : undefined,
+  };
 }

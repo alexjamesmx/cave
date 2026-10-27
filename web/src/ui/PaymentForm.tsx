@@ -21,47 +21,26 @@ function Labelled({ label, children }: { label: string; children(id: string): Re
   );
 }
 
-/** What a new payment starts from, such as a subscription set up from a past charge. */
-export interface PaymentStart {
-  title?: string;
-  kind?: string;
-  amount?: number;
-  category?: string;
-  account?: string;
-  due?: string;
-}
-
-/**
- * A payment: a card statement, a subscription, a bill. It repeats monthly unless changed.
- * Started as a subscription, it asks no kind.
- */
-export function PaymentForm({
-  onSaved,
-  start = {},
-}: {
-  onSaved(message: string): void;
-  start?: PaymentStart;
-}) {
+/** A payment: a card statement, a subscription, a bill. It repeats monthly unless changed. */
+export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
   const { local } = useCave();
   const collections = useCollections(local.db);
   const categories =
     collections?.find((c) => c.id === PAYMENTS)?.data.fields.find((f) => f.id === "category")
       ?.options ?? [];
   const sole = soleAccount(collections);
-  const [title, setTitle] = useState(start.title ?? "");
-  const [kind, setKind] = useState<string>(start.kind ?? "card");
-  const [amount, setAmount] = useState(start.amount === undefined ? "" : String(start.amount));
+  const [title, setTitle] = useState("");
+  const [kind, setKind] = useState<string>("card");
+  const [amount, setAmount] = useState("");
   const [approx, setApprox] = useState(false);
-  const [category, setCategory] = useState(start.category ?? "");
-  const [account, setAccount] = useState(start.account ?? "");
-  const [due, setDue] = useState(start.due ?? "");
+  const [category, setCategory] = useState("");
+  const [account, setAccount] = useState("");
+  const [due, setDue] = useState("");
   const [repeat, setRepeat] = useState("monthly");
   const [error, setError] = useState<string>();
   useEffect(() => {
-    if (sole && !start.account) setAccount(sole);
-  }, [sole, start.account]);
-  // Started as a subscription (Money → Subscriptions, New): the kind is fixed, so not asked.
-  const subscription = start.kind === "subscription";
+    if (sole) setAccount(sole);
+  }, [sole]);
   const missing = missingForPayment({ kind, amount, due, repeat, account });
 
   const submit = async (e: FormEvent) => {
@@ -87,15 +66,11 @@ export function PaymentForm({
       if (!(err instanceof FieldValueError)) throw err;
       return setError(err.message);
     }
-    onSaved(`Saved · ${subscription ? "Subscription" : "Payment"} · ${title.trim()}`);
+    onSaved(`Saved · Payment · ${title.trim()}`);
   };
 
   return (
-    <form
-      className="panel quick-form"
-      aria-label={subscription ? "Subscription" : "Payment"}
-      onSubmit={(e) => void submit(e)}
-    >
+    <form className="panel quick-form" aria-label="Payment" onSubmit={(e) => void submit(e)}>
       <div className="quick-row">
         <Labelled label="Title">
           {(id) => (
@@ -108,24 +83,22 @@ export function PaymentForm({
             />
           )}
         </Labelled>
-        {!subscription && (
-          <Labelled label="Kind">
-            {(id) => (
-              <select
-                id={id}
-                className="input"
-                value={kind}
-                onChange={(e) => setKind(e.target.value)}
-              >
-                {PAYMENT_KINDS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Labelled>
-        )}
+        <Labelled label="Kind">
+          {(id) => (
+            <select
+              id={id}
+              className="input"
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+            >
+              {PAYMENT_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          )}
+        </Labelled>
       </div>
       <div className="quick-row" style={{ alignItems: "end" }}>
         <Labelled label="Amount (expected)">

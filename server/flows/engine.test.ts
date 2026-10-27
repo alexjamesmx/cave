@@ -174,6 +174,49 @@ test("a schedule runs its slot once, after it was turned on, and records a late 
   expect(engine.runs("f-late")[0]?.result).toBe("missed");
 });
 
+const charge: FlowDefinition = {
+  version: 1,
+  trigger: {
+    type: "date-arrives",
+    collection: "payments",
+    field: "due",
+    before: 1,
+    where: [{ field: "kind", op: "=", value: "subscription" }],
+  },
+  steps: [{ type: "notify", title: "{{item.title}} charges tomorrow", open: "trigger-item" }],
+};
+
+test("a date arriving runs the flow once per date of the item's series, never for a paused or other item", async () => {
+  flow("f-charge", charge, Date.parse("2026-09-01T12:00:00Z"));
+  // Monthly on the 16th: tomorrow, so one day before is now.
+  write("music", "payments", {
+    _title: "Music",
+    kind: "subscription",
+    repeat: "monthly",
+    due: "2026-08-16",
+  });
+  write("paused", "payments", {
+    _title: "Paused",
+    kind: "subscription",
+    repeat: "monthly",
+    due: "2026-08-16",
+    active: false,
+  });
+  write("card", "payments", { _title: "Card", kind: "card", repeat: "monthly", due: "2026-08-16" });
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
+  expect(await engine.job.run({ now: NOW + 30_000 })).toMatchObject({ didSomething: false });
+  expect(notified.map((x) => x.n.title)).toEqual(["Music charges tomorrow"]);
+  // A month later the next date of the series arrives on its own.
+  const next = Date.parse("2026-11-15T16:00:00Z");
+  expect(await engine.job.run({ now: next })).toMatchObject({ summary: "1 ran, 0 missed" });
+});
+
+test("a date that arrived before the flow was turned on never runs it", async () => {
+  write("music", "payments", { _title: "Music", kind: "subscription", due: "2026-10-16" });
+  flow("f-charge", charge, NOW - 1000);
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ didSomething: false });
+});
+
 test("turning a flow on after today's slot waits for the next one", async () => {
   flow("f-rent", rent, NOW - 1000);
   expect(await engine.job.run({ now: NOW })).toMatchObject({ didSomething: false });

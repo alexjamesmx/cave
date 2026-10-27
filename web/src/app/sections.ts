@@ -78,8 +78,7 @@ export const SECTIONS: Section[] = [
       },
       {
         ...page("subscriptions", "Subscriptions", "money-subscriptions"),
-        description:
-          "What you pay for every month or year, what it costs, and what you've cancelled.",
+        description: "What you pay for every month or year, and what it has cost you.",
       },
       {
         ...view("net-worth", "Net worth", "wealth"),

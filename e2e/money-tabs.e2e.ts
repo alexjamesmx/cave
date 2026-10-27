@@ -81,9 +81,8 @@ test("a subscription can't be saved without amount, repeat and account", async (
   await page.goto("/money/payments");
   await expect(page).toHaveURL(/\/money\/subscriptions$/);
   await page.getByRole("button", { name: "New subscription" }).click();
-  const form = page.getByRole("form", { name: "Subscription" });
-  await form.getByLabel("Title").fill("Strict e2e");
-  await expect(form.getByLabel("Kind")).toHaveCount(0);
-  await expect(form.getByText(/A subscription needs: amount, due date(, account)?./)).toBeVisible();
+  const form = page.getByRole("form", { name: "New subscription" });
+  await form.getByLabel("Name").fill("Strict e2e");
+  await expect(form.getByText(/Still needs: amount, due date(, account)?./)).toBeVisible();
   await expect(form.getByRole("button", { name: "Save" })).toBeDisabled();
 });

@@ -69,9 +69,15 @@ test("a payment due tomorrow notifies once the day before and once on the day", 
   expect(notified[0]).toMatchObject({
     key: `payment:nu:${DUE}:before`,
     kind: "payment",
-    path: "/money/subscriptions",
+    path: "/settings/data/payments/upcoming",
     details: ["Fri Oct 16, 09:00", "$3,000"],
   });
+});
+
+test("a subscription never notifies here: its reminder is a flow the owner attaches", async () => {
+  write("music", { _title: "Music", kind: "subscription", due: DUE, active: true });
+  await run(DUE_AT + HOUR);
+  expect(notified).toEqual([]);
 });
 
 test("notify_days moves the first notice; an autopay payment only says it was charged, on the day", async () => {

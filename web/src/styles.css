@@ -3136,95 +3136,81 @@ ul.chips {
   }
 }
 
-/* Money → Subscriptions: the month's cost on top, then what to set up, active and cancelled. */
+/* Money → Subscriptions: the plan in one line of totals, then one table. */
 .subs-page {
   display: grid;
   gap: 14px;
 }
 
-.stat-value {
+.subs-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.subs-totals {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 36px;
+  margin: 0;
+}
+
+.subs-totals dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.subs-totals dd {
+  margin: 2px 0 0;
   font-size: 22px;
   font-weight: 600;
   color: var(--text-strong);
 }
 
-.subs-list,
-.subs-found {
-  padding: 16px;
-  display: grid;
-  gap: 10px;
-}
-
-.subs-list ul,
-.subs-found ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 6px;
-}
-
-.sub-card,
-.subs-found li {
+.subs-bar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-control);
-  border: 1px solid var(--line);
-  background: var(--control);
+  flex-wrap: wrap;
 }
 
-.subs-found li {
-  border-style: dashed;
-  background: transparent;
+.subs-table .num-col {
+  text-align: right;
 }
 
-.sub-card:hover {
-  border-color: var(--control-border);
+.subs-table tbody tr {
+  cursor: pointer;
 }
 
-.sub-card.cancelled {
-  opacity: 0.6;
+.subs-table tbody tr:hover {
+  background: var(--on);
 }
 
-.sub-card-main {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  gap: 2px;
+.subs-table tr.paused td {
+  opacity: 0.55;
 }
 
-.sub-card-title {
-  justify-self: start;
-  font-size: 14px;
+.subs-name {
   font-weight: 600;
   color: var(--text-strong);
-  text-align: left;
 }
 
-.sub-card-meta {
+.subs-note {
+  margin: 0;
   font-size: 12px;
 }
 
-.subs-found .sub-card-meta {
-  flex: 1;
-}
-
-.sub-card-amount {
+.sub-form {
   display: grid;
-  justify-items: end;
-  font-size: 14px;
-  white-space: nowrap;
+  gap: 12px;
 }
 
-.sub-card-monthly {
-  font-size: 11px;
-}
-
-@media (max-width: 600px) {
-  .sub-card,
-  .subs-found li {
-    flex-wrap: wrap;
-  }
+.sub-form-actions {
+  display: flex;
+  gap: 8px;
 }

@@ -86,8 +86,8 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
   await expect(page.getByRole("status").filter({ hasText: "Lists e2e" })).toBeVisible();
   await openNew(page);
   await page.getByRole("button", { name: "Subscription", exact: true }).click();
-  const pay = page.getByRole("form", { name: "Subscription" });
-  await expect(pay.getByLabel("Title")).toBeVisible();
+  const pay = page.getByRole("form", { name: "New subscription" });
+  await expect(pay.getByLabel("Name")).toBeVisible();
   await expect(pay.getByLabel("Account")).toHaveCount(0);
 
   // Archive the account again so the shared list stays as found; the entry keeps it, greyed.

@@ -44,7 +44,7 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
     "aria-current",
     "page",
   );
-  await expect(page.getByRole("region", { name: "Active subscriptions" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Subscriptions" })).toBeVisible();
 
   for (const [from, to] of [
     ["/", /\/projects\/scene$/],
