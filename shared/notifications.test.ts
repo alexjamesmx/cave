@@ -32,9 +32,10 @@ test("the owner's choices are read, unknown channels and values are dropped", ()
     detail: { webpush: "full", telegram: "full", discord: "titles", email: "full" },
     telegramApprovals: true,
   });
+  // The digest's time lives in its flow now; an old value here is ignored.
   expect(
     notificationSettings({ notifications: { channels: ["email"], digest: "07:30" } }),
-  ).toMatchObject({ channels: ["email"], digest: "07:30" });
+  ).not.toHaveProperty("digest");
 });
 
 test("recipients and sender names are checked before anything is kept", () => {

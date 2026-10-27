@@ -73,7 +73,7 @@ test("CAVE_ENV=test: a reminder due in a minute lands in the outbox and never re
     await page.goto("/");
     await addReminder(page, { title: "Push check", ...wallIn(1) });
 
-    // The outbox row is written where a send would happen: same sweep, same key.
+    // The outbox row is written where a send would happen: the reminder flow's notify step.
     const outbox = () =>
       page.evaluate(async () => {
         const res = await fetch("/api/system", {
@@ -90,7 +90,9 @@ test("CAVE_ENV=test: a reminder due in a minute lands in the outbox and never re
         async () =>
           (await outbox()).rows.filter(
             (r) =>
-              r.channel === "webpush" && r.result === "outbox" && r.key.startsWith("reminder:"),
+              r.channel === "webpush" &&
+              r.result === "outbox" &&
+              r.key.startsWith("flow:flow-reminders:"),
           ).length,
         { timeout: 120_000, intervals: [2_000] },
       )

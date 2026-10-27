@@ -59,7 +59,10 @@ export function listFlows(store: Store, agent: Agent): ToolOutcome {
 // names one the collection has: a flow is never a way around the allowlist.
 function reachError(store: Store, agent: Agent, def: FlowDefinition): string | undefined {
   const t = def.trigger;
-  const triggerCollection = t.type === "schedule" ? undefined : t.collection;
+  // The digest reads every collection, so it is for agents that can read them all.
+  if (agent.collections !== null && def.steps.some((s) => s.type === "digest"))
+    return "the digest step needs access to every collection";
+  const triggerCollection = "collection" in t ? t.collection : undefined;
   const fieldIds = (collection: string) => {
     const doc = visibleCollectionDoc(store, agent, collection);
     return doc ? new Set(["title", ...fieldsOf(doc).map((f) => f.id)]) : undefined;
@@ -79,6 +82,7 @@ function reachError(store: Store, agent: Agent, def: FlowDefinition): string | u
     );
   if (t.type === "item-changed")
     return check(t.collection, [t.field]) ?? stepsError(def, triggerCollection, check);
+  if (t.type === "budget-reached") return check("money", []) ?? stepsError(def, undefined, check);
   if (t.type === "date-arrives")
     return (
       check(t.collection, [t.field, ...(t.where ?? []).map((c) => c.field)]) ??

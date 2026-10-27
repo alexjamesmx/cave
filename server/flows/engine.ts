@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { localDate } from "../../shared/dates.ts";
+import { localDate, shortDay } from "../../shared/dates.ts";
 import { fieldsOf } from "../../shared/fields.ts";
 import { allHold, holds } from "../../shared/flows/conditions.ts";
 import { latestArrival } from "../../shared/flows/date-trigger.ts";
@@ -9,10 +9,12 @@ import { FLOWS } from "../../shared/flows/seed.ts";
 import { renderTemplate, type TemplateContext } from "../../shared/flows/templates.ts";
 import { parseStamp } from "../../shared/hlc.ts";
 import { parseRecipients } from "../../shared/notifications.ts";
-import { repeatOf } from "../../shared/recurrence.ts";
+import { anchorOf, repeatOf } from "../../shared/recurrence.ts";
 import type { Zone } from "../../shared/reminders.ts";
 import type { Doc } from "../../shared/types.ts";
 import { every, type Job } from "../jobs/scheduler.ts";
+import { digestLines } from "../notify/digest.ts";
+import { BUDGET, budgetState, noticeFor } from "../notify/notice.ts";
 import type { Notifier } from "../notify/notifier.ts";
 import type { AppliedChange, Store } from "../store.ts";
 import { createFlowWriter } from "./writer.ts";
@@ -183,14 +185,15 @@ export function createFlowEngine({
           if (++notes > MAX_NOTIFICATIONS)
             return fail(i, step.type, `more than ${MAX_NOTIFICATIONS} notifications`);
           const title = renderTemplate(step.title, ctx);
+          // Opening the trigger item, the notification is about it: a reminder's Done and
+          // Snooze, a payment's amount, the budget's numbers.
+          const about = step.open === "trigger-item" && item ? noticeFor(item, zone()) : undefined;
           const path =
             step.open === "calendar"
               ? "/calendar"
               : step.open === "created-item" && created
                 ? `/c/${created.collection}`
-                : item
-                  ? `/c/${item.collection}`
-                  : "/";
+                : (about?.path ?? "/");
           const ready = notifier.statuses().some((s) => s.status.ready);
           if (!ready) {
             steps.push({ step: i, type: step.type, outcome: "notify skipped: push off" });
@@ -204,14 +207,47 @@ export function createFlowEngine({
           const sent = await notifier.notify({
             key: `${key}:notify:${i}`,
             kind: "message",
+            ...about,
             title,
-            details: body ? [body] : [],
+            details: body ? [body] : (about?.details ?? []),
             path,
           });
           steps.push({
             step: i,
             type: step.type,
             outcome: `notified: ${sent.delivered} delivered, ${sent.failed} failed`,
+          });
+          break;
+        }
+        case "digest": {
+          const lines = digestLines(store, zone(), now());
+          const ready = notifier.statuses().find((c) => c.id === "email")?.status.ready;
+          if (lines.length === 0 || !ready) {
+            steps.push({
+              step: i,
+              type: step.type,
+              outcome: lines.length === 0 ? "nothing to tell today" : "skipped: email is off",
+            });
+            break;
+          }
+          if (dryRun) {
+            steps.push({ step: i, type: step.type, outcome: `would email ${lines.length} lines` });
+            break;
+          }
+          const sent = await notifier.notify(
+            {
+              key: `${key}:digest:${i}`,
+              kind: "digest",
+              title: `Your day · ${shortDay(ctx.today)}`,
+              details: lines,
+              path: "/projects/scene",
+            },
+            ["email"],
+          );
+          steps.push({
+            step: i,
+            type: step.type,
+            outcome: `emailed the digest: ${sent.delivered} delivered, ${sent.failed} failed`,
           });
           break;
         }
@@ -293,7 +329,7 @@ export function createFlowEngine({
       for (const flow of store.itemsOf(FLOWS).filter(isOn)) {
         const def = definitionOf(flow);
         const t = def?.trigger;
-        if (!def || !t || t.type === "schedule" || t.type === "date-arrives") continue;
+        if (!def || !t || (t.type !== "item-added" && t.type !== "item-changed")) continue;
         if (t.collection !== doc.collection) continue;
         if (t.type === "item-added") {
           const isNew = store.changesFor(doc.id, 2).length === 1;
@@ -314,32 +350,42 @@ export function createFlowEngine({
   /**
    * "When a date arrives": each item whose date (or the newest date of its repeating series)
    * came due since the flow was turned on runs the flow once for that date. A paused item
-   * (`active` false) or a finished one (`done`) is skipped; one seen more than 6 hours late is
-   * recorded as missed.
+   * (`active` false) or a finished one (`done`) is skipped, and so is a date seen more than 6
+   * hours late: a reminder from last week is history, not a burst of notifications.
    */
   async function arrivals(flow: Doc, def: FlowDefinition, at: number) {
     const t = def.trigger;
     let ran = 0;
-    let missed = 0;
-    if (t.type !== "date-arrives") return { ran, missed };
+    if (t.type !== "date-arrives") return ran;
     const field = t.field === "title" ? "_title" : t.field;
     for (const item of store.itemsOf(t.collection)) {
       const data = item.data;
       if (data._deleted === true || data.active === false || data.done === true) continue;
       if (!allHold(t.where, data)) continue;
-      const arrival = latestArrival(data[field], repeatOf(data), t.before ?? 0, at, zone());
-      if (!arrival || arrival.at < switchedAt(flow)) continue;
+      const anchor = field === "due" ? anchorOf(item) : data[field];
+      const arrival = latestArrival(data[field], repeatOf(data), t.before ?? 0, at, zone(), anchor);
+      if (!arrival || arrival.at < switchedAt(flow) || at - arrival.at > CATCH_UP_MS) continue;
       const key = `flow:${flow.id}:${item.id}:${arrival.date}`;
       if (hasRun.get(key)) continue;
-      if (at - arrival.at > CATCH_UP_MS) {
-        insertRun.run(key, flow.id, at, "missed", "[]");
-        missed += 1;
-        continue;
-      }
       await run(flow, def, item, key);
       ran += 1;
     }
-    return { ran, missed };
+    return ran;
+  }
+
+  /**
+   * "When spending reaches X%": once a month, the first time this month's spending is at or
+   * past that share of the limit. Nothing without a limit.
+   */
+  async function budgetReached(flow: Doc, def: FlowDefinition, at: number) {
+    const t = def.trigger;
+    if (t.type !== "budget-reached") return 0;
+    const budget = budgetState(store, at, zone());
+    if (!budget || Number(budget.data.percent) < t.percent) return 0;
+    const key = `flow:${flow.id}:${BUDGET}:${budget.data.month}`;
+    if (hasRun.get(key)) return 0;
+    await run(flow, def, budget, key);
+    return 1;
   }
 
   const job: Job = {
@@ -354,9 +400,11 @@ export function createFlowEngine({
       for (const flow of store.itemsOf(FLOWS).filter(isOn)) {
         const def = definitionOf(flow);
         if (def?.trigger.type === "date-arrives") {
-          const done = await arrivals(flow, def, at);
-          ran += done.ran;
-          missed += done.missed;
+          ran += await arrivals(flow, def, at);
+          continue;
+        }
+        if (def?.trigger.type === "budget-reached") {
+          ran += await budgetReached(flow, def, at);
           continue;
         }
         if (def?.trigger.type !== "schedule") continue;
@@ -392,7 +440,10 @@ export function createFlowEngine({
       const def = definitionOf(flow);
       if (!def) return { error: "the definition is not valid" };
       let item: Doc | undefined;
-      if (def.trigger.type !== "schedule") {
+      if (def.trigger.type === "budget-reached") {
+        item = budgetState(store, now(), zone());
+        if (!item) return { error: "no monthly limit set" };
+      } else if (def.trigger.type !== "schedule") {
         const t = def.trigger;
         item = store
           .itemsOf(t.collection)

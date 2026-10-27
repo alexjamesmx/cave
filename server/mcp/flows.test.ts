@@ -134,7 +134,8 @@ test("an allowlisted agent neither sees nor replaces a flow outside its collecti
     return listed.ok ? (listed.value as { flows: { id: string }[] }).flows.map((f) => f.id) : [];
   };
   expect(ids(claude)).toEqual(expect.arrayContaining([id, "flow-rent", "flow-salary"]));
-  expect(ids(moneyOnly)).toEqual([own.ok ? own.id : ""]);
+  // Money's budget flows are within its reach; the digest, which reads everything, is not.
+  expect(ids(moneyOnly)).toEqual(["flow-budget-80", "flow-budget-100", own.ok ? own.id : ""]);
   expect(save({ id, definition: moneyFlow }, moneyOnly)).toEqual({
     ok: false,
     error: `flow ${id} not found`,

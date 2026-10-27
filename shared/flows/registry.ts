@@ -181,6 +181,16 @@ export const TRIGGERS: TypeSpec[] = [
           : ""
       }${p.where ? ` where ${conditionsText(p.where)}` : ""}`,
   },
+  {
+    // The month's spending, as Money's Overview counts it, against the monthly limit.
+    type: "budget-reached",
+    label: "When spending reaches part of the budget",
+    sensitive: false,
+    params: [
+      { key: "percent", label: "Percent of the monthly limit", kind: "int", min: 1, max: 300 },
+    ],
+    describe: (p) => `When this month's spending reaches ${p.percent}% of the limit`,
+  },
 ];
 
 export const STEPS: TypeSpec[] = [
@@ -232,6 +242,13 @@ export const STEPS: TypeSpec[] = [
       { key: "body", label: "Message", kind: "template", max: 4000, long: true },
     ],
     describe: (p) => `Email “${p.subject}” to ${typeof p.to === "string" && p.to ? p.to : "you"}`,
+  },
+  {
+    type: "digest",
+    label: "Send the daily digest",
+    sensitive: false,
+    params: [],
+    describe: () => "Email the day: what needs you, what is due, payments, the budget",
   },
 ];
 
@@ -299,14 +316,16 @@ export type Trigger =
       field: string;
       before?: number;
       where?: Condition[];
-    };
+    }
+  | { type: "budget-reached"; percent: number };
 export type FieldValues = Record<string, string | number | boolean | null>;
 export type Step =
   | { type: "if"; all: Condition[] }
   | { type: "create"; collection: string; title: string; fields?: FieldValues }
   | { type: "update-trigger-item"; fields: FieldValues }
   | { type: "notify"; title: string; body?: string; open: (typeof OPEN)[number] }
-  | { type: "email"; to?: string; fromName?: string; subject: string; body: string };
+  | { type: "email"; to?: string; fromName?: string; subject: string; body: string }
+  | { type: "digest" };
 export interface FlowDefinition {
   version: 1;
   trigger: Trigger;

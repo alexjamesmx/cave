@@ -57,14 +57,19 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       seedVersion: SEED_VERSION,
     },
   });
-  // Two flow drafts, off, and valid definitions.
-  const drafts = docs.filter((d) => d.collection === "flows");
-  expect(drafts.map((d) => [d.id, d.data.status])).toEqual([
+  // Two drafts, and the built-in flows on (the digest off without a time); all valid.
+  const flows = docs.filter((d) => d.collection === "flows");
+  expect(flows.map((d) => [d.id, d.data.status])).toEqual([
     ["flow-rent", "draft"],
     ["flow-salary", "draft"],
+    ["flow-reminders", "on"],
+    ["flow-payments", "on"],
+    ["flow-budget-80", "on"],
+    ["flow-budget-100", "on"],
+    ["flow-digest", "off"],
   ]);
-  for (const d of drafts) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(19);
+  for (const d of flows) expect(parseDefinition(d.data.definition).ok).toBe(true);
+  expect(docs).toHaveLength(24);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {

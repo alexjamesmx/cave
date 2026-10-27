@@ -269,7 +269,7 @@ read -rs RK && printf 'CAVE_RESEND_API_KEY=%s\n' "$RK" >> /etc/cave/cave.env; un
 printf 'CAVE_EMAIL_FROM="Cave <cave@cave.example.dev>"\nCAVE_EMAIL_TO=you@example.dev\n' >> /etc/cave/cave.env
 systemctl restart cave
 ```
-Then Settings → Notifications → Email → **Send test**. Email gets full detail by default (it is your own inbox) and is the only channel the **daily digest** uses: set its time there, and once a day you get questions and blocked parts, what is due, payments due today and the budget line.
+Then Settings → Notifications → Email → **Send test**. Email gets full detail by default (it is your own inbox) and is the only channel the **daily digest** uses: turn on the Daily digest flow in Flows (its schedule is the time), and once a day you get questions and blocked parts, what is due, payments due today and the budget line.
 
 The server refuses to start with a malformed token or webhook URL, naming the setting but never its value.
 

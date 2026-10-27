@@ -118,13 +118,10 @@ test("a named channel overrides the defaults; one not ready or failing is logged
   for (const line of lines) expect(line).not.toContain("Pay rent");
 });
 
-test("the sent log remembers keys across channels and counts missed reminders", () => {
+test("the sent log remembers keys across channels", () => {
   const db = openDb(":memory:");
   const sent = createSentLog(db);
-  expect(sent.wasSent("reminder:a:1")).toBe(false);
-  sent.markSent("reminder:a:1", "a", 1, { delivered: 2, failed: 0 });
-  sent.markMissed("reminder:b:1", "b", 2);
-  expect(sent.wasSent("reminder:a:1")).toBe(true);
-  expect(sent.wasSent("reminder:b:1")).toBe(true);
-  expect(sent.missedCount()).toBe(1);
+  expect(sent.wasSent("offsite:a:1")).toBe(false);
+  sent.markSent("offsite:a:1", "a", 1, { delivered: 2, failed: 0 });
+  expect(sent.wasSent("offsite:a:1")).toBe(true);
 });

@@ -117,7 +117,7 @@ for (const env of CAVE_ENVS) {
       due: localDateTime(new Date(NOW - 60_000), "America/Mexico_City"),
       repeat: "none",
     });
-    await s.job("reminders");
+    await s.job("flows");
     const results = s.results();
     expect(results.map((r) => r.channel).sort()).toEqual(["discord", "telegram", "webpush"]);
     expect(new Set(results.map((r) => r.result))).toEqual(new Set([delivers ? "ok" : "outbox"]));

@@ -9,6 +9,7 @@ import {
 } from "../../../shared/notifications.ts";
 import { useCave } from "../app/context.ts";
 import { ownerGet, ownerPost } from "../app/owner-api.ts";
+import { flowPath } from "../app/router.ts";
 import { deviceLabel, needsHomeScreen } from "../logic/device-label.ts";
 import { useDoc } from "../store/queries.ts";
 
@@ -21,7 +22,6 @@ interface ChannelRow {
 }
 interface Overview {
   channels: ChannelRow[];
-  missed: number;
   telegram: { linked: boolean };
 }
 interface PushInfo {
@@ -147,32 +147,16 @@ export function NotificationChannels() {
           )}
           <EmailIdentity config={config} save={save} />
           <div className="channel-row">
-            <strong>Daily digest</strong>
+            <strong>What notifies</strong>
             <span className="muted">
-              One email a day: questions and blocked parts, what is due, payments, the budget.
+              Reminders, bills, the budget and the daily digest are flows: change their time, turn
+              them off or add your own in{" "}
+              <a className="link" href={flowPath()}>
+                Flows
+              </a>
+              .
             </span>
-            <input
-              className="input"
-              type="time"
-              aria-label="Digest time"
-              value={config.digest ?? ""}
-              onChange={(e) => {
-                const { digest: _, ...rest } = config;
-                save(e.target.value ? { ...rest, digest: e.target.value } : rest);
-              }}
-              style={{ width: "auto" }}
-            />
           </div>
-          <div className="channel-row">
-            <strong>Calendar</strong>
-            <span className="muted">Reminders and Tasks are built in; flows arrive later.</span>
-          </div>
-          {overview.missed > 0 && (
-            <span className="muted">
-              {overview.missed} reminders were missed while the server was down (over 6 hours late),
-              so they weren't sent.
-            </span>
-          )}
           {config.channels.some((c) => c === "telegram" || c === "discord") && (
             <span className="muted" style={{ fontSize: 13 }}>
               Telegram and Discord can read what they carry; “Titles only” keeps amounts, times and

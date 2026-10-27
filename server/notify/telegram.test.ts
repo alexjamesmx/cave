@@ -267,7 +267,7 @@ test("/flows lists each flow's status; one waiting for approval carries its butt
   inbox.push([text(OWNER, "/flows")]);
   await t.job.run({ now });
   expect(sent().map((c) => c.params.text)).toEqual([
-    "Rent reminder · draft\nSalary → save · draft",
+    "Rent reminder · draft\nSalary → save · draft\nReminder notifications · on\nBill notifications · on\nBudget at 80% · on\nBudget at 100% · on\nDaily digest · off",
     "Waiting for approval: Archive",
   ]);
   expect(JSON.stringify(sent()[1]?.params.reply_markup)).toContain("reject:f1");

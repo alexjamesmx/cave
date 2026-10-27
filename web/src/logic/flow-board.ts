@@ -110,7 +110,8 @@ export function groupFlows(
     if (!trigger) add("broken", "Needs fixing", "var(--bad)", flow);
     else if (trigger.type === "schedule") add("schedule", "On a schedule", "var(--ok)", flow);
     else {
-      const collection = String((trigger as { collection?: unknown }).collection ?? "");
+      // The budget is Money's: its flows sit with the ones that watch money.
+      const collection = "collection" in trigger ? trigger.collection : "money";
       add(`c:${collection}`, collectionName(collection), "var(--teal)", flow);
     }
   }
@@ -227,7 +228,7 @@ export function boardGraph({
       id: groupId,
       type: "group",
       position: { x: 0, y },
-      data: { label: "Built in · runs on its own", count: jobs.length, tone: "var(--warn)" },
+      data: { label: "System · keeps the Cave running", count: jobs.length, tone: "var(--warn)" },
       draggable: false,
       selectable: false,
       style: { width, height: HEAD + rows * JOB_ROW + PAD - 20 },

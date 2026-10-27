@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { fieldsOf } from "../shared/fields.ts";
+import { builtInFlowsMigration } from "../shared/flows/built-in.ts";
 import { formatStamp } from "../shared/hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
 import { DEFAULT_TEMPLATES } from "../shared/projects.ts";
@@ -21,7 +22,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
   expect(seedVersionOf(store)).toBe(1);
 
   expect(migrateSeed(store, NOW)).toEqual([
-    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
   ]);
   expect(store.get("flows")?.data).toMatchObject({ name: "Flows", hidden: true });
   expect(store.get("flow-rent")).toMatchObject({ collection: "flows", actor: "seed" });
@@ -200,7 +201,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
     NOW - 5000,
   );
 
-  expect(migrateSeed(store, NOW)).toEqual([16, 17, 18, 19, 20, 21, 22]);
+  expect(migrateSeed(store, NOW)).toEqual([16, 17, 18, 19, 20, 21, 22, 23]);
   for (const id of ["ai", "ai-rule", "ai-skill"]) {
     const d = store.get(id) as Doc;
     expect(d.data._deleted).toBe(true);
@@ -213,7 +214,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
   expect(store.get("ai-gone")?.stamps._deleted).toBe(stamp);
   expect(store.get("task-1")?.data._deleted).toBeUndefined();
   expect(store.itemsOf("ai")).toEqual([]);
-  expect(seedVersionOf(store)).toBe(22);
+  expect(seedVersionOf(store)).toBe(23);
 
   // Nothing left to do on what it produced, or on a database that never had the collection.
   expect(retireAiMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);
@@ -247,11 +248,47 @@ test("seed migration 22 clears the radar interests and subscription dismissals, 
     "test",
     1,
   );
-  expect(migrateSeed(store, NOW)).toEqual([22]);
+  expect(migrateSeed(store, NOW)).toEqual([22, 23]);
   expect(store.get("settings")?.data).toMatchObject({
     radarInterests: null,
     dismissedSubscriptions: null,
   });
   expect(store.get("settings")?.data.timezone).toBe("America/Mexico_City");
   expect(migrateSeed(store, NOW + 1)).toEqual([]);
+});
+
+test("seed migration 23 adds the built-in flows, on from now, the digest at the owner's digest time; it never replaces one", () => {
+  const store = createStore(openDb(":memory:"));
+  // A database at 22: no built-in flows yet, and a digest time set.
+  store.seedIfEmpty(
+    seedDocs().filter((d) => d.data.author !== "cave"),
+    1,
+  );
+  const settings = store.get("settings") as Doc;
+  const old = "0000000000001:0000:test";
+  store.applyChanges(
+    [
+      {
+        ...settings,
+        data: { seedVersion: 22, notifications: { channels: ["email"], digest: "07:30" } },
+        stamps: { seedVersion: old, notifications: old },
+        actor: "test",
+      },
+    ],
+    "test",
+    1,
+  );
+  expect(migrateSeed(store, NOW)).toEqual([23]);
+  const flow = (id: string) => store.get(id) as Doc;
+  expect(flow("flow-reminders").data).toMatchObject({ status: "on", author: "cave" });
+  expect(flow("flow-reminders").stamps.status).toBe(formatStamp(NOW, 0, "seed"));
+  expect(flow("flow-digest").data).toMatchObject({
+    status: "on",
+    definition: { trigger: { type: "schedule", every: "day", at: "07:30" } },
+  });
+  expect(migrateSeed(store, NOW + 1)).toEqual([]);
+  // One the owner deleted stays deleted: the migration only adds what is missing.
+  expect(
+    builtInFlowsMigration((id) => (id === "flow-digest" ? flow(id) : undefined)).map((f) => f.id),
+  ).not.toContain("flow-digest");
 });

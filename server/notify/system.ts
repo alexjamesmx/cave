@@ -8,15 +8,11 @@ import { createFlowEngine } from "../flows/engine.ts";
 import type { Job } from "../jobs/scheduler.ts";
 import type { Store } from "../store.ts";
 import { notificationRoutes } from "./api.ts";
-import { createBudgetSweep } from "./budget-sweep.ts";
 import { createChannelState } from "./channel-state.ts";
 import { createChannelWriter } from "./channel-writer.ts";
-import { createDigestJob } from "./digest.ts";
 import { createDiscordChannel } from "./discord.ts";
 import { createEmailChannel } from "./email.ts";
 import { createNotifier, createSentLog } from "./notifier.ts";
-import { createPaymentSweep } from "./payment-sweep.ts";
-import { createReminderSweep } from "./reminder-sweep.ts";
 import { type Approvals, createTelegram } from "./telegram.ts";
 import { createTelegramApi } from "./telegram-api.ts";
 import { createSubscriptions, createWebPushChannel } from "./webpush.ts";
@@ -107,20 +103,11 @@ export function createNotificationSystem(o: NotificationSystemOptions) {
     log,
   });
   approvals = createApprovals({ store: o.store, notifier, writer: telegramWriter, log });
-  const sweep = createReminderSweep({ store: o.store, notifier, sent, zone });
-  const payments = createPaymentSweep({ store: o.store, notifier, sent, zone });
-  const budget = createBudgetSweep({
-    store: o.store,
-    notifier,
-    sent,
-    timeZone: () => zone().timeZone,
-  });
-  const digest = createDigestJob({ store: o.store, notifier, sent, zone, settings });
   const flows = createFlowEngine({ store: o.store, db: o.db, notifier, now: o.now, zone, log });
-  const jobs: Job[] = [sweep, payments, budget, digest, flows.job, telegram.job];
+  // Reminders, payments, the budget and the digest are flows now (seed migration 23).
+  const jobs: Job[] = [flows.job, telegram.job];
   const routes = notificationRoutes({
     notifier,
-    sent,
     subscriptions,
     publicKey: o.push?.publicKey,
     telegram,

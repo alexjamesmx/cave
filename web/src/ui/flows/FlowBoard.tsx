@@ -128,7 +128,7 @@ function JobNode({ data }: NodeProps<Extract<BoardNode, { type: "job" }>>) {
         type="button"
         className="flow-card-body"
         aria-pressed={d.selected}
-        aria-label={`Built in ${d.label}`}
+        aria-label={`System ${d.label}`}
       >
         <span className="flow-card-name">
           <Icon name="cog" size={14} /> {d.label}

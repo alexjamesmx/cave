@@ -1,5 +1,5 @@
 import { CHANNELS, type ChannelId } from "../../shared/notifications.ts";
-import type { Notifier, SentLog } from "./notifier.ts";
+import type { Notifier } from "./notifier.ts";
 import type { Telegram } from "./telegram.ts";
 import type { Notification } from "./types.ts";
 import { type Subscriptions, validateSubscription } from "./webpush.ts";
@@ -8,7 +8,6 @@ const MAX_SUBSCRIBE_BYTES = 4 * 1024;
 
 interface NotificationApiDeps {
   notifier: Notifier;
-  sent: SentLog;
   subscriptions: Subscriptions;
   /** The VAPID public key; undefined while push is off. */
   publicKey: string | undefined;
@@ -41,7 +40,7 @@ function testNotification(now: number): Notification {
  * leave the server: devices are listed by label, and a device knows its own endpoint.
  */
 export function notificationRoutes(deps: NotificationApiDeps) {
-  const { notifier, sent, subscriptions, publicKey, telegram, now } = deps;
+  const { notifier, subscriptions, publicKey, telegram, now } = deps;
   return {
     /** `GET /api/push?deviceId=`: whether push is on, its public key, and the devices. */
     push(req: Request): Response {
@@ -93,11 +92,10 @@ export function notificationRoutes(deps: NotificationApiDeps) {
       const deviceId = typeof body.deviceId === "string" ? body.deviceId : undefined;
       return Response.json(await notifier.notify(testNotification(now()), ["webpush"], deviceId));
     },
-    /** `GET /api/notifications`: each channel and what it needs, and the missed count. */
+    /** `GET /api/notifications`: each channel and what it needs. */
     notifications(): Response {
       return Response.json({
         channels: notifier.statuses(),
-        missed: sent.missedCount(),
         telegram: { linked: telegram.linked() },
       });
     },

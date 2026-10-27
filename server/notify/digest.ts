@@ -1,22 +1,17 @@
 import { budgetLine, budgetOf } from "../../shared/budget.ts";
 import { transferCategories } from "../../shared/categories.ts";
-import { daysInMonth, localDate, monthOf, shortDay } from "../../shared/dates.ts";
+import { daysInMonth, localDate, monthOf } from "../../shared/dates.ts";
 import { fieldsOf } from "../../shared/fields.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import { monthSummary } from "../../shared/money.ts";
-import type { NotificationSettings } from "../../shared/notifications.ts";
 import { isActive, PAYMENTS } from "../../shared/payments.ts";
 import { isLive, openQuestions } from "../../shared/project-status.ts";
 import { PARTS } from "../../shared/projects.ts";
-import { dueInstant, type Zone } from "../../shared/recurrence.ts";
+import type { Zone } from "../../shared/recurrence.ts";
 import type { Doc } from "../../shared/types.ts";
-import { every, type Job } from "../jobs/scheduler.ts";
 import type { Store } from "../store.ts";
 import { dueList } from "./due-list.ts";
-import type { Notifier, SentLog } from "./notifier.ts";
-import type { Notification } from "./types.ts";
 
-const CHECK_MS = 5 * 60 * 1000;
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const titleOf = (d: Doc) =>
   typeof d.data._title === "string" && d.data._title ? d.data._title : "Untitled";
@@ -72,64 +67,4 @@ export function digestLines(store: Store, zone: Zone, now: number): string[] {
     );
   }
   return lines;
-}
-
-interface DigestOptions {
-  store: Store;
-  notifier: Notifier;
-  sent: SentLog;
-  zone: () => Zone;
-  settings: () => NotificationSettings;
-}
-
-/**
- * The daily digest (M12 part 3): once a day at `settings.notifications.digest` in the owner's
- * zone, one email with what the day holds: questions, blocked parts and flows waiting, what is
- * due today or overdue, payments due today, and the budget line. Email only: it is the one
- * channel that reads well at this length. Nothing is sent without a time or without email
- * ready, and a day with nothing in it sends nothing.
- */
-export function createDigestJob({ store, notifier, sent, zone, settings }: DigestOptions): Job {
-  return {
-    id: "digest",
-    label: "Daily digest",
-    describeSchedule: () => {
-      const at = settings().digest;
-      return at ? `every day at ${at}` : "off (no digest time)";
-    },
-    nextRun: every(CHECK_MS),
-    async run({ now }) {
-      const at = settings().digest;
-      if (!at) return { result: "skipped", summary: "no digest time set", didSomething: false };
-      const z = zone();
-      const today = localDate(new Date(now), z.timeZone);
-      const instant = dueInstant(`${today}T${at}`, z);
-      if (instant === undefined || now < instant)
-        return { result: "skipped", summary: `waiting for ${at}`, didSomething: false };
-      const key = `digest:${today}`;
-      if (sent.wasSent(key)) return { result: "ok", summary: "sent today", didSomething: false };
-      const email = notifier.statuses().find((c) => c.id === "email");
-      if (!email?.status.ready)
-        return { result: "skipped", summary: "email is not ready", didSomething: false };
-      const lines = digestLines(store, z, now);
-      if (lines.length === 0) {
-        sent.markSent(key, null, now, { delivered: 0, failed: 0 });
-        return { result: "ok", summary: "nothing to tell today", didSomething: false };
-      }
-      const n: Notification = {
-        key,
-        kind: "digest",
-        title: `Your day · ${shortDay(today)}`,
-        details: lines,
-        path: "/projects/scene",
-      };
-      const result = await notifier.notify(n, ["email"]);
-      sent.markSent(key, null, now, result);
-      return {
-        result: result.failed > 0 && result.delivered === 0 ? "failed" : "ok",
-        summary: `${result.delivered} sent, ${lines.length} lines`,
-        didSomething: true,
-      };
-    },
-  };
 }

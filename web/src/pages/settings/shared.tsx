@@ -35,7 +35,6 @@ export interface SystemReport {
   env: string;
   notifications: {
     log: { at: number; channel: string; key: string; result: string }[];
-    missed: number;
   };
   devices: { id: string; label: string | null; lastSeen: number }[];
   agents: {

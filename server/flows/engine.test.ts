@@ -2,6 +2,7 @@ import { beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { builtInFlows } from "../../shared/flows/built-in.ts";
 import type { FlowDefinition } from "../../shared/flows/registry.ts";
 import { formatStamp } from "../../shared/hlc.ts";
 import type { Zone } from "../../shared/reminders.ts";
@@ -52,6 +53,8 @@ beforeEach(() => {
     zone: () => MX,
     log: () => {},
   });
+  // The built-in flows are on in a fresh seed; each test turns on what it is about.
+  for (const f of builtInFlows()) write(f.id, "flows", { status: "off" }, 1);
 });
 
 function write(id: string, collection: string, data: Record<string, unknown>, at = clock) {
@@ -345,5 +348,119 @@ test("an email step sends through email only, to its own recipients as a plain m
   emailReady = false;
   expect(await engine.dryRun("f-mine")).toMatchObject({
     steps: [{ outcome: "email skipped: email not set up" }],
+  });
+});
+
+const on = (id: string) => write(id, "flows", { status: "on" }, Date.parse("2026-09-01T12:00:00Z"));
+
+test("built in: a due reminder notifies once with Done and Snooze; a snoozed one again at its new time, never twice", async () => {
+  on("flow-reminders");
+  write("r1", "reminders", { _title: "Pay rent", due: "2026-10-15T09:30", repeat: "monthly" });
+  write("r2", "reminders", { _title: "Done already", due: "2026-10-15T09:00", done: true });
+  write("r3", "reminders", { _title: "Later", due: "2026-10-15T11:00" });
+  write("old", "reminders", { _title: "Last week", due: "2026-10-08T09:00" });
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
+  expect(notified.map((x) => x.n)).toEqual([
+    {
+      key: "flow:flow-reminders:r1:2026-10-15T09:30:notify:0",
+      kind: "reminder",
+      itemId: "r1",
+      title: "Pay rent",
+      details: ["Thu Oct 15, 09:30", "Repeats monthly"],
+      path: "/r/r1",
+      tag: "reminder:r1",
+      actions: [
+        { id: "done", label: "Done", path: "/r/r1?do=done" },
+        { id: "snooze60", label: "Snooze 1h", path: "/r/r1?do=snooze60" },
+      ],
+    },
+  ]);
+  // Snoozed an hour: it tells again at 10:30, once; the series keeps its 09:30.
+  write("r1", "reminders", { due: "2026-10-15T10:30", _repeatFrom: "2026-10-15T09:30" });
+  expect(await engine.job.run({ now: NOW + 31 * 60_000 })).toMatchObject({
+    summary: "1 ran, 0 missed",
+  });
+  expect(await engine.job.run({ now: NOW + 32 * 60_000 })).toMatchObject({ didSomething: false });
+  // Done moves it to Nov 15 09:30: it tells then, once, not a second time for the series.
+  write("r1", "reminders", { due: "2026-11-15T09:30", _repeatFrom: null });
+  const nov = Date.parse("2026-11-15T15:31:00Z");
+  expect(await engine.job.run({ now: nov })).toMatchObject({ summary: "1 ran, 0 missed" });
+  expect(await engine.job.run({ now: nov + 60_000 })).toMatchObject({ didSomething: false });
+});
+
+test("built in: a bill tells the day before; a subscription doesn't", async () => {
+  on("flow-payments");
+  write("nu", "payments", {
+    _title: "Nu card",
+    kind: "card",
+    due: "2026-10-16T09:00",
+    amount: 3000,
+  });
+  write("tv", "payments", { _title: "TV", kind: "subscription", due: "2026-10-16T09:00" });
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
+  expect(notified.map((x) => x.n)).toMatchObject([
+    { kind: "payment", title: "Nu card · due tomorrow", details: ["Fri Oct 16, 09:00", "$3,000"] },
+  ]);
+});
+
+test("built in: the budget tells once a month at 80% and at the limit; nothing without a limit", async () => {
+  on("flow-budget-80");
+  on("flow-budget-100");
+  write("e1", "money", { _title: "Rent", direction: "expense", amount: 850, date: "2026-10-02" });
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ didSomething: false });
+  store.applyChanges(
+    [
+      {
+        id: "settings",
+        kind: "setting",
+        collection: null,
+        data: { budget: { monthlyLimit: 1000 } },
+        stamps: { budget: formatStamp(clock, tick++, "test") },
+        actor: "owner",
+      },
+    ],
+    "owner",
+    clock,
+  );
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
+  expect(notified.map((x) => x.n)).toMatchObject([
+    { kind: "budget", title: "Budget · 80% spent this month", path: "/money/overview" },
+  ]);
+  expect(notified[0]?.n.details[0]).toBe("$850 of $1,000");
+  expect(await engine.job.run({ now: NOW + 60_000 })).toMatchObject({ didSomething: false });
+  write("e2", "money", { _title: "Trip", direction: "expense", amount: 200, date: "2026-10-03" });
+  expect(await engine.job.run({ now: NOW + 120_000 })).toMatchObject({
+    summary: "1 ran, 0 missed",
+  });
+  expect(notified.at(-1)?.n.title).toBe("Budget · over this month's limit");
+});
+
+test("built in: the digest emails the day at its time, email only, and skips an empty day", async () => {
+  write(
+    "flow-digest",
+    "flows",
+    {
+      status: "on",
+      definition: builtInFlows("09:00").find((f) => f.id === "flow-digest")?.data.definition,
+    },
+    Date.parse("2026-10-01T12:00:00Z"),
+  );
+  write("r1", "reminders", { _title: "Dentist", due: "2026-10-15T17:30" });
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
+  expect(notified).toEqual([
+    {
+      n: {
+        key: "flow:flow-digest:2026-10-15T15:00:00.000Z:digest:0",
+        kind: "digest",
+        title: "Your day · Oct 15",
+        details: ["Due", "  Today 17:30 · Dentist"],
+        path: "/projects/scene",
+      },
+      only: ["email"],
+    },
+  ]);
+  emailReady = false;
+  expect((await engine.dryRun("flow-digest")) as { steps: { outcome: string }[] }).toMatchObject({
+    steps: [{ outcome: "skipped: email is off" }],
   });
 });

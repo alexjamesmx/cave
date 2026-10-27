@@ -164,9 +164,9 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   // runs sit beside the flows' under Runs. The old List path lands on the board.
   await page.goto("/flows");
   await expect(board).toContainText(name);
-  await board.getByRole("button", { name: "Built in Daily backup" }).click();
+  await board.getByRole("button", { name: "System Daily backup" }).click();
   await expect(page).toHaveURL(/\/flows\/jobs\/backups$/);
-  const card = page.getByRole("complementary", { name: "Built-in job" });
+  const card = page.getByRole("complementary", { name: "System job" });
   await expect(card).toContainText("Daily backup");
   await expect(card).toContainText("Schedule");
   await page.goto("/flows/runs?source=job");

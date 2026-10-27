@@ -127,7 +127,7 @@ export function createNotifier({
   };
 }
 
-/** The "already sent" check across channels, and the missed count Settings shows. */
+/** The "already sent" check across channels. */
 export function createSentLog(db: Database) {
   const has = db.query<{ key: string }, [string]>(
     "SELECT key FROM notifications_sent WHERE key = ?",
@@ -135,23 +135,11 @@ export function createSentLog(db: Database) {
   const put = db.query<void, [string, string | null, number, number, number]>(
     "INSERT OR IGNORE INTO notifications_sent (key, item_id, sent_at, delivered, failed) VALUES (?, ?, ?, ?, ?)",
   );
-  const missedLog = db.query<void, [string, number]>(
-    "INSERT INTO notification_log (key, channel, sent_at, result) VALUES (?, 'none', ?, 'missed')",
-  );
-  const missed = db.query<{ n: number }, []>(
-    "SELECT count(*) AS n FROM notification_log WHERE result = 'missed'",
-  );
   return {
     wasSent: (key: string) => has.get(key) !== null,
     markSent(key: string, itemId: string | null, at: number, result: SendResult) {
       put.run(key, itemId, at, result.delivered, result.failed);
     },
-    /** Too old to send after downtime: recorded so it never sends, and counted. */
-    markMissed(key: string, itemId: string | null, at: number) {
-      put.run(key, itemId, at, 0, 0);
-      missedLog.run(key, at);
-    },
-    missedCount: () => missed.get()?.n ?? 0,
   };
 }
 export type SentLog = ReturnType<typeof createSentLog>;

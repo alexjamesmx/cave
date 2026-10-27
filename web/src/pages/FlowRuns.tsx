@@ -13,7 +13,7 @@ type Source = "flow" | "job";
 const SOURCES: [Source | "", string][] = [
   ["", "Everything"],
   ["flow", "Flows"],
-  ["job", "Built in"],
+  ["job", "System"],
 ];
 
 type Row =

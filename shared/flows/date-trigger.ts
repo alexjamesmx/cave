@@ -11,10 +11,12 @@ import {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * "When a date arrives": the newest time a date field came due, `before` days early, up to
- * `now`. A field that repeats (the item's `repeat`) arrives on every date of its series, so a
- * monthly date fires each month without anyone moving it. `date` names the occurrence, so each
- * one runs a flow once. Undefined until the first arrival.
+ * "When a date arrives": the newest time a date came due, `before` days early, up to `now`.
+ * The stored date arrives; when the item repeats, so does each date of its series after it
+ * (counted from `anchor`, the series start, which a snooze leaves in place), so a monthly
+ * date fires each month without anyone moving it, and moving it (Done, a snooze) never fires
+ * the same date twice. `date` names the occurrence, so each one runs a flow once. Undefined
+ * until the first arrival.
  */
 export function latestArrival(
   value: unknown,
@@ -22,17 +24,24 @@ export function latestArrival(
   before: number,
   now: number,
   zone: Zone,
+  anchor: unknown = value,
 ): { date: string; at: number } | undefined {
-  const start = parseWall(value);
-  if (!start) return undefined;
+  const stored = parseWall(value);
+  if (!stored) return undefined;
   const early = before * DAY_MS;
-  let last: { date: string; at: number } | undefined;
-  const steps = repeat === "none" ? 0 : MAX_STEPS;
-  for (let k = 0; k <= steps; k++) {
-    const date = formatWall(occurrence(start, repeat, k));
-    const at = (dueInstant(date, zone) ?? Number.POSITIVE_INFINITY) - early;
-    if (at > now) break;
-    last = { date, at };
+  const arrival = (date: string) => ({
+    date,
+    at: (dueInstant(date, zone) ?? Number.POSITIVE_INFINITY) - early,
+  });
+  const first = arrival(formatWall(stored));
+  if (first.at > now) return undefined;
+  const start = parseWall(anchor) ?? stored;
+  let last = first;
+  if (repeat === "none") return last;
+  for (let k = 1; k <= MAX_STEPS; k++) {
+    const next = arrival(formatWall(occurrence(start, repeat, k)));
+    if (next.at > now) break;
+    if (next.at > last.at) last = next;
   }
   return last;
 }
