@@ -50,10 +50,10 @@ test("a click anywhere on a row, or Enter, opens its item in every section; Paid
   await addMoney(page, { amount: 42, title: "Rows e2e coffee" });
   await expect(page.getByRole("status").filter({ hasText: "Rows e2e coffee" })).toBeVisible();
 
-  // Calendar → Agenda.
-  await page.goto("/calendar/agenda");
+  // Calendar → Month's Upcoming.
+  await page.goto("/calendar/month");
   const agenda = page
-    .getByRole("region", { name: "Agenda" })
+    .getByRole("region", { name: "Upcoming" })
     .locator("li", { hasText: "Rows e2e bill" });
   await opensByClickAndKey(page, agenda, agenda.locator(".agenda-time"), "Payments item");
 

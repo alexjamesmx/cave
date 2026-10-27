@@ -1,5 +1,13 @@
 import { addMoney, offOriginRequests, ownerContext } from "./helpers.ts";
-import { expect, test } from "./test.ts";
+import { expect, type Page, test } from "./test.ts";
+
+/** One flow's nodes on the board: its lane, found by the flow id in the address. */
+const laneOf = (page: Page) => {
+  const id = decodeURIComponent(new URL(page.url()).pathname.split("/")[2] ?? "");
+  return page
+    .getByRole("region", { name: "Flow canvas" })
+    .locator(`.react-flow__node[data-id^="${id}/"]`);
+};
 
 test("a copy of Salary → save with a 100 threshold creates the task for an income of 200; Undo removes it", async ({
   browser,
@@ -16,8 +24,8 @@ test("a copy of Salary → save with a 100 threshold creates the task for an inc
   await expect(page).toHaveURL(/\/flows\/(?!flow-salary)[^/]+$/);
   await expect(page.getByLabel("Flow name")).toHaveValue("Copy of Salary → save");
 
-  // The if node on the canvas: amount ≥ 100 instead of 15,000.
-  const canvas = page.getByRole("region", { name: "Flow canvas" });
+  // The if node on the copy's lane: amount ≥ 100 instead of 15,000.
+  const canvas = laneOf(page);
   await canvas.getByRole("button", { name: /If amount >= 15000/ }).click();
   const editor = page.getByRole("complementary", { name: "Step settings" });
   const threshold = editor.getByLabel("Value");
@@ -74,17 +82,19 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
     "Flows",
     "Runs",
   ]);
-  // Every flow is a card; Salary → save shows its chain and opens its canvas.
-  const yours = page.getByRole("region", { name: "Your flows" });
-  await expect(yours.getByRole("link", { name: /^Salary → save/ })).toBeVisible();
-  await yours.getByRole("button", { name: "New flow" }).click();
+  // Every flow is on one canvas; Salary → save's card opens it in the inspector.
+  const board = page.getByRole("region", { name: "Flow canvas" });
+  await board.getByRole("button", { name: "Flow Salary → save" }).click();
+  await expect(page).toHaveURL(/\/flows\/flow-salary$/);
+  await expect(page.getByLabel("Flow name")).toHaveValue("Salary → save");
+  await board.getByRole("button", { name: "New flow" }).click();
   await expect(page).toHaveURL(/\/flows\/[0-9A-Z]{26}$/);
   const name = `Canvas e2e ${Date.now()}`;
   await page.getByLabel("Flow name").fill(name);
   await page.getByLabel("Flow name").blur();
 
   // The trigger node, then the trigger's form: when a note is added.
-  const canvas = page.getByRole("region", { name: "Flow canvas" });
+  const canvas = laneOf(page);
   const editor = page.getByRole("complementary", { name: "Step settings" });
   await canvas.getByRole("button", { name: /Trigger · On a schedule/ }).click();
   await editor.getByLabel("Type").selectOption({ label: "When an item is added" });
@@ -150,17 +160,14 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(runs.getByRole("link", { name: `Read ${note}` })).toBeVisible();
   await expect(runs.getByText("ok", { exact: true }).first()).toBeVisible();
 
-  // The overview lists the built-in jobs too; a job opens as a read-only card, and its runs
-  // sit beside the flows' under Runs. The old List path lands on the overview.
+  // The board holds the built-in jobs too; a job opens read-only in the inspector, and its
+  // runs sit beside the flows' under Runs. The old List path lands on the board.
   await page.goto("/flows");
-  await expect(page.getByRole("region", { name: "Your flows" })).toContainText(name);
-  await page
-    .getByRole("region", { name: "Built in" })
-    .getByRole("link", { name: /Daily backup/ })
-    .click();
+  await expect(board).toContainText(name);
+  await board.getByRole("button", { name: "Built in Daily backup" }).click();
   await expect(page).toHaveURL(/\/flows\/jobs\/backups$/);
-  const card = page.getByRole("region", { name: "Daily backup" });
-  await expect(card).toContainText("BUILT IN");
+  const card = page.getByRole("complementary", { name: "Built-in job" });
+  await expect(card).toContainText("Daily backup");
   await expect(card).toContainText("Schedule");
   await page.goto("/flows/runs?source=job");
   await expect(runs.getByRole("link", { name: "Daily backup" }).first()).toBeVisible();

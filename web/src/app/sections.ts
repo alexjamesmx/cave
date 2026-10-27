@@ -19,9 +19,8 @@ export type Tab = (
 
 export type PageId =
   | "calendar-month"
-  | "calendar-agenda"
-  | "calendar-week"
   | "calendar-reminders"
+  | "calendar-routine"
   | "money-transactions"
   | "projects-scene"
   | "projects-all"
@@ -98,11 +97,11 @@ export const SECTIONS: Section[] = [
     icon: "calendar-days",
     color: "var(--bad)",
     path: "/calendar",
+    // Agenda was the Month's side list and Week the routine; both merged after M13.
     tabs: [
       page("month", "Month", "calendar-month"),
-      page("agenda", "Agenda", "calendar-agenda"),
-      page("week", "Week", "calendar-week"),
       page("reminders", "Reminders", "calendar-reminders"),
+      page("routine", "Routine", "calendar-routine"),
     ],
     owns: ["reminders"],
   },
@@ -112,8 +111,8 @@ export const SECTIONS: Section[] = [
     icon: "workflow",
     color: "var(--warn)",
     path: "/flows",
-    // One flow's page is `/flows/<id>`: anything after Flows that is not a tab is a flow, open
-    // on the canvas; `/flows/jobs/<id>` is a built-in job's card (M12 part 4).
+    // `/flows/<id>`: anything after Flows that is not a tab is a flow, open in the inspector
+    // beside the canvas; `/flows/jobs/<id>` is a built-in job there (M12 part 4).
     tabs: [page("canvas", "Flows", "flows"), page("runs", "Runs", "flows-runs")],
     owns: ["flows"],
   },

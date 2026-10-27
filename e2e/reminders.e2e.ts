@@ -4,7 +4,7 @@ import { expect, test } from "./test.ts";
 // Thursday 2026-10-15, 10:00 in Mexico City, the seeded timezone. Timers keep running.
 const NOW = new Date("2026-10-15T16:00:00Z");
 
-test("reminders: added from New, edited, added and deleted from a day in Month, in the agenda; Done moves a monthly one and Undo restores it", async ({
+test("reminders: added from New, edited, added and deleted from a day in Month, in Upcoming; Done moves a monthly one and Undo restores it", async ({
   browser,
   baseURL,
 }) => {
@@ -22,7 +22,7 @@ test("reminders: added from New, edited, added and deleted from a day in Month, 
   await page.keyboard.press("c");
   await expect(page).toHaveURL(/\/calendar\/month$/);
   await expect(page.getByRole("heading", { name: "October 2026" })).toBeVisible();
-  const agenda = page.getByRole("region", { name: "Agenda" });
+  const agenda = page.getByRole("region", { name: "Upcoming" });
   await expect(agenda.getByRole("button", { name: "Test" })).toBeVisible();
   await expect(agenda.getByText("Oct 16", { exact: true })).toBeVisible();
 
@@ -35,17 +35,6 @@ test("reminders: added from New, edited, added and deleted from a day in Month, 
   await sheet.getByRole("button", { name: "Save" }).click();
   await expect(sheet).toHaveCount(0);
   await expect(page.getByRole("button", { name: "10:30 Test edited" })).toBeVisible();
-
-  // Week lists a day's reminders beside its routine; a day's + adds one on that day.
-  await page.goto("/calendar/week");
-  await expect(page.getByRole("region", { name: "Fri" })).toContainText("10:30Test edited");
-  await expect(page.getByText(/^free /)).toHaveCount(0);
-  await page.getByRole("button", { name: "New reminder on Sat" }).click();
-  await expect(page.getByRole("dialog", { name: "New reminder" }).getByLabel("Date")).toHaveValue(
-    "2026-10-17",
-  );
-  await page.keyboard.press("Escape");
-  await page.goto("/calendar/month");
 
   // A click on a day's number adds one on that day; Delete removes it (kept in the history).
   await page.getByRole("button", { name: /New reminder on .*Oct 20/ }).click();
@@ -61,7 +50,7 @@ test("reminders: added from New, edited, added and deleted from a day in Month, 
     .click();
   await expect(page.getByRole("button", { name: "17:30 Dentist" })).toHaveCount(0);
 
-  // The agenda's New reminder opens the same form on today.
+  // Upcoming's New reminder opens the same form on today.
   await agenda.getByRole("button", { name: "New reminder" }).click();
   sheet = page.getByRole("dialog", { name: "New reminder" });
   await expect(sheet.getByLabel("Date")).toHaveValue("2026-10-15");

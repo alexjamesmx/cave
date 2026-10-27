@@ -4,6 +4,24 @@ import { Icon } from "./icon.tsx";
 import { MarkdownView, TEXT_COLORS, type TextColor } from "./Markdown.tsx";
 
 const IDLE_MS = 2000;
+const PREVIEW_KEY = "cave.md-preview";
+
+// Whether the preview shows beside the text: a choice per device, on until turned off.
+const previewShown = () => {
+  try {
+    return localStorage.getItem(PREVIEW_KEY) !== "off";
+  } catch {
+    return true;
+  }
+};
+const keepPreview = (on: boolean) => {
+  try {
+    if (on) localStorage.removeItem(PREVIEW_KEY);
+    else localStorage.setItem(PREVIEW_KEY, "off");
+  } catch {
+    // Not kept, but this editor still follows the choice.
+  }
+};
 
 const TOOLS: [Action, string, string][] = [
   ["heading", "heading-2", "Heading"],
@@ -17,8 +35,9 @@ const TOOLS: [Action, string, string][] = [
 ];
 
 /**
- * The Markdown editor (M12 part 6): a textarea with a toolbar beside a live preview (an
- * Edit/Preview toggle on narrow screens), saved on blur and after two seconds idle. `value`
+ * The Markdown editor (M12 part 6): a textarea with a toolbar and a live preview that the
+ * Preview toggle shows or hides (beside the text on a wide screen, under it on a narrow one),
+ * saved on blur and after two seconds idle. `value`
  * is what is stored: when it changes under an unsaved draft (an agent, another device), the
  * editor asks before anything is written over.
  */
@@ -44,7 +63,7 @@ export function MarkdownEditor({
   const [draft, setDraft] = useState(value);
   const [loaded, setLoaded] = useState(value);
   const [state, setState] = useState<"saved" | "editing" | "conflict">("saved");
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(previewShown);
   const box = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const latest = useRef({ draft, loaded, state });
@@ -101,7 +120,7 @@ export function MarkdownEditor({
   };
 
   return (
-    <div className="md-editor" data-preview={preview ? "only" : "beside"}>
+    <div className="md-editor" data-preview={preview ? "on" : "off"}>
       <div className="md-toolbar" role="toolbar" aria-label="Formatting">
         {TOOLS.map(([action, icon, title]) => (
           <button
@@ -160,9 +179,12 @@ export function MarkdownEditor({
           type="button"
           className="btn md-toggle"
           aria-pressed={preview}
-          onClick={() => setPreview(!preview)}
+          onClick={() => {
+            keepPreview(!preview);
+            setPreview(!preview);
+          }}
         >
-          {preview ? "Edit" : "Preview"}
+          <Icon name={preview ? "eye" : "eye-off"} size={14} /> Preview
         </button>
       </div>
       {state === "conflict" && (
@@ -205,17 +227,19 @@ export function MarkdownEditor({
           onBlur={save}
           onKeyDown={onKey}
         />
-        <div className="md-preview">
-          {draft.trim() ? (
-            <MarkdownView
-              text={draft}
-              {...(resolve ? { resolve } : {})}
-              {...(onMissing ? { onMissing } : {})}
-            />
-          ) : (
-            <p className="muted">Nothing written yet.</p>
-          )}
-        </div>
+        {preview && (
+          <div className="md-preview">
+            {draft.trim() ? (
+              <MarkdownView
+                text={draft}
+                {...(resolve ? { resolve } : {})}
+                {...(onMissing ? { onMissing } : {})}
+              />
+            ) : (
+              <p className="muted">Nothing written yet.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

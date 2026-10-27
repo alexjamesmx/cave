@@ -38,6 +38,9 @@ export function redirectOf(pathname: string): string | undefined {
   if (first === "life" || first === "diary") return diaryPath(second);
   // Tasks → Calendar is Calendar → Month since M12 part 9.
   if (first === "tasks" && second === "calendar" && !third) return "/calendar/month";
+  // Agenda is the Month's side list and Week is the Routine after M13.
+  if (first === "calendar" && second === "agenda") return "/calendar/month";
+  if (first === "calendar" && second === "week") return "/calendar/routine";
   // The System page (M9 to M11 part 3) is Settings → Devices & server; its Flows and Agents
   // tabs went to their own pages.
   if (first === "system" || (first === "settings" && second === "system"))

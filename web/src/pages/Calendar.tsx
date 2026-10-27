@@ -17,14 +17,12 @@ import {
   reminderSource,
   taskSource,
 } from "../logic/calendar.ts";
-import { dayPlan } from "../logic/day-plan.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "../ui/ItemDrawer.tsx";
 import { Icon } from "../ui/icon.tsx";
 import { ReminderActions } from "../ui/ReminderActions.tsx";
 import { ReminderSheet } from "../ui/ReminderForm.tsx";
-import { BlockRow, useRoutineDay } from "../ui/RoutineToday.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -54,7 +52,11 @@ function useSources(): CalendarSource[] | undefined {
   );
 }
 
-export function Calendar({ mode }: { mode: "month" | "agenda" }) {
+/**
+ * Calendar → Month: the month grid beside what is coming up (overdue, then the next two
+ * weeks, from every source). A day's number adds a reminder on it; an entry opens its item.
+ */
+export function Calendar() {
   const { db } = useCave().local;
   const collections = useCollections(db);
   const sources = useSources();
@@ -96,70 +98,72 @@ export function Calendar({ mode }: { mode: "month" | "agenda" }) {
 
   return (
     <>
-      <div className={mode === "month" ? "calendar-page" : undefined}>
-        {mode === "month" && (
-          <section className="panel" style={{ padding: 16, display: "grid", gap: 12 }}>
-            <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button
-                type="button"
-                className="btn"
-                aria-label="Previous month"
-                onClick={() => setMonth(shiftMonth(month, -1))}
-              >
-                <Icon name="chevron-left" size={15} />
-              </button>
-              <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>{monthName(month)}</h2>
-              <button type="button" className="btn" onClick={() => setMonth(monthOf(today))}>
-                Today
-              </button>
-              <button
-                type="button"
-                className="btn"
-                aria-label="Next month"
-                onClick={() => setMonth(shiftMonth(month, 1))}
-              >
-                <Icon name="chevron-right" size={15} />
-              </button>
-            </header>
-            <div className="calendar">
-              {WEEKDAYS.map((d) => (
-                <span key={d} className="k">
-                  {d}
-                </span>
-              ))}
-              {grid.flat().map((day, i) =>
-                day ? (
-                  <div key={day} className={`day${day === today ? " today" : ""}`}>
+      <div className="calendar-page">
+        <section
+          className="panel"
+          aria-label="Month"
+          style={{ padding: 16, display: "grid", gap: 12 }}
+        >
+          <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              type="button"
+              className="btn"
+              aria-label="Previous month"
+              onClick={() => setMonth(shiftMonth(month, -1))}
+            >
+              <Icon name="chevron-left" size={15} />
+            </button>
+            <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>{monthName(month)}</h2>
+            <button type="button" className="btn" onClick={() => setMonth(monthOf(today))}>
+              Today
+            </button>
+            <button
+              type="button"
+              className="btn"
+              aria-label="Next month"
+              onClick={() => setMonth(shiftMonth(month, 1))}
+            >
+              <Icon name="chevron-right" size={15} />
+            </button>
+          </header>
+          <div className="calendar">
+            {WEEKDAYS.map((d) => (
+              <span key={d} className="k">
+                {d}
+              </span>
+            ))}
+            {grid.flat().map((day, i) =>
+              day ? (
+                <div key={day} className={`day${day === today ? " today" : ""}`}>
+                  <button
+                    type="button"
+                    className="day-add num muted"
+                    aria-label={`New reminder on ${shortDay(day)}`}
+                    onClick={() => setReminder({ day })}
+                  >
+                    {Number(day.slice(8))}
+                  </button>
+                  {(monthEvents.get(day) ?? []).map((e) => (
                     <button
+                      key={e.key}
                       type="button"
-                      className="day-add num muted"
-                      aria-label={`New reminder on ${shortDay(day)}`}
-                      onClick={() => setReminder({ day })}
+                      className={`event${e.done ? " done" : ""}`}
+                      style={{ "--mark": color(e.collection) } as CSSProperties}
+                      onClick={() => show(e)}
                     >
-                      {Number(day.slice(8))}
+                      {e.repeat && <Icon name="repeat" size={11} aria-label="repeats" />}
+                      {e.time && <span className="num">{e.time} </span>}
+                      {e.title}
                     </button>
-                    {(monthEvents.get(day) ?? []).map((e) => (
-                      <button
-                        key={e.key}
-                        type="button"
-                        className={`event${e.done ? " done" : ""}`}
-                        style={{ "--mark": color(e.collection) } as CSSProperties}
-                        onClick={() => show(e)}
-                      >
-                        {e.repeat && <Icon name="repeat" size={11} aria-label="repeats" />}
-                        {e.time && <span className="num">{e.time} </span>}
-                        {e.title}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: padding cells have no identity
-                  <div key={`pad-${i}`} />
-                ),
-              )}
-            </div>
-          </section>
-        )}
+                  ))}
+                </div>
+              ) : (
+                // biome-ignore lint/suspicious/noArrayIndexKey: padding cells have no identity
+                <div key={`pad-${i}`} />
+              ),
+            )}
+          </div>
+        </section>
         {agenda && (
           <Agenda
             events={agenda}
@@ -207,10 +211,6 @@ function Agenda({
   const reminders = useItems(db, "reminders");
   const overdue = events.filter((e) => e.overdue);
   const days = byDay(events.filter((e) => !e.overdue));
-  // Today is the owner's routine and what is due today, as one timeline.
-  const routine = useRoutineDay(today);
-  const todayPlan = dayPlan(routine.blocks, days.get(today) ?? []);
-  days.delete(today);
   const doc = (id: string) => reminders?.find((d) => d.id === id);
 
   const row = (e: CalendarEvent) => {
@@ -234,13 +234,22 @@ function Agenda({
   return (
     <section
       className="panel agenda"
-      aria-label="Agenda"
+      aria-label="Upcoming"
       style={{ padding: 16, display: "grid", gap: 12 }}
     >
       <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>Next {AGENDA_DAYS} days</h2>
-        <button type="button" className="btn primary" onClick={onNew}>
-          <Icon name="plus" size={15} /> New reminder
+        <h2 style={{ margin: 0, fontSize: 16, flex: 1 }}>Upcoming</h2>
+        <span className="muted" style={{ fontSize: 12 }}>
+          {AGENDA_DAYS} days
+        </span>
+        <button
+          type="button"
+          className="btn primary icon-btn"
+          aria-label="New reminder"
+          title="New reminder"
+          onClick={onNew}
+        >
+          <Icon name="plus" size={15} />
         </button>
       </header>
       {overdue.length > 0 && (
@@ -249,39 +258,15 @@ function Agenda({
           <ul className="agenda-list">{overdue.map(row)}</ul>
         </div>
       )}
-      {todayPlan.length > 0 && (
-        <div>
-          <span className="k">Today</span>
-          <ul className="agenda-list" aria-label="Today">
-            {todayPlan.map((p) =>
-              p.kind === "event" ? (
-                row(p.event)
-              ) : (
-                <BlockRow
-                  key={p.key}
-                  block={p.block}
-                  done={routine.isDone(p.block)}
-                  onMark={routine.mark}
-                />
-              ),
-            )}
-          </ul>
-        </div>
-      )}
-      {routine.error && (
-        <p role="alert" className="error" style={{ margin: 0 }}>
-          {routine.error}
-        </p>
-      )}
       {[...days.entries()].map(([day, list]) => (
         <div key={day}>
-          <span className="k">{shortDay(day)}</span>
+          <span className={`k${day === today ? " agenda-today" : ""}`}>
+            {day === today ? "Today" : shortDay(day)}
+          </span>
           <ul className="agenda-list">{list.map(row)}</ul>
         </div>
       ))}
-      {events.length === 0 && todayPlan.length === 0 && (
-        <span className="muted">Nothing due in the next two weeks.</span>
-      )}
+      {events.length === 0 && <span className="muted">Nothing due in the next two weeks.</span>}
     </section>
   );
 }

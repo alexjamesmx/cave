@@ -12,7 +12,6 @@ import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { DiaryDays } from "./DiaryDays.tsx";
 import { DiaryToday } from "./DiaryToday.tsx";
-import { FlowJob } from "./FlowJob.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
@@ -20,6 +19,7 @@ import { Notes } from "./Notes.tsx";
 import { ProjectPage } from "./Project.tsx";
 import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { Reminders } from "./Reminders.tsx";
+import { Routine } from "./Routine.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
 import { SettingsData } from "./settings/Data.tsx";
 import { SettingsDevices } from "./settings/Devices.tsx";
@@ -27,14 +27,12 @@ import { SettingsGeneral } from "./settings/General.tsx";
 import { SettingsNotifications } from "./settings/Notifications.tsx";
 import { TasksList } from "./TasksList.tsx";
 import { Transactions } from "./Transactions.tsx";
-import { Week } from "./Week.tsx";
 
 /** Each page tab's component; \`rest\` is the path after the tab (a flow id, a collection). */
 const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
-  "calendar-month": () => <Calendar mode="month" />,
-  "calendar-agenda": () => <Calendar mode="agenda" />,
-  "calendar-week": () => <Week />,
+  "calendar-month": () => <Calendar />,
   "calendar-reminders": () => <Reminders />,
+  "calendar-routine": () => <Routine />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
   "projects-scene": () => (
@@ -56,7 +54,7 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "diary-days": () => <DiaryDays />,
   project: (rest) => <ProjectPage rest={rest} />,
   activity: () => <ActivityPage />,
-  flows: (rest) => (rest[0] === "jobs" ? <FlowJob id={rest[1]} /> : <Flows id={rest[0]} />),
+  flows: (rest) => <Flows rest={rest} />,
   "flows-runs": () => <FlowRuns />,
   "settings-general": () => <SettingsGeneral />,
   "settings-devices": (rest) => <SettingsDevices tab={rest[0]} />,

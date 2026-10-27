@@ -1,22 +1,24 @@
-import type { Doc } from "./types.ts";
-
 /**
  * The routine (M12 part 7): the shape of a week, kept in `settings.routine`, no collection and
  * no time grid. Three kinds of block: fixed (days, a start and a length), daily (a length and
- * an optional preferred start) and weekly (a count per week and a length). A block may point
- * at a habit (a checkbox field of `journal`); only those count as done.
+ * an optional preferred start) and weekly (a count per week and a length). Since M13's follow-up it is a
+ * guide only: a block has an area of life, and nothing ticks or counts it.
  */
 
 export const KINDS = ["fixed", "daily", "weekly"] as const;
 export type BlockKind = (typeof KINDS)[number];
+
+/** What a block is for: the four things the week is built around, and anything else. */
+export const AREAS = ["body", "learn", "rest", "fun", "other"] as const;
+export type Area = (typeof AREAS)[number];
 
 export interface RoutineBlock {
   id: string;
   title: string;
   kind: BlockKind;
   minutes: number;
-  /** A journal checkbox field id; ticking it on a day is the block done. */
-  habit?: string;
+  /** Absent on blocks from before areas, which read as `other`. */
+  area?: Area;
   /** Fixed: 0 Monday … 6 Sunday. */
   days?: number[];
   /** `HH:MM`; required for fixed, a preference for daily. */
@@ -88,10 +90,11 @@ export function parseRoutine(
     )
       return { ok: false, error: `block ${title}: minutes must be 5 to 960` };
     const block: RoutineBlock = { id: b.id, title, kind: b.kind as BlockKind, minutes };
-    if (b.habit !== undefined) {
-      if (typeof b.habit !== "string" || !b.habit)
-        return { ok: false, error: `block ${title}: habit must be a field id` };
-      block.habit = b.habit;
+    // A habit link from M12 is dropped: the routine no longer counts anything.
+    if (b.area !== undefined) {
+      if (!AREAS.includes(b.area as Area))
+        return { ok: false, error: `block ${title}: area must be ${AREAS.join(", ")}` };
+      block.area = b.area as Area;
     }
     if (b.start !== undefined) {
       if (!isTime(b.start)) return { ok: false, error: `block ${title}: start must be HH:MM` };
@@ -124,17 +127,6 @@ export function parseRoutine(
 /** 0 Monday … 6 Sunday for a `YYYY-MM-DD`. */
 export const weekdayOf = (day: string) => (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7;
 
-const shift = (day: string, n: number) => {
-  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
-};
-
-/** The seven days of the week `day` is in, Monday first. */
-export function weekDays(day: string): string[] {
-  const monday = shift(day, -weekdayOf(day));
-  return Array.from({ length: 7 }, (_, i) => shift(monday, i));
-}
-
 const startMinutes = (b: RoutineBlock) => (b.start ? minutesOfTime(b.start) : undefined);
 
 /** The fixed and daily blocks of a weekday, timed ones first in time order, then by title. */
@@ -158,23 +150,23 @@ export function endOf(block: RoutineBlock): string | undefined {
   return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
-/** Whether a block was done on a day: its habit ticked on that day's entry. */
-export const isBlockDone = (block: RoutineBlock, entry: Doc | undefined) =>
-  block.habit !== undefined && entry?.data[block.habit] === true;
+export const areaOf = (block: RoutineBlock): Area => block.area ?? "other";
 
-/** For each weekly block with a habit, the days of `days` on which it was done. */
-export function weeklyCounts(
-  routine: Routine,
-  entries: Map<string, Doc>,
-  days: string[],
-): { block: RoutineBlock; done: number; of: number }[] {
-  return routine.blocks
-    .filter((b) => b.kind === "weekly")
-    .map((block) => ({
-      block,
-      done: block.habit ? days.filter((d) => isBlockDone(block, entries.get(d))).length : 0,
-      of: block.perWeek ?? 0,
-    }));
+/** How many minutes a block takes in a week. */
+export function weeklyMinutes(block: RoutineBlock): number {
+  if (block.kind === "fixed") return block.minutes * (block.days?.length ?? 0);
+  if (block.kind === "weekly") return block.minutes * (block.perWeek ?? 0);
+  return block.minutes * 7;
+}
+
+/** Each area's minutes a week, in `AREAS` order, the empty ones left out. */
+export function minutesByArea(routine: Routine): { area: Area; minutes: number }[] {
+  return AREAS.map((area) => ({
+    area,
+    minutes: routine.blocks
+      .filter((b) => areaOf(b) === area)
+      .reduce((sum, b) => sum + weeklyMinutes(b), 0),
+  })).filter((a) => a.minutes > 0);
 }
 
 /** `3h 30m`, `45m`. */

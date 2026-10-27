@@ -12,15 +12,17 @@ import {
 
 /**
  * React Flow with the Cave's look: dark, a dotted background, zoom controls, and the minimap
- * on a desktop only. The project Map and the AI Overview both draw through it.
+ * on a desktop only. The project Map and the Flows board both draw through it.
  */
 export function MapCanvas<N extends Node, E extends Edge>({
   label,
   minimap,
+  className,
+  children,
   ...props
 }: ReactFlowProps<N, E> & { label: string; minimap: boolean; nodeTypes: NodeTypes }) {
   return (
-    <section className="panel map-canvas" aria-label={label}>
+    <section className={`panel map-canvas${className ? ` ${className}` : ""}`} aria-label={label}>
       <ReactFlow<N, E>
         colorMode="dark"
         fitView
@@ -32,6 +34,7 @@ export function MapCanvas<N extends Node, E extends Edge>({
         <Background gap={24} />
         <Controls showInteractive={false} />
         {minimap && <MiniMap pannable zoomable />}
+        {children}
       </ReactFlow>
     </section>
   );

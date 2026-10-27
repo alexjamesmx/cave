@@ -20,6 +20,12 @@ export function previousDay(day: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+export function nextDay(day: string): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Consecutive days up to today with the habit done; not done yet today keeps the streak. */
 export function streak(byDay: Map<string, Doc>, habit: string, today: string): number {
   let day = byDay.get(today)?.data[habit] === true ? today : previousDay(today);

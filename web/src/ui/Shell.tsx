@@ -11,8 +11,9 @@ import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx"
 
 /**
  * The rail (M11): the mark, New, one icon per section from the registry with Settings at the
- * bottom, then the sync state. Show names (M12) widens it to icons with labels, per device. Each link keeps its label for assistive tech and shows it
- * beside the icon on hover or focus; the dock reads the same registry on a phone.
+ * bottom, then the sync state. Show names (M12) widens it to icons with labels, per device;
+ * narrow, each link keeps its label for assistive tech and shows it beside the icon on hover
+ * or focus. The dock reads the same registry on a phone.
  */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const active = route.name === "section" ? route.section : undefined;
@@ -36,8 +37,11 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
   return (
     <div className="app">
       <aside className="side">
-        <a className="brand-mark" href="/" aria-label="Cave" data-label="Cave">
-          <Icon name="zap" size={16} strokeWidth={2.2} />
+        <a className="brand" href="/" aria-label="Cave" data-label="Cave">
+          <span className="brand-mark">
+            <Icon name="zap" size={16} strokeWidth={2.2} />
+          </span>
+          <span className="rail-label brand-name">Cave</span>
         </a>
         <button
           type="button"
@@ -47,6 +51,8 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           onClick={() => openNew()}
         >
           <Icon name="plus" size={18} />
+          <span className="rail-label">New</span>
+          <kbd className="rail-label rail-kbd">⌘K</kbd>
         </button>
         <nav aria-label="Main" className="rail-nav">
           {SECTIONS.filter((s) => s.id !== "settings").map(link)}
@@ -60,6 +66,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               onClick={toggle}
             >
               <Icon name={wide ? "panel-left-close" : "panel-left-open"} size={16} />
+              <span className="rail-label">{wide ? "Hide names" : "Show names"}</span>
             </button>
             {SECTIONS.filter((s) => s.id === "settings").map(link)}
           </div>
