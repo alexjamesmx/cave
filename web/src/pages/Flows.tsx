@@ -275,6 +275,11 @@ function FlowInspector({
     await local.write({ id: copyId, kind: "item", collection: FLOWS }, copyData(flow.data));
     navigate(flowPath(copyId));
   };
+  // Marked deleted like any item: it stops running, leaves the canvas, and can be restored.
+  const remove = async () => {
+    if (!confirm(`Delete “${titleOf(flow)}”? It stays in the history and can be restored.`)) return;
+    if (await write({ _deleted: true })) navigate(flowPath());
+  };
   const look = statusOf(status);
 
   return (
@@ -338,6 +343,9 @@ function FlowInspector({
         </button>
         <button type="button" className="btn" onClick={() => void duplicate()}>
           <Icon name="copy" size={15} /> Duplicate
+        </button>
+        <button type="button" className="btn" onClick={() => void remove()}>
+          <Icon name="trash" size={15} /> Delete
         </button>
       </div>
       {asked && status === "pending-approval" && (

@@ -175,11 +175,12 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await page.goto("/flows/list");
   await expect(page).toHaveURL(/\/flows$/);
 
-  // Leave the shared database as found: the flow off, the task and the note gone.
-  await page.goto(flowUrl);
-  await page.getByRole("button", { name: "Turn off" }).click();
-  await expect(page.getByText("OFF", { exact: true })).toBeVisible();
+  // Delete takes the flow off the canvas; the task and the note go too, as found.
   page.on("dialog", (dialog) => void dialog.accept());
+  await page.goto(flowUrl);
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page).toHaveURL(/\/flows$/);
+  await expect(board).not.toContainText(name);
   await page.goto("/tasks/list");
   await page.getByRole("button", { name: `Read ${note}` }).click();
   await page.getByRole("button", { name: "Delete" }).click();
