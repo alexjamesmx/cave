@@ -42,7 +42,6 @@ export interface SystemReport {
   flowRuns: { flowId: string; lastAt: number; result: string }[];
   notifications: {
     log: { at: number; channel: string; key: string; result: string }[];
-    missed: number;
   };
   devices: { id: string; label: string | null; lastSeen: number }[];
   agents: {
@@ -84,9 +83,6 @@ export function createSystemReport(d: ReportDeps) {
     { sent_at: number; channel: string; key: string; result: string },
     [number]
   >("SELECT sent_at, channel, key, result FROM notification_log ORDER BY seq DESC LIMIT ?");
-  const missed = d.db.query<{ n: number }, []>(
-    "SELECT count(*) AS n FROM notification_log WHERE result = 'missed'",
-  );
   const writers = d.db.query<{ actor: string; at: number }, [number]>(
     "SELECT actor, max(at) AS at FROM changes WHERE actor LIKE 'user:%' AND at >= ? GROUP BY actor",
   );
@@ -155,7 +151,6 @@ export function createSystemReport(d: ReportDeps) {
           key: r.key,
           result: r.result,
         })),
-        missed: missed.get()?.n ?? 0,
       },
       devices: devices(now),
       agents: d.agents.list().map((a) => ({

@@ -31,8 +31,6 @@ export interface NotificationSettings {
   detail: Record<ChannelId, Detail>;
   /** Telegram's Approve button for flows; off, since a hijacked account could then approve. */
   telegramApprovals: boolean;
-  /** `HH:MM` in the owner's zone for the daily digest email (M12 part 3); unset means none. */
-  digest?: string;
   /** Who every email goes to unless a flow names someone; unset means the server's inbox. */
   emailTo?: string;
   /** The name emails come from; the address stays the server's verified one. */
@@ -69,14 +67,12 @@ export function notificationSettings(
         : DEFAULT_NOTIFICATIONS.detail[c],
     ]),
   ) as Record<ChannelId, Detail>;
-  const digest = raw?.digest;
   const to = typeof raw?.emailTo === "string" ? raw.emailTo.trim() : "";
   const name = typeof raw?.emailFromName === "string" ? raw.emailFromName.trim() : "";
   return {
     channels,
     detail,
     telegramApprovals: raw?.telegramApprovals === true,
-    ...(typeof digest === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(digest) ? { digest } : {}),
     ...(to && parseRecipients(to) ? { emailTo: to } : {}),
     ...(name && isSenderName(name) ? { emailFromName: name } : {}),
   };

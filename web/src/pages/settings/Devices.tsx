@@ -257,10 +257,7 @@ function Notifications({ server }: { server: Server }) {
         </Panel>
       )}
       <Panel title="Notification log">
-        <span className="muted">
-          {server.notifications.missed} missed reminder
-          {server.notifications.missed === 1 ? "" : "s"} · titles are never stored
-        </span>
+        <span className="muted">Titles are never stored.</span>
         {server.notifications.log.length === 0 && <span className="muted">Nothing sent yet.</span>}
         {server.notifications.log.map((n, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: one send can log the same key per channel

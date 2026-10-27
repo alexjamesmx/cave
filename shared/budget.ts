@@ -54,15 +54,3 @@ export function budgetLine(
         : undefined,
   };
 }
-
-/** The shares of the limit that notify, once each per month. */
-export const THRESHOLDS = [0.8, 1] as const;
-export type Threshold = (typeof THRESHOLDS)[number];
-
-/** The thresholds `spent` has reached. */
-export const crossed = (limit: number, spent: number): Threshold[] =>
-  limit > 0 ? THRESHOLDS.filter((t) => spent >= limit * t) : [];
-
-/** Names one send: a month and a threshold. */
-export const budgetKey = (month: string, threshold: Threshold) =>
-  `budget:${month}:${Math.round(threshold * 100)}`;

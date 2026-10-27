@@ -26,6 +26,10 @@ export function blankPart(
       return { type, collection, field: "title" };
     case "date-arrives":
       return { type, collection, field: "due" };
+    case "budget-reached":
+      return { type, percent: 80 };
+    case "digest":
+      return { type };
     case "if":
       return { type, all: [{ field: "title", op: "not-empty" }] };
     case "create":
@@ -78,7 +82,7 @@ export function moveStep(def: FlowDefinition, index: number, by: -1 | 1): FlowDe
 
 /** The trigger's collection: conditions and "change the trigger item" name its fields. */
 export const triggerCollection = (def: FlowDefinition) =>
-  def.trigger.type === "schedule" ? undefined : def.trigger.collection;
+  "collection" in def.trigger ? def.trigger.collection : undefined;
 
 /** What `{{…}}` a flow's text may use, for the picker: the trigger item's fields first. */
 export function templateTokens(def: FlowDefinition, fields: Field[]): string[] {

@@ -10,7 +10,7 @@ import type { Store } from "../store.ts";
 import type { ChannelState } from "./channel-state.ts";
 import type { ChannelWriter } from "./channel-writer.ts";
 import { dueList } from "./due-list.ts";
-import { describeDue } from "./reminder-sweep.ts";
+import { describeDue } from "./notice.ts";
 import type { TelegramApi, TelegramUpdate } from "./telegram-api.ts";
 import type { Message, NotificationChannel, SendResult } from "./types.ts";
 

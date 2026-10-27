@@ -4,6 +4,8 @@ export const LOOK: Record<string, { icon: string; color: string }> = {
   "item-added": { icon: "circle-plus", color: "var(--ok)" },
   "item-changed": { icon: "pencil", color: "var(--teal)" },
   "date-arrives": { icon: "calendar-clock", color: "var(--warn)" },
+  "budget-reached": { icon: "gauge", color: "var(--bad)" },
+  digest: { icon: "newspaper", color: "var(--wait)" },
   if: { icon: "split", color: "var(--warn)" },
   create: { icon: "square-plus", color: "var(--teal)" },
   "update-trigger-item": { icon: "pen-line", color: "var(--orange)" },
@@ -18,10 +20,6 @@ export const jobPath = (id: string) => `/flows/jobs/${encodeURIComponent(id)}`;
 
 /** One line on what each built-in job does; the schedule comes from the server. */
 export const JOB_ABOUT: Record<string, string> = {
-  reminders: "Sends each reminder's notification when it is due, once per due date.",
-  payments: "Tells you before a payment is due and on the day, once per due date.",
-  budget: "Checks the month's spending against your limit and tells you at 80 % and 100 %.",
-  digest: "One email a day with what needs you, what is due, payments and the budget.",
   flows: "Runs every flow that is on when its schedule or its trigger says so.",
   telegram: "Listens for your messages and button taps in the Telegram chat.",
   backups:

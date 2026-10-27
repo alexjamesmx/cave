@@ -41,7 +41,7 @@ test("Devices & server renders each sub-section with a reminder and a job run; A
   await expect(page).toHaveURL(/\/settings\/devices\/schedules$/);
   const schedule = page.getByRole("region", { name: "Next 7 days" });
   await expect(schedule.getByRole("link", { name: "system check" })).toBeVisible();
-  await expect(schedule.getByRole("link", { name: "Reminder notifications" })).toBeVisible();
+  await expect(schedule.getByRole("link", { name: "Scheduled flows" })).toBeVisible();
 
   await tabs.getByRole("link", { name: "Jobs" }).click();
   const jobs = page.getByRole("region", { name: "Jobs" });
@@ -53,7 +53,7 @@ test("Devices & server renders each sub-section with a reminder and a job run; A
 
   await tabs.getByRole("link", { name: "Notifications" }).click();
   await expect(
-    page.getByRole("region", { name: "Notification log" }).getByText(/\d+ missed reminders?/),
+    page.getByRole("region", { name: "Notification log" }).getByText("Titles are never stored."),
   ).toBeVisible();
 
   // Flows → Runs holds the jobs' runs too (M12 part 4): the start-up backup is there.

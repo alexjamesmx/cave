@@ -139,7 +139,7 @@ beforeAll(async () => {
   const scheduler = createScheduler({ jobs: system.jobs, db, now: () => NOW, log: () => {} });
   await scheduler.tick();
   db.run(
-    "INSERT INTO job_runs (job, started_at, finished_at, result, summary) VALUES ('reminders', ?, ?, 'ok', '1 sent, 0 missed')",
+    "INSERT INTO job_runs (job, started_at, finished_at, result, summary) VALUES ('flows', ?, ?, 'ok', '1 ran, 0 missed')",
     [NOW - 4000, NOW - 3900],
   );
   server = serveCave({
@@ -183,16 +183,9 @@ test("the report has jobs, runs, deploy, devices, agents, flows and the notifica
   expect(report.deployNextAt).toBe(NOW - 30_000 + 2 * 60_000);
   expect(report.env).toBe("production");
   expect(report.offsite).toMatchObject({ backup: { ok: true, snapshot: "01ebed8a" }, check: null });
-  expect(report.jobs.map((j) => j.id)).toEqual([
-    "reminders",
-    "payments",
-    "budget",
-    "digest",
-    "flows",
-    "telegram",
-  ]);
+  expect(report.jobs.map((j) => j.id)).toEqual(["flows", "telegram"]);
   expect(report.jobs.every((j) => j.lastRun === NOW)).toBe(true);
-  expect(report.jobRuns[0]).toMatchObject({ job: "reminders", summary: "1 sent, 0 missed" });
+  expect(report.jobRuns[0]).toMatchObject({ job: "flows", summary: "1 ran, 0 missed" });
   expect(report.flowRuns).toEqual([{ flowId: "flow-rent", lastAt: NOW - 3000, result: "stopped" }]);
   expect(report.notifications).toEqual({
     log: [
@@ -203,7 +196,6 @@ test("the report has jobs, runs, deploy, devices, agents, flows and the notifica
         result: "delivered",
       },
     ],
-    missed: 0,
   });
   expect(report.devices).toEqual([
     { id: "laptop", label: null, lastSeen: NOW - 1000 },

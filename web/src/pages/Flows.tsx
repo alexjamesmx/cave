@@ -178,7 +178,7 @@ export function Flows({ rest }: { rest: string[] }) {
         </aside>
       )}
       {jobId && (
-        <aside className="panel flow-inspector" aria-label="Built-in job">
+        <aside className="panel flow-inspector" aria-label="System job">
           <JobPanel id={jobId} />
         </aside>
       )}
@@ -407,8 +407,8 @@ function JobPanel({ id }: { id: string }) {
   const job = typeof server === "object" ? server.jobs.find((j) => j.id === id) : undefined;
   return (
     <>
-      <InspectorHead title="Built in · runs on its own" onClose={() => navigate(flowPath())} />
-      {server === "offline" && <Offline what="Built-in jobs" />}
+      <InspectorHead title="System · keeps the Cave running" onClose={() => navigate(flowPath())} />
+      {server === "offline" && <Offline what="System jobs" />}
       {server === undefined && <span className="muted">Checking…</span>}
       {typeof server === "object" && !job && <p className="muted">No such job.</p>}
       {job && (

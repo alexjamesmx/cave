@@ -1,5 +1,6 @@
 import { mergeCategoryOptions } from "./categories.ts";
 import { diaryMigration } from "./diary.ts";
+import { builtInFlows, builtInFlowsMigration } from "./flows/built-in.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
@@ -497,6 +498,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 21, docs: [], update: tasksCalendarMigration },
   // M12 cleanup: settings nothing reads any more are cleared.
   { version: 22, docs: [], update: retiredSettingsMigration },
+  // Everything the Cave does on its own is a flow: reminders, payments, the budget, the digest.
+  { version: 23, docs: [], update: builtInFlowsMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -554,6 +557,7 @@ export function seedDocs(): Doc[] {
         d.collection ?? null,
       ),
     ),
+    ...builtInFlows().map((f) => seeded(f.id, f.kind, f.data, f.collection)),
     seeded("settings", "setting", SETTINGS),
   ];
 }
