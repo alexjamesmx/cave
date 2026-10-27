@@ -2,18 +2,11 @@ import { beforeEach, expect, test } from "bun:test";
 import type { FlowDefinition } from "../../shared/flows/registry.ts";
 import { Hlc } from "../../shared/hlc.ts";
 import { seedDocs } from "../../shared/seed.ts";
-import type { CallLog } from "../agent-calls.ts";
 import { AgentWriter } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
 import { openDb } from "../db.ts";
 import { createStore, type Store } from "../store.ts";
-import {
-  listFlows,
-  MAX_ON_FLOWS,
-  MAX_SAVES_PER_DAY,
-  type SaveFlowArgs,
-  saveFlow,
-} from "./flows.ts";
+import { listFlows, MAX_ON_FLOWS, type SaveFlowArgs, saveFlow } from "./flows.ts";
 
 const NOW = Date.parse("2026-10-15T16:00:00Z");
 const claude: Agent = {
@@ -26,13 +19,10 @@ const claude: Agent = {
 const moneyOnly: Agent = { ...claude, name: "money-only", collections: ["money"] };
 
 let store: Store;
-let savesToday: number;
-const calls = { countSince: () => savesToday } as unknown as CallLog;
 
 beforeEach(() => {
   store = createStore(openDb(":memory:"));
   store.seedIfEmpty(seedDocs(), 1);
-  savesToday = 0;
 });
 
 const save = (args: Omit<SaveFlowArgs, "title"> & { title?: string }, agent = claude) =>
@@ -40,9 +30,7 @@ const save = (args: Omit<SaveFlowArgs, "title"> & { title?: string }, agent = cl
     store,
     agent,
     new AgentWriter(store, agent, new Hlc(`agent-${agent.name}`, () => NOW), () => NOW),
-    calls,
     { title: "A flow", ...args },
-    NOW,
   );
 
 const weekly: FlowDefinition = {
@@ -108,13 +96,7 @@ test("only flows can be replaced through save_flow, and the definition is valida
   });
 });
 
-test("limits: saves a day, and flows on per agent", () => {
-  savesToday = MAX_SAVES_PER_DAY;
-  expect(save({ definition: weekly })).toEqual({
-    ok: false,
-    error: `at most ${MAX_SAVES_PER_DAY} flow saves a day`,
-  });
-  savesToday = 0;
+test("limit: flows on per agent", () => {
   for (let i = 0; i < MAX_ON_FLOWS; i++) expect(save({ definition: weekly }).ok).toBe(true);
   expect(save({ definition: weekly })).toMatchObject({ ok: false });
   expect(save({ definition: weekly, status: "draft" })).toMatchObject({ ok: true });

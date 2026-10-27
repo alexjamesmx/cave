@@ -62,7 +62,7 @@ As a flow, which also puts a task on the list:
 - A flow with a step that changes existing items or reaches outside the Cave (`update-trigger-item`, `email`) is saved as `pending-approval`, whatever status was asked for. It runs only after the owner approves it on the Flows page, the Agents page or, if the owner turned it on, Telegram. A flow that only creates items and notifies can be saved `on` and runs at once.
 - An agent can never approve: re-saving a waiting flow as `on` keeps it waiting.
 - A flow may name only collections and fields the agent can see; one that names others is refused, and an allowlisted agent neither lists nor replaces flows outside its collections.
-- Limits per agent: 20 flows `on` and 10 saves a day.
+- Limit per agent: 20 flows `on`.
 - Every save is in the activity log and can be undone. A flow's own writes are recorded as `flow:<id>`, can be undone from its run history, and never trigger another flow.
 
 ## 2. Configure the agent

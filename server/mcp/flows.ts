@@ -3,15 +3,12 @@ import { describeFlow } from "../../shared/flows/describe.ts";
 import { type FlowDefinition, isSensitive, parseDefinition } from "../../shared/flows/registry.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import type { Doc } from "../../shared/types.ts";
-import type { CallLog } from "../agent-calls.ts";
 import { type AgentWriter, visibleCollectionDoc, type WriteResult } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
 import type { Store } from "../store.ts";
 import type { ToolOutcome } from "./read.ts";
 
 export const MAX_ON_FLOWS = 20;
-export const MAX_SAVES_PER_DAY = 10;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface SaveFlowArgs {
   id?: string | undefined;
@@ -125,9 +122,7 @@ export function saveFlow(
   store: Store,
   agent: Agent,
   writer: AgentWriter,
-  calls: CallLog,
   args: SaveFlowArgs,
-  now: number,
 ): WriteResult & { status?: string } {
   const parsed = parseDefinition(args.definition);
   if (!parsed.ok) return { ok: false, error: parsed.error };
@@ -144,9 +139,6 @@ export function saveFlow(
       !reachable(store, agent, current))
   )
     return { ok: false, error: `flow ${args.id} not found` };
-
-  if (calls.countSince(agent.name, "save_flow", now - DAY_MS) >= MAX_SAVES_PER_DAY)
-    return { ok: false, error: `at most ${MAX_SAVES_PER_DAY} flow saves a day` };
 
   const asked = args.status ?? "on";
   const status =
