@@ -9,9 +9,9 @@ test("New from anywhere: ⌘K opens the sheet of forms, a task saves and the she
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
 
-  // No Home: the app opens on Projects, and nothing takes a command grammar.
+  // No Home: the app opens on Money's overview, and nothing takes a command grammar.
   await page.goto("/");
-  await expect(page).toHaveURL(/\/projects\/scene$/);
+  await expect(page).toHaveURL(/\/money\/overview$/);
   await expect(page.getByLabel("Capture or jump")).toHaveCount(0);
 
   // The shortcut ignores keys typed into a field, so nothing may have focus.

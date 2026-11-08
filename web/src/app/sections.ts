@@ -22,11 +22,7 @@ export type PageId =
   | "calendar-reminders"
   | "calendar-routine"
   | "money-transactions"
-  | "projects-scene"
-  | "projects-all"
-  | "projects-ideas"
-  | "project"
-  | "activity"
+  | "ideas"
   | "notes"
   | "tasks-list"
   | "diary-today"
@@ -117,20 +113,14 @@ export const SECTIONS: Section[] = [
     owns: ["flows"],
   },
   {
-    id: "projects",
-    label: "Projects",
-    icon: "rocket",
+    // Ideas and LeetCode lived under Projects until it was retired on 2026-11-08.
+    id: "ideas",
+    label: "Ideas",
+    icon: "lightbulb",
     color: "var(--vio)",
-    path: "/projects",
-    tabs: [
-      page("scene", "Scene", "projects-scene"),
-      page("all", "All", "projects-all"),
-      page("ideas", "Ideas", "projects-ideas"),
-      page("activity", "Activity", "activity"),
-      // One project's page, at `/projects/<id>/<tab>`; pinned ones also show as tabs.
-      page("project", "Project", "project", true),
-    ],
-    owns: ["projects", "ideas", "leetcode", "parts"],
+    path: "/ideas",
+    tabs: [page("all", "Ideas", "ideas"), view("leetcode", "LeetCode", "leetcode")],
+    owns: ["ideas", "leetcode"],
   },
   {
     // Anything written down, then the diary's Today and Days: the diary is a kind of note.
@@ -173,11 +163,11 @@ export const SECTIONS: Section[] = [
   },
 ];
 
-/** Where the app opens: the Scene (M11 part 5). */
-export const LANDING = "/projects/scene";
+/** Where the app opens: Money's overview (the Scene went with Projects on 2026-11-08). */
+export const LANDING = "/money/overview";
 
 /** Collections with no section: reached only from Settings → Data. */
-export const DATA_ONLY = ["proposals", "runs", "radar"];
+export const DATA_ONLY = ["proposals", "radar"];
 
 export const sectionById = (id: string) => SECTIONS.find((s) => s.id === id);
 
@@ -190,18 +180,18 @@ export const tabPath = (section: Section, tab: Tab) => `${section.path}/${tab.id
 export const visibleTabs = (section: Section) => section.tabs.filter((t) => !t.hidden);
 
 export const DOCK_SIZE = 4;
-export const DEFAULT_DOCK = ["projects", "money", "tasks", "calendar"];
+export const DEFAULT_DOCK = ["money", "tasks", "calendar", "notes"];
 
-/** Dock ids from before M8, the AI section (gone in M10), Home and Life (gone in M11), Diary. */
+/** Dock ids from before M8, the AI section (gone in M10), Home and Life (gone in M11), Diary, Projects. */
 const OLD_DOCK: Record<string, string> = {
   payments: "money",
   wealth: "money",
   reminders: "calendar",
-  leetcode: "projects",
-  ideas: "projects",
+  leetcode: "ideas",
+  projects: "ideas",
   diary: "notes",
   life: "notes",
-  home: "projects",
+  home: "money",
   agents: "settings",
   ai: "settings",
   system: "settings",

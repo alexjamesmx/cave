@@ -1,18 +1,10 @@
 import { useState } from "react";
 import { NOTES } from "../../../shared/notes.ts";
 import { colorToken } from "../../../shared/pages.ts";
-import { isLive } from "../../../shared/project-status.ts";
-import type { Doc } from "../../../shared/types.ts";
+import { type Doc, isLive } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { navigate, useSearch } from "../app/router.ts";
-import {
-  excerpt,
-  groupByTopic,
-  looseNotes,
-  matchesNote,
-  notePath,
-  wikiResolver,
-} from "../logic/notes.ts";
+import { excerpt, groupByTopic, matchesNote, notePath, wikiResolver } from "../logic/notes.ts";
 import { titleOf } from "../logic/views.ts";
 import { useItems } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
@@ -23,18 +15,17 @@ import { rowOpen } from "../ui/row-open.ts";
 const ALL = "/notes/all";
 
 /**
- * Notes → Notes: everything written that is not a project's page, grouped by topic, as a
+ * Notes → Notes: everything written, grouped by topic, as a
  * gallery or a table (`?view=table`), with search and New note. `/notes/all/<id>` opens one.
  */
 export function Notes({ id }: { id: string | undefined }) {
   const { local } = useCave();
   const all = useItems(local.db, NOTES);
-  const projects = useItems(local.db, "projects");
   const table = new URLSearchParams(useSearch()).get("view") === "table";
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState<string>();
-  if (!all || !projects) return null;
-  const notes = looseNotes(all, projects);
+  if (!all) return null;
+  const notes = all.filter(isLive);
   const open = id ? notes.find((n) => n.id === id) : undefined;
 
   if (id && !open)
@@ -48,9 +39,8 @@ export function Notes({ id }: { id: string | undefined }) {
       <NoteEditor
         key={open.id}
         note={open}
-        kind="Note"
         backHref={ALL}
-        resolve={wikiResolver(notes, all.filter(isLive), projects)}
+        resolve={wikiResolver(notes, notes)}
         onDeleted={() => {
           setMessage(`Deleted · ${titleOf(open)}`);
           navigate(ALL);

@@ -13,7 +13,7 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
     "Money",
     "Calendar",
     "Flows",
-    "Projects",
+    "Ideas",
     "Notes",
     "Tasks",
     "Settings",
@@ -47,14 +47,15 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
   await expect(page.getByRole("table", { name: "Subscriptions" })).toBeVisible();
 
   for (const [from, to] of [
-    ["/", /\/projects\/scene$/],
+    ["/", /\/money\/overview$/],
     ["/c/journal", /\/notes\/write$/],
     ["/life/habits", /\/notes\/days$/],
     ["/projects/notes", /\/notes\/all$/],
     ["/agents", /\/settings\/agents$/],
     ["/settings/flows/flow-rent", /\/flows\/flow-rent$/],
     ["/ai/flows/flow-salary", /\/flows\/flow-salary$/],
-    ["/ai/activity", /\/projects\/activity$/],
+    ["/ai/activity", /\/money\/overview$/],
+    ["/projects/ideas", /\/ideas\/all$/],
     ["/system/jobs", /\/settings\/devices\/jobs$/],
     ["/settings/system/flows", /\/flows$/],
     ["/settings/lists", /\/money\/lists$/],

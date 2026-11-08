@@ -27,7 +27,7 @@ type Row =
 /**
  * Flows → Runs (M12 part 4): everything the Cave ran on its own, newest first: each flow run
  * with its steps' outcomes and Undo on what it wrote, and each built-in job's run with its
- * result. Agents' runs stay under Projects → Activity.
+ * result.
  */
 export function FlowRuns() {
   const { db } = useCave().local;

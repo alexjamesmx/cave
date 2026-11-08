@@ -1,12 +1,5 @@
 import { expect, test } from "bun:test";
-import {
-  collectionPath,
-  flowPath,
-  parseRoute,
-  projectPath,
-  redirectOf,
-  shortcutPath,
-} from "./router.ts";
+import { collectionPath, flowPath, parseRoute, redirectOf, shortcutPath } from "./router.ts";
 
 const section = (s: string, tab: string, rest: string[] = []) => ({
   name: "section" as const,
@@ -16,7 +9,7 @@ const section = (s: string, tab: string, rest: string[] = []) => ({
 });
 
 test("sections and their tabs; an unknown tab falls back to the first", () => {
-  expect(parseRoute("/")).toEqual({ name: "redirect", to: "/projects/scene" });
+  expect(parseRoute("/")).toEqual({ name: "redirect", to: "/money/overview" });
   expect(parseRoute("/money")).toEqual(section("money", "overview"));
   expect(parseRoute("/money/subscriptions")).toEqual(section("money", "subscriptions"));
   expect(parseRoute("/money/nope")).toEqual(section("money", "overview"));
@@ -28,7 +21,8 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   );
   expect(parseRoute("/notes")).toEqual(section("notes", "all"));
   expect(parseRoute("/notes/all/01J9ABC")).toEqual(section("notes", "all", ["01J9ABC"]));
-  expect(parseRoute("/projects/activity")).toEqual(section("projects", "activity", []));
+  expect(parseRoute("/ideas")).toEqual(section("ideas", "all"));
+  expect(parseRoute("/ideas/leetcode")).toEqual(section("ideas", "leetcode"));
   expect(parseRoute("/settings/data/money/untagged")).toEqual(
     section("settings", "data", ["money", "untagged"]),
   );
@@ -56,7 +50,7 @@ test("every old path redirects to its new home", () => {
     ["/c/reminders/table", "/calendar/reminders"],
     ["/calendar/agenda", "/calendar/month"],
     ["/calendar/week", "/calendar/routine"],
-    ["/", "/projects/scene"],
+    ["/", "/money/overview"],
     ["/c/journal", "/notes/write"],
     ["/c/journal/habits", "/notes/days"],
     ["/c/journal/gallery", "/notes/days"],
@@ -73,16 +67,24 @@ test("every old path redirects to its new home", () => {
     ["/c/tasks/table", "/tasks/list"],
     ["/c/tasks/calendar", "/calendar/month"],
     ["/tasks/calendar", "/calendar/month"],
-    ["/c/ideas", "/projects/ideas"],
-    ["/c/projects", "/projects"],
-    ["/c/leetcode", "/projects/proj-leetcode"],
-    ["/c/leetcode/table", "/projects/proj-leetcode"],
-    ["/projects/radar", "/projects/ideas"],
+    ["/c/ideas", "/ideas/all"],
+    ["/c/leetcode", "/ideas/leetcode"],
+    ["/c/leetcode/table", "/ideas/leetcode"],
+    // Projects was retired: its pages go to their new homes or the landing page.
+    ["/c/projects", "/money/overview"],
+    ["/c/parts", "/money/overview"],
+    ["/c/runs", "/money/overview"],
+    ["/projects", "/money/overview"],
+    ["/projects/scene", "/money/overview"],
+    ["/projects/all", "/money/overview"],
+    ["/projects/activity", "/money/overview"],
+    ["/projects/ideas", "/ideas/all"],
+    ["/projects/radar", "/ideas/all"],
+    ["/projects/proj-leetcode", "/ideas/leetcode"],
+    ["/projects/proj-leetcode/tracker", "/ideas/leetcode"],
     ["/projects/notes", "/notes/all"],
     ["/projects/notes/n1", "/notes/all/n1"],
-    ["/projects/proj-cave/items", "/projects/proj-cave"],
-    ["/projects/proj-cave/notes", "/projects/proj-cave/pages"],
-    ["/projects/proj-cave/map", "/projects/proj-cave/canvas"],
+    ["/projects/proj-cave/canvas", "/money/overview"],
     ["/c/flows", "/flows"],
     ["/settings/flows", "/flows"],
     ["/settings/flows/flow-rent", "/flows/flow-rent"],
@@ -95,7 +97,7 @@ test("every old path redirects to its new home", () => {
     ["/ai/agents", "/settings/agents"],
     ["/ai/flows", "/flows"],
     ["/ai/flows/flow-rent", "/flows/flow-rent"],
-    ["/ai/activity", "/projects/activity"],
+    ["/ai/activity", "/money/overview"],
     ["/system", "/settings/devices"],
     ["/system/jobs", "/settings/devices/jobs"],
     ["/settings/system", "/settings/devices"],
@@ -111,9 +113,8 @@ test("every old path redirects to its new home", () => {
     expect(parseRoute(from)).toEqual({ name: "redirect", to });
   }
   for (const current of [
-    "/projects/all",
-    "/projects/proj-cave/canvas",
-    "/projects/ideas",
+    "/ideas/all",
+    "/ideas/leetcode",
     "/money/overview",
     "/flows/flow-rent",
     "/notes",
@@ -124,22 +125,6 @@ test("every old path redirects to its new home", () => {
     "/money/lists",
   ])
     expect(redirectOf(current)).toBeUndefined();
-});
-
-test("anything after Projects that is not a tab is a project's page", () => {
-  expect(parseRoute("/projects/proj-cave/board")).toEqual({
-    name: "section",
-    section: "projects",
-    tab: "project",
-    rest: ["proj-cave", "board"],
-  });
-  expect(parseRoute("/projects/ideas")).toEqual({
-    name: "section",
-    section: "projects",
-    tab: "ideas",
-    rest: [],
-  });
-  expect(projectPath("proj-cave", "board")).toBe("/projects/proj-cave/board");
 });
 
 test("links to a collection or a flow go straight to their new home", () => {

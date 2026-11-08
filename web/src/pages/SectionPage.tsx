@@ -1,23 +1,15 @@
 import type { ReactNode } from "react";
-import { useCave } from "../app/context.ts";
-import { projectPath } from "../app/router.ts";
 import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections.ts";
-import { titleOf } from "../logic/views.ts";
-import { Scene } from "../scene/Scene.tsx";
-import { useItems } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
-import { NeedsYou } from "../ui/NeedsYou.tsx";
-import { ActivityPage } from "./Activity.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { DiaryDays } from "./DiaryDays.tsx";
 import { DiaryToday } from "./DiaryToday.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
+import { IdeasPage } from "./Ideas.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
 import { Notes } from "./Notes.tsx";
-import { ProjectPage } from "./Project.tsx";
-import { IdeasPage, ProjectsAll } from "./Projects.tsx";
 import { Reminders } from "./Reminders.tsx";
 import { Routine } from "./Routine.tsx";
 import { Subscriptions } from "./Subscriptions.tsx";
@@ -37,25 +29,11 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
   "money-subscriptions": () => <Subscriptions />,
-  "projects-scene": () => (
-    <>
-      <LandingNeedsYou />
-      <Scene />
-    </>
-  ),
-  "projects-all": () => (
-    <>
-      <LandingNeedsYou />
-      <ProjectsAll />
-    </>
-  ),
-  "projects-ideas": () => <IdeasPage />,
+  ideas: () => <IdeasPage />,
   notes: (rest) => <Notes id={rest[0]} />,
   "tasks-list": () => <TasksList />,
   "diary-today": () => <DiaryToday />,
   "diary-days": () => <DiaryDays />,
-  project: (rest) => <ProjectPage rest={rest} />,
-  activity: () => <ActivityPage />,
   flows: (rest) => <Flows rest={rest} />,
   "flows-runs": () => <FlowRuns />,
   "settings-general": () => <SettingsGeneral />,
@@ -75,7 +53,6 @@ export function SectionPage({
   tabId: string;
   rest: string[];
 }) {
-  const pinned = usePinnedProjects();
   const tab = section.tabs.find((t) => t.id === tabId) ?? section.tabs[0];
   if (!tab) return null;
   const content =
@@ -85,8 +62,6 @@ export function SectionPage({
       PAGES[tab.page](rest)
     );
   const tabs = visibleTabs(section);
-  // Pinned projects sit beside All and Ideas.
-  const extra = section.id === "projects" ? (pinned ?? []) : [];
   return (
     <>
       <header style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -95,7 +70,7 @@ export function SectionPage({
         </span>
         <h1 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>{section.label}</h1>
       </header>
-      {tabs.length + extra.length > 1 && (
+      {tabs.length > 1 && (
         <nav aria-label={`${section.label} tabs`} className="section-tabs">
           {tabs.map((t) => (
             <a
@@ -104,15 +79,6 @@ export function SectionPage({
               aria-current={t.id === tab.id ? "page" : undefined}
             >
               {t.label}
-            </a>
-          ))}
-          {extra.map((p) => (
-            <a
-              key={p.id}
-              href={projectPath(p.id)}
-              aria-current={tab.id === "project" && rest[0] === p.id ? "page" : undefined}
-            >
-              {titleOf(p)}
             </a>
           ))}
         </nav>
@@ -125,14 +91,4 @@ export function SectionPage({
       {content}
     </>
   );
-}
-
-function usePinnedProjects() {
-  const projects = useItems(useCave().local.db, "projects");
-  return projects?.filter((p) => p.data.pinned === true);
-}
-
-/** What needs the owner, above the Scene and the All list. */
-function LandingNeedsYou() {
-  return <NeedsYou />;
 }

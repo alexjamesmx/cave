@@ -1357,24 +1357,6 @@ a.btn {
   border-bottom-color: var(--lime);
 }
 
-.project-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-}
-
-.project-card {
-  display: grid;
-  gap: 8px;
-  padding: 16px;
-  color: var(--text);
-  text-decoration: none;
-}
-
-.project-card:hover {
-  border-color: var(--lime);
-}
-
 /* CAVE_ENV other than production (M6b): always visible, never in the way. */
 .env-badge {
   position: fixed;
@@ -1469,29 +1451,8 @@ a.btn {
   --xy-controls-button-color: var(--text);
 }
 
-.map-card {
-  display: grid;
-  gap: 4px;
-  min-width: 180px;
-  max-width: 240px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
-  color: var(--text);
-  font-size: 13px;
-}
-
 .map-card-part {
   border-color: var(--purple);
-}
-
-.map-card[data-status="done"] {
-  opacity: 0.7;
-}
-
-.map-card[data-status="active"] {
-  border-color: var(--lime);
 }
 
 .map-status {
@@ -1501,28 +1462,6 @@ a.btn {
   background: var(--on);
   color: var(--muted);
   font-size: 11px;
-}
-
-.map-note {
-  width: 200px;
-  min-height: 90px;
-  padding: 10px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--warn);
-  color: #1a1400;
-  font: inherit;
-  font-size: 13px;
-  white-space: pre-wrap;
-  resize: none;
-}
-
-.map-group {
-  width: 100%;
-  height: 100%;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  background: rgba(163, 155, 224, 0.06);
 }
 
 .map-group-title {
@@ -1537,133 +1476,12 @@ a.btn {
   letter-spacing: 0.08em;
 }
 
-.map-edge-depends .react-flow__edge-path {
-  stroke: var(--purple);
-  stroke-width: 2;
-}
-
-.map-edge-contains .react-flow__edge-path {
-  stroke-dasharray: 4 4;
-}
-
 .map-handle-hidden {
   opacity: 0;
   pointer-events: none;
 }
 
 /* Runs (M8 part 4): a list of runs, each opening its steps as a vertical pipeline. */
-.run-list {
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.run-row {
-  list-style: none;
-  padding: 0;
-}
-
-.run-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding: 12px 14px;
-}
-
-.run-pill {
-  font-size: 11px;
-  text-transform: lowercase;
-}
-
-.run-pipeline {
-  margin: 0;
-  padding: 4px 14px 14px 28px;
-  display: grid;
-  gap: 10px;
-}
-
-.run-step {
-  display: grid;
-  gap: 4px;
-  padding-left: 12px;
-  border-left: 2px solid var(--border);
-}
-
-.run-step.current {
-  animation: run-pulse 1.6s ease-in-out infinite;
-}
-
-.run-detail {
-  font-size: 13px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-@keyframes run-pulse {
-  50% {
-    opacity: 0.55;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .run-step.current {
-    animation: none;
-  }
-}
-
-.run-head {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.map-run {
-  display: grid;
-  gap: 4px;
-  min-width: 180px;
-  max-width: 240px;
-  padding: 10px 12px;
-  border: 1px solid var(--teal);
-  border-radius: var(--radius);
-  background: var(--panel);
-  color: var(--text);
-  font-size: 13px;
-  animation: run-glow 2s ease-in-out infinite;
-}
-
-.map-run[data-status="waiting"] {
-  border-color: var(--warn);
-}
-
-.map-edge-run .react-flow__edge-path {
-  stroke: var(--teal);
-}
-
-@keyframes run-glow {
-  50% {
-    border-color: var(--line);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .map-run {
-    animation: none;
-  }
-}
-
-.map-card[data-status="failing"] {
-  border-color: var(--expense);
-}
-
-.map-card[data-status="disabled"] {
-  opacity: 0.6;
-}
 
 /* Rendered Markdown: text only, links and wikilinks. */
 .markdown {
@@ -1702,121 +1520,12 @@ a.btn {
 }
 
 /* The Scene (M11 part 5): a canvas that fills the content area; the legend sits bottom-left. */
-.scene-wrap {
-  position: relative;
-  height: min(68vh, 720px);
-  min-height: 340px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  overflow: hidden;
-}
-
-.scene-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.scene-canvas.hot {
-  cursor: pointer;
-}
-
-.scene-legend {
-  position: absolute;
-  left: 12px;
-  bottom: 8px;
-  margin: 0;
-  font-size: 11px;
-  color: var(--muted);
-  pointer-events: none;
-}
-
-.scene-empty {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  margin: 0;
-  pointer-events: none;
-}
 
 /* The hidden links keep their place in the tab order; a focused one shows as a chip. */
-.scene-links a:focus-visible {
-  position: fixed;
-  left: 50%;
-  top: 12px;
-  transform: translateX(-50%);
-  width: auto;
-  height: auto;
-  clip: auto;
-  padding: 6px 12px;
-  border-radius: var(--radius-control);
-  background: var(--on);
-  color: var(--text);
-  z-index: 10;
-}
-
-@media (max-width: 767px) {
-  .scene-wrap {
-    height: 60vh;
-  }
-}
 
 /* Drawn shapes on a project's canvas (M11 part 6). */
-.map-shape {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  background: var(--on);
-  color: var(--text);
-  font-size: 13px;
-}
-
-.map-shape-rounded {
-  border-radius: 14px;
-}
-
-.map-shape-diamond {
-  border: 0;
-  background: none;
-}
-
-.map-shape-diamond::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--on);
-  border: 1px solid var(--border);
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-}
-
-.map-shape-text {
-  position: relative;
-  width: 80%;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: center;
-}
 
 /* The Diagram tab: the editor beside the render on a desktop, stacked on a phone. */
-.diagram-split {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.diagram-source {
-  min-height: 260px;
-  font-family: var(--font-num);
-  font-size: 12.5px;
-  resize: vertical;
-}
 
 .diagram {
   padding: 16px;
@@ -1852,94 +1561,13 @@ a.btn {
 }
 
 /* The project header (M11 part 6): a status ring with progress, the name, goal and meta. */
-.project-head {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 16px;
-  align-items: center;
-}
-
-.status-ring {
-  grid-row: span 3;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: conic-gradient(var(--ring) calc(var(--share) * 1%), var(--on) 0);
-}
-
-.status-ring span {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--bg);
-  font-size: 12.5px;
-  font-weight: 600;
-  font-family: var(--font-num);
-}
-
-.project-meta {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.project-meta b {
-  color: var(--text);
-  font-weight: 600;
-}
 
 /* The plan: parts as a checklist; the current one is marked. */
-.plan-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 0;
-  border-top: 1px solid var(--line);
-}
-
-.plan-row .mark {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border: 1px solid var(--muted);
-  color: var(--on-accent);
-}
-
-.plan-row[data-status="done"] .mark {
-  background: var(--ok);
-  border-color: var(--ok);
-}
-
-.plan-row[data-status="blocked"] .mark {
-  background: var(--bad);
-  border-color: var(--bad);
-}
-
-.plan-row.current .mark {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
-}
-
-.plan-row.current .plan-title {
-  font-weight: 600;
-}
 
 .connected {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-@media (max-width: 760px) {
-  .diagram-split {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 /* Flows on a canvas (M11 part 7): the nodes and the else branch. */
@@ -2050,9 +1678,6 @@ a.btn {
 }
 
 /* A task that belongs to a project carries the Projects colour on its card's edge. */
-.board-card.has-project {
-  border-left: 3px solid var(--vio);
-}
 
 /* Searchable selects (M12 part 1). */
 .option-picker {
@@ -2421,12 +2046,6 @@ ul.chips {
 
 .page-head .title-input {
   flex: 1 1 240px;
-}
-
-.tracker-head {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
 }
 
 /* Calendar → Routine (after M13): the week as a board of blocks coloured by their area. */

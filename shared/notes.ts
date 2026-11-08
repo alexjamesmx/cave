@@ -1,13 +1,11 @@
 import { COLOR_FIELD } from "./pages.ts";
 import { PALETTE } from "./palette.ts";
-import { PROJECTS } from "./projects.ts";
 import type { CollectionData } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
 /**
  * Notes live in the Cave (M9 part A): the title is `_title`, the Markdown is `_body`, and a
- * `/`-separated `folder` groups them. They belong to projects through the `project` ref, and
- * link to each other with `[[wikilinks]]`.
+ * `/`-separated `folder` groups them, and they link to each other with `[[wikilinks]]`.
  */
 
 export const NOTES = "notes";
@@ -32,7 +30,6 @@ export const NOTES_COLLECTION: CollectionData = {
         { value: "import", icon: "download", color: PALETTE.grey },
       ],
     },
-    { id: "project", name: "Project", type: "ref", config: { collection: PROJECTS } },
     COLOR_FIELD,
   ],
   views: [

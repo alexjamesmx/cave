@@ -1,12 +1,11 @@
 import { PALETTE } from "./palette.ts";
-import { DEFAULT_TEMPLATES, type ProjectTemplate } from "./projects.ts";
 import type { CollectionData, Field, SelectOption } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
 /**
- * Pages and the study tracker (M12 part 6): a `color` on notes and diary days, the fields the
- * LeetCode tracker needs, and the `study` template. Seed migration 19 adds what a database
- * lacks and changes nothing the owner wrote.
+ * Pages and the study tracker (M12 part 6): a `color` on notes and diary days, and the fields
+ * the LeetCode tracker needs. Seed migration 19 adds what a database lacks and changes nothing
+ * the owner wrote.
  */
 
 const opt = (value: string, icon: string, color: string, label?: string): SelectOption => ({
@@ -93,9 +92,8 @@ const missing = (have: Field[], want: Field[]) =>
   want.filter((f) => !have.some((x) => x.id === f.id));
 
 /**
- * Seed migration 19: `color` on notes and journal, the tracker fields on leetcode, and in the
- * owner's stored templates the `study` template and the learning template's tracker, each only
- * where it is missing.
+ * Seed migration 19: `color` on notes and journal and the tracker fields on leetcode, each only
+ * where it is missing. (It also added project templates, retired with Projects in 24.)
  */
 export function pagesMigration(get: (id: string) => Doc | undefined): SeedDoc[] {
   const docs: SeedDoc[] = [];
@@ -109,22 +107,5 @@ export function pagesMigration(get: (id: string) => Doc | undefined): SeedDoc[] 
   add("journal", [COLOR_FIELD]);
   add("leetcode", TRACKER_FIELDS);
 
-  const settings = get("settings");
-  const stored = settings?.data.projectTemplates;
-  if (settings && stored && typeof stored === "object" && !Array.isArray(stored)) {
-    const templates = { ...(stored as Record<string, Partial<ProjectTemplate>>) };
-    let changed = false;
-    if (!templates.study) {
-      templates.study = DEFAULT_TEMPLATES.study as ProjectTemplate;
-      changed = true;
-    }
-    const learning = templates.learning;
-    if (learning && !learning.tracker && DEFAULT_TEMPLATES.learning?.tracker) {
-      templates.learning = { ...learning, tracker: DEFAULT_TEMPLATES.learning.tracker };
-      changed = true;
-    }
-    if (changed)
-      docs.push({ id: "settings", kind: "setting", data: { projectTemplates: templates } });
-  }
   return docs;
 }

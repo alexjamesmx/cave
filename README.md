@@ -1,6 +1,6 @@
 # Cave
 
-Local-first personal brain: money, tasks, habits, diary, projects and pages in one installable web app, with one MCP API any agent can use. Every device keeps a full offline copy and syncs with one server.
+Local-first personal brain: money, tasks, habits, diary, ideas and notes in one installable web app, with one MCP API any agent can use. Every device keeps a full offline copy and syncs with one server.
 
 Status: pre-v0.1, live at `https://cave.alexjamesmx.dev`.
 

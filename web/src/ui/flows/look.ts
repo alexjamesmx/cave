@@ -25,6 +25,5 @@ export const JOB_ABOUT: Record<string, string> = {
   backups:
     "Takes a full copy of the database when the newest is more than a day old, checked hourly.",
   offsite: "Checks the off-box copy and reports its last result.",
-  "runs-trim":
-    "Keeps the newest 500 runs in Activity and the newest 500 flow and job runs; older ones go.",
+  "runs-trim": "Keeps the newest 500 flow and job runs; older ones go.",
 };

@@ -3,8 +3,7 @@ import { fieldsOf } from "../shared/fields.ts";
 import { builtInFlowsMigration } from "../shared/flows/built-in.ts";
 import { formatStamp } from "../shared/hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
-import { DEFAULT_TEMPLATES } from "../shared/projects.ts";
-import { CAVE_PROJECT, LEETCODE_PROJECT, projectsMigration } from "../shared/projects-seed.ts";
+import { retireProjectsMigration } from "../shared/retire-projects.ts";
 import type { Field } from "../shared/schema.ts";
 import { retireAiMigration, SEED_VERSION, seedDocs } from "../shared/seed.ts";
 import type { Doc } from "../shared/types.ts";
@@ -22,7 +21,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
   expect(seedVersionOf(store)).toBe(1);
 
   expect(migrateSeed(store, NOW)).toEqual([
-    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
   ]);
   expect(store.get("flows")?.data).toMatchObject({ name: "Flows", hidden: true });
   expect(store.get("flow-rent")).toMatchObject({ collection: "flows", actor: "seed" });
@@ -33,7 +32,6 @@ test("a database seeded before seed migrations gets the proposals and the remind
     timezone: "America/Mexico_City",
     reminderTime: "09:00",
     notifications: DEFAULT_NOTIFICATIONS,
-    projectTemplates: DEFAULT_TEMPLATES,
     // Migration 20 moved the M2 Habits view's icons here.
     habitIcons: expect.objectContaining({ gym: "dumbbell" }),
     seedVersion: SEED_VERSION,
@@ -109,64 +107,98 @@ test("seed migration 6 merges the categories: the owner's options and edits stay
   expect(options.slice(0, 2).map((o) => o.value)).toEqual(["food", "home"]);
 });
 
-test("seed migration 9: project refs, parts, LeetCode linked, the Cave's milestones, idempotent", () => {
+test("seed migration 24 retires Projects: collections and items marked deleted, refs archived with their values, templates cleared, idempotent", () => {
   const store = createStore(openDb(":memory:"));
-  store.seedIfEmpty(m2Seed as Doc[], 1);
+  store.seedIfEmpty(seedDocs(), 1);
+  // A database at version 23, as Projects left it: three collections, refs on others, templates.
   const stamp = formatStamp(NOW - 5000, 0, "phone");
-  const problem = (id: string, data: Record<string, unknown>): Doc => ({
+  const doc = (
+    id: string,
+    kind: Doc["kind"],
+    collection: string | null,
+    data: Record<string, unknown>,
+  ): Doc => ({
     id,
-    kind: "item",
-    collection: "leetcode",
+    kind,
+    collection,
     data,
     stamps: Object.fromEntries(Object.keys(data).map((k) => [k, stamp])),
     actor: "user:phone",
   });
+  const ref = (id: string, target: string): Field => ({
+    id,
+    name: id,
+    type: "ref",
+    config: { collection: target },
+  });
+  const empty = { icon: "folder", fields: [], views: [] };
   store.applyChanges(
     [
-      problem("lc1", { _title: "Two Sum", status: "solved" }),
-      problem("lc2", { _title: "LRU", status: "queued" }),
+      doc("projects", "collection", null, { name: "Projects", ...empty }),
+      doc("parts", "collection", null, { name: "Parts", ...empty }),
+      doc("runs", "collection", null, { name: "Runs", hidden: true, ...empty }),
+      doc("tasks", "collection", null, {
+        fields: [...fieldsOf(store.get("tasks")), ref("project", "projects"), ref("part", "parts")],
+      }),
+      doc("notes", "collection", null, {
+        fields: [...fieldsOf(store.get("notes")), ref("project", "projects")],
+      }),
+      doc("p1", "item", "projects", { _title: "Kitchen", status: "active" }),
+      doc("p-gone", "item", "projects", { _title: "Old", _deleted: true }),
+      doc("part1", "item", "parts", { _title: "Paint", project: "p1" }),
+      doc("run1", "item", "runs", { _title: "Plan", project: "p1", status: "done" }),
+      doc("t1", "item", "tasks", {
+        _title: "Buy paint",
+        status: "todo",
+        project: "p1",
+        part: "part1",
+      }),
+      doc("settings", "setting", null, { seedVersion: 23, projectTemplates: { generic: {} } }),
     ],
     "user:phone",
     NOW - 5000,
   );
-  migrateSeed(store, NOW);
 
-  expect(store.get(LEETCODE_PROJECT)?.data).toMatchObject({
-    _title: "LeetCode",
-    template: "learning",
-  });
-  expect(store.get("lc1")?.data).toMatchObject({
-    _title: "Two Sum",
-    status: "solved",
-    project: LEETCODE_PROJECT,
-  });
-  expect(store.get("lc2")?.data.project).toBe(LEETCODE_PROJECT);
-  const parts = store.itemsOf("parts").filter((p) => p.data.project === CAVE_PROJECT);
-  expect(parts.map((p) => [p.data._title, p.data.status])).toContainEqual([
-    "M8: one structure, and Projects",
-    "active",
-  ]);
-  expect(parts).toHaveLength(10);
+  expect(migrateSeed(store, NOW)).toEqual([24]);
+  for (const id of ["projects", "parts", "runs", "p1", "part1", "run1"]) {
+    const d = store.get(id) as Doc;
+    expect(d.data._deleted).toBe(true);
+    expect(d.actor).toBe("seed");
+  }
+  // An item already deleted keeps its own delete.
+  expect(store.get("p-gone")?.stamps._deleted).toBe(stamp);
   const field = (c: string, id: string) => fieldsOf(store.get(c)).find((f) => f.id === id);
-  for (const c of ["tasks", "ideas", "leetcode", "reminders", "money"])
-    expect(field(c, "project")).toMatchObject({ type: "ref", config: { collection: "projects" } });
-  expect(field("tasks", "part")).toMatchObject({ type: "ref", config: { collection: "parts" } });
-  expect(field("projects", "template")?.type).toBe("select");
+  expect(field("tasks", "project")?.archived).toBe(true);
+  expect(field("tasks", "part")?.archived).toBe(true);
+  expect(field("notes", "project")?.archived).toBe(true);
+  expect(field("tasks", "status")?.archived).toBeUndefined();
+  // The task stays, values and all.
+  expect(store.get("t1")?.data).toMatchObject({
+    _title: "Buy paint",
+    project: "p1",
+    part: "part1",
+  });
+  expect(store.get("t1")?.data._deleted).toBeUndefined();
+  expect(store.get("settings")?.data.projectTemplates).toBeNull();
+  expect(seedVersionOf(store)).toBe(24);
 
-  // Run again on what it produced: nothing left to do.
-  expect(
-    projectsMigration(store.get, (c) => store.itemsOf(c), new Date(NOW).toISOString()),
-  ).toEqual([]);
+  // Nothing left to do on what it produced, or on a fresh seed that never had Projects.
+  expect(retireProjectsMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);
+  const fresh = createStore(openDb(":memory:"));
+  fresh.seedIfEmpty(seedDocs(), 1);
+  for (const id of ["projects", "parts", "runs"]) expect(fresh.get(id)).toBeUndefined();
+  expect(retireProjectsMigration(fresh.get, (c) => fresh.itemsOf(c))).toEqual([]);
 });
 
 test("a later migration's write to the same key in one run wins over an earlier one's", () => {
   const store = createStore(openDb(":memory:"));
   store.seedIfEmpty(m2Seed as Doc[], 1);
   migrateSeed(store, NOW);
-  // 6 wrote money's fields with the categories; 9 then added `project` to the same key.
-  const ids = fieldsOf(store.get("money")).map((f) => f.id);
-  expect(ids).toContain("project");
-  const category = fieldsOf(store.get("money")).find((f) => f.id === "category");
+  // 6 wrote money's fields with the categories; 10 then rewrote the same key (accounts a list).
+  const fields = fieldsOf(store.get("money"));
+  expect(fields.find((f) => f.id === "account")?.type).toBe("select");
+  expect(fields.find((f) => f.id === "detail")?.archived).toBe(true);
+  const category = fields.find((f) => f.id === "category");
   expect(category?.options?.some((o) => o.value === "gula")).toBe(true);
 });
 
@@ -201,7 +233,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
     NOW - 5000,
   );
 
-  expect(migrateSeed(store, NOW)).toEqual([16, 17, 18, 19, 20, 21, 22, 23]);
+  expect(migrateSeed(store, NOW)).toEqual([16, 17, 18, 19, 20, 21, 22, 23, 24]);
   for (const id of ["ai", "ai-rule", "ai-skill"]) {
     const d = store.get(id) as Doc;
     expect(d.data._deleted).toBe(true);
@@ -214,7 +246,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
   expect(store.get("ai-gone")?.stamps._deleted).toBe(stamp);
   expect(store.get("task-1")?.data._deleted).toBeUndefined();
   expect(store.itemsOf("ai")).toEqual([]);
-  expect(seedVersionOf(store)).toBe(23);
+  expect(seedVersionOf(store)).toBe(24);
 
   // Nothing left to do on what it produced, or on a database that never had the collection.
   expect(retireAiMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);
@@ -248,7 +280,7 @@ test("seed migration 22 clears the radar interests and subscription dismissals, 
     "test",
     1,
   );
-  expect(migrateSeed(store, NOW)).toEqual([22, 23]);
+  expect(migrateSeed(store, NOW)).toEqual([22, 23, 24]);
   expect(store.get("settings")?.data).toMatchObject({
     radarInterests: null,
     dismissedSubscriptions: null,
@@ -278,7 +310,7 @@ test("seed migration 23 adds the built-in flows, on from now, the digest at the 
     "test",
     1,
   );
-  expect(migrateSeed(store, NOW)).toEqual([23]);
+  expect(migrateSeed(store, NOW)).toEqual([23, 24]);
   const flow = (id: string) => store.get(id) as Doc;
   expect(flow("flow-reminders").data).toMatchObject({ status: "on", author: "cave" });
   expect(flow("flow-reminders").stamps.status).toBe(formatStamp(NOW, 0, "seed"));

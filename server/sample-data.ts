@@ -1,5 +1,4 @@
 import type { FlowDefinition } from "../shared/flows/registry.ts";
-import { LEETCODE_PROJECT } from "../shared/projects-seed.ts";
 
 /** One fake record: an item of `collection`, written as the owner would. */
 interface SampleDoc {
@@ -150,49 +149,6 @@ function payments(today: string): SampleDoc[] {
   ];
 }
 
-const PROJECT = "s-proj-kitchen";
-
-function projects(today: string): SampleDoc[] {
-  return [
-    {
-      id: PROJECT,
-      collection: "projects",
-      data: {
-        _title: "Kitchen refresh",
-        status: "active",
-        area: "home",
-        goal: "New paint, shelves and lights before the holidays",
-        template: "generic",
-        pinned: true,
-        review: addDays(today, 14),
-      },
-    },
-    {
-      id: "s-part-plan",
-      collection: "parts",
-      data: {
-        _title: "Plan and budget",
-        project: PROJECT,
-        status: "done",
-        kind: "phase",
-        order: 1,
-      },
-    },
-    {
-      id: "s-part-build",
-      collection: "parts",
-      data: {
-        _title: "Paint and shelves",
-        project: PROJECT,
-        status: "active",
-        kind: "phase",
-        order: 2,
-        due: addDays(today, 21),
-      },
-    },
-  ];
-}
-
 function tasks(today: string): SampleDoc[] {
   const t = (id: string, title: string, data: Record<string, unknown>): SampleDoc => ({
     id: `s-task-${id}`,
@@ -237,8 +193,6 @@ function tasks(today: string): SampleDoc[] {
     }),
     t("paint", "Pick the paint colour", {
       status: "todo",
-      project: PROJECT,
-      part: "s-part-build",
       due: addDays(today, 4),
     }),
   ];
@@ -304,7 +258,7 @@ const IDEAS: SampleDoc[] = [
   {
     id: "s-idea-shelves",
     collection: "ideas",
-    data: { _title: "Floating kitchen shelves", stage: "building", project: PROJECT },
+    data: { _title: "Floating kitchen shelves", stage: "building" },
   },
 ];
 
@@ -340,7 +294,6 @@ function leetcode(today: string): SampleDoc[] {
       difficulty,
       topic,
       status,
-      project: LEETCODE_PROJECT,
       ...(solvedDaysAgo === undefined ? {} : { solved_at: addDays(today, -solvedDaysAgo) }),
     },
   });
@@ -410,7 +363,7 @@ const OTHER: SampleDoc[] = [
  * so this month, Payments and the calendar always have content. No randomness: the same day
  * gives the same records. Parents come before what refers to them.
  */
-/** Notes in a few folders, linked with wikilinks, one on the kitchen project. */
+/** Notes in a few folders, linked with wikilinks. */
 const NOTES: SampleDoc[] = [
   {
     id: "s-note-shelves",
@@ -421,7 +374,6 @@ const NOTES: SampleDoc[] = [
         "Wall: 180 cm. Two boards, four brackets.\n\nSee [[Kitchen paint]] for colours.\n\n- [x] Measure\n- [ ] Buy brackets",
       folder: "Projects/Kitchen",
       source: "owner",
-      project: PROJECT,
     },
   },
   {
@@ -432,7 +384,6 @@ const NOTES: SampleDoc[] = [
       _body: "Warm white for the walls; the accent wall in sage.",
       folder: "Projects/Kitchen",
       source: "owner",
-      project: PROJECT,
     },
   },
   {
@@ -495,53 +446,8 @@ function radar(today: string): SampleDoc[] {
   ];
 }
 
-/** One finished and one running agent run on the kitchen project, so Activity has both. */
-function runs(today: string): SampleDoc[] {
-  const at = (time: string) => `${today}T${time}:00`;
-  const utc = (time: string) => `${today}T${time}:00.000Z`;
-  return [
-    {
-      id: "s-run-plan",
-      collection: "runs",
-      data: {
-        _title: "Plan the shelves",
-        _body: "Measured the wall and listed the parts to buy.",
-        project: PROJECT,
-        part: "s-part-plan",
-        agent: "claude",
-        status: "done",
-        started_at: at("09:00"),
-        finished_at: at("09:20"),
-        steps: [
-          { title: "Read the project", status: "done", at: utc("15:00") },
-          {
-            title: "Listed the parts",
-            status: "done",
-            detail: "4 brackets, 2 boards",
-            at: utc("15:10"),
-          },
-        ],
-      },
-    },
-    {
-      id: "s-run-build",
-      collection: "runs",
-      data: {
-        _title: "Pick the paint",
-        project: PROJECT,
-        part: "s-part-build",
-        agent: "claude",
-        status: "running",
-        started_at: at("10:00"),
-        steps: [{ title: "Compare three colours", status: "running", at: utc("16:00") }],
-      },
-    },
-  ];
-}
-
 export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
   return [
-    ...projects(today),
     ...money(today),
     ...payments(today),
     ...tasks(today),
@@ -550,7 +456,6 @@ export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
     ...wealth(today),
     ...leetcode(today),
     ...reminders(today),
-    ...runs(today),
     ...radar(today),
     ...NOTES,
     ...OTHER,

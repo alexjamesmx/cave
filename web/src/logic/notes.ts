@@ -1,8 +1,6 @@
 import { normTitle } from "../../../shared/money-stats.ts";
 import { normFolder } from "../../../shared/notes.ts";
-import { isLive } from "../../../shared/project-status.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { projectPath } from "../app/router.ts";
 import { titleOf } from "./views.ts";
 
 export const NO_TOPIC = "No topic";
@@ -10,38 +8,17 @@ export const NO_TOPIC = "No topic";
 /** The path of one note in the Notes section. */
 export const notePath = (id: string) => `/notes/all/${encodeURIComponent(id)}`;
 
-/** The path of one page of a project. */
-export const pagePath = (project: string, note: string) =>
-  `${projectPath(project, "pages")}/${encodeURIComponent(note)}`;
-
 /**
  * Where `[[Title]]` goes: the first note with that title (case ignored) in `near`, else in
- * `all`; a live project's page opens in its project, any other note in Notes.
+ * `all`, opened in Notes.
  */
-export function wikiResolver(near: Doc[], all: Doc[], projects: Doc[]) {
-  const live = new Set(projects.filter(isLive).map((p) => p.id));
+export function wikiResolver(near: Doc[], all: Doc[]) {
   return (title: string): { href: string } | undefined => {
     const key = title.toLowerCase();
     const same = (n: Doc) => titleOf(n).toLowerCase() === key;
     const hit = near.find(same) ?? all.find(same);
-    if (!hit) return undefined;
-    const owner = hit.data.project;
-    return {
-      href:
-        typeof owner === "string" && live.has(owner) ? pagePath(owner, hit.id) : notePath(hit.id),
-    };
+    return hit ? { href: notePath(hit.id) } : undefined;
   };
-}
-
-/**
- * The notes the Notes section shows: live ones that are no live project's page. A page whose
- * project was deleted comes back here rather than vanishing.
- */
-export function looseNotes(notes: Doc[], projects: Doc[]): Doc[] {
-  const live = new Set(projects.filter(isLive).map((p) => p.id));
-  return notes.filter(
-    (n) => isLive(n) && !(typeof n.data.project === "string" && live.has(n.data.project)),
-  );
 }
 
 /** A note's topic is its folder; notes without one share "No topic". */

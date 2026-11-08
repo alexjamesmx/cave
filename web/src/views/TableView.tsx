@@ -9,7 +9,7 @@ import type { ViewProps } from "./types.ts";
 // Large collections (the ledger) render in pages so the DOM stays small.
 const PAGE = 200;
 
-export function TableView({ collection, view, items, open, preset }: ViewProps) {
+export function TableView({ collection, view, items, open }: ViewProps) {
   const { fields } = collection.data;
   const [shown, setShown] = useState(PAGE);
   const reminders = collection.id === "reminders";
@@ -62,12 +62,7 @@ export function TableView({ collection, view, items, open, preset }: ViewProps) 
             </button>
           )}
         </span>
-        <NewItem
-          collection={collection.id}
-          {...(preset ? { preset } : {})}
-          placeholder="New row"
-          onCreated={open}
-        />
+        <NewItem collection={collection.id} placeholder="New row" onCreated={open} />
       </div>
     </section>
   );

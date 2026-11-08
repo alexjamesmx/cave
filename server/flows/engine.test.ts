@@ -454,7 +454,7 @@ test("built in: the digest emails the day at its time, email only, and skips an 
         kind: "digest",
         title: "Your day · Oct 15",
         details: ["Due", "  Today 17:30 · Dentist"],
-        path: "/projects/scene",
+        path: "/money/overview",
       },
       only: ["email"],
     },

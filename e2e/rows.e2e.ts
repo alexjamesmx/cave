@@ -79,8 +79,8 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
   const taskRow = page.locator("tr", { hasText: "Rows e2e task" });
   await opensByClickAndKey(page, taskRow, taskRow.locator("td").nth(1), "Tasks item");
 
-  // Projects → Ideas.
-  await page.goto("/projects/ideas");
+  // Ideas → Ideas.
+  await page.goto("/ideas/all");
   await page.getByLabel("New idea").fill("Rows e2e idea");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   const idea = page.getByRole("listitem").filter({ hasText: "Rows e2e idea" });
@@ -88,7 +88,7 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
 
   // Leave the shared database as found.
   for (const [path, name, drawer] of [
-    ["/projects/ideas", "Rows e2e idea", "Ideas item"],
+    ["/ideas/all", "Rows e2e idea", "Ideas item"],
     ["/tasks/list", "Rows e2e task", "Tasks item"],
     ["/money/transactions", "Rows e2e coffee", "Money item"],
   ] as const) {

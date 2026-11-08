@@ -15,7 +15,6 @@ import { PAYMENTS, paidPatch } from "../shared/payments.ts";
 import { RADAR, RADAR_PER_DAY, sameUrl } from "../shared/radar.ts";
 import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
 import { parseRoutine, routineOf } from "../shared/routine.ts";
-import { RUNS } from "../shared/runs.ts";
 import type { CollectionData } from "../shared/schema.ts";
 import { completeTask } from "../shared/tasks.ts";
 import type { Doc } from "../shared/types.ts";
@@ -23,8 +22,6 @@ import type { Agent } from "./agents.ts";
 import type { Store } from "./store.ts";
 
 const MAX_TITLE_CHARS = 500;
-/** A question's task title keeps this much of the step text. */
-export const QUESTION_CHARS = 80;
 export const MAX_BODY_BYTES = 100 * 1024;
 export const PROPOSALS = "proposals";
 const REMINDERS = "reminders";
@@ -192,49 +189,6 @@ export class AgentWriter {
       collection: FLOWS,
       data: { _created: new Date(now).toISOString(), ...data },
     });
-  }
-
-  /**
-   * The runs collection is hidden from every other write; the run tools check that the
-   * agent owns the run and that it is open, then write here. Refs are checked as on any write.
-   */
-  writeRun(current: Doc | undefined, data: Record<string, unknown>): WriteResult {
-    const errors = validateFields(activeFields(fieldsOf(this.store.get(RUNS))), data, {
-      refTarget: (id) => this.store.get(id),
-    });
-    if (errors.length > 0) return fail(formatFieldErrors(errors));
-    if (current) return this.apply(current, { ...current, data });
-    const now = this.now();
-    return this.apply(undefined, {
-      id: newId(now),
-      kind: "item",
-      collection: RUNS,
-      data: { _created: new Date(now).toISOString(), ...data },
-    });
-  }
-
-  /**
-   * The task that carries an agent's question (`log_step` with `question: true`): written
-   * whether or not `tasks` is in the agent's allowlist, since the question is part of its run.
-   * `_askedBy` and `_run` mark it; agents cannot set `_` keys themselves.
-   */
-  writeQuestion(run: Doc, question: string): WriteResult {
-    const tasks = this.store.get("tasks");
-    if (!live(tasks)) return fail("the tasks collection is missing");
-    const now = this.now();
-    const data = {
-      _created: new Date(now).toISOString(),
-      _title: `Answer: ${question.trim().slice(0, QUESTION_CHARS)}`,
-      project: run.data.project,
-      status: "todo",
-      _askedBy: this.agent.name,
-      _run: run.id,
-    };
-    const errors = validateFields(activeFields(fieldsOf(tasks)), data, {
-      refTarget: (id) => this.store.get(id),
-    });
-    if (errors.length > 0) return fail(formatFieldErrors(errors));
-    return this.apply(undefined, { id: newId(now), kind: "item", collection: "tasks", data });
   }
 
   /**

@@ -2,7 +2,6 @@ import { optionText } from "../../../shared/categories.ts";
 import { shortDay } from "../../../shared/dates.ts";
 import { isSafeUrl, offeredOptions } from "../../../shared/fields.ts";
 import type { Field, SelectOption } from "../../../shared/schema.ts";
-import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { flowPath } from "../app/router.ts";
 import { formatMoney } from "../logic/format.ts";
@@ -47,11 +46,7 @@ export function FieldValue({ field, value }: { field: Field; value: unknown }) {
       return <span className="num">{`${shortDay(text)}${time}`}</span>;
     }
     case "json":
-      return (
-        <span className="muted">
-          {field.config?.schema === "map" ? "Map layout" : "Flow definition"}
-        </span>
-      );
+      return <span className="muted">Flow definition</span>;
     case "ref":
       return <RefValue id={String(value)} />;
     case "url":
@@ -80,23 +75,12 @@ type Blur = { target: HTMLInputElement };
 // Blur only writes when the text changed, so tabbing through a form never rewrites a value.
 const changed = (e: Blur) => e.target.value !== e.target.defaultValue;
 
-/** Where a ref's target opens, when it has a page of its own. */
-const refPath = (doc: Doc) =>
-  doc.collection === "projects" ? `/projects/${encodeURIComponent(doc.id)}` : undefined;
-
 /** A ref shows its target's title; a deleted or missing target says so. */
 function RefValue({ id }: { id: string }) {
   const doc = useDoc(useCave().local.db, id);
   if (!doc) return <span className="muted">{id}</span>;
   if (doc.data._deleted === true) return <span className="muted">{titleOf(doc)} (deleted)</span>;
-  const path = refPath(doc);
-  return path ? (
-    <a href={path} className="link" onClick={(e) => e.stopPropagation()}>
-      {titleOf(doc)}
-    </a>
-  ) : (
-    <span>{titleOf(doc)}</span>
-  );
+  return <span>{titleOf(doc)}</span>;
 }
 
 /** A ref picks one live item of its target collection. */
@@ -154,11 +138,7 @@ export function FieldInput({ field, value, onChange, id }: InputProps) {
     case "ref":
       return <RefInput field={field} value={value} onChange={onChange} {...(id ? { id } : {})} />;
     case "json":
-      return field.config?.schema === "map" ? (
-        <span id={id} className="muted">
-          Edit on the project's Map tab
-        </span>
-      ) : (
+      return (
         <a id={id} href={flowPath()} className="link">
           Edit on the Flows page
         </a>

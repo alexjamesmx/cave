@@ -20,8 +20,8 @@ interface AgentInfo {
 }
 
 /**
- * Settings → Agents: everything about agents except their runs (Projects → Activity): flows
- * waiting for approval, delete proposals, and each agent's token, permissions and use.
+ * Settings → Agents: everything about agents: flows waiting for approval, delete proposals, and
+ * each agent's token, permissions and use.
  */
 export function SettingsAgents() {
   return (

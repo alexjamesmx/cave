@@ -3,7 +3,6 @@ import type { Doc } from "../../../shared/types.ts";
 import {
   excerpt,
   groupByTopic,
-  looseNotes,
   matchesNote,
   NO_TOPIC,
   notePath,
@@ -11,27 +10,13 @@ import {
   wikiResolver,
 } from "./notes.ts";
 
-const doc = (id: string, collection: string, data: Record<string, unknown>): Doc => ({
+const note = (id: string, data: Record<string, unknown> = {}): Doc => ({
   id,
   kind: "item",
-  collection,
-  data,
+  collection: "notes",
+  data: { _title: id, ...data },
   stamps: {},
   actor: "user",
-});
-const note = (id: string, data: Record<string, unknown> = {}) =>
-  doc(id, "notes", { _title: id, ...data });
-
-test("loose notes: no project, or a project that is gone; deleted notes never", () => {
-  const projects = [doc("p1", "projects", {}), doc("p2", "projects", { _deleted: true })];
-  const notes = [
-    note("free"),
-    note("page", { project: "p1" }),
-    note("orphan", { project: "p2" }),
-    note("missing", { project: "p9" }),
-    note("gone", { _deleted: true }),
-  ];
-  expect(looseNotes(notes, projects).map((n) => n.id)).toEqual(["free", "orphan", "missing"]);
 });
 
 test("topics A to Z with No topic last; each newest first", () => {
@@ -73,14 +58,11 @@ test("a note's path", () => {
   expect(notePath("01ABC")).toBe("/notes/all/01ABC");
 });
 
-test("wikilinks: the nearby note first, a live project's page in its project, else Notes", () => {
-  const projects = [doc("p1", "projects", {}), doc("p2", "projects", { _deleted: true })];
-  const page = note("Plan", { project: "p1" });
-  const loose = note("plan");
-  const orphan = note("Old", { project: "p2" });
-  const resolve = wikiResolver([loose], [page, loose, orphan], projects);
+test("wikilinks: the nearby note first, else any note, opened in Notes", () => {
+  const far = note("Plan");
+  const near = note("plan");
+  const resolve = wikiResolver([near], [far, near]);
   expect(resolve("PLAN")).toEqual({ href: notePath("plan") });
-  expect(wikiResolver([], [page], projects)("plan")).toEqual({ href: "/projects/p1/pages/Plan" });
-  expect(resolve("old")).toEqual({ href: notePath("Old") });
+  expect(wikiResolver([], [far])("plan")).toEqual({ href: notePath("Plan") });
   expect(resolve("nothing")).toBeUndefined();
 });

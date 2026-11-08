@@ -1,6 +1,6 @@
 # Cave
 
-Local-first personal brain: money, tasks, habits, diary, projects, pages. Every device holds a full offline copy; any agent reads and writes it through one MCP API. Repo: https://github.com/alexjamesmx/cave (public: no real data in it, ever).
+Local-first personal brain: money, tasks, habits, diary, ideas, notes. Every device holds a full offline copy; any agent reads and writes it through one MCP API. Repo: https://github.com/alexjamesmx/cave (public: no real data in it, ever).
 
 ## Status
 
@@ -27,7 +27,7 @@ Pre-v0.1: M1 to M13 are on `main` and live at `https://cave.alexjamesmx.dev`; a 
 - Local-first; the server is a sync hub, not a dependency.
 - Agents only through `/mcp` or the HTTP API, never the database file.
 - Owner keeps the data: SQLite, full JSON export.
-- Nothing hard-deleted; every change names its actor and can be undone. Exception: runs trimmed to 500 (`docs/decisions.md`).
+- Nothing hard-deleted; every change names its actor and can be undone. Exception: the server's flow and job logs are trimmed to 500 rows (`docs/decisions.md`).
 - Not an AI tool: the Cave runs no model and has no chat. Agents come in through MCP; the UI is forms.
 
 ## Stack
@@ -52,8 +52,7 @@ Bun 1.4.3 (runtime, packages, bundler, tests; no other lockfiles). TypeScript st
 
 - Small changes: commit on `main`, push; the push deploys. Branch + PR only for: schema migration; auth, request guard, tokens, secrets; `deploy/` or server privileges; deleting or rewriting real data; a new runtime dependency. The owner can always ask for a PR.
 - Milestones: `docs/plan-<m>.md` (spec) and `docs/log/<m>.md` (changes, real command output, deviations) exist only while the milestone is built. On ship: tag the last commit `<m>-history`, delete both, update Status.
-- Log work in the Cave when the `cave` connector is up: `start_run` on `proj-cave` per part, `log_step` per commit, push or deploy, `finish_run`. If it is down, say so once.
-- The `ship-change` skill (`.claude/skills/ship-change/`) is the verify, commit, push and log loop.
+- The `ship-change` skill (`.claude/skills/ship-change/`) is the verify, commit and push loop.
 
 ## Git
 

@@ -92,7 +92,7 @@ const scheduler = createScheduler({
   jobs: [
     ...notifications.jobs,
     createBackupJob(db, backupDir),
-    createRunsTrimJob(store, db, Date.now),
+    createRunsTrimJob(db),
     createOffsiteJob({
       statusPath: offsiteStatusPath,
       notifier: notifications.notifier,

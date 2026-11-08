@@ -13,6 +13,9 @@ export interface Doc {
   actor: string;
 }
 
+/** Not marked deleted. Deletes are tombstones (`_deleted: true`); nothing is removed. */
+export const isLive = (d: Doc) => d.data._deleted !== true;
+
 export interface SyncRequest {
   deviceId: string;
   cursor: number;

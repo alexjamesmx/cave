@@ -8,6 +8,4 @@ export interface ViewProps {
   /** The collection's live items, already without deleted ones. */
   items: Doc[];
   open(id: string): void;
-  /** Values every new item gets: the project when the view is scoped to one. */
-  preset?: Record<string, unknown>;
 }

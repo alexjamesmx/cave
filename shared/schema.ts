@@ -8,7 +8,7 @@ export const FIELD_TYPES = [
   "url",
   // A structured value checked by a named schema; it merges as one unit (M7 flows).
   "json",
-  // An item id in another collection (M8): a task's project, a part's parent.
+  // An item id in another collection (M8).
   "ref",
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
@@ -70,8 +70,8 @@ interface FieldConfig {
    * this is set. The `settings` doc's `timezone` says which local time.
    */
   withTime?: boolean;
-  /** For `json` fields: the schema the value must pass: a flow, a project's map, a run's steps. */
-  schema?: "flow" | "map" | "steps";
+  /** For `json` fields: the schema the value must pass; only flows use one. */
+  schema?: "flow";
   /** For `ref` fields: the collection the target lives in. */
   collection?: string;
   /** For `select` fields: take the options from this field; the field's own are ignored. */

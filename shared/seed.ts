@@ -16,17 +16,9 @@ import {
   paymentLinkMigration,
   TASK_FIELDS,
 } from "./payments.ts";
-import { mapMigration } from "./project-map.ts";
-import { DEFAULT_TEMPLATES, PARTS, PARTS_COLLECTION, projectPageMigration } from "./projects.ts";
-import {
-  LEETCODE_PROJECT,
-  LEETCODE_PROJECT_DATA,
-  projectsMigration,
-  withProjectFields,
-} from "./projects-seed.ts";
 import { RADAR, RADAR_COLLECTION, radarMigration } from "./radar.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
-import { RUNS, RUNS_COLLECTION, runsMigration } from "./runs.ts";
+import { retireProjectsMigration } from "./retire-projects.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
 import { tasksCalendarMigration } from "./tasks.ts";
 import type { Doc, Kind } from "./types.ts";
@@ -225,26 +217,6 @@ const COLLECTIONS: Record<string, CollectionData> = {
       ...TRACKER_FIELDS,
     ],
     views: [view("progress", "Progress", "progress"), view("table", "Table", "table")],
-  },
-  projects: {
-    name: "Projects",
-    icon: "folder-kanban",
-    color: C.purple,
-    order: 6,
-    fields: [
-      field("status", "Status", "select", [
-        opt("active", "play", C.lime),
-        opt("paused", "pause", C.gold),
-        opt("done", "circle-check", C.cyan),
-        opt("dropped", "circle-x", C.expense),
-      ]),
-      field("area", "Area", "text"),
-      field("review", "Review", "date"),
-    ],
-    views: [
-      view("table", "Table", "table"),
-      view("board", "Board", "board", { groupBy: "status" }),
-    ],
   },
   reminders: {
     name: "Reminders",
@@ -470,16 +442,15 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   // M7b part 8 created the `ai` collection; M10 retired it (16), so a database that never had
   // it gets nothing here.
   { version: 8, docs: [] },
-  // M8 part 2: project refs, parts, templates, and the LeetCode and Cave projects.
-  { version: 9, docs: [], update: projectsMigration },
+  // M8 part 2 added project refs, parts and templates; Projects is retired (24).
+  { version: 9, docs: [] },
   // M7c part 3: accounts as a select, payments share money's lists, detail archived.
   { version: 10, docs: [], update: listsMigration },
   // M7c part 6: money's `payment` ref, so subscription charges link to their payment.
   { version: 11, docs: [], update: paymentLinkMigration },
-  // M8 part 3: a project's whiteboard, kept in its `map` key.
-  { version: 12, docs: [], update: mapMigration },
-  // M8 part 4: runs, the trace of AI work.
-  { version: 13, docs: [], update: runsMigration },
+  // M8 parts 3 and 4: a project's whiteboard and agents' runs; retired with Projects (24).
+  { version: 12, docs: [] },
+  { version: 13, docs: [] },
   // M9 part A: notes live in the Cave.
   { version: 14, docs: [], update: notesMigration },
   // M9 part B: the radar, fed by agents, ranked by the owner's interests.
@@ -488,8 +459,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 16, docs: [], update: retireAiMigration },
   // M11 part 1: palette A replaces the neon seed colours still in place.
   { version: 17, docs: [], update: recolourMigration },
-  // M11 part 6: the project page's `lives_in` and `diagram` fields.
-  { version: 18, docs: [], update: projectPageMigration },
+  // M11 part 6: the project page's fields; retired with Projects (24).
+  { version: 18, docs: [] },
   // M12 part 6: a colour on notes and diary days, the tracker fields, the study template.
   { version: 19, docs: [], update: pagesMigration },
   // M12 part 8: the diary's Habits and Gallery views retire; habit icons become a setting.
@@ -500,6 +471,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 22, docs: [], update: retiredSettingsMigration },
   // Everything the Cave does on its own is a flow: reminders, payments, the budget, the digest.
   { version: 23, docs: [], update: builtInFlowsMigration },
+  // 2026-11-08: Projects, parts and runs are retired; their refs are archived.
+  { version: 24, docs: [], update: retireProjectsMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -508,7 +481,6 @@ export const SEED_VERSION = Math.max(1, ...SEED_MIGRATIONS.map((m) => m.version)
 // Reminders and the daily brief resolve local date-times through this timezone.
 const SETTINGS = {
   timezone: "America/Mexico_City",
-  projectTemplates: DEFAULT_TEMPLATES,
   habitIcons: Object.fromEntries(HABITS.map(([id, , icon]) => [id, icon])),
   ...REMINDER_DEFAULTS,
   ...NOTIFICATION_DEFAULTS,
@@ -530,33 +502,14 @@ const seeded = (
 });
 
 /** Seed collections and settings stamped at time 0, so any edit from a device wins. */
-/** A collection as a fresh seed has it: with the M8 project fields. */
-const withProjects = (id: string, data: CollectionData): CollectionData => ({
-  ...data,
-  fields: withProjectFields(id, data.fields),
-});
-
 export function seedDocs(): Doc[] {
   return [
-    ...Object.entries(COLLECTIONS).map(([id, data]) =>
-      seeded(id, "collection", withProjects(id, data)),
-    ),
+    ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
     seeded("proposals", "collection", PROPOSALS),
-    seeded(PAYMENTS, "collection", withProjects(PAYMENTS, PAYMENTS_COLLECTION)),
-    seeded(PARTS, "collection", PARTS_COLLECTION),
-    seeded(RUNS, "collection", RUNS_COLLECTION),
+    seeded(PAYMENTS, "collection", PAYMENTS_COLLECTION),
     seeded(NOTES, "collection", NOTES_COLLECTION),
     seeded(RADAR, "collection", RADAR_COLLECTION),
-    // LeetCode is a project from the start, so its old link always has somewhere to go.
-    seeded(LEETCODE_PROJECT, "item", LEETCODE_PROJECT_DATA, "projects"),
-    ...FLOW_DOCS.map((d) =>
-      seeded(
-        d.id,
-        d.kind,
-        d.id === FLOWS ? withProjects(FLOWS, d.data as unknown as CollectionData) : d.data,
-        d.collection ?? null,
-      ),
-    ),
+    ...FLOW_DOCS.map((d) => seeded(d.id, d.kind, d.data, d.collection ?? null)),
     ...builtInFlows().map((f) => seeded(f.id, f.kind, f.data, f.collection)),
     seeded("settings", "setting", SETTINGS),
   ];

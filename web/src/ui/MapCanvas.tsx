@@ -12,7 +12,7 @@ import {
 
 /**
  * React Flow with the Cave's look: dark, a dotted background, zoom controls, and the minimap
- * on a desktop only. The project Map and the Flows board both draw through it.
+ * on a desktop only. The Flows board draws through it.
  */
 export function MapCanvas<N extends Node, E extends Edge>({
   label,

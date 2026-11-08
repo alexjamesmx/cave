@@ -39,7 +39,7 @@ export function TasksList() {
   if (!stored || !items) return null;
   const collection = withActiveFields(stored);
   const field = (id: string) => collection.data.fields.find((f) => f.id === id);
-  const [status, due, priority, project] = ["status", "due", "priority", "project"].map(field);
+  const [status, due, priority] = ["status", "due", "priority"].map(field);
   const set = (patch: Partial<typeof q>) => setSearch(taskQueryToSearch({ ...q, ...patch }));
 
   return (
@@ -78,7 +78,6 @@ export function TasksList() {
               <th>Status</th>
               <th>Due</th>
               <th>Priority</th>
-              {project && <th>Project</th>}
             </tr>
           </thead>
           <tbody>
@@ -92,11 +91,6 @@ export function TasksList() {
                 <td>{status && <OptionChip field={status} value={d.data.status} />}</td>
                 <td>{due && <FieldValue field={due} value={d.data.due} />}</td>
                 <td>{priority && <FieldValue field={priority} value={d.data.priority} />}</td>
-                {project && (
-                  <td>
-                    <FieldValue field={project} value={d.data.project} />
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>

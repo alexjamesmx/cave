@@ -2,8 +2,8 @@ import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 const PHONE = { width: 390, height: 844 };
-const ALL = ["Money", "Calendar", "Flows", "Projects", "Notes", "Tasks", "Settings"];
-const DEFAULT = ["Projects", "Money", "Tasks", "Calendar"];
+const ALL = ["Money", "Calendar", "Flows", "Ideas", "Notes", "Tasks", "Settings"];
+const DEFAULT = ["Money", "Tasks", "Calendar", "Notes"];
 
 test("the phone dock: four sections and New, More with every section, and an edited dock that syncs", async ({
   browser,

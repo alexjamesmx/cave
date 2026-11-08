@@ -240,7 +240,7 @@ export function createFlowEngine({
               kind: "digest",
               title: `Your day · ${shortDay(ctx.today)}`,
               details: lines,
-              path: "/projects/scene",
+              path: "/money/overview",
             },
             ["email"],
           );

@@ -11,8 +11,6 @@ export type Route =
   | { name: "not-found" };
 
 const parts = (pathname: string) => pathname.split("/").filter(Boolean).map(decodeURIComponent);
-const isProjectsTab = (segment: string) =>
-  sectionById("projects")?.tabs.some((t) => t.id === segment) ?? false;
 const enc = (...segments: string[]) => `/${segments.map(encodeURIComponent).join("/")}`;
 
 /**
@@ -22,13 +20,13 @@ const enc = (...segments: string[]) => `/${segments.map(encodeURIComponent).join
 export function redirectOf(pathname: string): string | undefined {
   const p = parts(pathname);
   const [first, second, third] = p;
-  // Home is gone (M11): the app opens on Projects.
+  // Home is gone (M11): the app opens on its landing page.
   if (p.length === 0) return LANDING;
   if (first === "agents" && p.length === 1) return "/settings/agents";
-  // The AI section (M8 to M10): agents to Settings, flows to their section, Activity to Projects.
+  // The AI section (M8 to M10): agents to Settings, flows to their section, Activity is gone.
   if (first === "ai") {
     if (second === "flows") return flowPath(third);
-    if (second === "activity") return "/projects/activity";
+    if (second === "activity") return LANDING;
     return "/settings/agents";
   }
   // Flows lived under Settings from M10 to M11; Lists until M11 part 3.
@@ -48,22 +46,20 @@ export function redirectOf(pathname: string): string | undefined {
   // Wealth is Net worth since M7c; Payments is Subscriptions since the owner set bills aside.
   if (first === "money" && second === "wealth") return "/money/net-worth";
   if (first === "money" && second === "payments") return "/money/subscriptions";
-  // The Radar page (M9) and the "Agent finds" bucket (M11) are gone: Ideas holds the owner's own.
-  if (first === "projects" && second === "radar") return "/projects/ideas";
-  // The Notes view left Projects in M12 part 5; notes have their own section now.
-  if (first === "projects" && second === "notes")
-    return third ? enc("notes", "all", third) : "/notes/all";
-  // A project's Items and Notes tabs went with M11 part 6; its Map is the Canvas.
-  if (first === "projects" && second && third && !isProjectsTab(second)) {
-    if (third === "items") return enc("projects", second);
-    if (third === "notes") return `/projects/${encodeURIComponent(second)}/pages`;
-    if (third === "map") return enc("projects", second, "canvas");
+  // Projects was retired on 2026-11-08: its Ideas (and the old Radar) are the Ideas section,
+  // LeetCode's project is that section's LeetCode tab, its Notes view is Notes, the rest opens
+  // the landing page.
+  if (first === "projects") {
+    if (second === "ideas" || second === "radar") return "/ideas/all";
+    if (second === "proj-leetcode") return "/ideas/leetcode";
+    if (second === "notes") return third ? enc("notes", "all", third) : "/notes/all";
+    return LANDING;
   }
   if (first !== "c" || !second) return undefined;
   const collection = second;
   const view = third;
-  // LeetCode is a project now (M8 part 2): its items are on that project's page.
-  if (collection === "leetcode") return "/projects/proj-leetcode";
+  // LeetCode's views are one tab under Ideas since Projects was retired.
+  if (collection === "leetcode") return "/ideas/leetcode";
   // The journal's Write is Diary → Today; its Habits and Gallery views are Days (M12 part 8).
   if (collection === "journal") return diaryPath(view && view !== "write" ? "days" : "write");
   // Tasks → Calendar is Calendar → Month since M12 part 9.
@@ -75,8 +71,8 @@ export function redirectOf(pathname: string): string | undefined {
     : (tabs.find((t) => t.kind === "view" && t.view === undefined) ?? tabs[0]);
   if (owner && tab) return tabPath(owner, tab);
   if (collection === "money" && view === "table") return "/money/transactions";
-  if (collection === "projects") return "/projects";
-  if (collection === "ideas") return "/projects/ideas";
+  if (collection === "projects" || collection === "parts" || collection === "runs") return LANDING;
+  if (collection === "ideas") return "/ideas/all";
   if (collection === "notes") return "/notes/all";
   if (collection === "reminders") return "/calendar/reminders";
   if (collection === "payments")
@@ -106,9 +102,6 @@ export function parseRoute(pathname: string): Route {
   if (p[0] === "r" && p[1] && p.length === 2) return { name: "reminder", id: p[1] };
   const section = sectionById(p[0] as string);
   if (!section) return { name: "not-found" };
-  // `/projects/<id>/<tab>`: anything after Projects that is not a tab is a project.
-  if (section.id === "projects" && p[1] && !section.tabs.some((t) => t.id === p[1]))
-    return { name: "section", section: "projects", tab: "project", rest: p.slice(1) };
   // `/flows/<id>`: anything after Flows that is not a tab is a flow, open on the canvas;
   // `/flows/jobs/<id>` is a built-in job's card (M12 part 4). The List tab is gone.
   if (section.id === "flows" && p[1] === "list") return { name: "redirect", to: "/flows" };
@@ -125,9 +118,6 @@ export const collectionPath = (collection: string, view?: string) => {
   const old = `/c/${encodeURIComponent(collection)}${view ? `/${encodeURIComponent(view)}` : ""}`;
   return redirectOf(old) ?? old;
 };
-
-export const projectPath = (id: string, tab?: string) =>
-  tab ? enc("projects", id, tab) : enc("projects", id);
 
 export const flowPath = (id?: string) => (id ? enc("flows", id) : "/flows");
 

@@ -5,10 +5,8 @@ import { fieldsOf } from "../../shared/fields.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import { monthSummary } from "../../shared/money.ts";
 import { isActive, PAYMENTS } from "../../shared/payments.ts";
-import { isLive, openQuestions } from "../../shared/project-status.ts";
-import { PARTS } from "../../shared/projects.ts";
 import type { Zone } from "../../shared/recurrence.ts";
-import type { Doc } from "../../shared/types.ts";
+import { type Doc, isLive } from "../../shared/types.ts";
 import type { Store } from "../store.ts";
 import { dueList } from "./due-list.ts";
 
@@ -21,15 +19,11 @@ const timeOf = (due: string) => (due.length > 10 ? ` ${due.slice(11, 16)}` : "")
 export function digestLines(store: Store, zone: Zone, now: number): string[] {
   const today = localDate(new Date(now), zone.timeZone);
   const lines: string[] = [];
-  const questions = openQuestions(store.itemsOf("tasks"));
-  const blocked = store.itemsOf(PARTS).filter((p) => isLive(p) && p.data.status === "blocked");
   const waiting = store
     .itemsOf(FLOWS)
     .filter((f) => isLive(f) && f.data.status === "pending-approval");
-  if (questions.length + blocked.length + waiting.length > 0) {
+  if (waiting.length > 0) {
     lines.push("Needs you");
-    for (const q of questions) lines.push(`  ? ${titleOf(q)}`);
-    for (const p of blocked) lines.push(`  Blocked: ${titleOf(p)}`);
     for (const f of waiting) lines.push(`  Flow waiting for approval: ${titleOf(f)}`);
   }
   const due = dueList(store, zone, now).filter((e) => e.group !== "Tomorrow");

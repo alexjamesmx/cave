@@ -1,7 +1,7 @@
 import { renderMermaidSVG } from "beautiful-mermaid";
 
 /**
- * A project's Diagram tab (M11 part 6): Mermaid source rendered to SVG by beautiful-mermaid,
+ * Mermaid diagrams in Markdown (M11 part 6): Mermaid source rendered to SVG by beautiful-mermaid,
  * synchronously. The renderer's SVG carries one `style` attribute (its colour variables) and a
  * `<style>` element (an `@import` of a Google font and the derived variables); both would be
  * refused by the page's Content-Security-Policy and the font would leave the machine, so they

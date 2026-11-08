@@ -5,14 +5,12 @@ import { FlowDefinitionSchema } from "../../shared/flows/registry.ts";
 import type { Hlc } from "../../shared/hlc.ts";
 import { newId } from "../../shared/ids.ts";
 import { AREAS, KINDS, MAX_BLOCKS } from "../../shared/routine.ts";
-import { STEP_LIMITS, STEP_STATUSES } from "../../shared/runs.ts";
 import type { CallLog } from "../agent-calls.ts";
 import { AgentWriter, type WriteResult } from "../agent-writer.ts";
 import type { Agent } from "../agents.ts";
 import type { Store } from "../store.ts";
 import { listFlows, MAX_ON_FLOWS, saveFlow } from "./flows.ts";
 import { addNote } from "./note.ts";
-import { getProject } from "./project.ts";
 import {
   getItem,
   listCollections,
@@ -22,7 +20,6 @@ import {
   type ToolOutcome,
 } from "./read.ts";
 import { getRoutine } from "./routine.ts";
-import { finishRun, logStep, startRun } from "./runs.ts";
 
 export interface McpDeps {
   store: Store;
@@ -37,7 +34,7 @@ const DATA_RULE =
 const REMINDER_RULE =
   'Reminders: one whose repeat isn\'t "none" repeats on completion; done: true moves due to the next occurrence and keeps it open. The Cave sends their notifications itself; never set up outside scheduled tasks for them. To also create or change items on a schedule or when items change, use save_flow.';
 const RADAR_RULE =
-  "Radar: the owner no longer sees the radar collection; put something worth reading in add_note on its project instead. A radar item still needs url (http or https) and why, one item per address (a duplicate is refused with the existing id), at most 50 a day.";
+  "Radar: the owner no longer sees the radar collection; put something worth reading in add_note instead. A radar item still needs url (http or https) and why, one item per address (a duplicate is refused with the existing id), at most 50 a day.";
 const DAY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD");
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -145,16 +142,6 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
         annotations: READ,
       },
       (args) => run("money_month", args, () => moneyMonth(store, agent, args.month, deps.now())),
-    );
-    server.registerTool(
-      "get_project",
-      {
-        description:
-          "Get one project (an item in projects): its data, its status (state, progress, activity this week, whether an agent is on it), its parts as a tree, its open tasks, its questions for the owner (open, and answered in the last 30 days with the owner's answer), and per collection how many items point at it (their `project` field) with the latest 20. Items link to a project through a `project` ref field holding its id; query with where {project: id} for more.",
-        inputSchema: z.object({ id: z.string() }),
-        annotations: READ,
-      },
-      (args) => run("get_project", args, () => getProject(store, agent, args.id, deps.now())),
     );
     server.registerTool(
       "list_flows",
@@ -330,69 +317,14 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
       },
       (args) => run("add_habit", args, () => fromWrite(writer().addHabit(args.name))),
     );
-    const runDeps = { store, agent, writer, now: deps.now, timeZone };
-    // `question: true` writes a task for the owner, which is also how the answer comes back.
-    server.registerTool(
-      "start_run",
-      {
-        description: `Start a run: the trace of work you are doing on one of the owner's projects (from query projects or get_project), optionally on one of its parts. Returns the run id. Log a step per meaningful action with log_step and end with finish_run; the owner watches it live in the project's Activity. Titles and details are shown as plain text. ${DATA_RULE}`,
-        inputSchema: z.object({
-          project: z.string(),
-          title: z.string(),
-          part: z.string().optional(),
-        }),
-        annotations: WRITE,
-      },
-      (args) => run("start_run", args, () => fromWrite(startRun(runDeps, args))),
-    );
-    server.registerTool(
-      "log_step",
-      {
-        description: `Add a step to a run you started: a short title, its status (running, done, failed, waiting, skipped) and an optional detail. At most ${STEP_LIMITS.steps} steps per run; a finished run takes no more. question: true when the step is a question only the owner can answer (the title is the question): the Cave adds a task for the owner and returns its id as question; read the answer later with get_project (questions). Prefer status waiting with it.`,
-        inputSchema: z.object({
-          run: z.string(),
-          title: z.string().min(1).max(STEP_LIMITS.title),
-          status: z.enum(STEP_STATUSES),
-          detail: z.string().max(STEP_LIMITS.detail).optional(),
-          question: z.boolean().optional(),
-        }),
-        annotations: WRITE,
-      },
-      (args) =>
-        run("log_step", args, () => {
-          const result = logStep(runDeps, args);
-          return result.ok
-            ? {
-                ok: true,
-                value: { id: result.id, ...(result.question ? { question: result.question } : {}) },
-                seqs: result.seqs,
-              }
-            : result;
-        }),
-    );
-    server.registerTool(
-      "finish_run",
-      {
-        description:
-          "Finish a run you started: done, failed or cancelled, with a one-paragraph summary of what happened.",
-        inputSchema: z.object({
-          run: z.string(),
-          status: z.enum(["done", "failed", "cancelled"]),
-          summary: z.string(),
-        }),
-        annotations: WRITE,
-      },
-      (args) => run("finish_run", args, () => fromWrite(finishRun(runDeps, args))),
-    );
     server.registerTool(
       "add_note",
       {
         description:
-          "Save a new Markdown page, marked as written by you: on a project (its id, from query projects) when the owner should read it there, else in Notes. Use [[Title]] to link another page. It never changes an existing one.",
+          "Save a new Markdown page in Notes, marked as written by you. Use [[Title]] to link another page. It never changes an existing one.",
         inputSchema: z.object({
           title: z.string(),
           body: z.string(),
-          project: z.string().optional(),
         }),
         annotations: WRITE,
       },

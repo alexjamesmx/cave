@@ -12,19 +12,16 @@ export const when = (iso: unknown) =>
     : "";
 
 /**
- * One note open in the Markdown editor, for a project's page and the Notes section alike:
- * Rename, Colour, Topic (Notes only), Delete (soft: it stays in the history).
+ * One note open in the Markdown editor: Rename, Colour, Topic, Delete (soft: it stays in the
+ * history).
  */
 export function NoteEditor({
   note,
-  kind,
   backHref,
   resolve,
   onDeleted,
 }: {
   note: Doc;
-  /** "Page" inside a project, "Note" in the Notes section; it names the controls. */
-  kind: "Page" | "Note";
   backHref: string;
   resolve(title: string): { href: string } | undefined;
   onDeleted(): void;
@@ -38,23 +35,23 @@ export function NoteEditor({
   return (
     <article
       className="panel"
-      aria-label={`${kind} ${titleOf(note)}`}
+      aria-label={`Note ${titleOf(note)}`}
       style={{ padding: 16, display: "grid", gap: 12 }}
     >
       <div className="page-head">
-        <a className="btn" href={backHref} aria-label={`All ${kind.toLowerCase()}s`}>
+        <a className="btn" href={backHref} aria-label={`All notes`}>
           <Icon name="chevron-left" size={15} />
         </a>
         <input
           className="input title-input"
-          aria-label={`${kind} title`}
+          aria-label={`Note title`}
           defaultValue={titleOf(note)}
           onBlur={(e) => {
             const next = e.target.value.trim();
             if (next && next !== titleOf(note)) void saver.save(note.id, { _title: next });
           }}
         />
-        {kind === "Note" && (
+        {
           <input
             className="input"
             aria-label="Topic"
@@ -66,7 +63,7 @@ export function NoteEditor({
             }}
             style={{ width: 180 }}
           />
-        )}
+        }
         <select
           className="input"
           aria-label="Colour"
@@ -93,9 +90,9 @@ export function NoteEditor({
       )}
       <MarkdownEditor
         id={`note-${note.id}`}
-        label={`${kind} body`}
+        label={`Note body`}
         value={body}
-        placeholder={`Write in Markdown. [[Title]] links another ${kind.toLowerCase()}; a mermaid code block draws a diagram.`}
+        placeholder={`Write in Markdown. [[Title]] links another note; a mermaid code block draws a diagram.`}
         resolve={resolve}
         onSave={(text) => void saver.save(note.id, { _body: text })}
       />

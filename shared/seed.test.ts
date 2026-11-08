@@ -3,7 +3,6 @@ import { CATEGORY_SET } from "./categories.ts";
 import { parseDefinition } from "./flows/registry.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
-import { PALETTE } from "./palette.ts";
 import { FIELD_TYPES, VIEW_TYPES } from "./schema.ts";
 import { SEED_VERSION, seedDocs } from "./seed.ts";
 
@@ -29,13 +28,10 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       "leetcode",
       "money",
       "notes",
-      "parts",
       "payments",
-      "projects",
       "proposals",
       "radar",
       "reminders",
-      "runs",
       "tasks",
       "wealth",
     ].sort(),
@@ -46,7 +42,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       .filter((c) => c.data.hidden)
       .map((c) => c.id)
       .sort(),
-  ).toEqual(["flows", "proposals", "runs"]);
+  ).toEqual(["flows", "proposals"]);
   expect(byId.get("settings")).toMatchObject({
     kind: "setting",
     collection: null,
@@ -69,7 +65,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     ["flow-digest", "off"],
   ]);
   for (const d of flows) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(24);
+  expect(docs).toHaveLength(20);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {
@@ -88,16 +84,8 @@ test("dates that carry a time are flagged withTime", () => {
 
 test("seeded select options and colours", () => {
   const values = (c: string, f: string) => fieldOf(c, f)?.options?.map((o) => o.value);
-  expect(values("projects", "status")).toEqual(["active", "paused", "done", "dropped"]);
-  expect(fieldOf("projects", "status")?.options?.map((o) => o.color)).toEqual([
-    PALETTE.ok,
-    PALETTE.warn,
-    PALETTE.teal,
-    PALETTE.bad,
-  ]);
   expect(values("reminders", "repeat")).toEqual(["none", "daily", "weekly", "monthly", "yearly"]);
   expect(values("leetcode", "difficulty")).toEqual(["easy", "medium", "hard"]);
-  expect(fieldOf("projects", "review")?.type).toBe("date");
 });
 
 test("every select option has an icon and a token colour", () => {
