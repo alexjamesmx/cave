@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { useCave } from "../app/context.ts";
 import { closeNew, newSheet, newShortcut, openNew, type QuickKind } from "../app/quick.ts";
 import { usePathname } from "../app/router.ts";
 import { useSignal } from "../app/signal.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections } from "../store/queries.ts";
-import { Icon } from "./icon.tsx";
 import { MoneyForm } from "./MoneyForm.tsx";
 import { NoteForm } from "./NoteForm.tsx";
 import { TaskForm } from "./QuickForms.tsx";
@@ -13,12 +12,12 @@ import { ReminderForm } from "./ReminderForm.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { SubscriptionForm } from "./SubscriptionForm.tsx";
 
-const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
-  { kind: "expense", label: "Money", icon: "wallet" },
-  { kind: "task", label: "Task", icon: "square-check" },
-  { kind: "reminder", label: "Reminder", icon: "bell" },
-  { kind: "subscription", label: "Subscription", icon: "repeat" },
-  { kind: "note", label: "Note", icon: "notebook-pen" },
+const QUICK: { kind: QuickKind; label: string; emoji: string; color: string }[] = [
+  { kind: "expense", label: "Money", emoji: "💸", color: "#34d399" },
+  { kind: "task", label: "Task", emoji: "✅", color: "#60a5fa" },
+  { kind: "reminder", label: "Reminder", emoji: "🔔", color: "#fb7185" },
+  { kind: "subscription", label: "Subscription", emoji: "🔁", color: "#22d3ee" },
+  { kind: "note", label: "Note", emoji: "📝", color: "#a78bfa" },
 ];
 
 const TOAST_MS = 8000;
@@ -72,11 +71,15 @@ export function NewSheet() {
               <button
                 key={q.kind}
                 type="button"
-                className={`btn${quick === q.kind ? " primary" : ""}`}
+                className="quick-kind"
                 aria-expanded={quick === q.kind}
+                style={{ "--c": q.color } as CSSProperties}
                 onClick={() => pick(q.kind)}
               >
-                <Icon name={q.icon} size={15} /> {q.label}
+                <span className="emoji-tile" aria-hidden="true">
+                  {q.emoji}
+                </span>
+                {q.label}
               </button>
             ))}
           </fieldset>

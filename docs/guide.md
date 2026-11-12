@@ -4,32 +4,65 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## The shape
 
-- **Unlock once per device** with the server token; without it the app shows only a lock screen. Settings → Devices & server → Lock this device, or Forget this device to also delete its copy.
-- **Six sections** on the rail at the left (icons; the name shows on hover, or always with **Show names** at the bottom of the rail, remembered on this device): Money, Calendar, Flows, Ideas, Notes, Tasks, and Settings at the bottom. On a phone the rail is a dock at the bottom: four sections you choose (More → Edit dock, or Settings → General), Ask in the middle, More for the rest.
-- **New from anywhere:** the rail's + (⌘K or Ctrl+K, the dock's middle button on a phone) opens one sheet of short forms: Money, Task, Reminder, Subscription, Note. **N** opens it on a note. A save closes the sheet and shows what was saved for a moment. There is no chat in the app: agents read and write the Cave through the connector.
-- **The app opens on Money's overview.** What is due is Calendar's; flows waiting for your approval are in Settings → Agents and on the Flows canvas.
-
-## Ideas
-
-- **Ideas:** yours, newest first: capture one in a line, open one to edit its stage and notes.
-- **LeetCode:** the problems you track, with the collection's progress view (solved by difficulty, this week, what is due for review).
+- **Unlock once per device** with the server token; without it the app shows only a lock screen. Settings → Devices & server has Lock this device, and Forget this device, which also deletes its copy.
+- **Five sections and Settings.** The sidebar on the left has an emoji tile per section: 💸 Money, ✅ Tasks, 📅 Calendar, 📝 Notes and ⚡ Flows, with ⚙️ Settings at the bottom.
+  - **Hide names** collapses it to the tiles, remembered on this device.
+  - On a phone, a dock at the bottom shows Money, Tasks, a raised +, Calendar and Notes. ⚙️ in each page's header opens every section, Flows and Settings included.
+- **New from anywhere.** + New on the sidebar (⌘K or Ctrl+K; the dock's + on a phone) opens one sheet with five choices: 💸 Money, ✅ Task, 🔔 Reminder, 🔁 Subscription and 📝 Note.
+  - **N** opens it on a note.
+  - A save closes the sheet and shows what was saved for a moment.
+  - There is no chat in the app: agents read and write the Cave through the connector.
+- **The app opens on Money's overview.** What is due is in Calendar → Agenda. Flows waiting for your approval are in Settings → Agents and on the Flows canvas.
 
 ## Money
 
-- **Add** an expense or income from Transactions (New entry: the form stays open for the next receipt) or the New sheet, for any day and time (Today, Yesterday). Pick Expense or Income first: the category is a searchable select that offers only that direction's categories, here and when you edit an entry; transfers (investments) count as neither spending nor income. With one account in the list it is taken without asking; add another under Categories & accounts and the account picker returns.
-- **Transactions:** one month at a time (arrows, or All time) with its in, out and net on top; chips All, Expenses, Income, Transfers and Uncategorized (no category, or one that is no longer in the list); search; Group by day, category or account, each group with its subtotal, collapsible. Undated entries are listed and counted apart, never filled in.
-- **Overview:** month or year. Spent, Income, Saved and Invested (transfers into Investment) with their change against the previous period and a 12-month line; the month day by day; where it went against last period, each row opening the ledger on that category; the last 12 months stacked by category; top titles and the largest entries. Filters are kept in the URL.
-- **Budget:** two amounts you type (Overview → Budget → Edit, or Settings → General): a monthly limit and a saving target. The Budget tile shows what is left (or how far over) and where the month ends at the current pace; the year uses twelve times the limit. Crossing 80 % and 100 % of the limit notifies you once each a month, on every channel that is ready. Claude reads the same numbers through `money_month`.
-- **Subscriptions:** one table of what you pay for every month or year: name, amount, how often, its cost a month, the next charge (it moves on by itself), since when and how much you've spent. On top, what the active ones cost a month and a year, how many are active, and everything spent. Spent and Since come from your real expenses: under the Subscriptions category with the same name, or linked to it from the expense's Payment field, so a month it was paused simply has no charge. Chips show Active, Paused or All; a row opens it to edit, **Pause** or **Resume**, or Delete. It never reminds on its own: for a reminder, make a flow that starts **When a date arrives** on Payments' due date.
+- **Add an entry** (New → Money, or + New entry in Transactions).
+  - The amount comes first, then Expense or Income. Tap a category from the emoji grid; More shows them all.
+  - Pick the account. The one you used last is already picked, and every entry has an account; with none in the list, the form asks you to add one first.
+  - Set when (Today, Yesterday or Other). The title is optional.
+  - Save says what it will save ("Save −$245 · Food").
+  - From Transactions the form stays open for the next receipt.
+  - Transfers (investments) count as neither spending nor income.
+- **Transactions.**
+  - **Scope:** one month or one year at a time; a year runs from 1 January to today. On top: what came in, what went out and what's left.
+  - **Search:** finds anything, whether title, note, category, account or amount (`245`, `$1,225`).
+  - **Chips:** All, Expenses, Income and **To review**. To review holds entries with no category or no account; pick the category right on the row.
+  - **Layout:** days group the entries, each day with its total. On a phone each entry is a card.
+  - **Editing:** tap an entry to edit it.
+- **Overview.**
+  - Month or year.
+  - Spent, Came in, Saved and Budget left on top.
+  - "Where it went" by category, beside the month day by day; a category opens Transactions on that category for the same month or year.
+  - The last 12 months stacked by category.
+- **Budget.**
+  - **Two amounts you type** (Overview, or Settings → General): a monthly limit and a saving target.
+  - **Budget left:** shows what's left, or how far over, and where the month ends at the current pace. The year uses twelve times the limit.
+  - **Alerts:** crossing 80 % and 100 % of the limit notifies you once each a month. Claude reads the same numbers through `money_month`.
+- **Subscriptions.**
+  - **What you see:** what you pay for every month or year: the cost a month and a year, the next charge (it moves on by itself), since when, and how much you've spent.
+  - **Paid:** logs this charge as an expense, linked to the subscription, with its amount, category and account.
+  - **Spent and Since:** they come from your real expenses, so a paused month counts nothing.
+  - **Changing one:** open it to edit, Pause, Resume or Delete.
+  - **Reminders:** it never reminds on its own. For a reminder, make a flow that starts **When a date arrives**.
 - **Net worth:** what you own minus what you owe.
-- **Categories & accounts:** the two lists every expense, income and payment picks from (name, emoji, colour, kind, order, archive). Other lists (task statuses, idea stages) are edited in the field editor under Settings → Data.
+- **Categories:**
+  - **Lists:** Expenses, Income, Transfers and Accounts, the lists every entry picks from. Each row shows its emoji, name, colour (16 to choose from) and how many entries use it. Drag to reorder.
+  - **Deleting a category or account:** asks where its entries go, whether another one or To review, then removes it. Undo puts it all back.
 
-## Calendar and reminders
+## Calendar
 
-- **Reminder:** one form everywhere (New, a day in Month, Upcoming, the Reminders table): Title, Date, Time (empty for the whole day) and Repeat. Open a reminder to change it, mark it Done or Delete it.
-- **Done and Snooze** on every reminder (the form, the table, Upcoming), as two small buttons beside it. A repeating reminder moves to its next occurrence and stays open; the 31st becomes the 30th in shorter months and returns to the 31st. Undo puts the previous values back.
-- **Month** (or `C`): a grid with repeats shown ahead; click a day's number to add a reminder on it, a reminder to edit it. Beside it, **Upcoming**: overdue on top, then today and the next 14 days from every source, with + for a new reminder. **Reminders**: a table like Transactions: Upcoming, Overdue, Done and All with counts, search, a repeat filter, grouped by day, the repeat beside each title, Done and Snooze on each row. **Routine**: the week you aim for, a guide and nothing more: one column per weekday, blocks coloured by their area (Body, Learn, Rest, Fun, Other), the "some times a week" ones under Any day, and each area's hours a week on top. A block is on set days with a start, every day, or some times a week; a day's + adds one on that day, a click edits it. The routine has no dates, never notifies and counts nothing. The old Agenda and Week paths open Month and Routine. Scheduled flows show their next run.
-- A reminder with a date and no time is due at the reminder time in Settings → General (09:00 by default).
+- **Month** (or `C`): the month with every dated thing on its day, marked 🔔 reminder, ✅ task or 💳 payment.
+  - Click a day to add a reminder on it, or an item to open it.
+  - Beside it, **Upcoming**: "Remind me to…" with Today, Tomorrow, a date and a time, then Overdue, Today, Tomorrow, This week and Later.
+- **Agenda:** the same list on its own page, with everything that has a date: reminders, tasks with a due date and payments.
+  - ✓ marks a reminder or a task done, or logs a payment as paid. A repeating one moves to its next date.
+  - Undo puts the previous values back.
+- **Reminders:** one form everywhere, with Title, Date, Time (empty for the whole day) and Repeat. Open one to change it, mark it Done, Snooze it or Delete it.
+  - A reminder with a date and no time is due at the reminder time in Settings → General (09:00 by default).
+- **Routine:** the week you aim for, as a guide and nothing more.
+  - **Layout:** one column per weekday, plus the "some times a week" blocks under Any day. On top are each area's hours a week.
+  - **Blocks:** coloured by their area (Body, Learn, Rest, Fun, Other). A day's + adds one; a click edits it.
+  - **No effects:** it has no dates, never notifies and counts nothing.
 
 ## Flows
 
@@ -40,17 +73,38 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Notes
 
-- **Notes** (`/notes/all`): everything you write, as a gallery grouped by topic (A to Z, "No topic" last, newest first in each), or a table with **Table** (`?view=table`). Search covers title, topic and text. **New note** opens a blank one: a title, a topic (a `/`-separated path such as `School/Calculus`), a colour, and Markdown in the same editor as the diary; a ```` ```mermaid ```` block draws as a diagram, `[[Title]]` links another note. Delete keeps it in the history. The Ask sheet's Note form saves here; agents' `add_note` lands here under the topic Inbox.
-- **Today** (`/notes/write`): one day full width: the entry in the Markdown editor (the same toolbar, preview and autosave as pages; **Preview** shows or hides the rendered text beside it, remembered on this device), the habits as toggles, a colour and Delete entry (kept in the history). Arrows move between days, and the day follows today until you pick one, so a diary left open past midnight moves on.
-- **Days:** the month as a grid: a dot for a written day, a strip of the habits logged, the day's colour as its tint, today outlined; beside it the habits' last 30 days and streaks, and **Add habit** adds one (it becomes a toggle on every day). Click a day to read it (`/notes/days?day=`): the entry rendered as a page, the habits done under it, arrows to the day before and after. **Edit** opens the same editor as Today; **Read** goes back. The old Habits and Months pages open Days, and every `/diary` link opens its tab here.
+- **Notes** (`/notes/all`): everything you write, ideas included.
+  - **Topics:** listed on the left (on a phone, a row of pills): All, 📥 Inbox (no topic), 💡 Ideas, then yours. A topic is a `/`-separated path such as `School/Calculus`.
+  - **Capture:** type in the capture bar and press Enter to save a note in the open topic. The first line becomes the title.
+  - **Search:** `/` searches the title, topic and text.
+  - **Cards:** each note is a card tinted by its topic.
+  - **Editor:** + New note, or a card, opens the editor: a title, a topic, a colour, and Markdown. A ```` ```mermaid ```` block draws a diagram, and `[[Title]]` links another note.
+  - **Deleting:** Delete keeps the note in the history.
+  - **Agents:** `add_note` lands notes under the topic Inbox.
+- **Today** (`/notes/write`): one day full width.
+  - **The day:** the entry in the Markdown editor, the habits as toggles, a colour, and Delete entry (kept in the history).
+  - **Moving between days:** the arrows. The day follows today until you pick one.
+- **Days:** the month as a grid.
+  - **Each day:** a dot for a written day, a strip of the habits logged, and the day's colour as its tint.
+  - **Beside it:** the habits' last 30 days and streaks. **Add habit** adds one.
+  - **Reading:** click a day to read it. Edit opens it in Today's editor.
+- **LeetCode:** the problems you track, with their progress.
+- **Ideas** are notes in the topic Ideas since M14, and the old Ideas links open that topic.
 
 ## Tasks
 
-- **Board** for the work in flight: To do, Doing, Waiting; **Show done** adds Done and Dropped back (remembered on this device). **List**: a table with Open, Done, Dropped and All, search, open tasks by due date. Tasks with a due date are in Calendar → Month too. One New task button; drag between columns (press and hold on a phone), arrow keys move a focused card. A repeating task's Done brings the same task back on its next date.
+- **Board**, for the work in flight.
+  - **Columns:** To do, Doing and Waiting. Each fills the screen.
+  - **Moving cards:** drag a card anywhere in a column to drop it there (press and hold on a phone). Arrow keys move a focused card.
+  - **Adding:** + in a column's header, or + Add a task at its bottom, adds a task to that column.
+  - **Cards:** say when they're due ("Overdue · 1 day", "Today · 17:00"); 🔥 marks high priority.
+  - **Show done:** adds Done and Dropped.
+  - **Repeating tasks:** Done brings the task back on its next date.
+- **List:** a table with Open, Done, Dropped and All, plus search, with open tasks sorted by due date.
 
 ## Settings
 
-- **General:** your name and goal, time zone, reminder time, theme, what the app opens on, motion (on, or follow the system's reduced-motion setting), the phone dock.
+- **General:** your name and goal, the budget, time zone, reminder time, and what the app opens on. Motion follows the system's reduced-motion setting.
 - **Devices & server:** this device (lock, forget), the devices that synced in the last 30 days, the server (version, last deploy, backups, off-box copy), integrations; sub-sections for Schedules (the next 7 days: reminders, flow slots, jobs, the deploy check), Jobs (and their runs) and Notifications (the log by channel and key, titles never stored; the Dev outbox outside production).
 - **Email:** Settings → Notifications → Email sets who every email goes to and the name it comes from (the address stays the server's verified one); a flow's Send an email step can name its own.
 - **Notifications:** Web Push on this device (on iPhone, from the Home Screen app), and the channels: Telegram once linked, Discord with a webhook, Email through Resend (`docs/hosting.md` step 12). Web Push is private and the default; Telegram and Discord get titles only unless you choose full detail; email goes to your own inbox, so it gets full detail. What notifies is a flow (see Flows): this page only says where notifications go and how much each channel is told.

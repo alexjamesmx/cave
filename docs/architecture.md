@@ -90,13 +90,40 @@ Hidden collections stay out of navigation and out of agents' reach except throug
 
 ## Visual tokens
 
-Palette A (M11). The hex values live once in `shared/palette.ts` and as tokens in `web/src/styles.css`; `web/src/tokens.test.ts` keeps them equal and checks contrast (text 4.5:1 on every surface, status colours 3:1).
+The vivid palette (M14). The hex values live once in `shared/palette.ts` and as tokens in `web/src/styles.css`. `web/src/tokens.test.ts` keeps them equal and checks contrast: text 4.5:1 on every surface, status colours and swatches 3:1.
 
-- Surfaces: page `#15171b`, rail `#111317`, panels `#1b1e24`, controls `#181b20`, active and hover `#22262e`, lines `#272b33`. Radius 10 px (panels) / 7 px (controls). No glows, gradients or grid behind content, except the Flows canvas: a faint tint, nodes with a soft gradient, a glow on what is on.
-- Text `#e4e7eb` (13.5 px / 1.5), secondary and labels `#98a0ab`, labels uppercase 11 px with 0.06 em tracking.
-- Accent sage `#8fd0a0` (text on it `#0f1a12`): focus, primary buttons, the active tab.
-- Status and marks: ok `#8fd0a0` (on track, income, done), warn `#d9b56f`, wait `#8cb7dd`, bad `#e59aa4` (blocked, expense, overdue), vio `#a39be0`, teal `#7fc4cf`, orange `#d9a06f`, purple `#c9a3e0`. The pre-M11 names (`--lime`, `--income`, `--expense`, `--cyan`, `--violet`, `--gold`, `--orange`, `--purple`) are aliases of these.
-- Sections: Money ok, Calendar bad, Flows warn, Ideas vio, Notes vio, Tasks teal, Settings `#6b7380`.
-- Fonts: Space Grotesk (UI), JetBrains Mono (numbers, tabular), Newsreader (diary).
-- The rail: 52 px, icons only, the label beside the icon on hover or focus; under 768 px the dock replaces it.
-- Icons: inline stroke SVG at 1.9 px; every collection, category, habit and field type has one.
+- **Surfaces:**
+  - Colours: page `#0f1013`, sidebar `#0b0c0f`, panels `#15171b`, controls `#121418`, active and hover `#1c1f25`, lines `#22252c`.
+  - Radius: 16 px for panels, 11 px for controls, pills fully round.
+- **Text:**
+  - Primary `#eceef2` (14 px, line height 1.5). Secondary and labels `#8b93a1`.
+  - Labels are uppercase at 11.5 px.
+- **Brand:**
+  - The sunset gradient `#ff9a62 → #ff4f7e` with text `#2a0a12`, used on New, the dock's + and primary buttons.
+  - Accent `#ff7f6e` for focus.
+- **Status and marks:** the pre-M11 names (`--lime`, `--income`, `--expense`, `--cyan`, `--violet`, `--gold`) are aliases of these.
+  - ok `#3ddc97`: income, done.
+  - warn `#f5b94a`.
+  - wait `#60a5fa`.
+  - bad `#ff8a94`: expense, overdue.
+  - vio `#a78bfa`, teal `#2dd4bf`, orange `#ff8a4c`, purple `#e879f9`.
+- **Swatches:**
+  - Sixteen (`SWATCHES`, tokens `--s-<name>`), the only choices in every colour picker: orange, amber, yellow, lime, green, teal, cyan, sky, blue, indigo, violet, fuchsia, pink, rose, red, grey.
+  - Seed migration 25 gives each seeded category its own swatch.
+- **Sections:**
+  - Each has an emoji on a tile tinted with its colour: Money 💸 `#34d399`, Tasks ✅ `#60a5fa`, Calendar 📅 `#fb7185`, Notes 📝 `#a78bfa`, Flows ⚡ `#fbbf24`, Settings ⚙️ `#8b93a1`.
+  - Tabs are pills. There are no descriptions under titles.
+- **Fonts:**
+  - Text: Inter, with `tabular-nums` for figures.
+  - Headings and big figures: Space Grotesk.
+  - Code: JetBrains Mono.
+  - Diary: Newsreader.
+- **The sidebar:**
+  - 224 px with names. Collapsing it (per device) leaves 68 px of tiles, with the name shown on hover or focus.
+  - Under 768 px it is replaced by the dock (Money, Tasks, +, Calendar, Notes) and ⚙️ "Everything" in each page's header.
+- **Motion:**
+  - A tab fades up in 180 ms. Sheets pop in on a desktop and rise from the bottom on a phone.
+  - Buttons press to 0.97.
+  - All of it is off under `prefers-reduced-motion`.
+- **Icon:** "Arches", three white arches on the sunset gradient (`web/icons/icon.svg`, PNGs rendered from it).
+- **Icons:** Lucide inline stroke SVG at 1.9 px, where an emoji can't go.
