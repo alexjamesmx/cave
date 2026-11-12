@@ -76,9 +76,7 @@ export function NewSheet() {
                 style={{ "--c": q.color } as CSSProperties}
                 onClick={() => pick(q.kind)}
               >
-                <span className="emoji-tile" aria-hidden="true">
-                  {q.emoji}
-                </span>
+                <span className="emoji-tile" aria-hidden="true" data-emoji={q.emoji} />
                 {q.label}
               </button>
             ))}

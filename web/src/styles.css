@@ -193,6 +193,11 @@ a {
   background: color-mix(in srgb, var(--c, var(--muted)) 18%, transparent);
 }
 
+.emoji-tile::before,
+.dock-emoji::before {
+  content: attr(data-emoji);
+}
+
 .rail-new {
   display: flex;
   align-items: center;

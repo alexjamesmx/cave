@@ -30,7 +30,7 @@ test("the sidebar shows five sections and Settings once; a tab survives a reload
     "aria-pressed",
     "false",
   );
-  await expect(main.getByText("Money", { exact: true })).toBeHidden();
+  expect((await side.boundingBox())?.width ?? 0).toBeLessThan(wide - 100);
   await page.getByRole("button", { name: "Show names" }).click();
   await expect(main.getByText("Money", { exact: true })).toBeVisible();
   expect((await side.boundingBox())?.width ?? 0).toBeGreaterThan(wide - 10);

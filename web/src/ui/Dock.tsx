@@ -19,9 +19,7 @@ export function Dock() {
       aria-current={s.id === active ? "page" : undefined}
       style={{ "--c": s.color } as CSSProperties}
     >
-      <span className="dock-emoji" aria-hidden="true">
-        {s.emoji}
-      </span>
+      <span className="dock-emoji" aria-hidden="true" data-emoji={s.emoji} />
       <span>{s.label}</span>
     </a>
   );
@@ -64,9 +62,7 @@ export function EverythingButton() {
                 className="more-item"
                 style={{ "--c": s.color } as CSSProperties}
               >
-                <span className="emoji-tile" aria-hidden="true">
-                  {s.emoji}
-                </span>
+                <span className="emoji-tile" aria-hidden="true" data-emoji={s.emoji} />
                 <span>{s.label}</span>
               </a>
             ))}

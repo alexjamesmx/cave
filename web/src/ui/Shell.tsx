@@ -10,16 +10,18 @@ import { Icon } from "./icon.tsx";
 import { NewSheet } from "./NewSheet.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
 
-/** A section's emoji on a tile of its own colour; the sidebar, the dock and headers share it. */
+/**
+ * A section's emoji on a tile of its own colour; the sidebar, the dock and headers share it.
+ * The emoji is drawn by CSS from `data-emoji`, so a link's text stays its name alone.
+ */
 export function SectionTile({ section, size = 30 }: { section: Section; size?: number }) {
   return (
     <span
       className="emoji-tile"
       aria-hidden="true"
+      data-emoji={section.emoji}
       style={{ "--c": section.color, "--size": `${size}px` } as CSSProperties}
-    >
-      {section.emoji}
-    </span>
+    />
   );
 }
 

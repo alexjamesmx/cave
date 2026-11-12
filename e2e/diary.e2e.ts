@@ -14,6 +14,7 @@ test("Notes → Days: a day opened from the grid reads as Markdown, Edit writes 
     "Notes",
     "Today",
     "Days",
+    "LeetCode",
   ]);
   await page.goto("/diary/months");
   await expect(page).toHaveURL(/\/notes\/days$/);
