@@ -1121,13 +1121,23 @@ textarea.input {
   color: var(--on-accent);
 }
 
-/* What a quick form saved, for a moment, where the eye lands after the sheet closes. */
-.toast {
+/* Toasts: what was just done, stacked at the bottom centre, newest last (web/src/app/toast.ts). */
+.toasts {
   position: fixed;
   left: 50%;
   bottom: 28px;
   transform: translateX(-50%);
   z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+.toast {
   margin: 0;
   display: flex;
   align-items: center;
@@ -1138,7 +1148,8 @@ textarea.input {
   font-size: 13.5px;
   font-weight: 600;
   box-shadow: var(--shadow-pop);
-  animation: toast-in 0.24s var(--ease) both;
+  pointer-events: auto;
+  animation: toast-in 0.24s var(--ease) backwards;
 }
 
 .dock {
@@ -1150,9 +1161,8 @@ textarea.input {
     padding-bottom: calc(112px + env(safe-area-inset-bottom));
   }
 
-  .toast {
+  .toasts {
     bottom: calc(100px + env(safe-area-inset-bottom));
-    max-width: calc(100vw - 32px);
   }
 
   /* The dock (M14): four sections and a raised New, floating over the page. */
@@ -2311,7 +2321,7 @@ fieldset.chips {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translate(-50%, 10px) scale(0.96);
+    transform: translateY(10px) scale(0.96);
   }
 }
 

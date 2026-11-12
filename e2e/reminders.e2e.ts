@@ -1,4 +1,11 @@
-import { addReminder, mcpClient, offOriginRequests, ownerContext } from "./helpers.ts";
+import {
+  addReminder,
+  mcpClient,
+  offOriginRequests,
+  ownerContext,
+  pickAccount,
+  pickCategory,
+} from "./helpers.ts";
 import { expect, type Locator, type Page, test } from "./test.ts";
 
 // Thursday 2026-10-15, 10:00 in Mexico City, the seeded timezone. Timers keep running.
@@ -148,7 +155,14 @@ test("Month and Upcoming, the quick add, the Agenda with the same counts, and �
   await page.getByRole("button", { name: /^Upcoming/ }).click();
 
   // ✓ on a payment logs its expense, linked, and moves it to next month; Undo reverses both.
+  // This one has no category or account yet, so the money form asks for them: nothing is guessed.
   await agenda.getByRole("button", { name: `Mark paid: ${BILL}` }).click();
+  const paying = page.getByRole("dialog", { name: `Paid · ${BILL}` });
+  const form = paying.getByRole("form", { name: "Expense" });
+  await expect(form.getByLabel("Amount")).toHaveValue("30");
+  await pickCategory(form, "Subscriptions");
+  await pickAccount(form);
+  await form.getByRole("button", { name: /^Save/ }).click();
   await expect(toast(page, `Paid · ${BILL}`)).toBeVisible();
   const later = region(agenda, "Later").getByRole("listitem").filter({ hasText: BILL });
   await expect(later).toContainText("Nov 14");

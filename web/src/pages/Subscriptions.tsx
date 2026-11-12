@@ -14,6 +14,7 @@ import {
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone } from "../app/hooks.ts";
+import { showToast } from "../app/toast.ts";
 import { formatMoney } from "../logic/format.ts";
 import { paidEntry } from "../logic/subscription-paid.ts";
 import { titleOf } from "../logic/views.ts";
@@ -24,7 +25,6 @@ import { MarkTile, OptionTile } from "../ui/OptionTile.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 import { Sheet } from "../ui/Sheet.tsx";
 import { SubscriptionForm } from "../ui/SubscriptionForm.tsx";
-import { useUndoToast } from "../ui/UndoToast.tsx";
 
 const EVERY: Record<string, string> = {
   daily: "day",
@@ -67,7 +67,6 @@ export function Subscriptions() {
   const [chip, setChip] = useState<Chip>("active");
   const [open, setOpen] = useState<Doc | "new">();
   const [paying, setPaying] = useState<Doc>();
-  const [toast, showToast] = useUndoToast();
 
   const rows = useMemo(
     () =>
@@ -236,7 +235,6 @@ export function Subscriptions() {
           />
         </Sheet>
       )}
-      {toast}
     </div>
   );
 }

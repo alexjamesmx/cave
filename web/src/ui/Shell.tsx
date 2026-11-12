@@ -9,6 +9,7 @@ import { EnvBadge } from "./EnvBadge.tsx";
 import { Icon } from "./icon.tsx";
 import { NewSheet } from "./NewSheet.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
+import { Toasts } from "./UndoToast.tsx";
 
 /**
  * A section's emoji on a tile of its own colour; the sidebar, the dock and headers share it.
@@ -97,6 +98,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
       </main>
       <Dock />
       <NewSheet />
+      <Toasts />
       <EnvBadge />
     </div>
   );

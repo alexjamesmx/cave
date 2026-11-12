@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
 import { FieldValueError, offeredOptions } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
@@ -6,6 +6,7 @@ import { expenseFrom, PAYMENTS, paidPatch } from "../../../shared/payments.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone } from "../app/hooks.ts";
+import { type Toast as SharedToast, showToast } from "../app/toast.ts";
 import { type AgendaItem, type AgendaType, COLLECTION_OF, donePatch } from "../logic/agenda.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { paidEntry } from "../logic/subscription-paid.ts";
@@ -16,15 +17,10 @@ import { MoneyForm } from "./MoneyForm.tsx";
 import { ReminderSheet } from "./ReminderForm.tsx";
 import { Sheet } from "./Sheet.tsx";
 
-const TOAST_MS = 8000;
-
 /** A reminder's sheet (an existing one by id, or a new one on a day), or a drawer. */
 type Editing = { type: AgendaType; id?: string; day?: string };
 
-interface Toast {
-  label: string;
-  undo?: () => Promise<unknown>;
-}
+type Toast = Omit<SharedToast, "id">;
 
 type Patch = Record<string, unknown>;
 
@@ -37,7 +33,7 @@ const before = (doc: Doc, patch: Patch) =>
  * payment's drawer), add a reminder on a day, and ✓. Every ✓ is an ordinary stamped write,
  * followed by a toast with Undo that writes the previous values back. A payment's ✓ logs its
  * expense, linked, then moves it to its next date; when its amount varies the expense form
- * asks for it first. `overlay` renders the sheets, drawers and the toast.
+ * asks for it first. `overlay` renders the sheets and drawers; toasts go to the shared stack.
  */
 export function useAgendaActions(): {
   open(type: AgendaType, id: string): void;
@@ -51,14 +47,7 @@ export function useAgendaActions(): {
   const zone = useReminderZone();
   const [editing, setEditing] = useState<Editing>();
   const [paying, setPaying] = useState<Doc>();
-  const [toast, setToast] = useState<Toast>();
   const busy = useRef(new Set<string>());
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(undefined), TOAST_MS);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const write = (collection: string, id: string, patch: Patch) =>
     local.write({ id, kind: "item", collection }, patch);
@@ -66,10 +55,10 @@ export function useAgendaActions(): {
   /** Writes, and shows a refused value in the toast instead of throwing. */
   const attempt = async (run: () => Promise<Toast>) => {
     try {
-      setToast(await run());
+      showToast(await run());
     } catch (e) {
       if (!(e instanceof FieldValueError)) throw e;
-      setToast({ label: e.message });
+      showToast({ message: e.message });
     }
   };
 
@@ -79,7 +68,7 @@ export function useAgendaActions(): {
     const previous = before(payment, patch);
     await write(PAYMENTS, payment.id, patch);
     return {
-      label: `Paid · ${titleOf(payment)}`,
+      message: `Paid · ${titleOf(payment)}`,
       undo: async () => {
         await write("money", expense, { _deleted: true });
         await write(PAYMENTS, payment.id, previous);
@@ -124,7 +113,7 @@ export function useAgendaActions(): {
     run(async () => {
       await write(collection, it.id, patch);
       return {
-        label: `Done · ${it.title}`,
+        message: `Done · ${it.title}`,
         undo: () => write(collection, it.id, previous),
       };
     });
@@ -148,7 +137,7 @@ export function useAgendaActions(): {
           day={editing.day}
           onClose={(message) => {
             setEditing(undefined);
-            if (message) setToast({ label: message });
+            if (message) showToast({ message });
           }}
         />
       )}
@@ -175,24 +164,6 @@ export function useAgendaActions(): {
             }}
           />
         </Sheet>
-      )}
-      {toast && (
-        <p role="status" className="panel toast">
-          {toast.label}
-          {toast.undo && (
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                const { undo } = toast;
-                setToast(undefined);
-                void undo?.();
-              }}
-            >
-              Undo
-            </button>
-          )}
-        </p>
       )}
     </>
   );

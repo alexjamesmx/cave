@@ -5,12 +5,12 @@ import type { OptionKind, SelectOption } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { editFields } from "../app/lists.ts";
+import { showToast } from "../app/toast.ts";
 import { deleteCategoryPlan, holding, restoreOption } from "../logic/category-delete.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { OptionsEditor } from "../ui/OptionsEditor.tsx";
 import { OptionTile } from "../ui/OptionTile.tsx";
 import { Sheet } from "../ui/Sheet.tsx";
-import { useUndoToast } from "../ui/UndoToast.tsx";
 
 interface List {
   id: string;
@@ -62,7 +62,6 @@ export function MoneyLists() {
   const payments = useItems(local.db, PAYMENTS);
   const [tab, setTab] = useState(LISTS[0] as List);
   const [deleting, setDeleting] = useState<{ list: List; option: SelectOption }>();
-  const [toast, showToast] = useUndoToast();
   const items = useMemo(() => [...(entries ?? []), ...(payments ?? [])], [entries, payments]);
   const counts = useMemo(() => {
     const byField = { category: new Map<string, number>(), account: new Map<string, number>() };
@@ -165,7 +164,6 @@ export function MoneyLists() {
           onDelete={(moveTo) => void remove(deleting.list, deleting.option, moveTo)}
         />
       )}
-      {toast}
     </div>
   );
 }

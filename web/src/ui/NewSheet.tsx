@@ -3,6 +3,7 @@ import { useCave } from "../app/context.ts";
 import { closeNew, newSheet, newShortcut, openNew, type QuickKind } from "../app/quick.ts";
 import { usePathname } from "../app/router.ts";
 import { useSignal } from "../app/signal.ts";
+import { showToast } from "../app/toast.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections } from "../store/queries.ts";
 import { MoneyForm } from "./MoneyForm.tsx";
@@ -20,8 +21,6 @@ const QUICK: { kind: QuickKind; label: string; emoji: string; color: string }[] 
   { kind: "note", label: "Note", emoji: "📝", color: "#a78bfa" },
 ];
 
-const TOAST_MS = 8000;
-
 /**
  * Add anything from any screen: five short forms in one sheet.
  * The rail's New, the dock's New, ⌘K and N open it; navigating, Escape, the scrim and a save
@@ -32,7 +31,6 @@ export function NewSheet() {
   const { local } = useCave();
   const stored = useCollections(local.db);
   const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
-  const [saved, setSaved] = useState<string>();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -48,17 +46,12 @@ export function NewSheet() {
   // Navigating closes the sheet.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the path is the trigger
   useEffect(() => closeNew(), [pathname]);
-  useEffect(() => {
-    if (!saved) return;
-    const timer = setTimeout(() => setSaved(undefined), TOAST_MS);
-    return () => clearTimeout(timer);
-  }, [saved]);
 
   const quick = state.form;
   const pick = (kind: QuickKind) =>
     newSheet.set({ open: true, ...(quick === kind ? {} : { form: kind }) });
   const done = (message: string) => {
-    setSaved(message);
+    showToast({ message });
     closeNew();
   };
   return (
@@ -87,11 +80,6 @@ export function NewSheet() {
           {quick === "note" && <NoteForm onDone={done} />}
           {quick === "reminder" && <ReminderForm onDone={done} />}
         </Sheet>
-      )}
-      {saved && (
-        <p role="status" className="panel toast">
-          {saved}
-        </p>
       )}
     </>
   );

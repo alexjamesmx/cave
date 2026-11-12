@@ -44,7 +44,7 @@ test("the sidebar shows five sections and Settings once; a tab survives a reload
     "aria-current",
     "page",
   );
-  await expect(page.getByRole("table", { name: "Subscriptions" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Subscriptions" })).toBeVisible();
 
   for (const [from, to] of [
     ["/", /\/money\/overview$/],
