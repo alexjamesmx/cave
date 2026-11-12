@@ -4,6 +4,7 @@ import { builtInFlows, builtInFlowsMigration } from "./flows/built-in.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
+import { ideasToNotesMigration } from "./ideas-to-notes.ts";
 import { listsMigration, MONEY_ACCOUNT } from "./lists.ts";
 import { NOTES, NOTES_COLLECTION, notesMigration } from "./notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
@@ -151,27 +152,6 @@ const COLLECTIONS: Record<string, CollectionData> = {
       COLOR_FIELD,
     ],
     views: [view("write", "Write", "write")],
-  },
-  ideas: {
-    name: "Ideas",
-    icon: "lightbulb",
-    color: C.gold,
-    order: 3,
-    fields: [
-      field("stage", "Stage", "select", [
-        opt("spark", "sparkles", C.gold),
-        opt("exploring", "compass", C.cyan),
-        opt("building", "hammer", C.lime),
-        opt("parked", "pause", C.grey),
-      ]),
-      field("area", "Area", "text"),
-      field("next_step", "Next step", "text"),
-    ],
-    views: [
-      view("table", "Table", "table"),
-      view("board", "Board", "board", { groupBy: "stage" }),
-      view("gallery", "Gallery", "gallery"),
-    ],
   },
   wealth: {
     name: "Wealth",
@@ -531,6 +511,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 24, docs: [], update: retireProjectsMigration },
   // M14: the vivid palette replaces palette A; seeded categories get a colour each.
   { version: 25, docs: [], update: vividMigration },
+  // M14: every idea is a note in topic Ideas; the ideas collection is retired.
+  { version: 26, docs: [], update: ideasToNotesMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
