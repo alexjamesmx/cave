@@ -23,13 +23,16 @@ export function DiaryToday() {
     <DiaryDay
       day={day}
       header={
-        <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="k" style={{ flex: 1 }}>
-            {day === today ? "Today" : ""} {shortDay(day)} {day.slice(0, 4)}
-          </span>
+        <header className="diary-head">
+          <h2>
+            {day === today ? "Today " : ""}
+            <span className="muted">
+              {shortDay(day)} {day.slice(0, 4)}
+            </span>
+          </h2>
           <button
             type="button"
-            className="btn"
+            className="icon-btn"
             aria-label="Previous day"
             onClick={() => setDay(previousDay(day))}
           >
@@ -37,7 +40,7 @@ export function DiaryToday() {
           </button>
           <button
             type="button"
-            className="btn"
+            className="icon-btn"
             aria-label="Next day"
             disabled={day >= today}
             onClick={() => setDay(nextDay(day))}

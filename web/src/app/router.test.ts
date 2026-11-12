@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { collectionPath, flowPath, parseRoute, redirectOf, shortcutPath } from "./router.ts";
+import {
+  collectionPath,
+  flowPath,
+  parseRoute,
+  redirectOf,
+  shortcutPath,
+  withQuery,
+} from "./router.ts";
 
 const section = (s: string, tab: string, rest: string[] = []) => ({
   name: "section" as const,
@@ -67,7 +74,8 @@ test("every old path redirects to its new home", () => {
     ["/c/tasks/table", "/tasks/list"],
     ["/c/tasks/calendar", "/calendar/month"],
     ["/tasks/calendar", "/calendar/month"],
-    ["/c/ideas", "/notes/ideas"],
+    ["/c/ideas", "/notes/all?topic=Ideas"],
+    ["/c/ideas/board", "/notes/all?topic=Ideas"],
     ["/c/leetcode", "/notes/leetcode"],
     ["/c/leetcode/table", "/notes/leetcode"],
     // Projects was retired: its pages go to their new homes or the landing page.
@@ -78,8 +86,8 @@ test("every old path redirects to its new home", () => {
     ["/projects/scene", "/money/overview"],
     ["/projects/all", "/money/overview"],
     ["/projects/activity", "/money/overview"],
-    ["/projects/ideas", "/notes/ideas"],
-    ["/projects/radar", "/notes/ideas"],
+    ["/projects/ideas", "/notes/all?topic=Ideas"],
+    ["/projects/radar", "/notes/all?topic=Ideas"],
     ["/projects/proj-leetcode", "/notes/leetcode"],
     ["/projects/proj-leetcode/tracker", "/notes/leetcode"],
     ["/projects/notes", "/notes/all"],
@@ -107,8 +115,11 @@ test("every old path redirects to its new home", () => {
     ["/settings/system/flows", "/flows"],
     ["/settings/system/agents", "/settings/agents"],
     ["/settings/lists", "/money/lists"],
-    ["/ideas", "/notes/ideas"],
-    ["/ideas/all", "/notes/ideas"],
+    // Ideas are notes in topic Ideas (M14), its hidden tab included.
+    ["/ideas", "/notes/all?topic=Ideas"],
+    ["/ideas/all", "/notes/all?topic=Ideas"],
+    ["/ideas/radar", "/notes/all?topic=Ideas"],
+    ["/notes/ideas", "/notes/all?topic=Ideas"],
     ["/ideas/leetcode", "/notes/leetcode"],
   ];
   for (const [from, to] of cases) {
@@ -128,6 +139,15 @@ test("every old path redirects to its new home", () => {
     "/money/lists",
   ])
     expect(redirectOf(current)).toBeUndefined();
+});
+
+test("a redirect keeps the old query string; a target's own keys come first and win", () => {
+  expect(withQuery("/notes/all", "?q=oak")).toBe("/notes/all?q=oak");
+  expect(withQuery("/notes/all", "")).toBe("/notes/all");
+  expect(withQuery("/notes/all?topic=Ideas", "")).toBe("/notes/all?topic=Ideas");
+  expect(withQuery("/notes/all?topic=Ideas", "?q=oak&topic=Tech")).toBe(
+    "/notes/all?topic=Ideas&q=oak",
+  );
 });
 
 test("links to a collection or a flow go straight to their new home", () => {

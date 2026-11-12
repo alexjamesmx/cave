@@ -9,7 +9,10 @@ import type { Doc } from "./types.ts";
  */
 
 export const NOTES = "notes";
+/** Agents' notes land here; notes with no topic count as Inbox too. */
 export const INBOX = "Inbox";
+/** Ideas are notes in this topic since M14 (seed migration 26). */
+export const IDEAS_TOPIC = "Ideas";
 
 export const NOTES_COLLECTION: CollectionData = {
   name: "Notes",
