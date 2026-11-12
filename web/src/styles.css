@@ -42,9 +42,10 @@
   /* The brand: the icon's sunset, on New and the dock's +. */
   --brand: linear-gradient(135deg, #ff9a62, #ff4f7e);
   --on-brand: #2a0a12;
-  /* The names the views used before M11, kept as aliases so every mark follows the palette. */
-  --lime: var(--accent);
-  --on-lime: var(--on-accent);
+  /* The names the views used before M11, kept as aliases so every mark follows the palette.
+     Lime meant "good" (done, solved, positive), so it follows ok, not the accent. */
+  --lime: var(--ok);
+  --on-lime: #06281b;
   --income: var(--ok);
   --expense: var(--bad);
   --cyan: var(--teal);
@@ -101,11 +102,11 @@ textarea {
 }
 
 a {
-  color: var(--lime);
+  color: var(--accent);
 }
 
 :focus-visible {
-  outline: 2px solid var(--lime);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -619,7 +620,7 @@ textarea.input {
 }
 
 .link:hover {
-  color: var(--lime);
+  color: var(--accent);
 }
 
 .drawer {
@@ -1684,7 +1685,7 @@ a.btn {
 }
 
 [data-row]:focus-visible {
-  outline: 2px solid var(--lime);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
