@@ -1,5 +1,8 @@
-import { useMemo, useState } from "react";
-import { isActive, PAYMENTS } from "../../../shared/payments.ts";
+import { type CSSProperties, useMemo, useState } from "react";
+import { localDateTime } from "../../../shared/dates.ts";
+import { offeredOptions } from "../../../shared/fields.ts";
+import { newId } from "../../../shared/ids.ts";
+import { expenseFrom, isActive, PAYMENTS, paidPatch } from "../../../shared/payments.ts";
 import {
   chargesOf,
   historyOf,
@@ -11,14 +14,17 @@ import {
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone } from "../app/hooks.ts";
-import { flowPath } from "../app/router.ts";
 import { formatMoney } from "../logic/format.ts";
+import { paidEntry } from "../logic/subscription-paid.ts";
 import { titleOf } from "../logic/views.ts";
-import { useItems } from "../store/queries.ts";
+import { useCollections, useItems } from "../store/queries.ts";
 import { Icon } from "../ui/icon.tsx";
+import { MoneyForm } from "../ui/MoneyForm.tsx";
+import { MarkTile, OptionTile } from "../ui/OptionTile.tsx";
 import { rowOpen } from "../ui/row-open.ts";
 import { Sheet } from "../ui/Sheet.tsx";
 import { SubscriptionForm } from "../ui/SubscriptionForm.tsx";
+import { useUndoToast } from "../ui/UndoToast.tsx";
 
 const EVERY: Record<string, string> = {
   daily: "day",
@@ -31,6 +37,7 @@ type Chip = (typeof CHIPS)[number];
 const CHIP_LABEL: Record<Chip, string> = { active: "Active", paused: "Paused", all: "All" };
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
+const tint = (color: string) => ({ "--c": color }) as CSSProperties;
 const day = (d: string) =>
   new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
@@ -45,19 +52,22 @@ const monthYear = (d: string) =>
   });
 
 /**
- * Money → Subscriptions: one table of what the owner pays for, with the plan on top (a month,
- * a year) and each one's history (spent, since the first charge) from the real expenses. A
- * row opens it to edit, pause or delete. Reminders are flows, attached from Flows.
+ * Money → Subscriptions (M14): what runs and what it costs a month and a year, then one card
+ * each with its history (spent, since the first charge) from the real expenses. Paid logs this
+ * charge as a linked expense in one tap (the money form asks when the amount varies) and moves
+ * it to its next date; Undo takes both back. A card opens it to edit, pause or delete.
  */
 export function Subscriptions() {
   const { local } = useCave();
   const payments = useItems(local.db, PAYMENTS);
   const money = useItems(local.db, "money");
+  const fields = useCollections(local.db)?.find((c) => c.id === "money")?.data.fields;
   const zone = useReminderZone();
   const now = useNow().getTime();
   const [chip, setChip] = useState<Chip>("active");
   const [open, setOpen] = useState<Doc | "new">();
-  const [message, setMessage] = useState<string>();
+  const [paying, setPaying] = useState<Doc>();
+  const [toast, showToast] = useUndoToast();
 
   const rows = useMemo(
     () =>
@@ -70,6 +80,12 @@ export function Subscriptions() {
     [payments, money, now, zone],
   );
   if (!payments || !money) return null;
+  const listOf = (id: string) => {
+    const field = fields?.find((f) => f.id === id);
+    return field ? offeredOptions(field) : [];
+  };
+  const categoryOf = (value: unknown) =>
+    fields?.find((f) => f.id === "category")?.options?.find((o) => o.value === value);
   const active = rows.filter((r) => r.on);
   const { total, approx } = monthlyTotal(active.map((r) => r.doc));
   const spent = rows.reduce((sum, r) => sum + r.spent, 0);
@@ -77,107 +93,121 @@ export function Subscriptions() {
   const shown = rows.filter((r) => chip === "all" || r.on === (chip === "active"));
   const about = approx ? "≈ " : "";
 
+  /** The charge is logged; the subscription moves to its next date, as `mark_paid` does. */
+  const moveOn = async (sub: Doc, expense: string, amount: number | undefined) => {
+    const patch = paidPatch(sub, Date.now(), zone);
+    const before = Object.fromEntries(Object.keys(patch).map((k) => [k, sub.data[k] ?? null]));
+    await local.write({ id: sub.id, kind: "item", collection: PAYMENTS }, patch);
+    showToast({
+      message: `Paid · ${titleOf(sub)}${amount === undefined ? "" : ` · ${formatMoney(amount)}`}`,
+      undo: async () => {
+        await local.write({ id: expense, kind: "item", collection: "money" }, { _deleted: true });
+        await local.write({ id: sub.id, kind: "item", collection: PAYMENTS }, before);
+      },
+    });
+  };
+  const paid = async (sub: Doc) => {
+    const date = localDateTime(new Date(), zone.timeZone);
+    const entry = paidEntry(sub, listOf("category"), listOf("account"), date);
+    if (!entry) return setPaying(sub);
+    const id = newId();
+    await local.write({ id, kind: "item", collection: "money" }, entry);
+    await moveOn(sub, id, entry.amount as number);
+  };
+
   return (
-    <div className="subs-page">
-      <header className="subs-head">
-        <dl className="subs-totals">
-          <div>
-            <dt>Per month</dt>
-            <dd className="num">
-              {about}
-              {formatMoney(total)}
-            </dd>
-          </div>
-          <div>
-            <dt>Per year</dt>
-            <dd className="num">
-              {about}
-              {formatMoney(total * 12)}
-            </dd>
-          </div>
-          <div>
-            <dt>Active</dt>
-            <dd className="num">{active.length}</dd>
-          </div>
-          <div>
-            <dt>Spent so far</dt>
-            <dd className="num">{formatMoney(spent)}</dd>
-          </div>
-        </dl>
-        <button type="button" className="btn primary" onClick={() => setOpen("new")}>
-          <Icon name="plus" size={15} /> New subscription
-        </button>
-      </header>
-      <div className="subs-bar">
-        <fieldset className="chips">
+    <div className="ms-page">
+      <section className="ms-totals" aria-label="Totals">
+        <div className="panel m-stat">
+          <span className="m-label">Per month</span>
+          <span className="m-big num">
+            {about}
+            {formatMoney(total)}
+          </span>
+        </div>
+        <div className="panel m-stat">
+          <span className="m-label">Per year</span>
+          <span className="m-big num">
+            {about}
+            {formatMoney(total * 12)}
+          </span>
+        </div>
+        <div className="panel m-stat">
+          <span className="m-label">Active</span>
+          <span className="m-big num">{active.length}</span>
+        </div>
+        <div className="panel m-stat">
+          <span className="m-label">Spent so far</span>
+          <span className="m-big num out">{formatMoney(spent)}</span>
+        </div>
+      </section>
+      <div className="ms-bar">
+        <fieldset className="tx-chips">
           <legend className="sr">Show</legend>
           {CHIPS.map((c) => (
             <button
               key={c}
               type="button"
-              className="btn"
+              className="pill"
               aria-pressed={chip === c}
               onClick={() => setChip(c)}
             >
-              {CHIP_LABEL[c]} <span className="num muted">{count[c]}</span>
+              {CHIP_LABEL[c]} <span className="mc-n num">{count[c]}</span>
             </button>
           ))}
         </fieldset>
-        <p role="status" className="muted" style={{ margin: 0 }}>
-          {message}
-        </p>
+        <button type="button" className="btn primary" onClick={() => setOpen("new")}>
+          <Icon name="plus" size={15} /> New subscription
+        </button>
       </div>
-      <section className="panel" style={{ padding: 4, overflowX: "auto" }}>
-        <table className="table subs-table" aria-label="Subscriptions">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th className="num-col">Amount</th>
-              <th>Every</th>
-              <th className="num-col">Per month</th>
-              <th>Next</th>
-              <th>Since</th>
-              <th className="num-col">Spent</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map(({ doc, on, next, spent: paid, since }) => (
-              <tr
-                key={doc.id}
-                className={on ? undefined : "paused"}
-                {...rowOpen(() => setOpen(doc))}
-              >
-                <td>
-                  <button type="button" className="link subs-name" onClick={() => setOpen(doc)}>
-                    {titleOf(doc)}
+      <ul className="panel ms-list" aria-label="Subscriptions">
+        {shown.map(({ doc, on, next, spent: paidSoFar, since }) => {
+          const c = categoryOf(doc.data.category);
+          const amount = typeof doc.data.amount === "number" ? doc.data.amount : undefined;
+          const every = EVERY[str(doc.data.repeat)] ?? "once";
+          return (
+            <li
+              key={doc.id}
+              className={`ms-row${on ? "" : " paused"}`}
+              style={tint(c?.color ?? "var(--s-cyan)")}
+              {...rowOpen(() => setOpen(doc))}
+            >
+              {c ? <OptionTile option={c} /> : <MarkTile mark="🔁" />}
+              <div className="ms-what">
+                <button type="button" className="link ms-name" onClick={() => setOpen(doc)}>
+                  {titleOf(doc)}
+                </button>
+                <span className="m-note num">
+                  {amount === undefined
+                    ? "—"
+                    : `${doc.data.approx === true ? "≈ " : ""}${formatMoney(amount)}`}{" "}
+                  a {every} · {on ? (next ? `next ${day(next)}` : "no date") : "Paused"}
+                </span>
+              </div>
+              <span className="ms-cell ms-month">
+                <span className="m-note">Per month</span>
+                <span className="num">{on ? formatMoney(monthlyCost(doc)) : "—"}</span>
+              </span>
+              <span className="ms-cell ms-spent">
+                <span className="m-note">Spent{since ? ` since ${monthYear(since)}` : ""}</span>
+                <span className="num">{paidSoFar > 0 ? formatMoney(paidSoFar) : "—"}</span>
+              </span>
+              <span className="ms-act">
+                {on && (
+                  <button type="button" className="btn" onClick={() => void paid(doc)}>
+                    <Icon name="check" size={15} /> Paid
                   </button>
-                </td>
-                <td className="num num-col">
-                  {typeof doc.data.amount === "number" ? formatMoney(doc.data.amount) : "—"}
-                </td>
-                <td className="muted">{EVERY[str(doc.data.repeat)] ?? "once"}</td>
-                <td className="num num-col">{on ? formatMoney(monthlyCost(doc)) : "—"}</td>
-                <td>{on ? next ? day(next) : "—" : <span className="muted">Paused</span>}</td>
-                <td className="muted">{since ? monthYear(since) : "—"}</td>
-                <td className="num num-col">{paid > 0 ? formatMoney(paid) : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                )}
+              </span>
+            </li>
+          );
+        })}
         {shown.length === 0 && (
-          <p className="muted" style={{ margin: 0, padding: 14 }}>
+          <li className="m-note ms-empty">
             {rows.length === 0 ? "No subscriptions yet." : "Nothing here."}
-          </p>
+          </li>
         )}
-      </section>
-      <p className="muted subs-note">
-        Spent and Since come from your expenses: under Subscriptions with the same name, or linked
-        to it. A reminder is a{" "}
-        <a className="link" href={flowPath()}>
-          flow
-        </a>{" "}
-        that starts “When a date arrives”.
-      </p>
+      </ul>
       {open && (
         <Sheet
           title={open === "new" ? "New subscription" : titleOf(open)}
@@ -187,12 +217,26 @@ export function Subscriptions() {
             key={open === "new" ? "new" : open.id}
             {...(open === "new" ? {} : { doc: open })}
             onDone={(m) => {
-              setMessage(m);
+              showToast({ message: m });
               setOpen(undefined);
             }}
           />
         </Sheet>
       )}
+      {paying && (
+        <Sheet title={`Paid · ${titleOf(paying)}`} onClose={() => setPaying(undefined)}>
+          <MoneyForm
+            prefill={{ ...expenseFrom(paying), payment: paying.id }}
+            submitLabel="Save and mark paid"
+            onSaved={(expense) => {
+              const sub = paying;
+              setPaying(undefined);
+              void moveOn(sub, expense, undefined);
+            }}
+          />
+        </Sheet>
+      )}
+      {toast}
     </div>
   );
 }

@@ -1,7 +1,7 @@
-import { ownerContext } from "./helpers.ts";
+import { ownerContext, pickAccount, pickCategory, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Transactions: entries from the page itself, chips, group by category, the category filter and the month strip", async ({
+test("Transactions: the form from the page, the chips and To review, a category picked in place, a search by amount, the year, and the editor", async ({
   browser,
 }) => {
   const page = await (
@@ -10,76 +10,82 @@ test("Transactions: entries from the page itself, chips, group by category, the 
   const stamp = Date.now();
   await page.goto("/money/transactions");
   await page.getByRole("button", { name: "New entry" }).click();
-  const form = page.getByRole("form", { name: /Expense|Income/ });
-  const picker = form.getByRole("combobox", { name: "Category", exact: true });
+  const sheet = page.getByRole("dialog", { name: "New entry" });
+  const form = sheet.getByRole("form", { name: /Expense|Income/ });
+  const save = form.getByRole("button", { name: /^Save/ });
 
-  // Income offers income categories only, found by typing.
+  // The amount comes first; Income offers income categories only, even under More.
+  await expect(form.getByLabel("Amount")).toBeFocused();
   await form.getByRole("button", { name: "Income", exact: true }).click();
-  await picker.fill("sal");
-  await expect(page.getByRole("option", { name: "💼 Salary" })).toBeVisible();
-  await expect(page.getByRole("option", { name: "🍬 Gula" })).toHaveCount(0);
-  await page.keyboard.press("Escape");
+  await expect(form.getByRole("button", { name: "Salary", exact: true })).toBeVisible();
+  await form.getByRole("button", { name: "More" }).click();
+  await expect(form.getByRole("button", { name: "Gula", exact: true })).toHaveCount(0);
   await form.getByRole("button", { name: "Expense", exact: true }).click();
 
-  // An expense with a category picked by typing; the form stays open, cleared for the next.
-  await form.getByLabel("Amount").fill("410");
+  // An expense: a typed amount with its comma, a category from More found by typing.
+  await form.getByLabel("Amount").fill("1,225");
   await form.getByLabel("Title").fill(`Mezcal ${stamp}`);
-  await picker.fill("gul");
-  await page.getByRole("option", { name: "🍬 Gula" }).click();
-  await expect(picker).toHaveValue("🍬 Gula");
-  await form.getByRole("button", { name: "Save" }).click();
+  await form.getByLabel("Find a category").fill("gul");
+  await form.getByRole("button", { name: "Gula", exact: true }).click();
+  // On a database with no account yet, one is typed in place, and Save waits for it.
+  if ((await form.getByLabel("Add an account").count()) > 0) await expect(save).toBeDisabled();
+  await pickAccount(form);
+  await expect(save).toHaveText("Save −$1,225 · Gula");
+  await save.click();
   await expect(
-    page.getByRole("status").filter({ hasText: `Saved · Expense · Mezcal ${stamp}` }),
+    sheet.getByRole("status").filter({ hasText: `Saved · Expense · Mezcal ${stamp}` }),
   ).toBeVisible();
+  // The form stays, cleared for the next one; this one has no category.
   await expect(form.getByLabel("Amount")).toHaveValue("");
+  await expect(form.getByLabel("Amount")).toBeFocused();
   await form.getByLabel("Amount").fill("60");
   await form.getByLabel("Title").fill(`Mystery ${stamp}`);
-  await form.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: `Mystery ${stamp}` })).toBeVisible();
+  await expect(save).toHaveText("Save −$60");
+  await save.click();
+  await expect(sheet.getByRole("status").filter({ hasText: `Mystery ${stamp}` })).toBeVisible();
+  await sheet.getByRole("button", { name: "Close" }).click();
 
-  const rows = page.getByRole("row");
+  const rows = page.getByRole("listitem");
   const mezcal = rows.filter({ hasText: `Mezcal ${stamp}` });
   const mystery = rows.filter({ hasText: `Mystery ${stamp}` });
-  await expect(mezcal).toContainText("🍬 Gula");
-  await expect(mezcal).toContainText("−$410");
+  await expect(mezcal).toContainText("Gula");
+  await expect(mezcal).toContainText("−$1,225");
 
-  // The Uncategorized chip keeps only the entry with no category.
-  await page.getByRole("button", { name: "Uncategorized", exact: true }).click();
-  await expect(page).toHaveURL(/chip=uncategorized/);
+  // To review keeps the entry without a category; a category picked in place clears it.
+  await page.getByRole("button", { name: /^To review/ }).click();
+  await expect(page).toHaveURL(/chip=review/);
   await expect(mystery).toHaveCount(1);
   await expect(mezcal).toHaveCount(0);
+  await mystery.getByRole("button", { name: "+ Pick category" }).click();
+  await mystery.getByRole("combobox", { name: `Category for Mystery ${stamp}` }).fill("food");
+  await page.getByRole("option", { name: /Food$/ }).click();
+  await expect(mystery).toHaveCount(0);
   await page.getByRole("button", { name: "All", exact: true }).click();
   await expect(page).not.toHaveURL(/chip=/);
+  await expect(mystery).toContainText("Food");
 
-  // Group by category: a Gula group with its subtotal, collapsible.
-  await page.getByLabel("Group by").selectOption("category");
-  const gula = page.getByRole("rowgroup", { name: "🍬 Gula" });
-  await expect(gula.getByRole("row").filter({ hasText: `Mezcal ${stamp}` })).toBeVisible();
-  await expect(gula.getByRole("row").first()).toContainText("−$");
-  await gula.getByRole("button", { name: /Gula/ }).click();
-  await expect(gula.getByRole("row").filter({ hasText: `Mezcal ${stamp}` })).toHaveCount(0);
-  await expect(page.getByRole("rowgroup", { name: "Uncategorized" })).toContainText(
-    `Mystery ${stamp}`,
-  );
+  // One search finds an amount with or without $ and its comma, and a category by name.
+  const search = page.getByLabel("Search transactions");
+  for (const q of ["$1225", "1,225", "gula"]) {
+    await search.fill(q);
+    await expect(mezcal).toHaveCount(1);
+    await expect(mystery).toHaveCount(0);
+  }
+  await search.fill("");
 
-  // The category filter, then the month strip and All time.
-  await page.getByLabel("Group by").selectOption("day");
-  await page.getByRole("combobox", { name: "Category filter" }).fill("gul");
-  await page.getByRole("option", { name: "🍬 Gula" }).click();
-  await expect(page).toHaveURL(/category=gula/);
-  await expect(mystery).toHaveCount(0);
+  // A year scope runs from 1 January to today; the month comes back with Month.
+  await page.getByRole("button", { name: "Year", exact: true }).click();
+  await expect(page).toHaveURL(/month=\d{4}$/);
   await expect(mezcal).toHaveCount(1);
-  await page.getByRole("button", { name: "Clear category filter" }).click();
-  await expect(page).not.toHaveURL(/category=/);
-  await page.getByRole("button", { name: "Previous month" }).click();
-  await expect(page).toHaveURL(/month=\d{4}-\d{2}/);
+  await page.getByRole("button", { name: "Previous year" }).click();
   await expect(mezcal).toHaveCount(0);
-  await page.getByRole("button", { name: "All time" }).click();
-  await expect(page).toHaveURL(/month=all/);
+  await page.getByRole("button", { name: "Month", exact: true }).click();
+  await expect(page).toHaveURL(/month=\d{4}-12$/);
+  await page.goto("/money/transactions");
   await expect(mezcal).toHaveCount(1);
 
-  // Editing an expense offers expense categories only; turning it into income swaps them.
-  await page.getByRole("button", { name: `Mezcal ${stamp}`, exact: true }).click();
+  // A row opens the editor; an expense offers expense categories, income swaps them.
+  await mezcal.locator(".tx-acct").click();
   const drawer = page.getByRole("complementary", { name: "Money item" });
   const choices = () => drawer.getByLabel("Category", { exact: true }).locator("option");
   await expect(choices().filter({ hasText: "Gula" })).toHaveCount(1);
@@ -95,10 +101,33 @@ test("Transactions: entries from the page itself, chips, group by category, the 
   page.on("dialog", (dialog) => void dialog.accept());
   for (const title of [`Mezcal ${stamp}`, `Mystery ${stamp}`]) {
     await page.getByRole("button", { name: title, exact: true }).click();
-    await page
-      .getByRole("complementary", { name: "Money item" })
-      .getByRole("button", { name: "Delete" })
-      .click();
+    await pushed(page, () =>
+      page
+        .getByRole("complementary", { name: "Money item" })
+        .getByRole("button", { name: "Delete" })
+        .click(),
+    );
     await expect(rows.filter({ hasText: title })).toHaveCount(0);
   }
+});
+
+test("the money form: an account is always chosen, never No account; a new one is typed in place and Save waits for it", async ({
+  browser,
+}) => {
+  // The spec above leaves at least one live account.
+  const page = await (await ownerContext(browser)).newPage();
+  await page.goto("/money/transactions");
+  await page.getByRole("button", { name: "New entry" }).click();
+  const form = page.getByRole("dialog", { name: "New entry" }).getByRole("form");
+  const save = form.getByRole("button", { name: /^Save/ });
+  await form.getByLabel("Amount").fill("12");
+  await pickCategory(form, "Food");
+  const accounts = form.getByRole("group", { name: "Account" });
+  await expect(accounts.getByRole("button", { name: "No account" })).toHaveCount(0);
+  await expect(accounts.getByRole("button", { pressed: true })).toHaveCount(1);
+  await expect(save).toBeEnabled();
+  await accounts.getByRole("button", { name: "+ New" }).click();
+  await expect(save).toBeDisabled();
+  await form.getByLabel("New account").fill("E2E spare");
+  await expect(save).toBeEnabled();
 });

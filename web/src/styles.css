@@ -850,13 +850,6 @@ textarea.input {
   color: var(--text-strong);
 }
 
-.chip.untagged {
-  background: rgba(217, 181, 111, 0.16);
-  color: var(--gold);
-  padding: 1px 7px;
-  font-size: 10px;
-}
-
 .quick {
   display: flex;
   flex-wrap: wrap;
@@ -1349,60 +1342,6 @@ textarea.input {
   color: var(--bad);
 }
 
-/* The money form's category grid (M7b part 5). */
-/* Money dashboards (M7b part 7). */
-.legend {
-  display: flex;
-  gap: 14px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.legend-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  margin-right: 6px;
-  vertical-align: -1px;
-}
-
-.slot-labels {
-  display: flex;
-  gap: 6px;
-  font-size: 10px;
-}
-
-.slot-labels span {
-  flex: 1;
-  text-align: center;
-  overflow: hidden;
-}
-
-.period-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.money-filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  padding: 14px;
-}
-
-.month-table td,
-.month-table th {
-  text-align: right;
-}
-
-.month-table td:first-child,
-.month-table th:first-child {
-  text-align: left;
-}
-
 a.btn {
   text-decoration: none;
   color: var(--text);
@@ -1481,54 +1420,6 @@ a.btn {
 [data-row]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
-}
-
-/* Settings → Lists and the field editor: one option per row, wrapping on a phone. */
-.option-row {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.option-grip {
-  color: var(--muted);
-  cursor: grab;
-}
-
-.swatch {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-}
-
-.swatch-panel {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 4px);
-  right: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  width: 200px;
-  margin: 0;
-  padding: 8px;
-  border: 1px solid var(--border);
-}
-
-.swatch-button {
-  padding: 4px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.swatch-button[aria-pressed="true"] {
-  border-color: var(--lime);
 }
 
 /* The project Map and the AI Overview (React Flow), in the Cave's colours. */
@@ -1851,14 +1742,6 @@ a.btn {
   color: var(--text-strong);
 }
 
-.ledger-totals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-left: auto;
-  font-size: 13px;
-}
-
 .table .group-row td {
   text-align: left;
   padding: 6px 10px;
@@ -1880,146 +1763,10 @@ a.btn {
   text-align: left;
 }
 
-/* Money → Overview tiles and charts (M12 part 1). */
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
-}
-
-.tile {
-  padding: 12px 14px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto auto;
-  gap: 2px 10px;
-  align-items: center;
-}
-
-.tile .k {
-  grid-column: 1;
-}
-
-.tile .tile-value {
-  grid-column: 1;
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.tile .tile-note {
-  grid-column: 1;
-  font-size: 11px;
-}
-
-.tile .sparkline {
-  grid-column: 2;
-  grid-row: 1 / 4;
-  width: 96px;
-  height: 36px;
-}
-
-.day-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(26px, 1fr));
-  gap: 3px;
-}
-
-.day-cell {
-  height: 34px;
-  border-radius: 5px;
-  background: var(--on);
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  color: var(--muted);
-  position: relative;
-}
-
-.day-cell .fill {
-  position: absolute;
-  inset: 0;
-  border-radius: 5px;
-  background: var(--expense);
-}
-
-.day-cell span {
-  position: relative;
-}
-
-.day-cell.today {
-  outline: 1px solid var(--accent);
-}
-
-.stacked {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  height: 140px;
-}
-
-.stacked .stack {
-  flex: 1;
-  display: flex;
-  flex-direction: column-reverse;
-  height: 100%;
-  justify-content: flex-start;
-}
-
-.stacked .segment {
-  width: 100%;
-}
-
-.stacked .segment:first-child {
-  border-radius: 0 0 3px 3px;
-}
-
-.where-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 10px;
-  align-items: center;
-  padding: 3px 4px;
-  border-radius: 6px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.where-row:hover {
-  background: var(--on);
-}
-
-.where-row .bar-track {
-  grid-column: 1 / -1;
-}
-
-.filters-pop {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  z-index: 20;
-  width: min(640px, 90vw);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-}
-
 fieldset.chips {
   border: 0;
   padding: 0;
   margin: 0;
-}
-
-ul.chips {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.tile .tile-action {
-  grid-column: 2;
-  grid-row: 1;
-  font-size: 12px;
 }
 
 /* A built-in job's card (M12 part 4). */
@@ -2520,75 +2267,6 @@ ul.chips {
   .reader-actions {
     flex: 1;
   }
-}
-
-/* Money → Subscriptions: the plan in one line of totals, then one table. */
-.subs-page {
-  display: grid;
-  gap: 14px;
-}
-
-.subs-head {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.subs-totals {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 36px;
-  margin: 0;
-}
-
-.subs-totals dt {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.subs-totals dd {
-  margin: 2px 0 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-strong);
-}
-
-.subs-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.subs-table .num-col {
-  text-align: right;
-}
-
-.subs-table tbody tr {
-  cursor: pointer;
-}
-
-.subs-table tbody tr:hover {
-  background: var(--on);
-}
-
-.subs-table tr.paused td {
-  opacity: 0.55;
-}
-
-.subs-name {
-  font-weight: 600;
-  color: var(--text-strong);
-}
-
-.subs-note {
-  margin: 0;
-  font-size: 12px;
 }
 
 .sub-form {

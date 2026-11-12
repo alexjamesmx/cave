@@ -9,9 +9,9 @@ const accountField = (collections: CollectionDoc[] | undefined) =>
   collections?.find((c) => c.id === "money")?.data.fields.find((f) => f.id === "account");
 
 /**
- * The one live account, when the list holds exactly one (M12 part 1): forms preselect it and
- * hide the picker, and the ledger hides its account column and filter. `undefined` before the
- * list is loaded, or with none or several.
+ * The one live account, when the list holds exactly one: the subscription and payment forms
+ * preselect it, still showing the picker. `undefined` before the list is loaded, or with none
+ * or several.
  */
 export function soleAccount(collections: CollectionDoc[] | undefined): string | undefined {
   const field = accountField(collections);
@@ -20,7 +20,10 @@ export function soleAccount(collections: CollectionDoc[] | undefined): string | 
   return live.length === 1 ? live[0]?.value : undefined;
 }
 
-/** The accounts list as a select, plus "New account…" to type one; saving adds it to the list. */
+/**
+ * The accounts list as a select, plus "New account…" to type one; saving adds it to the list.
+ * There is no "No account": with none chosen yet the select shows a disabled "Pick an account".
+ */
 export function AccountPicker({
   id,
   collections,
@@ -73,7 +76,11 @@ export function AccountPicker({
         } else onChange(e.target.value);
       }}
     >
-      <option value="">No account</option>
+      {!value && (
+        <option value="" disabled>
+          Pick an account
+        </option>
+      )}
       {offered.map((o) => (
         <option key={o.value} value={o.value}>
           {optionText(o)}
