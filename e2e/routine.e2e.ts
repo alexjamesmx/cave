@@ -15,7 +15,7 @@ test("Calendar → Routine: a daily block on every day, a block on one day from 
   await expect(page).toHaveURL(/\/calendar\/routine$/);
   await expect(
     page.getByRole("navigation", { name: "Calendar tabs" }).getByRole("link"),
-  ).toHaveText(["Month", "Reminders", "Routine"]);
+  ).toHaveText(["Month", "Agenda", "Routine"]);
 
   // A daily block, to learn: on every day, and Learn counts its seven half hours.
   await page.getByRole("button", { name: "Add block" }).click();

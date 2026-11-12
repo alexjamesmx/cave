@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { unlock } from "../app/lock.ts";
-import { Icon } from "./icon.tsx";
+import { BrandMark } from "./BrandMark.tsx";
 
 /** All a device without a token sees: no sidebar, no page, nothing from the local copy. */
 export function LockScreen() {
@@ -20,9 +20,7 @@ export function LockScreen() {
   return (
     <main className="lock">
       <form className="panel lock-card" onSubmit={(e) => void submit(e)}>
-        <div className="brand-mark" aria-hidden="true">
-          <Icon name="zap" size={22} strokeWidth={2.2} />
-        </div>
+        <BrandMark size={48} />
         <h1 style={{ margin: 0, fontSize: 26 }}>Cave</h1>
         <label style={{ display: "grid", gap: 6, width: "100%" }}>
           <span className="k">Server token</span>

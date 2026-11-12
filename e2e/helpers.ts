@@ -31,7 +31,7 @@ export async function ownerContext(
 }
 
 export const syncBadge = (page: Page) =>
-  page.getByRole("status").filter({ hasText: /SYNC|OFFLINE/ });
+  page.getByRole("status").filter({ hasText: /sync|offline/i });
 
 /**
  * Records every request the context makes to a host other than the app's own; a test ends

@@ -10,11 +10,16 @@ import { applyRail } from "./app/rail.ts";
 import { interceptLinks, listenForShortcuts } from "./app/router.ts";
 import { warmShellCache } from "./app/shell-cache.ts";
 // Fonts ship with the app (SIL OFL), so the shell works offline and no request leaves the origin.
+import "@fontsource-variable/inter";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/newsreader";
 import "@fontsource-variable/newsreader/wght-italic.css";
 import "./styles.css";
+import "./styles/money.css";
+import "./styles/tasks.css";
+import "./styles/calendar.css";
+import "./styles/notes.css";
 import { LockScreen } from "./ui/LockScreen.tsx";
 
 const container = document.getElementById("root");

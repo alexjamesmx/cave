@@ -1,4 +1,4 @@
-import { mergeCategoryOptions } from "./categories.ts";
+import { CATEGORY_SET, mergeCategoryOptions } from "./categories.ts";
 import { diaryMigration } from "./diary.ts";
 import { builtInFlows, builtInFlowsMigration } from "./flows/built-in.ts";
 import { SEEDED_FLOWS } from "./flows/drafts.ts";
@@ -8,7 +8,7 @@ import { listsMigration, MONEY_ACCOUNT } from "./lists.ts";
 import { NOTES, NOTES_COLLECTION, notesMigration } from "./notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { COLOR_FIELD, pagesMigration, TRACKER_FIELDS } from "./pages.ts";
-import { PALETTE, recolour } from "./palette.ts";
+import { PALETTE, PALETTE_A, recolour, vivify } from "./palette.ts";
 import {
   MONEY_PAYMENT_REF,
   PAYMENTS,
@@ -384,17 +384,20 @@ const SEEDED_COLLECTIONS = [
 ];
 
 /**
- * M11 part 1: palette A. A collection's colour and its options' colours that still equal a
- * retired seed colour become the palette colour; anything the owner changed to another value
- * stays. `fields` is one key, so the whole array is written back from what the database holds.
+ * A collection's colour and its options' colours, each through `colourOf`; only collections the
+ * seed created, and only what changes. `fields` is one key, so the whole array is written back
+ * from what the database holds.
  */
-export function recolourMigration(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
+function recolourCollections(
+  get: (id: string) => Doc | undefined,
+  colourOf: (hex: unknown, collection: string, field: string, option?: string) => unknown,
+): SeedMigration["docs"] {
   const docs: SeedMigration["docs"] = [];
   for (const id of SEEDED_COLLECTIONS) {
     const doc = get(id);
     if (doc?.kind !== "collection" || doc.data._deleted === true) continue;
     const data: Record<string, unknown> = {};
-    const color = recolour(doc.data.color);
+    const color = colourOf(doc.data.color, id, "");
     if (color !== doc.data.color) data.color = color;
     const fields = (doc.data as unknown as CollectionData).fields;
     if (Array.isArray(fields)) {
@@ -402,7 +405,7 @@ export function recolourMigration(get: (id: string) => Doc | undefined): SeedMig
       const next = fields.map((f) => {
         if (!Array.isArray(f.options)) return f;
         const options = f.options.map((o) => {
-          const c = recolour(o.color);
+          const c = colourOf(o.color, id, f.id, o.value);
           if (c === o.color) return o;
           changed = true;
           return { ...o, color: c as string };
@@ -414,6 +417,59 @@ export function recolourMigration(get: (id: string) => Doc | undefined): SeedMig
     if (Object.keys(data).length > 0) docs.push({ id, kind: "collection", data });
   }
   return docs;
+}
+
+/**
+ * M11 part 1: palette A. Colours that still equal a retired seed colour become the palette
+ * colour; anything the owner changed to another value stays.
+ */
+export const recolourMigration = (get: (id: string) => Doc | undefined) =>
+  recolourCollections(get, recolour);
+
+/** Each seeded money category's palette A colour (M11 to M13). */
+const A = PALETTE_A;
+const M11_CATEGORY: Record<string, string> = {
+  food: A.orange,
+  groceries: A.ok,
+  gula: A.purple,
+  home: A.vio,
+  transport: A.teal,
+  health: A.bad,
+  beauty: A.purple,
+  shopping: A.orange,
+  subscriptions: A.teal,
+  fun: A.purple,
+  travel: A.teal,
+  gifts: A.bad,
+  learning: A.vio,
+  error: A.bad,
+  other: A.grey,
+  salary: A.ok,
+  vales: A.ok,
+  rent_income: A.ok,
+  gifts_received: A.ok,
+  sales: A.ok,
+  transfers_in: A.ok,
+  other_income: A.ok,
+  income: A.ok,
+  investment: A.warn,
+  between_accounts: A.ok,
+  transfer: A.ok,
+};
+
+/**
+ * M14: the vivid palette. A seeded money category still in its palette A colour takes its own
+ * swatch, so categories stop sharing five colours; every other palette A colour becomes the
+ * vivid colour of the same name. A colour the owner picked outside palette A stays.
+ */
+export function vividMigration(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
+  return recolourCollections(get, (hex, collection, field, option) => {
+    if (collection === "money" && field === "category" && option !== undefined) {
+      const own = CATEGORY_SET.find((c) => c.value === option)?.color;
+      if (own && typeof hex === "string" && hex.toUpperCase() === M11_CATEGORY[option]) return own;
+    }
+    return vivify(hex);
+  });
 }
 
 // Flows (M7 Part C): the collection and two drafts, as one migration so they arrive together.
@@ -473,6 +529,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 23, docs: [], update: builtInFlowsMigration },
   // 2026-11-08: Projects, parts and runs are retired; their refs are archived.
   { version: 24, docs: [], update: retireProjectsMigration },
+  // M14: the vivid palette replaces palette A; seeded categories get a colour each.
+  { version: 25, docs: [], update: vividMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

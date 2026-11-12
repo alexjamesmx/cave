@@ -5,7 +5,7 @@ import { formatStamp } from "../shared/hlc.ts";
 import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
 import { retireProjectsMigration } from "../shared/retire-projects.ts";
 import type { Field } from "../shared/schema.ts";
-import { retireAiMigration, SEED_VERSION, seedDocs } from "../shared/seed.ts";
+import { retireAiMigration, SEED_MIGRATIONS, SEED_VERSION, seedDocs } from "../shared/seed.ts";
 import type { Doc } from "../shared/types.ts";
 import { openDb } from "./db.ts";
 import m2Seed from "./fixtures/m2-seed.json";
@@ -14,15 +14,16 @@ import { createStore } from "./store.ts";
 
 const NOW = 1_791_900_000_000;
 
+/** Every migration from `first` on: what a database at `first - 1` gets. */
+const from = (first: number) => SEED_MIGRATIONS.map((m) => m.version).filter((v) => v >= first);
+
 test("a database seeded before seed migrations gets the proposals and the reminder time once", () => {
   const store = createStore(openDb(":memory:"));
   store.seedIfEmpty(m2Seed as Doc[], 1);
   expect(store.get("proposals")).toBeUndefined();
   expect(seedVersionOf(store)).toBe(1);
 
-  expect(migrateSeed(store, NOW)).toEqual([
-    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-  ]);
+  expect(migrateSeed(store, NOW)).toEqual(from(2));
   expect(store.get("flows")?.data).toMatchObject({ name: "Flows", hidden: true });
   expect(store.get("flow-rent")).toMatchObject({ collection: "flows", actor: "seed" });
   const proposals = store.get("proposals");
@@ -159,7 +160,7 @@ test("seed migration 24 retires Projects: collections and items marked deleted, 
     NOW - 5000,
   );
 
-  expect(migrateSeed(store, NOW)).toEqual([24]);
+  expect(migrateSeed(store, NOW)).toEqual(from(24));
   for (const id of ["projects", "parts", "runs", "p1", "part1", "run1"]) {
     const d = store.get(id) as Doc;
     expect(d.data._deleted).toBe(true);
@@ -180,7 +181,7 @@ test("seed migration 24 retires Projects: collections and items marked deleted, 
   });
   expect(store.get("t1")?.data._deleted).toBeUndefined();
   expect(store.get("settings")?.data.projectTemplates).toBeNull();
-  expect(seedVersionOf(store)).toBe(24);
+  expect(seedVersionOf(store)).toBe(SEED_VERSION);
 
   // Nothing left to do on what it produced, or on a fresh seed that never had Projects.
   expect(retireProjectsMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);
@@ -233,7 +234,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
     NOW - 5000,
   );
 
-  expect(migrateSeed(store, NOW)).toEqual([16, 17, 18, 19, 20, 21, 22, 23, 24]);
+  expect(migrateSeed(store, NOW)).toEqual(from(16));
   for (const id of ["ai", "ai-rule", "ai-skill"]) {
     const d = store.get(id) as Doc;
     expect(d.data._deleted).toBe(true);
@@ -246,7 +247,7 @@ test("seed migration 16 marks the ai collection and its live items deleted, touc
   expect(store.get("ai-gone")?.stamps._deleted).toBe(stamp);
   expect(store.get("task-1")?.data._deleted).toBeUndefined();
   expect(store.itemsOf("ai")).toEqual([]);
-  expect(seedVersionOf(store)).toBe(24);
+  expect(seedVersionOf(store)).toBe(SEED_VERSION);
 
   // Nothing left to do on what it produced, or on a database that never had the collection.
   expect(retireAiMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);
@@ -280,7 +281,7 @@ test("seed migration 22 clears the radar interests and subscription dismissals, 
     "test",
     1,
   );
-  expect(migrateSeed(store, NOW)).toEqual([22, 23, 24]);
+  expect(migrateSeed(store, NOW)).toEqual(from(22));
   expect(store.get("settings")?.data).toMatchObject({
     radarInterests: null,
     dismissedSubscriptions: null,
@@ -310,7 +311,7 @@ test("seed migration 23 adds the built-in flows, on from now, the digest at the 
     "test",
     1,
   );
-  expect(migrateSeed(store, NOW)).toEqual([23, 24]);
+  expect(migrateSeed(store, NOW)).toEqual(from(23));
   const flow = (id: string) => store.get(id) as Doc;
   expect(flow("flow-reminders").data).toMatchObject({ status: "on", author: "cave" });
   expect(flow("flow-reminders").stamps.status).toBe(formatStamp(NOW, 0, "seed"));

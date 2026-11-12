@@ -9,7 +9,7 @@ test("an entry added offline syncs after reconnect and shows on a second device"
   const foreign = offOriginRequests(laptop, baseURL as string);
   const page = await laptop.newPage();
   await page.goto("/");
-  await expect(syncBadge(page)).toHaveText("SYNCED");
+  await expect(syncBadge(page)).toHaveText("Synced");
 
   await laptop.setOffline(true);
   await addMoney(page, { amount: 205, title: "e2e tacos", category: "Food" });
@@ -17,10 +17,10 @@ test("an entry added offline syncs after reconnect and shows on a second device"
     page.getByRole("status").filter({ hasText: "Saved · Expense · e2e tacos" }),
   ).toBeVisible();
   // The write is local; the debounced sync fails and the badge says so.
-  await expect(syncBadge(page)).toHaveText("OFFLINE · SAVED HERE");
+  await expect(syncBadge(page)).toHaveText("Offline · saved here");
 
   await laptop.setOffline(false);
-  await expect(syncBadge(page)).toHaveText("SYNCED");
+  await expect(syncBadge(page)).toHaveText("Synced");
 
   const phone = await ownerContext(browser);
   const other = await phone.newPage();

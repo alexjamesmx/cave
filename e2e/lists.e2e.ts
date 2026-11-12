@@ -32,7 +32,7 @@ test("Money → Categories & accounts: rename, emoji, colour, reorder, archive a
 
   // A colour from the palette, then one typed as hex.
   await list.getByRole("button", { name: "Colour for food", exact: true }).click();
-  await list.getByRole("button", { name: "#7FC4CF" }).click();
+  await list.getByRole("button", { name: "#2DD4BF" }).click();
   await list.getByRole("button", { name: "Colour for food", exact: true }).click();
   await list.getByLabel("Colour for food as hex").fill("#123456");
   await list.getByLabel("Colour for food as hex").press("Enter");

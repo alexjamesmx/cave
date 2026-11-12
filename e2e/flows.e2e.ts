@@ -142,7 +142,7 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
 
   // An idea arrives; the server runs the flow and the task appears.
   const note = `Canvas idea ${Date.now()}`;
-  await page.goto("/ideas/all");
+  await page.goto("/notes/ideas");
   await page.getByLabel("New idea").fill(note);
   await page.getByLabel("New idea").press("Enter");
   // The list shows it once the write has committed; leaving earlier could lose the write.
@@ -185,7 +185,7 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await page.getByRole("button", { name: `Read ${note}` }).click();
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("button", { name: `Read ${note}` })).toHaveCount(0);
-  await page.goto("/ideas/all");
+  await page.goto("/notes/ideas");
   const ideas = page.getByRole("list", { name: "Ideas" });
   await ideas.getByRole("button", { name: note, exact: true }).click();
   await page.getByRole("button", { name: "Delete" }).click();

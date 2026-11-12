@@ -4,12 +4,12 @@ import { useSignal } from "../app/signal.ts";
 import { useLive } from "../store/live.ts";
 
 const LABELS = {
-  idle: ["SYNCED", "var(--income)"],
-  syncing: ["SYNCING", "var(--cyan)"],
-  offline: ["OFFLINE · SAVED HERE", "var(--gold)"],
-  "clock-ahead": ["CLOCK AHEAD", "var(--expense)"],
-  unauthorized: ["TOKEN NEEDED", "var(--expense)"],
-  error: ["SYNC ERROR", "var(--expense)"],
+  idle: ["Synced", "var(--income)"],
+  syncing: ["Syncing", "var(--cyan)"],
+  offline: ["Offline · saved here", "var(--gold)"],
+  "clock-ahead": ["Clock ahead", "var(--expense)"],
+  unauthorized: ["Token needed", "var(--expense)"],
+  error: ["Sync error", "var(--expense)"],
 } as const;
 
 export function SyncBadge() {
@@ -17,10 +17,10 @@ export function SyncBadge() {
   const status = useSignal(cave.status);
   const { db } = cave.local;
   const refused = useLive(() => db.rejected.count(), [db]) ?? 0;
-  // A clean sync with refused docs still leaves work for the owner, so it is not "SYNCED".
+  // A clean sync with refused docs still leaves work for the owner, so it is not "Synced".
   const [label, color] =
     status.phase === "idle" && refused > 0
-      ? [`${refused} NOT SYNCED`, "var(--gold)"]
+      ? [`${refused} not synced`, "var(--gold)"]
       : LABELS[status.phase];
   const title =
     status.phase === "error"
@@ -29,7 +29,7 @@ export function SyncBadge() {
         ? "Open the items marked “not synced” to fix their values"
         : undefined;
   return (
-    <div className="sync num" role="status" title={title} data-label={label}>
+    <div className="sync" role="status" title={title} data-label={label}>
       <span className="dot" style={{ background: color }} />
       <span className="rail-label">{label}</span>
     </div>

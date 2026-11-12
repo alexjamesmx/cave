@@ -1,7 +1,7 @@
 import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("the rail shows the six sections and Settings once; a tab survives a reload; old links land in place", async ({
+test("the sidebar shows five sections and Settings once; a tab survives a reload; old links land in place", async ({
   browser,
 }) => {
   const page = await (
@@ -11,29 +11,29 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
   const main = page.getByRole("navigation", { name: "Main" });
   await expect(main.getByRole("link")).toHaveText([
     "Money",
-    "Calendar",
-    "Flows",
-    "Ideas",
-    "Notes",
     "Tasks",
+    "Calendar",
+    "Notes",
+    "Flows",
     "Settings",
   ]);
 
-  // Show names widens the rail to its labels; the choice survives a reload; Hide names undoes it.
+  // The sidebar opens wide with names; Hide names narrows it to tiles, the choice survives a
+  // reload, and Show names undoes it.
   const side = page.locator(".side");
-  const narrow = (await side.boundingBox())?.width ?? 0;
+  await expect(main.getByText("Money", { exact: true })).toBeVisible();
+  const wide = (await side.boundingBox())?.width ?? 0;
+  await page.getByRole("button", { name: "Hide names" }).click();
+  expect((await side.boundingBox())?.width ?? 0).toBeLessThan(wide - 100);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Show names" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect(main.getByText("Money", { exact: true })).toBeHidden();
   await page.getByRole("button", { name: "Show names" }).click();
   await expect(main.getByText("Money", { exact: true })).toBeVisible();
-  expect((await side.boundingBox())?.width ?? 0).toBeGreaterThan(narrow + 100);
-  await page.reload();
-  await expect(page.getByRole("button", { name: "Hide names" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(main.getByText("Money", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Hide names" }).click();
-  await expect(page.getByRole("button", { name: "Show names" })).toBeVisible();
-  expect((await side.boundingBox())?.width ?? 0).toBeLessThan(narrow + 10);
+  expect((await side.boundingBox())?.width ?? 0).toBeGreaterThan(wide - 10);
 
   await main.getByRole("link", { name: "Money" }).click();
   const tabs = page.getByRole("navigation", { name: "Money tabs" });
@@ -55,7 +55,9 @@ test("the rail shows the six sections and Settings once; a tab survives a reload
     ["/settings/flows/flow-rent", /\/flows\/flow-rent$/],
     ["/ai/flows/flow-salary", /\/flows\/flow-salary$/],
     ["/ai/activity", /\/money\/overview$/],
-    ["/projects/ideas", /\/ideas\/all$/],
+    ["/projects/ideas", /\/notes\/ideas$/],
+    ["/ideas/leetcode", /\/notes\/leetcode$/],
+    ["/calendar/reminders", /\/calendar\/agenda$/],
     ["/system/jobs", /\/settings\/devices\/jobs$/],
     ["/settings/system/flows", /\/flows$/],
     ["/settings/lists", /\/money\/lists$/],

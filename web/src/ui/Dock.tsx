@@ -1,128 +1,78 @@
-import { useEffect, useState } from "react";
-import { useCave } from "../app/context.ts";
+import { type CSSProperties, useEffect, useState } from "react";
 import { openNew } from "../app/quick.ts";
 import { usePathname } from "../app/router.ts";
-import { DOCK_SIZE, dockOf, SECTIONS, type Section, sectionOf } from "../app/sections.ts";
-import { useDoc } from "../store/queries.ts";
+import { DOCK, SECTIONS, type Section, sectionOf } from "../app/sections.ts";
 import { Icon } from "./icon.tsx";
 import { Sheet } from "./Sheet.tsx";
 
-const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
-type Panel = "more" | "edit" | undefined;
-
-/** The phone's navigation (CSS shows it under 768 px): four sections and a raised New. */
+/**
+ * The phone's navigation (CSS shows it under 768 px, M14): Money, Tasks, a raised New,
+ * Calendar and Notes. Flows and Settings are one tap away in each page's ⚙️ (Everything).
+ */
 export function Dock() {
-  const { local } = useCave();
-  const settings = useDoc(local.db, "settings");
-  const dock = dockOf(settings?.data);
-  const pathname = usePathname();
-  const active = sectionOf(pathname);
-  const [panel, setPanel] = useState<Panel>();
-
-  // Navigating closes whatever sheet was open.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the path is the trigger
-  useEffect(() => setPanel(undefined), [pathname]);
-
+  const active = sectionOf(usePathname());
   const link = (s: Section) => (
     <a
       key={s.id}
       href={s.path}
       className="dock-item"
       aria-current={s.id === active ? "page" : undefined}
+      style={{ "--c": s.color } as CSSProperties}
     >
-      <Icon name={s.icon} size={20} />
+      <span className="dock-emoji" aria-hidden="true">
+        {s.emoji}
+      </span>
       <span>{s.label}</span>
     </a>
   );
+  return (
+    <nav aria-label="Dock" className="dock">
+      {DOCK.slice(0, 2).map(link)}
+      <button type="button" className="dock-new" aria-label="New" onClick={() => openNew()}>
+        <Icon name="plus" size={26} strokeWidth={2.4} />
+      </button>
+      {DOCK.slice(2).map(link)}
+    </nav>
+  );
+}
 
+/** ⚙️ in a page's header on a phone: every section, Flows and Settings included. */
+export function EverythingButton() {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  // Navigating closes the sheet.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the path is the trigger
+  useEffect(() => setOpen(false), [pathname]);
   return (
     <>
-      <nav aria-label="Dock" className="dock">
-        {dock.slice(0, 2).map(link)}
-        <button type="button" className="dock-new" aria-label="New" onClick={() => openNew()}>
-          <Icon name="plus" size={26} strokeWidth={2.2} />
-        </button>
-        {dock.slice(2).map(link)}
-        <button
-          type="button"
-          className="dock-item"
-          aria-expanded={panel !== undefined}
-          onClick={() => setPanel(panel ? undefined : "more")}
-        >
-          <Icon name="grid-2x2" size={20} />
-          <span>More</span>
-        </button>
-      </nav>
-      {panel === "more" && (
-        <Sheet title="Everything" onClose={() => setPanel(undefined)}>
+      <button
+        type="button"
+        className="icon-btn phone-only"
+        aria-label="Everything"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+      >
+        <span aria-hidden="true">⚙️</span>
+      </button>
+      {open && (
+        <Sheet title="Everything" onClose={() => setOpen(false)}>
           <div className="more-grid">
             {SECTIONS.map((s) => (
-              <a key={s.id} href={s.path} className="more-item">
-                <Icon name={s.icon} size={22} color={s.color} />
+              <a
+                key={s.id}
+                href={s.path}
+                className="more-item"
+                style={{ "--c": s.color } as CSSProperties}
+              >
+                <span className="emoji-tile" aria-hidden="true">
+                  {s.emoji}
+                </span>
                 <span>{s.label}</span>
               </a>
             ))}
           </div>
-          <button type="button" className="btn" onClick={() => setPanel("edit")}>
-            Edit dock
-          </button>
         </Sheet>
       )}
-      {panel === "edit" && (
-        <Sheet title="Edit dock" onClose={() => setPanel(undefined)}>
-          <EditDock
-            current={dock.map((s) => s.id)}
-            onSave={(ids) => {
-              void local.write(SETTINGS, { dock: ids });
-              setPanel(undefined);
-            }}
-          />
-        </Sheet>
-      )}
-    </>
-  );
-}
-
-/** Pick exactly four; the order picked is the dock's order, left to right. */
-export function EditDock({ current, onSave }: { current: string[]; onSave(ids: string[]): void }) {
-  const [picked, setPicked] = useState(current);
-  const toggle = (id: string) =>
-    setPicked((p) =>
-      p.includes(id) ? p.filter((x) => x !== id) : p.length < DOCK_SIZE ? [...p, id] : p,
-    );
-  return (
-    <>
-      <span className="muted" style={{ fontSize: 13 }}>
-        Pick {DOCK_SIZE}, in order. Every phone gets the same dock.
-      </span>
-      <div className="more-grid">
-        {SECTIONS.map((s) => {
-          const at = picked.indexOf(s.id);
-          return (
-            <button
-              key={s.id}
-              type="button"
-              className="more-item"
-              aria-pressed={at !== -1}
-              onClick={() => toggle(s.id)}
-            >
-              <Icon name={s.icon} size={22} color={s.color} />
-              <span>
-                {at !== -1 ? `${at + 1}. ` : ""}
-                {s.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      <button
-        type="button"
-        className="btn primary"
-        disabled={picked.length !== DOCK_SIZE}
-        onClick={() => onSave(picked)}
-      >
-        Save dock
-      </button>
     </>
   );
 }

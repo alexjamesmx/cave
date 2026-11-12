@@ -1,22 +1,12 @@
 import type { ReactNode } from "react";
 import { useCave } from "../../app/context.ts";
 import { useReminderZone } from "../../app/hooks.ts";
-import { dockOf, LANDING, SECTIONS } from "../../app/sections.ts";
+import { LANDING, SECTIONS } from "../../app/sections.ts";
 import { useDoc } from "../../store/queries.ts";
 import { BudgetFields } from "../../ui/BudgetFields.tsx";
-import { EditDock } from "../../ui/Dock.tsx";
 import { SETTINGS } from "./shared.tsx";
 
-/** One theme for now; a light one is one more entry here. */
-const THEMES = [{ id: "graphite", label: "Graphite" }];
-
-/** `settings.motion`: animate (the Scene, transitions) always, or only when the OS allows it. */
-const MOTION = [
-  { id: "on", label: "On" },
-  { id: "system", label: "Follow the system setting" },
-];
-
-/** Settings → General: who you are, your goal, time, look and the phone dock. */
+/** Settings → General: who you are, your goal, the budget, time and where the app opens. */
 export function SettingsGeneral() {
   return (
     <>
@@ -33,7 +23,6 @@ export function SettingsGeneral() {
       <TimeZone />
       <ReminderTime />
       <Look />
-      <PhoneDock />
     </>
   );
 }
@@ -172,70 +161,19 @@ function ReminderTime() {
   );
 }
 
-/** Theme, what the app opens on, and motion. */
+/** Where the app opens. Motion follows the system's reduced-motion setting (M14). */
 function Look() {
-  const { local } = useCave();
-  const theme = useText("theme") || "graphite";
-  const motion = useText("motion") || "on";
   const [, sectionId, tabId] = LANDING.split("/");
   const section = SECTIONS.find((s) => s.id === sectionId);
   const tab = section?.tabs.find((t) => t.id === tabId);
   return (
     <Panel>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className="k">Theme</span>
-        <select
-          className="input"
-          value={theme}
-          onChange={(e) => void local.write(SETTINGS, { theme: e.target.value })}
-        >
-          {THEMES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </label>
       <div style={{ display: "grid", gap: 6 }}>
         <span className="k">Opens on</span>
         <span>
           {section?.label} → {tab?.label}
         </span>
       </div>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className="k">Motion</span>
-        <select
-          className="input"
-          value={motion}
-          onChange={(e) => void local.write(SETTINGS, { motion: e.target.value })}
-        >
-          {MOTION.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <span className="muted" style={{ fontSize: 13 }}>
-        "Follow the system setting" stops animation when the OS asks for reduced motion.
-      </span>
-    </Panel>
-  );
-}
-
-/** The phone dock's four sections, the same as the dock's own Edit. */
-function PhoneDock() {
-  const { local } = useCave();
-  const settings = useDoc(local.db, "settings");
-  const dock = dockOf(settings?.data).map((s) => s.id);
-  return (
-    <Panel>
-      <span className="k">Phone dock</span>
-      <EditDock
-        key={dock.join()}
-        current={dock}
-        onSave={(ids) => void local.write(SETTINGS, { dock: ids })}
-      />
     </Panel>
   );
 }

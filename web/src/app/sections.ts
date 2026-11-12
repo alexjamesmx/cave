@@ -4,8 +4,8 @@
  * lives in the section that owns it. Adding a section or a tab is one entry here.
  */
 
-/** A tab shows one view of a collection, or one page; `description` is one line for someone new. */
-export type Tab = (
+/** A tab shows one view of a collection, or one page. Tabs carry no descriptions (M14). */
+export type Tab =
   | {
       id: string;
       label: string;
@@ -14,12 +14,11 @@ export type Tab = (
       view?: string;
       hidden?: boolean;
     }
-  | { id: string; label: string; kind: "page"; page: PageId; hidden?: boolean }
-) & { description?: string };
+  | { id: string; label: string; kind: "page"; page: PageId; hidden?: boolean };
 
 export type PageId =
   | "calendar-month"
-  | "calendar-reminders"
+  | "calendar-agenda"
   | "calendar-routine"
   | "money-transactions"
   | "ideas"
@@ -40,7 +39,11 @@ export type PageId =
 export interface Section {
   id: string;
   label: string;
+  /** Lucide name, where an emoji can't go (a select, a flow step). */
   icon: string;
+  /** What the sidebar, the dock and the page header show (M14). */
+  emoji: string;
+  /** The section's own colour, a hex so tints can be mixed from it. */
   color: string;
   /** `/<id>`. */
   path: string;
@@ -61,51 +64,66 @@ export const SECTIONS: Section[] = [
     id: "money",
     label: "Money",
     icon: "wallet",
-    color: "var(--ok)",
+    emoji: "💸",
+    color: "#34d399",
     path: "/money",
     tabs: [
-      {
-        ...view("overview", "Overview", "money", "dashboard"),
-        description: "Where your money went this month.",
-      },
-      {
-        ...page("transactions", "Transactions", "money-transactions"),
-        description: "Money that moved. Every expense, income and transfer.",
-      },
-      {
-        ...page("subscriptions", "Subscriptions", "money-subscriptions"),
-        description: "What you pay for every month or year, and what it has cost you.",
-      },
-      {
-        ...view("net-worth", "Net worth", "wealth"),
-        description: "What you own minus what you owe.",
-      },
-      {
-        ...page("lists", "Categories & accounts", "money-lists"),
-        description: "The lists every expense, income and payment picks from.",
-      },
+      view("overview", "Overview", "money", "dashboard"),
+      page("transactions", "Transactions", "money-transactions"),
+      page("subscriptions", "Subscriptions", "money-subscriptions"),
+      view("net-worth", "Net worth", "wealth"),
+      page("lists", "Categories", "money-lists"),
     ],
     owns: ["money", "payments", "wealth"],
+  },
+  {
+    id: "tasks",
+    label: "Tasks",
+    icon: "square-check",
+    emoji: "✅",
+    color: "#60a5fa",
+    path: "/tasks",
+    tabs: [view("board", "Board", "tasks", "board"), page("list", "List", "tasks-list")],
+    owns: ["tasks"],
   },
   {
     id: "calendar",
     label: "Calendar",
     icon: "calendar-days",
-    color: "var(--bad)",
+    emoji: "📅",
+    color: "#fb7185",
     path: "/calendar",
-    // Agenda was the Month's side list and Week the routine; both merged after M13.
+    // Agenda is everything with a date (M14); it was Reminders, reminders only.
     tabs: [
       page("month", "Month", "calendar-month"),
-      page("reminders", "Reminders", "calendar-reminders"),
+      page("agenda", "Agenda", "calendar-agenda"),
       page("routine", "Routine", "calendar-routine"),
     ],
     owns: ["reminders"],
   },
   {
+    // Anything written down, the diary's Today and Days, and LeetCode (M14): Ideas are notes.
+    id: "notes",
+    label: "Notes",
+    icon: "notebook-pen",
+    emoji: "📝",
+    color: "#a78bfa",
+    path: "/notes",
+    tabs: [
+      page("all", "Notes", "notes"),
+      page("write", "Today", "diary-today"),
+      page("days", "Days", "diary-days"),
+      view("leetcode", "LeetCode", "leetcode"),
+      page("ideas", "Ideas", "ideas", true),
+    ],
+    owns: ["notes", "journal", "leetcode", "ideas"],
+  },
+  {
     id: "flows",
     label: "Flows",
     icon: "workflow",
-    color: "var(--warn)",
+    emoji: "⚡",
+    color: "#fbbf24",
     path: "/flows",
     // `/flows/<id>`: anything after Flows that is not a tab is a flow, open in the inspector
     // beside the canvas; `/flows/jobs/<id>` is a built-in job there (M12 part 4).
@@ -113,43 +131,11 @@ export const SECTIONS: Section[] = [
     owns: ["flows"],
   },
   {
-    // Ideas and LeetCode lived under Projects until it was retired on 2026-11-08.
-    id: "ideas",
-    label: "Ideas",
-    icon: "lightbulb",
-    color: "var(--vio)",
-    path: "/ideas",
-    tabs: [page("all", "Ideas", "ideas"), view("leetcode", "LeetCode", "leetcode")],
-    owns: ["ideas", "leetcode"],
-  },
-  {
-    // Anything written down, then the diary's Today and Days: the diary is a kind of note.
-    id: "notes",
-    label: "Notes",
-    icon: "notebook-pen",
-    color: "var(--vio)",
-    path: "/notes",
-    tabs: [
-      page("all", "Notes", "notes"),
-      page("write", "Today", "diary-today"),
-      page("days", "Days", "diary-days"),
-    ],
-    owns: ["notes", "journal"],
-  },
-  {
-    id: "tasks",
-    label: "Tasks",
-    icon: "square-check",
-    color: "var(--teal)",
-    path: "/tasks",
-    tabs: [view("board", "Board", "tasks", "board"), page("list", "List", "tasks-list")],
-    owns: ["tasks"],
-  },
-  {
     id: "settings",
     label: "Settings",
     icon: "settings",
-    color: "#6b7380",
+    emoji: "⚙️",
+    color: "#8b93a1",
     path: "/settings",
     // Only general things live here (M11 part 3); each section edits its own lists.
     tabs: [
@@ -179,38 +165,8 @@ export const tabPath = (section: Section, tab: Tab) => `${section.path}/${tab.id
 /** Tabs shown in a section's tab bar. */
 export const visibleTabs = (section: Section) => section.tabs.filter((t) => !t.hidden);
 
-export const DOCK_SIZE = 4;
-export const DEFAULT_DOCK = ["money", "tasks", "calendar", "notes"];
-
-/** Dock ids from before M8, the AI section (gone in M10), Home and Life (gone in M11), Diary, Projects. */
-const OLD_DOCK: Record<string, string> = {
-  payments: "money",
-  wealth: "money",
-  reminders: "calendar",
-  leetcode: "ideas",
-  projects: "ideas",
-  diary: "notes",
-  life: "notes",
-  home: "money",
-  agents: "settings",
-  ai: "settings",
-  system: "settings",
-};
-
-/**
- * `settings.dock` as synced: four section ids, old ones mapped to their section. Duplicates
- * collapse; anything short of four distinct sections falls back to the default.
- */
-export function dockOf(settings: Record<string, unknown> | undefined): Section[] {
-  const raw = settings?.dock;
-  const ids = Array.isArray(raw)
-    ? [...new Set(raw.map((id) => OLD_DOCK[String(id)] ?? String(id)))].filter((id) =>
-        SECTIONS.some((s) => s.id === id),
-      )
-    : [];
-  const chosen = ids.length === DOCK_SIZE ? ids : DEFAULT_DOCK;
-  return chosen.map((id) => sectionById(id) as Section);
-}
+/** The phone dock (M14): the four sections used every day, the same on every phone. */
+export const DOCK = ["money", "tasks", "calendar", "notes"].map((id) => sectionById(id) as Section);
 
 /** Which section a path belongs to, for marking the active one; `/` is where the app opens. */
 export function sectionOf(pathname: string): string | undefined {

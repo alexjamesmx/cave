@@ -1,8 +1,8 @@
-import { PALETTE } from "../../../shared/palette.ts";
+import { SWATCHES as NAMED, PALETTE } from "../../../shared/palette.ts";
 import type { SelectOption } from "../../../shared/schema.ts";
 
-/** Swatches that keep their contrast on the light and the dark surface. */
-export const SWATCHES: string[] = Object.values(PALETTE);
+/** The sixteen swatches every colour picker offers, in order. */
+export const SWATCHES: string[] = Object.values(NAMED);
 
 export const isHexColor = (value: string) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
