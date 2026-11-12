@@ -1,7 +1,7 @@
 import { addMoney, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Overview: tiles with their change, where it went into the ledger, the year table, and filters kept in the URL", async ({
+test("Overview: four numbers with their change, the budget, where it went into the ledger for the same month or year, the days shaded and twelve months", async ({
   browser,
 }) => {
   const context = await ownerContext(browser, { viewport: { width: 1360, height: 900 } });
@@ -16,59 +16,43 @@ test("Overview: tiles with their change, where it went into the ledger, the year
 
   await page.goto("/money/overview");
   await expect(page.getByRole("region", { name: "Spent", exact: true })).toContainText(
-    /vs last month/,
+    /vs [A-Z][a-z]+|Same as|None in/,
   );
-  await expect(page.getByRole("region", { name: "Saved", exact: true })).toContainText(/of income/);
-  await expect(page.getByRole("img", { name: /Spent per month, 12 months/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Saved", exact: true })).toContainText(
+    /of what came in/,
+  );
 
-  // A monthly limit typed on the Budget tile: what is left and the pace, then cleared again.
-  const budget = page.getByRole("region", { name: "Budget", exact: true });
-  await expect(budget).toContainText("Set a monthly limit");
-  await budget.getByRole("button", { name: "Edit" }).click();
+  // A monthly limit set from the Budget left card: what is left, then cleared again.
+  const budget = page.getByRole("region", { name: "Budget left", exact: true });
+  await expect(budget).toContainText("No limit set");
+  await budget.getByRole("button", { name: "Set" }).click();
   const limit = page.getByRole("region", { name: "Budget settings" }).getByLabel("Monthly limit");
   await limit.fill("1000000");
   await limit.blur();
-  await expect(budget).toContainText(/\$[\d,]+ left/);
-  await expect(budget).toContainText(/of \$1,000,000 · at this rate/);
+  await expect(budget).toContainText(/of \$1,000,000/);
   await limit.fill("");
   await limit.blur();
-  await expect(budget).toContainText("Set a monthly limit");
+  await expect(budget).toContainText("No limit set");
+
   await expect(page.getByRole("img", { name: /Spending per day in/ })).toBeVisible();
   await expect(page.getByRole("img", { name: /Spending per month by category/ })).toBeVisible();
   const where = page.getByRole("region", { name: "Where it went" });
-  await expect(where).toContainText("🍬 Gula");
+  await expect(where).toContainText("Gula");
 
   // A category row opens the ledger filtered to it, for this month.
   await where.getByRole("link", { name: /Gula/ }).click();
   await expect(page).toHaveURL(/\/money\/transactions\?month=\d{4}-\d{2}&category=gula$/);
-  await expect(page.getByRole("row").filter({ hasText: "Dashboard gula" }).first()).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Dashboard gula" })).toBeVisible();
   await page.goBack();
 
+  // In Year, the same row opens that year only (not every year), from 1 January to today.
   await page.getByRole("button", { name: "Year", exact: true }).click();
-  const year = new Date().getFullYear();
-  await expect(page.getByRole("heading", { name: String(year) })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Months" }).getByRole("row")).toHaveCount(13);
-  await expect(page.getByText("Biggest expenses of the year")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Spent", exact: true })).toContainText(
-    /vs last year/,
-  );
-
-  // A category filter goes into the URL and survives a reload.
-  await page.getByText("Filters", { exact: true }).click();
-  await page.getByRole("combobox", { name: "Add a category" }).fill("gul");
-  await page.getByRole("option", { name: "🍬 Gula" }).click();
-  await expect(page).toHaveURL(/categories=gula/);
-  await page.reload();
-  await expect(page).toHaveURL(/categories=gula/);
-  await expect(page.getByText("Filters · 1 on")).toBeVisible();
-  await expect(
-    page
-      .getByRole("region", { name: "Top titles" })
-      .locator(".bar-label", { hasText: "Dashboard gula" }),
-  ).toBeVisible();
-
+  const year = String(new Date().getFullYear());
+  await expect(page.getByRole("heading", { name: year, exact: true })).toBeVisible();
+  await expect(page.getByRole("img", { name: `Spending per month in ${year}` })).toBeVisible();
+  await where.getByRole("link", { name: /Gula/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/money/transactions\\?month=${year}&category=gula$`));
+  await expect(page.getByRole("heading", { name: year, exact: true })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Dashboard gula" })).toBeVisible();
   await page.screenshot({ path: "test-results/money-dashboard.png", fullPage: true });
-  await page.getByText("Filters · 1 on").click();
-  await page.getByRole("button", { name: "Clear filters" }).click();
-  await expect(page).not.toHaveURL(/categories=/);
 });

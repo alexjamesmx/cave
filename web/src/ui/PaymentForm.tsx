@@ -162,18 +162,16 @@ export function PaymentForm({ onSaved }: { onSaved(message: string): void }) {
             />
           )}
         </Labelled>
-        {!sole && (
-          <Labelled label="Account">
-            {(id) => (
-              <AccountPicker
-                id={id}
-                collections={collections}
-                value={account}
-                onChange={setAccount}
-              />
-            )}
-          </Labelled>
-        )}
+        <Labelled label="Account">
+          {(id) => (
+            <AccountPicker
+              id={id}
+              collections={collections}
+              value={account}
+              onChange={setAccount}
+            />
+          )}
+        </Labelled>
       </div>
       {error && (
         <p role="alert" className="error" style={{ margin: 0 }}>

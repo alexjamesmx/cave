@@ -1,145 +1,273 @@
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import { budgetLine, budgetOf } from "../../../shared/budget.ts";
-import { optionText, transferCategories } from "../../../shared/categories.ts";
-import { daysInMonth, monthName, shiftMonth, shortDay } from "../../../shared/dates.ts";
+import { transferCategories } from "../../../shared/categories.ts";
+import { daysInMonth, monthGrid, monthName, shiftMonth, shortDay } from "../../../shared/dates.ts";
 import { undatedSummary } from "../../../shared/money.ts";
 import {
-  changeText,
   currentPeriod,
-  filterEntries,
-  filterFromSearch,
-  filterToSearch,
-  lastTwelve,
-  type MoneyFilter,
   type PeriodSummary,
   periodSummary,
   previousPeriod,
   stackedTwelve,
-  topTitles,
 } from "../../../shared/money-stats.ts";
 import type { SelectOption } from "../../../shared/schema.ts";
 import { useCave } from "../app/context.ts";
 import { useToday } from "../app/hooks.ts";
-import { setSearch, useSearch } from "../app/router.ts";
-import { formatMoney, percent, signedMoney } from "../logic/format.ts";
-import { titleOf } from "../logic/views.ts";
-import { useCollections, useDoc } from "../store/queries.ts";
-import { soleAccount } from "../ui/AccountPicker.tsx";
+import { formatMoney, percent } from "../logic/format.ts";
+import { change, heatLevel, type Period, whereLink } from "../logic/overview.ts";
+import { useDoc } from "../store/queries.ts";
 import { BudgetFields } from "../ui/BudgetFields.tsx";
-import { BarRow, DayStrip, StackedColumns, Tile } from "../ui/charts.tsx";
 import { Icon } from "../ui/icon.tsx";
-import { OptionPicker } from "../ui/OptionPicker.tsx";
+import { MarkTile } from "../ui/OptionTile.tsx";
 import type { ViewProps } from "./types.ts";
 
-type Kind = "month" | "year";
+const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
+/** Rows "Where it went" lists; the rest are a link away. */
+const WHERE_ROWS = 8;
 
-const periodLabel = (p: { kind: Kind; key: string }) =>
-  p.kind === "month" ? monthName(p.key) : p.key;
-
-/** Transfers into the seed's investment category: the one kind of transfer that is saving. */
-const INVESTMENT = "investment";
+const tint = (color: string) => ({ "--c": color }) as CSSProperties;
+const monthShort = (month: string) => shortDay(`${month}-01`).split(" ")[0] ?? month;
+const monthLong = (month: string) =>
+  new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(
+    new Date(`${month}-01T00:00:00Z`),
+  );
 
 /**
- * Money → Overview (M12 part 1): the period's four numbers as tiles with their change and a
- * 12-month line, the month day by day, where it went against last period, twelve months
- * stacked by category, the top titles and the largest entries. One screen on a laptop.
+ * A change against the period before, coloured by whether it is good news: less spent, more
+ * come in.
  */
-export function MoneyDashboard({ collection, items, open }: ViewProps) {
+function Versus({
+  now,
+  was,
+  before,
+  good,
+}: {
+  now: number;
+  was: number;
+  before: string;
+  good: "up" | "down";
+}) {
+  const c = change(now, was);
+  if (c.dir === "same") return <>Same as {before}</>;
+  if (c.dir === "new") return <>None in {before}</>;
+  return (
+    <>
+      <span className={c.dir === good ? "in" : "out"}>{c.text}</span> vs {before}
+    </>
+  );
+}
+
+/** The budget card: what is left of the limit, or, with none set, the daily rate. */
+function BudgetCard({
+  s,
+  period,
+  limit,
+  editing,
+  onEdit,
+}: {
+  s: PeriodSummary;
+  period: Period;
+  limit: number | undefined;
+  editing: boolean;
+  onEdit(): void;
+}) {
+  // The year's limit is twelve months of the monthly one, measured over the days elapsed.
+  const days = s.months.reduce((t, m) => t + daysInMonth(m.month), 0);
+  const elapsed = s.months.reduce((t, m) => t + m.daysElapsed, 0);
+  const line =
+    limit === undefined
+      ? undefined
+      : budgetLine(limit * (period.kind === "month" ? 1 : 12), s.spent, elapsed, days);
+  const toGo = days - elapsed;
+  const tone =
+    line === undefined ? "" : line.share >= 1 ? " out" : line.share >= 0.8 ? " warn" : " in";
+  return (
+    <section className="panel m-stat ov-kpi" aria-label="Budget left">
+      <span className="m-label">
+        Budget left
+        <button type="button" className="link ov-edit" aria-expanded={editing} onClick={onEdit}>
+          {line ? "Edit" : "Set"}
+        </button>
+      </span>
+      <span className={`m-big num${tone}`}>
+        {line === undefined
+          ? "—"
+          : line.left >= 0
+            ? formatMoney(line.left)
+            : `${formatMoney(-line.left)} over`}
+      </span>
+      {line && (
+        <span className={`m-meter${tone}`} aria-hidden="true">
+          <span style={{ width: `${Math.min(line.share, 1) * 100}%` }} />
+        </span>
+      )}
+      <span className="m-note">
+        {line
+          ? `${percent(line.spent, line.limit)} of ${formatMoney(line.limit)}${
+              elapsed > 0 && toGo > 0 ? ` · ${toGo} ${toGo === 1 ? "day" : "days"} to go` : ""
+            }`
+          : `No limit set${elapsed > 0 ? ` · ${formatMoney(Math.round(s.spent / elapsed))} a day` : ""}`}
+      </span>
+    </section>
+  );
+}
+
+/** The month as a calendar shaded by each day's spending; days to come are outlined. */
+function DayHeat({ s, month, today }: { s: PeriodSummary; month: string; today: string }) {
+  const values = s.months[0]?.byDay ?? [];
+  const max = Math.max(0, ...values);
+  const peak = values.indexOf(max);
+  const dayOf = (i: number) => `${month}-${String(i + 1).padStart(2, "0")}`;
+  return (
+    <section className="panel ov-panel" aria-label="Day by day">
+      <header className="ov-head">
+        <h2 className="ov-h">Day by day</h2>
+        {max > 0 && (
+          <span className="m-note num">
+            Peak {shortDay(dayOf(peak))} · {formatMoney(max)}
+          </span>
+        )}
+      </header>
+      <div className="ov-week" aria-hidden="true">
+        {WEEKDAYS.map((d, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: weekdays are positional
+          <span key={i}>{d}</span>
+        ))}
+      </div>
+      <div className="ov-heat" role="img" aria-label={`Spending per day in ${monthName(month)}`}>
+        {monthGrid(month)
+          .flat()
+          .map((day, i) => {
+            // biome-ignore lint/suspicious/noArrayIndexKey: the padding before and after the month is positional
+            if (!day) return <span key={`pad-${i}`} className="ov-cell pad" />;
+            const v = values[Number(day.slice(8)) - 1] ?? 0;
+            const state = day === today ? " today" : day > today ? " later" : "";
+            return (
+              <span
+                key={day}
+                className={`ov-cell h${heatLevel(v, max)}${state}`}
+                title={`${shortDay(day)}: ${formatMoney(v)}`}
+              >
+                {Number(day.slice(8))}
+              </span>
+            );
+          })}
+      </div>
+      <HeatKey />
+    </section>
+  );
+}
+
+/** A year as twelve months shaded by spending, so a heavy month stands out at a glance. */
+function MonthHeat({ s, year }: { s: PeriodSummary; year: string }) {
+  const max = Math.max(0, ...s.months.map((m) => m.spent));
+  const peak = s.months.find((m) => m.spent === max && max > 0);
+  return (
+    <section className="panel ov-panel" aria-label="Month by month">
+      <header className="ov-head">
+        <h2 className="ov-h">Month by month</h2>
+        {peak && (
+          <span className="m-note num">
+            Peak {monthShort(peak.month)} · {formatMoney(peak.spent)}
+          </span>
+        )}
+      </header>
+      <div className="ov-heat months" role="img" aria-label={`Spending per month in ${year}`}>
+        {s.months.map((m) => (
+          <span
+            key={m.month}
+            className={`ov-cell h${heatLevel(m.spent, max)}${m.daysElapsed === 0 ? " later" : ""}`}
+            title={`${monthName(m.month)}: ${formatMoney(m.spent)}`}
+          >
+            <b>{monthShort(m.month)}</b>
+            <span className="num">{m.spent > 0 ? formatMoney(m.spent) : "—"}</span>
+          </span>
+        ))}
+      </div>
+      <HeatKey />
+    </section>
+  );
+}
+
+function HeatKey() {
+  return (
+    <div className="ov-key m-note" aria-hidden="true">
+      Less
+      {[0, 1, 2, 3].map((h) => (
+        <span key={h} className={`ov-cell h${h}`} />
+      ))}
+      More
+    </div>
+  );
+}
+
+/**
+ * Money → Overview (M14): a month or a year as four numbers (spent, come in, saved, budget
+ * left), where it went beside the days (or months) shaded by spending, and twelve months
+ * stacked by category underneath. A category opens Transactions for the same period.
+ */
+export function MoneyDashboard({ collection, items }: ViewProps) {
   const today = useToday();
   const db = useCave().local.db;
-  const collections = useCollections(db);
   const budget = budgetOf(useDoc(db, "settings")?.data);
   const [editingBudget, setEditingBudget] = useState(false);
-  const search = useSearch();
-  const filter = useMemo(() => filterFromSearch(search), [search]);
-  const [period, setPeriod] = useState<{ kind: Kind; key: string }>(() => ({
+  const [period, setPeriod] = useState<Period>(() => ({
     kind: "month",
     key: currentPeriod("month", today),
   }));
   const category = collection.data.fields.find((f) => f.id === "category");
   const transfers = useMemo(() => transferCategories(category), [category]);
-  const filtered = useMemo(() => filterEntries(items, filter), [items, filter]);
   const s = useMemo(
-    () => periodSummary(filtered, period, today, transfers),
-    [filtered, period, today, transfers],
+    () => periodSummary(items, period, today, transfers),
+    [items, period, today, transfers],
   );
+  const before = previousPeriod(period);
   const prev = useMemo(
-    () => periodSummary(filtered, previousPeriod(period), today, transfers),
-    [filtered, period, today, transfers],
+    () => periodSummary(items, previousPeriod(period), today, transfers),
+    [items, period, today, transfers],
   );
   const endMonth = period.kind === "month" ? period.key : `${period.key}-12`;
-  const trend = useMemo(
-    () => lastTwelve(filtered, endMonth, today, transfers),
-    [filtered, endMonth, today, transfers],
-  );
   const stacked = useMemo(
-    () => stackedTwelve(filtered, endMonth, today, transfers),
-    [filtered, endMonth, today, transfers],
+    () => stackedTwelve(items, endMonth, today, transfers),
+    [items, endMonth, today, transfers],
   );
   const undated = useMemo(() => undatedSummary(items), [items]);
-  const labelOf = (value: string | null) => {
-    if (value === null) return "Uncategorized";
-    const o = category?.options?.find((x) => x.value === value);
-    return o ? optionText(o) : value;
+  const optionOf = (value: string | null): SelectOption | undefined =>
+    category?.options?.find((o) => o.value === value);
+  const nameOf = (value: string | null) => {
+    if (value === null) return "To review";
+    const o = optionOf(value);
+    return o ? o.label || o.value : value;
   };
+  const emojiOf = (value: string | null) =>
+    value === null ? "❔" : (optionOf(value)?.emoji ?? "•");
   const colorOf = (value: string | null) =>
-    category?.options?.find((o) => o.value === value)?.color ?? "var(--muted)";
-  const invested = (p: PeriodSummary) =>
-    p.months.reduce(
-      (t, m) =>
-        t + m.transfers.filter((e) => e.category === INVESTMENT).reduce((a, e) => a + e.amount, 0),
-      0,
-    );
-  const saved = (p: PeriodSummary) => p.income - p.spent;
-  // The year's limit is twelve months of the monthly one, measured over the days elapsed.
-  const line =
-    budget.monthlyLimit === undefined
-      ? undefined
-      : budgetLine(
-          budget.monthlyLimit * (period.kind === "month" ? 1 : 12),
-          s.spent,
-          s.months.reduce((t, m) => t + m.daysElapsed, 0),
-          s.months.reduce((t, m) => t + daysInMonth(m.month), 0),
-        );
-  const target =
-    budget.savingTarget === undefined
-      ? undefined
-      : budget.savingTarget * (period.kind === "month" ? 1 : 12);
-  const titles = topTitles(s.expenses, 5);
+    value === null ? "var(--warn)" : (optionOf(value)?.color ?? "var(--muted)");
+  const beforeName = period.kind === "month" ? monthLong(before.key) : before.key;
+  const saved = s.income - s.spent;
   const step = (by: -1 | 1) =>
-    setPeriod((p) =>
-      p.kind === "month"
-        ? { ...p, key: shiftMonth(p.key, by) }
-        : { ...p, key: String(Number(p.key) + by) },
-    );
-  const active = Object.keys(filter).length;
-  const sole = soleAccount(collections);
-  const accounts = sole
-    ? []
-    : [...new Set(items.map((d) => d.data.account).filter((a) => typeof a === "string" && a))]
-        .map(String)
-        .sort();
-  const before = period.kind === "month" ? "last month" : "last year";
-  const vs = (now: number, was: number) => `${changeText(now, was)} vs ${before}`;
-  const days = s.months[0]?.byDay ?? [];
-  const peak = days.indexOf(Math.max(...days));
-  const dayOf = (i: number) => `${period.key}-${String(i + 1).padStart(2, "0")}`;
-  const monthLink = (c: string | null) =>
-    `/money/transactions?${new URLSearchParams({
-      ...(period.kind === "month" ? { month: period.key } : { month: "all" }),
-      ...(c === null ? { chip: "uncategorized" } : { category: c }),
-    }).toString()}`;
+    setPeriod((p) => ({
+      ...p,
+      key: p.kind === "month" ? shiftMonth(p.key, by) : String(Number(p.key) + by),
+    }));
+  const unit = period.kind;
+  const series = [
+    ...stacked.categories.map((c) => ({ name: `${emojiOf(c)} ${nameOf(c)}`, color: colorOf(c) })),
+    ...(stacked.other ? [{ name: "Other", color: "var(--muted)" }] : []),
+  ];
+  const tallest = Math.max(0, ...stacked.months.map((m) => m.total));
+  const where = s.byCategory.slice(0, WHERE_ROWS);
+  const rest = s.byCategory.length - where.length;
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <header className="period-bar">
-        <fieldset className="quick-row" style={{ border: 0, padding: 0, margin: 0 }}>
+    <div className="ov-page">
+      <div className="m-scope">
+        <fieldset className="m-seg">
           <legend className="sr">Period</legend>
           {(["month", "year"] as const).map((k) => (
             <button
               key={k}
               type="button"
-              className={`btn${period.kind === k ? " primary" : ""}`}
               aria-pressed={period.kind === k}
               onClick={() => setPeriod({ kind: k, key: currentPeriod(k, today) })}
             >
@@ -149,31 +277,27 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
         </fieldset>
         <button
           type="button"
-          className="btn"
-          aria-label={`Previous ${period.kind}`}
+          className="icon-btn"
+          aria-label={`Previous ${unit}`}
           onClick={() => step(-1)}
         >
-          <Icon name="chevron-left" size={15} />
+          <Icon name="chevron-left" size={16} />
         </button>
-        <h2 style={{ margin: 0, fontSize: 18 }}>{periodLabel(period)}</h2>
+        <h2 className="m-scope-label">
+          {period.kind === "month" ? monthName(period.key) : period.key}
+        </h2>
         <button
           type="button"
-          className="btn"
-          aria-label={`Next ${period.kind}`}
+          className="icon-btn"
+          aria-label={`Next ${unit}`}
           onClick={() => step(1)}
         >
-          <Icon name="chevron-right" size={15} />
+          <Icon name="chevron-right" size={16} />
         </button>
-        <Filters
-          filter={filter}
-          active={active}
-          categories={category?.options ?? []}
-          accounts={accounts}
-        />
-      </header>
+      </div>
 
       {(s.incomplete > 0 || undated.count > 0) && (
-        <p role="status" className="panel banner" style={{ margin: 0 }}>
+        <p role="status" className="panel banner ov-banner">
           {s.incomplete > 0 &&
             `${s.incomplete} entr${s.incomplete === 1 ? "y has" : "ies have"} no amount or direction and ${s.incomplete === 1 ? "is" : "are"} not in these totals. `}
           {undated.count > 0 &&
@@ -182,394 +306,142 @@ export function MoneyDashboard({ collection, items, open }: ViewProps) {
         </p>
       )}
 
-      <div className="tiles">
-        <Tile
-          label="Spent"
-          value={signedMoney(s.spent, "expense")}
-          note={`${vs(s.spent, prev.spent)} · ${s.spentCount} entries`}
-          tone="var(--expense)"
-          trend={{ values: trend.map((p) => p.spent), label: "Spent per month, 12 months" }}
-        />
-        <Tile
-          label="Income"
-          value={signedMoney(s.income, "income")}
-          note={`${vs(s.income, prev.income)} · ${s.incomeCount} entries`}
-          tone="var(--income)"
-          trend={{ values: trend.map((p) => p.income), label: "Income per month, 12 months" }}
-        />
-        <Tile
-          label="Saved"
-          value={signedMoney(saved(s), saved(s) >= 0 ? "income" : "expense")}
-          note={
-            s.income > 0
-              ? `${percent(Math.max(saved(s), 0), s.income)} of income · ${vs(saved(s), saved(prev))}${
-                  target === undefined ? "" : ` · target ${formatMoney(target)}`
-                }`
-              : "no income in this period"
-          }
-          tone={
-            saved(s) < 0 || (target !== undefined && saved(s) < target)
-              ? "var(--expense)"
-              : "var(--accent)"
-          }
-          trend={{
-            values: trend.map((p) => Math.max(p.income - p.spent, 0)),
-            label: "Saved per month, 12 months",
-          }}
-        />
-        <Tile
-          label="Invested"
-          value={formatMoney(invested(s))}
-          note={`${vs(invested(s), invested(prev))} · ${formatMoney(s.transferred)} moved in all`}
-          tone="var(--cyan)"
-          trend={{
-            values: trend.map((p) => p.transferred),
-            label: "Transfers per month, 12 months",
-          }}
-        />
-        <Tile
-          label="Budget"
-          value={
-            line === undefined
-              ? "—"
-              : line.left >= 0
-                ? `${formatMoney(line.left)} left`
-                : `${formatMoney(-line.left)} over`
-          }
-          note={
-            line === undefined
-              ? "Set a monthly limit"
-              : `${formatMoney(line.spent)} of ${formatMoney(line.limit)}${
-                  line.pace === undefined ? "" : ` · at this rate ${formatMoney(line.pace)}`
-                }`
-          }
-          tone={
-            line === undefined
-              ? undefined
-              : line.share >= 1
-                ? "var(--expense)"
-                : line.share >= 0.8
-                  ? "var(--warn)"
-                  : "var(--accent)"
-          }
-          action={
-            <button
-              type="button"
-              className="link"
-              aria-expanded={editingBudget}
-              onClick={() => setEditingBudget(!editingBudget)}
-            >
-              Edit
-            </button>
-          }
+      <div className="ov-kpis">
+        <section className="panel m-stat ov-kpi" aria-label="Spent">
+          <span className="m-label">Spent</span>
+          <span className="m-big num out">{formatMoney(s.spent)}</span>
+          <span className="m-note">
+            <Versus now={s.spent} was={prev.spent} before={beforeName} good="down" />
+          </span>
+        </section>
+        <section className="panel m-stat ov-kpi" aria-label="Came in">
+          <span className="m-label">Came in</span>
+          <span className="m-big num in">{formatMoney(s.income)}</span>
+          <span className="m-note">
+            <Versus now={s.income} was={prev.income} before={beforeName} good="up" />
+          </span>
+        </section>
+        <section className="panel m-stat ov-kpi" aria-label="Saved">
+          <span className="m-label">Saved</span>
+          <span className={`m-big num${saved < 0 ? " out" : ""}`}>
+            {saved < 0 ? "−" : ""}
+            {formatMoney(Math.abs(saved))}
+          </span>
+          <span className="m-note">
+            {s.income > 0
+              ? `${percent(Math.max(saved, 0), s.income)} of what came in`
+              : "Nothing came in"}
+            {budget.savingTarget !== undefined &&
+              ` · target ${formatMoney(budget.savingTarget * (period.kind === "month" ? 1 : 12))}`}
+          </span>
+        </section>
+        <BudgetCard
+          s={s}
+          period={period}
+          limit={budget.monthlyLimit}
+          editing={editingBudget}
+          onEdit={() => setEditingBudget(!editingBudget)}
         />
       </div>
       {editingBudget && (
-        <section className="panel" aria-label="Budget settings" style={{ padding: 16 }}>
+        <section className="panel ov-budget" aria-label="Budget settings">
           <BudgetFields />
         </section>
       )}
 
-      <div className="split">
-        {period.kind === "month" ? (
-          <section
-            className="panel"
-            aria-label="Day by day"
-            style={{ padding: 16, display: "grid", gap: 10 }}
-          >
-            <span className="k">
-              Day by day
-              {s.spent > 0 && ` · peak ${shortDay(dayOf(peak))} ${formatMoney(days[peak] ?? 0)}`}
-              {s.months[0] && s.months[0].daysElapsed > 0
-                ? ` · ${formatMoney(Math.round(s.spent / s.months[0].daysElapsed))} a day`
-                : ""}
-            </span>
-            <DayStrip
-              values={days}
-              labels={days.map((v, i) => `${shortDay(dayOf(i))}: ${formatMoney(v)}`)}
-              label={`Spending per day in ${monthName(period.key)}`}
-              {...(period.key === today.slice(0, 7) ? { today: Number(today.slice(8)) - 1 } : {})}
-            />
-          </section>
-        ) : (
-          <YearTable s={s} />
-        )}
-        <section
-          className="panel"
-          aria-label="Where it went"
-          style={{ padding: 16, display: "grid", gap: 4 }}
-        >
-          <span className="k" style={{ paddingBottom: 6 }}>
-            Where it went · against {before}
-          </span>
-          {s.byCategory.length === 0 && <span className="muted">No spending in this period.</span>}
-          {s.byCategory.slice(0, 8).map(({ category: c, amount }) => {
-            const was = prev.byCategory.find((x) => x.category === c)?.amount ?? 0;
-            return (
-              <a key={c ?? "__untagged"} className="where-row" href={monthLink(c)}>
-                <span>{labelOf(c)}</span>
-                <span className="num muted" style={{ fontSize: 12 }}>
-                  {changeText(amount, was)}
-                </span>
-                <span className="num">
-                  {formatMoney(amount)} · {percent(amount, s.spent)}
-                </span>
-                <span className="bar-track" aria-hidden="true">
-                  <span
-                    className="bar-fill"
-                    style={{
-                      width: `${s.spent === 0 ? 0 : Math.max((amount / s.spent) * 100, 1)}%`,
-                      background: colorOf(c),
-                    }}
-                  />
-                </span>
-              </a>
-            );
-          })}
-        </section>
-      </div>
-
-      <div className="split">
-        <section
-          className="panel"
-          aria-label="Last 12 months"
-          style={{ padding: 16, display: "grid", gap: 10 }}
-        >
-          <span className="k">Last 12 months · by category</span>
-          <StackedColumns
-            label="Spending per month by category, last 12 months"
-            series={[
-              ...stacked.categories.map((c) => ({ name: labelOf(c), color: colorOf(c) })),
-              ...(stacked.other ? [{ name: "Other", color: "var(--muted)" }] : []),
-            ]}
-            slots={stacked.months.map((m) => ({
-              label: m.month.slice(5),
-              values: m.values,
-              total: m.total,
-            }))}
-          />
-        </section>
-        <section
-          className="panel"
-          aria-label="Top titles"
-          style={{ padding: 16, display: "grid", gap: 8 }}
-        >
-          <span className="k">Top titles</span>
-          {titles.length === 0 && <span className="muted">Nothing yet.</span>}
-          {titles.map((t) => (
-            <BarRow
-              key={t.title}
-              label={t.title}
-              value={`${formatMoney(t.amount)} · ${t.count}×`}
-              share={titles[0] ? t.amount / titles[0].amount : 0}
-              color="var(--expense)"
-            />
-          ))}
-          <span className="k" style={{ marginTop: 6 }}>
-            {period.kind === "year" ? "Biggest expenses of the year" : "Largest"}
-          </span>
-          <section aria-label="Largest" style={{ display: "grid", gap: 2 }}>
-            {s.expenses.slice(0, period.kind === "year" ? 8 : 5).map((e) => (
-              <button key={e.doc.id} type="button" className="entry" onClick={() => open(e.doc.id)}>
-                <span style={{ flex: 1, textAlign: "left" }}>
-                  {e.category === null && <span className="chip untagged">tag me</span>}{" "}
-                  {titleOf(e.doc)}
-                </span>
-                <span className="num muted" style={{ fontSize: 12 }}>
-                  {shortDay(e.day)}
-                </span>
-                <span className="num" style={{ color: "var(--expense)" }}>
-                  {signedMoney(e.amount, "expense")}
-                </span>
-              </button>
-            ))}
-          </section>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-/** The year as a table: each month's totals, the same numbers `money_month` gives. */
-function YearTable({ s }: { s: PeriodSummary }) {
-  return (
-    <section className="panel" aria-label="Months" style={{ padding: 4, overflowX: "auto" }}>
-      <table className="table month-table">
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Income</th>
-            <th>Spent</th>
-            <th>Net</th>
-            <th>Transfers</th>
-          </tr>
-        </thead>
-        <tbody>
-          {s.months.map((m) => (
-            <tr key={m.month}>
-              <td>{monthName(m.month)}</td>
-              <td className="num">{formatMoney(m.income)}</td>
-              <td className="num">{formatMoney(m.spent)}</td>
-              <td className="num">{signedMoney(m.net, m.net >= 0 ? "income" : "expense")}</td>
-              <td className="num">{formatMoney(m.transferred)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
-  );
-}
-
-/** Every filter writes the URL, so a filtered view can be bookmarked. */
-function Filters({
-  filter,
-  active,
-  categories,
-  accounts,
-}: {
-  filter: MoneyFilter;
-  active: number;
-  categories: SelectOption[];
-  accounts: string[];
-}) {
-  const set = (patch: { [K in keyof MoneyFilter]?: MoneyFilter[K] | undefined }) => {
-    const next = { ...filter, ...patch } as Record<string, unknown>;
-    for (const k of Object.keys(next)) {
-      const v = next[k];
-      if (v === undefined || v === "" || (Array.isArray(v) && v.length === 0)) delete next[k];
-    }
-    setSearch(filterToSearch(next as MoneyFilter));
-  };
-  const num = (v: string) => (v === "" ? undefined : Number(v));
-  const chosen = filter.categories ?? [];
-  const labelOf = (value: string) => {
-    const o = categories.find((x) => x.value === value);
-    return o ? optionText(o) : value;
-  };
-  return (
-    <details className="panel" style={{ marginLeft: "auto", position: "relative" }}>
-      <summary style={{ padding: "7px 12px", cursor: "pointer" }}>
-        Filters{active > 0 ? ` · ${active} on` : ""}
-      </summary>
-      <div className="money-filters filters-pop">
-        <label className="quick-field">
-          <span className="k">From</span>
-          <input
-            className="input"
-            type="date"
-            value={filter.from ?? ""}
-            onChange={(e) => set({ from: e.target.value })}
-          />
-        </label>
-        <label className="quick-field">
-          <span className="k">To</span>
-          <input
-            className="input"
-            type="date"
-            value={filter.to ?? ""}
-            onChange={(e) => set({ to: e.target.value })}
-          />
-        </label>
-        <label className="quick-field">
-          <span className="k">Direction</span>
-          <select
-            className="input"
-            value={filter.direction ?? ""}
-            onChange={(e) =>
-              set({ direction: (e.target.value || undefined) as MoneyFilter["direction"] })
-            }
-          >
-            <option value="">Both</option>
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
-        </label>
-        {accounts.length > 0 && (
-          <label className="quick-field">
-            <span className="k">Account</span>
-            <select
-              className="input"
-              value={filter.account ?? ""}
-              onChange={(e) => set({ account: e.target.value })}
+      <div className="ov-pair">
+        <section className="panel ov-panel" aria-label="Where it went">
+          <header className="ov-head">
+            <h2 className="ov-h">Where it went</h2>
+            <span className="m-note">vs {beforeName}</span>
+          </header>
+          {where.length === 0 && <p className="m-note">No spending in this period.</p>}
+          <div className="ov-where-list">
+            {where.map(({ category: c, amount }) => {
+              const was = prev.byCategory.find((x) => x.category === c)?.amount ?? 0;
+              const share = s.spent === 0 ? 0 : (amount / s.spent) * 100;
+              return (
+                <a
+                  key={c ?? "\u0000"}
+                  className="ov-where"
+                  href={whereLink(period, c)}
+                  style={tint(colorOf(c))}
+                >
+                  <MarkTile mark={emojiOf(c)} />
+                  <span className="ov-where-name">
+                    <span>{nameOf(c)}</span>
+                    <span className="m-meter" aria-hidden="true">
+                      <span style={{ width: `${Math.max(share, 1)}%` }} />
+                    </span>
+                  </span>
+                  <span className="num ov-amt">{formatMoney(amount)}</span>
+                  <span className="num m-note">{Math.round(share)}%</span>
+                  <span className="num m-note">{change(amount, was).text}</span>
+                </a>
+              );
+            })}
+          </div>
+          {rest > 0 && (
+            <a
+              className="m-note ov-more"
+              href={`/money/transactions?month=${period.key}&chip=expense`}
             >
-              <option value="">Any</option>
-              {accounts.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label className="quick-field">
-          <span className="k">Text</span>
-          <input
-            className="input"
-            value={filter.text ?? ""}
-            onChange={(e) => set({ text: e.target.value })}
-          />
-        </label>
-        <label className="quick-field">
-          <span className="k">Min amount</span>
-          <input
-            className="input"
-            type="number"
-            value={filter.min ?? ""}
-            onChange={(e) => set({ min: num(e.target.value) })}
-          />
-        </label>
-        <label className="quick-field">
-          <span className="k">Max amount</span>
-          <input
-            className="input"
-            type="number"
-            value={filter.max ?? ""}
-            onChange={(e) => set({ max: num(e.target.value) })}
-          />
-        </label>
-        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={filter.uncategorized === true}
-            onChange={(e) => set({ uncategorized: e.target.checked || undefined })}
-          />
-          Uncategorized only
-        </label>
-        <div className="quick-field" style={{ gridColumn: "1 / -1" }}>
-          <span className="k">Categories</span>
-          <OptionPicker
-            label="Add a category"
-            options={categories.filter((o) => !chosen.includes(o.value))}
-            value=""
-            onChange={(value) => {
-              if (value) set({ categories: [...chosen, value] });
-            }}
-            allowEmpty={false}
-            placeholder="Type to add"
-          />
-          {chosen.length > 0 && (
-            <ul className="chips" aria-label="Chosen categories">
-              {chosen.map((c) => (
-                <li key={c}>
-                  <button
-                    type="button"
-                    className="btn"
-                    aria-label={`Remove ${labelOf(c)}`}
-                    onClick={() => set({ categories: chosen.filter((x) => x !== c) })}
-                  >
-                    {labelOf(c)} ×
-                  </button>
-                </li>
-              ))}
-            </ul>
+              {rest} more in Transactions
+            </a>
           )}
-        </div>
-        {active > 0 && (
-          <button type="button" className="btn" onClick={() => setSearch("")}>
-            Clear filters
-          </button>
+        </section>
+        {period.kind === "month" ? (
+          <DayHeat s={s} month={period.key} today={today} />
+        ) : (
+          <MonthHeat s={s} year={period.key} />
         )}
       </div>
-    </details>
+
+      <section className="panel ov-panel" aria-label="Last 12 months">
+        <header className="ov-head">
+          <h2 className="ov-h">
+            {period.kind === "year" ? `${period.key} by month` : "Last 12 months"}
+          </h2>
+          <div className="ov-legend m-note" aria-hidden="true">
+            {series.map((x) => (
+              <span key={x.name}>
+                <i style={{ background: x.color }} />
+                {x.name}
+              </span>
+            ))}
+          </div>
+        </header>
+        <div
+          className="ov-stack"
+          role="img"
+          aria-label="Spending per month by category, last 12 months"
+        >
+          {stacked.months.map((m) => (
+            <div
+              key={m.month}
+              className={`ov-col${period.kind === "month" && m.month === endMonth ? " now" : ""}`}
+            >
+              <div className="ov-track">
+                <div
+                  className="ov-bars"
+                  title={`${monthName(m.month)}: ${formatMoney(m.total)}`}
+                  style={{ height: tallest === 0 ? 0 : `${(m.total / tallest) * 100}%` }}
+                >
+                  {m.values.map((v, i) => (
+                    <span
+                      // biome-ignore lint/suspicious/noArrayIndexKey: the series is positional
+                      key={i}
+                      title={`${series[i]?.name}: ${formatMoney(v)}`}
+                      style={{ flexGrow: v, background: series[i]?.color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <span className="m-note">{monthShort(m.month)}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

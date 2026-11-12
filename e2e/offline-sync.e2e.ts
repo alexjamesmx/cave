@@ -26,7 +26,7 @@ test("an entry added offline syncs after reconnect and shows on a second device"
   const other = await phone.newPage();
   await other.goto("/c/money/table");
   await expect(other.getByRole("button", { name: "e2e tacos" })).toBeVisible();
-  await expect(other.getByRole("row", { name: /e2e tacos/ })).toContainText("$205");
+  await expect(other.getByRole("listitem").filter({ hasText: "e2e tacos" })).toContainText("$205");
 
   expect(foreign).toEqual([]);
   await laptop.close();

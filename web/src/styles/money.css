@@ -1,1 +1,1386 @@
 /* Money (M14): this area's own styles, loaded after styles.css. */
+
+/* An emoji tile draws its emoji from data-emoji, so the emoji never joins an element's name. */
+.emoji-tile[data-emoji]::before {
+  content: attr(data-emoji);
+}
+
+/* The tab's entrance holds its last frame (`both`), an identity transform that would make the
+   tab the containing block of every fixed sheet and drawer inside it; without the fill they
+   stay on the viewport. */
+.tab-body:has(> .tx-page, > .ov-page, > .ms-page, > .mc-page) {
+  animation-fill-mode: backwards;
+}
+
+.tx-page,
+.ov-page,
+.ms-page,
+.mc-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* What the money did: in green, out coral, between own accounts teal. */
+:where(.tx-page, .ov-page, .ms-page) .in {
+  color: var(--ok);
+}
+
+:where(.tx-page, .ov-page, .ms-page) .out {
+  color: var(--bad);
+}
+
+:where(.tx-page, .ov-page, .ms-page) .warn {
+  color: var(--warn);
+}
+
+:where(.tx-page, .ov-page, .ms-page) .move {
+  color: var(--teal);
+}
+
+/* The scope: Month or Year, then ‹ the period ›. */
+.m-scope {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.m-scope-label {
+  margin: 0;
+  min-width: 150px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.m-scope .icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.m-seg {
+  display: inline-flex;
+  margin: 0 8px 0 0;
+  padding: 3px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.m-seg button {
+  height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9aa1ad;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.m-seg button[aria-pressed="true"] {
+  background: var(--s-green);
+  color: #06281b;
+  font-weight: 600;
+}
+
+/* A number card: a label, the figure, a line under it. */
+.m-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px 18px;
+}
+
+.m-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9aa1ad;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.m-big {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-note {
+  color: #7d8592;
+  font-size: 12.5px;
+}
+
+.m-split,
+.m-meter {
+  display: flex;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.m-split .out {
+  background: var(--bad);
+}
+
+.m-split .in {
+  background: var(--ok);
+}
+
+.m-meter span {
+  border-radius: 99px;
+  background: var(--c, var(--ok));
+}
+
+.m-meter.in {
+  --c: var(--ok);
+}
+
+.m-meter.warn {
+  --c: var(--warn);
+}
+
+.m-meter.out {
+  --c: var(--bad);
+}
+
+.btn.m-danger {
+  border-color: #ff6b78;
+  background: #ff6b78;
+  color: #2a0a0e;
+}
+
+/* Transactions: the summary, the tools, and the entries by day on one grid. */
+.tx-sum {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tx-sum > .m-stat,
+.ms-totals > .m-stat {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.tx-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tx-search {
+  flex: 1 1 320px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: #7d8592;
+}
+
+.tx-search:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.tx-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.tx-chips {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.tx-list {
+  overflow: hidden;
+  padding-bottom: 4px;
+}
+
+.tx-day ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tx-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 18px 8px;
+  color: #9aa1ad;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tx-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 190px 150px 120px;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  border-top: 1px solid #1d2026;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.tx-row:hover {
+  background: #1a1c21;
+}
+
+.tx-row.review {
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+
+.tx-row .emoji-tile {
+  --size: 38px;
+  border-radius: 12px;
+}
+
+.tx-what {
+  min-width: 0;
+}
+
+.tx-title {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.tx-sub {
+  color: #7d8592;
+  font-size: 12.5px;
+}
+
+.tx-line,
+.tx-when-phone {
+  display: none;
+}
+
+.tx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 15%, transparent);
+  color: var(--c);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-chip.archived {
+  opacity: 0.55;
+}
+
+.tx-pick {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px dashed var(--warn);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--warn);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tx-pick-open {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tx-pick-open .input {
+  height: 32px;
+}
+
+.tx-set-date {
+  display: flex;
+  gap: 6px;
+}
+
+.tx-set-date .input,
+.tx-set-date .btn {
+  height: 30px;
+}
+
+.tx-acct {
+  overflow: hidden;
+  color: #aeb4be;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-warn {
+  color: var(--warn);
+}
+
+.tx-amt {
+  text-align: right;
+  font-weight: 600;
+}
+
+.tx-foot {
+  margin: 0;
+  padding: 12px 18px 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tx-saved {
+  margin: 0;
+  min-height: 20px;
+}
+
+/* Overview: four numbers, the pair of panels, twelve months. */
+.ov-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ov-kpi {
+  padding: 18px 20px;
+}
+
+.ov-kpi .m-big {
+  font-size: 28px;
+}
+
+.m-label .ov-edit {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 12.5px;
+}
+
+.ov-budget {
+  padding: 16px;
+}
+
+.ov-banner {
+  margin: 0;
+}
+
+.ov-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.ov-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px 20px;
+}
+
+.ov-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ov-h {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ov-where-list {
+  display: grid;
+  gap: 2px;
+}
+
+.ov-where {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 96px 44px 64px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.ov-where:hover {
+  background: #1a1c21;
+}
+
+.ov-where .emoji-tile {
+  --size: 32px;
+  border-radius: 10px;
+}
+
+.ov-where-name {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.ov-where-name > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-where .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ov-amt {
+  font-weight: 600;
+}
+
+.ov-more {
+  align-self: flex-start;
+}
+
+.ov-week,
+.ov-heat {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ov-week span {
+  color: #7d8592;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* The calendar stretches to the panel beside it, so the pair ends level. */
+.ov-heat {
+  flex: 1;
+  grid-auto-rows: minmax(34px, 1fr);
+}
+
+.ov-heat.months {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(54px, 1fr);
+}
+
+.ov-cell {
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--on);
+  color: #c3c8d1;
+  font-size: 12px;
+}
+
+.ov-cell.h1 {
+  background: color-mix(in srgb, var(--bad) 25%, transparent);
+}
+
+.ov-cell.h2 {
+  background: color-mix(in srgb, var(--bad) 55%, transparent);
+}
+
+.ov-cell.h3 {
+  background: var(--bad);
+  color: #2a0a0e;
+}
+
+.ov-cell.pad {
+  background: transparent;
+}
+
+.ov-cell.later {
+  background: transparent;
+  outline: 1px dashed var(--control-border);
+  outline-offset: -1px;
+  color: #4b515c;
+}
+
+.ov-cell.today {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+.ov-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-key .ov-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.ov-heat.months .ov-cell {
+  align-content: center;
+  gap: 2px;
+}
+
+.ov-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.ov-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+.ov-stack {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: 100%;
+  gap: 14px;
+  height: 190px;
+}
+
+.ov-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  text-align: center;
+}
+
+.ov-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+}
+
+.ov-bars {
+  display: flex;
+  flex-direction: column-reverse;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 8px;
+  overflow: hidden;
+  opacity: 0.85;
+}
+
+.ov-bars span {
+  flex-basis: 0;
+  min-height: 0;
+}
+
+.ov-col.now .ov-bars {
+  opacity: 1;
+}
+
+/* Categories: one list at a time, each option on one grid. */
+.mc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mc-n {
+  color: #7d8592;
+  font-size: 12px;
+}
+
+.pill[aria-pressed="true"] .mc-n {
+  color: #5f6672;
+}
+
+.mc-list {
+  max-width: 880px;
+}
+
+.mc-delete-head {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.mc-delete-head .emoji-tile {
+  --size: 36px;
+}
+
+.mc-move {
+  display: grid;
+  gap: 10px;
+  color: #c3c8d1;
+}
+
+.mc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.opt-editor ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.opt-row {
+  display: grid;
+  grid-template-columns: 20px 40px minmax(0, 1fr) 44px 120px 44px;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 16px;
+}
+
+li.opt-row,
+.opt-add {
+  border-top: 1px solid #1d2026;
+}
+
+li.opt-row:hover {
+  background: #1a1c21;
+}
+
+li.opt-row.dragging {
+  opacity: 0.5;
+}
+
+.opt-head {
+  padding-top: 12px;
+  padding-bottom: 10px;
+  color: #7d8592;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.opt-handle {
+  width: 20px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #4b515c;
+  letter-spacing: -2px;
+  cursor: grab;
+}
+
+.opt-pop-root {
+  position: relative;
+  display: inline-grid;
+}
+
+.opt-pop-root .opt-emoji {
+  --size: 40px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.opt-pop-root .opt-emoji.dashed {
+  border: 1px dashed #3a3f48;
+  background: transparent;
+}
+
+.opt-name {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.opt-name:hover,
+.opt-name.boxed {
+  border-color: var(--control-border);
+}
+
+.opt-name:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.opt-dot {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 1px var(--control-border);
+  cursor: pointer;
+}
+
+.opt-count {
+  color: #7d8592;
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.opt-del {
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.opt-del:hover {
+  border-color: #3a2a2d;
+  color: var(--bad);
+}
+
+.opt-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  min-width: 220px;
+  padding: 12px;
+  box-shadow: var(--shadow-pop);
+}
+
+.opt-colours {
+  width: 268px;
+}
+
+.opt-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.opt-swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c);
+  cursor: pointer;
+}
+
+.opt-swatch[aria-pressed="true"] {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.opt-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.opt-add-btn {
+  grid-column: 5 / 7;
+  justify-self: end;
+}
+
+.opt-error {
+  padding: 0 16px 10px;
+}
+
+.opt-archived {
+  padding: 10px 16px 12px;
+  border-top: 1px solid #1d2026;
+}
+
+.opt-archived summary {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.opt-archived ul {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.opt-archived-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opt-archived-row .emoji-tile {
+  --size: 30px;
+}
+
+.opt-archived-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+}
+
+/* Subscriptions: the plan in four numbers, then a card per subscription. */
+.ms-totals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ms-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+.ms-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 120px 170px 104px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ms-row + .ms-row {
+  border-top: 1px solid #1d2026;
+}
+
+.ms-row:hover {
+  background: #1a1c21;
+}
+
+.ms-row.paused {
+  opacity: 0.6;
+}
+
+.ms-row .emoji-tile {
+  --size: 40px;
+  border-radius: 13px;
+}
+
+.ms-what {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ms-name {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-cell {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.ms-cell .num {
+  font-weight: 600;
+}
+
+.ms-act {
+  justify-self: end;
+}
+
+.ms-empty {
+  padding: 14px 18px;
+}
+
+/* The money form: amount first, then direction, category, account and when. */
+.money-form {
+  --tone: var(--bad);
+  --on-tone: #2a0a0e;
+  display: grid;
+  gap: 16px;
+  text-align: left;
+}
+
+.money-form.income {
+  --tone: var(--ok);
+  --on-tone: #06281b;
+}
+
+.mf-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--bg);
+}
+
+.mf-seg button {
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #9aa1ad;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mf-seg button[aria-pressed="true"] {
+  background: var(--tone);
+  color: var(--on-tone);
+}
+
+.mf-amount {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.mf-amount label {
+  color: #7d8592;
+  font-size: 12.5px;
+}
+
+.mf-figure {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 100%;
+  color: var(--tone);
+}
+
+.mf-figure span {
+  font-family: var(--font-head);
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.mf-figure input {
+  min-width: 1ch;
+  max-width: calc(100% - 40px);
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-head);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mf-figure input::placeholder {
+  color: color-mix(in srgb, var(--tone) 40%, transparent);
+}
+
+.money-form .mf-title {
+  width: 100%;
+  height: 40px;
+  margin-top: 4px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.mf-block {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mf-block legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+/* Four tiles a row on a phone; one row of eight on a desktop, so the form fits its sheet. */
+.mf-cats {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mf-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 4px 8px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #c3c8d1;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mf-cat:hover {
+  background: var(--on);
+}
+
+.mf-cat[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  box-shadow: inset 0 0 0 2px var(--c);
+  color: var(--text);
+}
+
+.mf-cat .emoji-tile {
+  --size: 44px;
+  border-radius: 14px;
+  font-size: 22px;
+}
+
+.mf-cat-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mf-chips .pill {
+  height: 38px;
+}
+
+.mf-new-account {
+  flex: 1 1 140px;
+}
+
+.mf-save {
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--tone);
+  color: var(--on-tone);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease);
+}
+
+.mf-save:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.mf-save:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 767px) {
+  .m-scope {
+    gap: 6px;
+  }
+
+  .mf-cats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .m-scope-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .m-seg {
+    margin-right: 2px;
+  }
+
+  /* One card on a phone: what is left on top, in and out under the split. */
+  .tx-sum {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "left left" "in out";
+    gap: 8px 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--panel);
+  }
+
+  .tx-sum > .m-stat {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .tx-left {
+    grid-area: left;
+    align-items: center;
+    text-align: center;
+  }
+
+  .tx-left .m-big {
+    font-size: 32px;
+  }
+
+  .tx-left .m-split {
+    align-self: stretch;
+    margin-top: 4px;
+  }
+
+  .tx-in {
+    grid-area: in;
+  }
+
+  .tx-out {
+    grid-area: out;
+    align-items: flex-end;
+  }
+
+  .tx-in .m-big,
+  .tx-out .m-big {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .tx-in .m-note,
+  .tx-out .m-note {
+    display: none;
+  }
+
+  .tx-search {
+    flex-basis: 100%;
+  }
+
+  .tx-chips {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .tx-tools .tx-new {
+    display: none;
+  }
+
+  .tx-day-head {
+    padding: 14px 16px 4px;
+  }
+
+  .tx-row {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 10px 16px;
+    border-top: 0;
+  }
+
+  .tx-row .emoji-tile {
+    --size: 40px;
+    border-radius: 13px;
+  }
+
+  .tx-cat,
+  .tx-acct,
+  .tx-when {
+    display: none;
+  }
+
+  .tx-line {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tx-line:has(.tx-pick-open) {
+    overflow: visible;
+  }
+
+  .tx-line .tx-pick {
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-weight: 500;
+  }
+
+  .tx-amt {
+    display: grid;
+    justify-items: end;
+  }
+
+  .tx-when-phone {
+    display: block;
+    color: #7d8592;
+    font-size: 12.5px;
+    font-weight: 400;
+  }
+
+  .ov-kpis,
+  .ms-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .ov-kpi,
+  .ms-totals > .m-stat {
+    padding: 14px;
+  }
+
+  .ov-kpi .m-big,
+  .ms-totals .m-big {
+    font-size: 22px;
+  }
+
+  .ov-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ov-panel {
+    padding: 16px;
+  }
+
+  .ov-where {
+    grid-template-columns: 32px minmax(0, 1fr) 76px 36px;
+    gap: 10px;
+  }
+
+  .ov-where > :last-child {
+    display: none;
+  }
+
+  .ov-stack {
+    gap: 5px;
+    height: 150px;
+  }
+
+  .mc-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .opt-row {
+    grid-template-columns: 16px 36px minmax(0, 1fr) 28px 30px 36px;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .opt-head {
+    display: none;
+  }
+
+  .opt-pop-root .opt-emoji {
+    --size: 36px;
+  }
+
+  .opt-add-btn {
+    grid-column: 4 / 7;
+  }
+
+  .opt-colours {
+    right: 0;
+    left: auto;
+  }
+
+  .ms-row {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-areas: "tile what act" ". month spent";
+    gap: 6px 12px;
+    padding: 12px 14px;
+  }
+
+  .ms-row > .emoji-tile {
+    grid-area: tile;
+  }
+
+  .ms-what {
+    grid-area: what;
+  }
+
+  .ms-act {
+    grid-area: act;
+  }
+
+  .ms-month {
+    grid-area: month;
+    text-align: left;
+  }
+
+  .ms-spent {
+    grid-area: spent;
+  }
+}

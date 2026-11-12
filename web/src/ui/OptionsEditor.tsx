@@ -1,42 +1,204 @@
-import { useState } from "react";
-import { optionText } from "../../../shared/categories.ts";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import type { OptionKind, SelectOption } from "../../../shared/schema.ts";
-import {
-  addOption,
-  isHexColor,
-  moveOption,
-  patchOption,
-  SWATCHES,
-  setArchived,
-} from "../logic/options.ts";
+import { addOption, moveOption, patchOption, SWATCHES, setArchived } from "../logic/options.ts";
 import { Icon } from "./icon.tsx";
+import { OptionTile } from "./OptionTile.tsx";
+
+const KINDS: [OptionKind, string][] = [
+  ["expense", "Expense"],
+  ["income", "Income"],
+  ["transfer", "Transfer"],
+];
+
+const tint = (color: string) => ({ "--c": color }) as CSSProperties;
 
 /**
- * One select's options, as Money → Categories & accounts and the field editor show them. Values are fixed
- * once added (items store them); the name, emoji, colour and kind change freely. Options are
- * archived, never deleted, so items that hold one keep showing it.
+ * A popover's open state: a press outside closes it (after `onAway`, which may keep what was
+ * typed), Escape closes it as it is.
+ */
+function usePopover(onAway?: () => void) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLSpanElement>(null);
+  const away = useRef(onAway);
+  away.current = onAway;
+  useEffect(() => {
+    if (!open) return;
+    const press = (e: PointerEvent) => {
+      if (root.current?.contains(e.target as Node)) return;
+      away.current?.();
+      setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", press);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", press);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+  return { open, setOpen, root };
+}
+
+/** The option's emoji on its tile; a press opens a field to type or paste another. */
+function EmojiButton({
+  emoji,
+  fallback,
+  label,
+  field,
+  onChange,
+  dashed = false,
+}: {
+  emoji: string;
+  fallback: ReactNode;
+  label: string;
+  /** The field's accessible name. */
+  field: string;
+  onChange(emoji: string): void;
+  dashed?: boolean;
+}) {
+  const [text, setText] = useState(emoji);
+  const commit = () => {
+    if (text.trim() !== emoji) onChange(text.trim());
+  };
+  const { open, setOpen, root } = usePopover(commit);
+  return (
+    <span className="opt-pop-root" ref={root}>
+      <button
+        type="button"
+        className={`emoji-tile opt-emoji${dashed ? " dashed" : ""}`}
+        aria-label={label}
+        aria-expanded={open}
+        {...(emoji ? { "data-emoji": emoji } : {})}
+        onClick={() => {
+          if (open) commit();
+          else setText(emoji);
+          setOpen(!open);
+        }}
+      >
+        {!emoji && fallback}
+      </button>
+      {open && (
+        <span className="panel opt-pop">
+          <input
+            className="input"
+            aria-label={field}
+            placeholder="Type or paste an emoji"
+            value={text}
+            // biome-ignore lint/a11y/noAutofocus: the field is all the popover holds
+            autoFocus
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              commit();
+              setOpen(false);
+            }}
+          />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** The colour dot: a press opens the sixteen swatches, and the kind for a money category. */
+function ColourDot({
+  option,
+  kinds,
+  onChange,
+}: {
+  option: SelectOption;
+  kinds: boolean;
+  onChange(patch: Partial<SelectOption>): void;
+}) {
+  const { open, setOpen, root } = usePopover();
+  const label = `Colour for ${option.value}`;
+  return (
+    <span className="opt-pop-root" ref={root}>
+      <button
+        type="button"
+        className="opt-dot"
+        style={tint(option.color)}
+        aria-label={label}
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      />
+      {open && (
+        <span className="panel opt-pop opt-colours">
+          <fieldset className="opt-swatches" aria-label={label}>
+            {SWATCHES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className="opt-swatch"
+                style={tint(c)}
+                aria-label={c}
+                aria-pressed={c.toLowerCase() === option.color.toLowerCase()}
+                onClick={() => {
+                  onChange({ color: c });
+                  setOpen(false);
+                }}
+              />
+            ))}
+          </fieldset>
+          {kinds && (
+            <fieldset className="opt-kinds" aria-label={`Kind for ${option.value}`}>
+              {KINDS.map(([kind, name]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  className="pill"
+                  aria-pressed={option.kind === kind}
+                  onClick={() => {
+                    onChange({ kind });
+                    setOpen(false);
+                  }}
+                >
+                  {name}
+                </button>
+              ))}
+            </fieldset>
+          )}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/**
+ * One select's options, as Money → Categories and the field editor show them (M14): a row
+ * each on one fixed grid (drag handle, emoji, name, colour, entry count, delete), so the
+ * columns line up whatever the names. Values are fixed once added (items store them); the
+ * name, emoji, colour and kind change freely. With `onDelete` (Money's lists) 🗑 deletes for
+ * good, the caller moving the entries; without it 🗑 archives, as a generic list keeps its
+ * values. Options archived before stay in a closed group, to restore or delete.
  */
 export function OptionsEditor({
   name,
   options,
   kinds = false,
   section,
+  counts,
   onChange,
+  onDelete,
 }: {
-  /** The list's name, for labels: "Category", "Account". */
+  /** The list's name, for labels: "Expense category", "Account". */
   name: string;
   options: SelectOption[];
-  /** Whether options have a kind (money categories). */
+  /** Whether options have a kind (money categories), changed from the colour popover. */
   kinds?: boolean;
   /**
    * Show only the options of this kind (expense also takes the kindless ones); a new option is
-   * created with it. The kind picker still moves an option to another section.
+   * created with it.
    */
   section?: OptionKind;
+  /** How many items hold each value. */
+  counts?: ReadonlyMap<string, number>;
   /** Gets a change to apply to the options as stored now, so quick edits never undo each other. */
   onChange(update: (current: SelectOption[]) => SelectOption[]): void;
+  onDelete?(option: SelectOption): void;
 }) {
   const [draft, setDraft] = useState("");
+  const [draftEmoji, setDraftEmoji] = useState("");
   const [error, setError] = useState<string>();
   const [dragging, setDragging] = useState<string>();
   const inSection = (o: SelectOption) =>
@@ -46,233 +208,172 @@ export function OptionsEditor({
   const at = (list: SelectOption[], value: string) => list.findIndex((o) => o.value === value);
   const moveTo = (from: string, to: string) =>
     onChange((cur) => moveOption(cur, at(cur, from), at(cur, to)));
-  const move = (value: string, by: number) => {
-    const target = live[live.findIndex((o) => o.value === value) + by];
-    if (target) moveTo(value, target.value);
-  };
+  const patch = (value: string, p: Partial<SelectOption>) =>
+    onChange((cur) => patchOption(cur, value, p));
+  const count = (value: string) => (counts ? (counts.get(value) ?? 0) : undefined);
+  const lower = name.toLowerCase();
 
   return (
-    <div style={{ display: "grid", gap: 6 }}>
-      <ul aria-label={`${name} options`} style={{ margin: 0, padding: 0, display: "grid", gap: 6 }}>
+    <div className="opt-editor">
+      <div className="opt-row opt-head" aria-hidden="true">
+        <span />
+        <span>Icon</span>
+        <span>Name</span>
+        <span>Colour</span>
+        <span className="opt-count">{counts ? "Entries" : ""}</span>
+        <span />
+      </div>
+      <ul aria-label={`${name} options`}>
         {live.map((o, i) => (
           <li
             key={o.value}
+            className={`opt-row${dragging === o.value ? " dragging" : ""}`}
+            style={tint(o.color)}
             draggable
             onDragStart={() => setDragging(o.value)}
+            onDragEnd={() => setDragging(undefined)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => {
               if (dragging !== undefined) moveTo(dragging, o.value);
               setDragging(undefined);
             }}
-            className="option-row"
           >
-            <span className="option-grip" aria-hidden="true">
-              <Icon name="grip-vertical" size={14} />
-            </span>
-            <span
-              className="chip"
-              style={{ background: `${o.color}1f`, color: o.color, minWidth: 96 }}
-              title={`Stored as “${o.value}”`}
-            >
-              {!o.emoji && <Icon name={o.icon} size={13} />}
-              {optionText(o)}
-            </span>
-            <input
-              key={`emoji-${o.emoji ?? ""}`}
-              className="input"
-              aria-label={`Emoji for ${o.value}`}
-              defaultValue={o.emoji ?? ""}
-              placeholder="Emoji"
-              style={{ width: 56 }}
-              onBlur={(e) => {
-                const emoji = e.target.value.trim();
-                if (emoji !== (o.emoji ?? ""))
-                  onChange((cur) => patchOption(cur, o.value, { emoji }));
+            <button
+              type="button"
+              className="opt-handle"
+              aria-label={`Move ${o.value}`}
+              title="Drag, or use the arrow keys"
+              onKeyDown={(e) => {
+                const by = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+                const target = live[i + by];
+                if (!by || !target) return;
+                e.preventDefault();
+                moveTo(o.value, target.value);
               }}
+            >
+              ⋮⋮
+            </button>
+            <EmojiButton
+              emoji={o.emoji ?? ""}
+              fallback={<Icon name={o.icon} size={18} />}
+              label={`Change icon of ${o.value}`}
+              field={`Emoji for ${o.value}`}
+              onChange={(emoji) => patch(o.value, { emoji })}
             />
             <input
               key={`label-${o.label ?? ""}`}
-              className="input"
+              className="opt-name"
               aria-label={`Name for ${o.value}`}
               defaultValue={o.label ?? ""}
               placeholder={o.value}
-              style={{ flex: "1 1 120px", minWidth: 0 }}
               onBlur={(e) => {
                 const label = e.target.value.trim();
-                if (label !== (o.label ?? ""))
-                  onChange((cur) => patchOption(cur, o.value, { label }));
+                if (label !== (o.label ?? "")) patch(o.value, { label });
               }}
             />
-            {kinds && (
-              <select
-                className="input"
-                aria-label={`Kind for ${o.value}`}
-                value={o.kind ?? ""}
-                style={{ width: "auto" }}
-                onChange={(e) => {
-                  // Read now: the update runs after React has put the controlled select back
-                  // to the stored kind, so a read inside it would save the old value.
-                  const kind = (e.target.value || undefined) as OptionKind | undefined;
-                  onChange((cur) => patchOption(cur, o.value, { kind }));
-                }}
+            <ColourDot option={o} kinds={kinds} onChange={(p) => patch(o.value, p)} />
+            <span className="num opt-count">{count(o.value)}</span>
+            {onDelete ? (
+              <button
+                type="button"
+                className="opt-del"
+                aria-label={`Delete ${o.value}`}
+                onClick={() => onDelete(o)}
               >
-                <option value="">No kind</option>
-                <option value="expense">Expense</option>
-                <option value="income">Income</option>
-                <option value="transfer">Transfer</option>
-              </select>
+                🗑
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="opt-del"
+                aria-label={`Archive ${o.value}`}
+                onClick={() => onChange((cur) => setArchived(cur, o.value, true))}
+              >
+                <Icon name="archive" size={15} />
+              </button>
             )}
-            <ColorPicker
-              value={o.color}
-              label={`Colour for ${o.value}`}
-              onChange={(color) => onChange((cur) => patchOption(cur, o.value, { color }))}
-            />
-            <button
-              type="button"
-              className="btn"
-              aria-label={`Move ${o.value} up`}
-              disabled={i === 0}
-              onClick={() => move(o.value, -1)}
-            >
-              <Icon name="arrow-up" size={13} />
-            </button>
-            <button
-              type="button"
-              className="btn"
-              aria-label={`Move ${o.value} down`}
-              disabled={i === live.length - 1}
-              onClick={() => move(o.value, 1)}
-            >
-              <Icon name="arrow-down" size={13} />
-            </button>
-            <button
-              type="button"
-              className="btn"
-              aria-label={`Archive ${o.value}`}
-              onClick={() => onChange((cur) => setArchived(cur, o.value, true))}
-            >
-              <Icon name="archive" size={13} />
-            </button>
           </li>
         ))}
       </ul>
       <form
-        style={{ display: "flex", gap: 6, flexWrap: "wrap" }}
+        className="opt-row opt-add"
+        style={tint("var(--muted)")}
         onSubmit={(e) => {
           e.preventDefault();
           const result = addOption(options, draft);
           if ("error" in result) return setError(result.error);
+          const value = draft.trim();
+          const emoji = draftEmoji;
           setError(undefined);
           setDraft("");
+          setDraftEmoji("");
           onChange((cur) => {
-            const added = addOption(cur, draft);
+            const added = addOption(cur, value);
             if ("error" in added) return cur;
-            return section
-              ? patchOption(added.options, draft.trim(), { kind: section })
-              : added.options;
+            return patchOption(added.options, value, {
+              ...(section ? { kind: section } : {}),
+              ...(emoji ? { emoji } : {}),
+            });
           });
         }}
       >
+        <span />
+        <EmojiButton
+          emoji={draftEmoji}
+          fallback="+"
+          label={`Pick an icon for the new ${lower}`}
+          field={`Emoji for the new ${lower}`}
+          dashed
+          onChange={setDraftEmoji}
+        />
         <input
-          className="input"
-          aria-label={`New ${name.toLowerCase()} option`}
-          placeholder={`New ${name.toLowerCase()}`}
+          className="opt-name boxed"
+          aria-label={`New ${lower}`}
+          placeholder={`New ${lower}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          style={{ flex: "1 1 160px", minWidth: 0 }}
         />
-        <button type="submit" className="btn">
+        <button type="submit" className="btn primary opt-add-btn">
           Add
         </button>
-        {error && (
-          <span role="alert" className="error">
-            {error}
-          </span>
-        )}
       </form>
+      {error && (
+        <p role="alert" className="error opt-error">
+          {error}
+        </p>
+      )}
       {archived.length > 0 && (
-        <details>
-          <summary className="k">Archived ({archived.length})</summary>
-          <ul style={{ margin: "6px 0 0", padding: 0, display: "grid", gap: 6 }}>
+        <details className="opt-archived">
+          <summary>Archived ({archived.length})</summary>
+          <ul aria-label={`Archived ${lower} options`}>
             {archived.map((o) => (
-              <li key={o.value} className="option-row">
-                <span className="muted" style={{ flex: 1 }}>
-                  {optionText(o)}
-                </span>
+              <li key={o.value} className="opt-archived-row" style={tint(o.color)}>
+                <OptionTile option={o} />
+                <span className="opt-archived-name">{o.label || o.value}</span>
+                <span className="num m-note">{count(o.value)}</span>
                 <button
                   type="button"
                   className="btn"
+                  aria-label={`Restore ${o.value}`}
                   onClick={() => onChange((cur) => setArchived(cur, o.value, false))}
                 >
-                  Restore {o.value}
+                  Restore
                 </button>
+                {onDelete && (
+                  <button
+                    type="button"
+                    className="btn"
+                    aria-label={`Delete ${o.value}`}
+                    onClick={() => onDelete(o)}
+                  >
+                    Delete
+                  </button>
+                )}
               </li>
             ))}
           </ul>
         </details>
       )}
     </div>
-  );
-}
-
-/** A swatch palette that reads in light and dark, plus a #RRGGBB field for anything else. */
-function ColorPicker({
-  value,
-  label,
-  onChange,
-}: {
-  value: string;
-  label: string;
-  onChange(color: string): void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [hex, setHex] = useState(value);
-  return (
-    <span style={{ position: "relative" }}>
-      <button
-        type="button"
-        className="btn"
-        aria-label={label}
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-      >
-        <span className="swatch" style={{ background: value }} />
-      </button>
-      {open && (
-        <fieldset className="swatch-panel panel" aria-label={label}>
-          {SWATCHES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className="swatch-button"
-              aria-label={c}
-              aria-pressed={c.toLowerCase() === value.toLowerCase()}
-              onClick={() => {
-                onChange(c);
-                setHex(c);
-                setOpen(false);
-              }}
-            >
-              <span className="swatch" style={{ background: c }} />
-            </button>
-          ))}
-          <input
-            className="input"
-            aria-label={`${label} as hex`}
-            value={hex}
-            onChange={(e) => setHex(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && isHexColor(hex)) {
-                e.preventDefault();
-                onChange(hex.toUpperCase());
-                setOpen(false);
-              }
-            }}
-            aria-invalid={!isHexColor(hex)}
-            style={{ width: 96 }}
-          />
-        </fieldset>
-      )}
-    </span>
   );
 }
