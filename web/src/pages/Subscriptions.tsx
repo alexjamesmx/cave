@@ -14,6 +14,7 @@ import {
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone } from "../app/hooks.ts";
+import { oncePerKey } from "../app/once.ts";
 import { showToast } from "../app/toast.ts";
 import { formatMoney } from "../logic/format.ts";
 import { paidEntry } from "../logic/subscription-paid.ts";
@@ -67,6 +68,7 @@ export function Subscriptions() {
   const [chip, setChip] = useState<Chip>("active");
   const [open, setOpen] = useState<Doc | "new">();
   const [paying, setPaying] = useState<Doc>();
+  const [once] = useState(oncePerKey);
 
   const rows = useMemo(
     () =>
@@ -105,13 +107,15 @@ export function Subscriptions() {
       },
     });
   };
-  const paid = async (sub: Doc) => {
+  const paid = (sub: Doc) => {
     const date = localDateTime(new Date(), zone.timeZone);
     const entry = paidEntry(sub, listOf("category"), listOf("account"), date);
     if (!entry) return setPaying(sub);
-    const id = newId();
-    await local.write({ id, kind: "item", collection: "money" }, entry);
-    await moveOn(sub, id, entry.amount as number);
+    once(sub.id, async () => {
+      const id = newId();
+      await local.write({ id, kind: "item", collection: "money" }, entry);
+      await moveOn(sub, id, entry.amount as number);
+    });
   };
 
   return (
@@ -193,7 +197,7 @@ export function Subscriptions() {
               </span>
               <span className="ms-act">
                 {on && (
-                  <button type="button" className="btn" onClick={() => void paid(doc)}>
+                  <button type="button" className="btn" onClick={() => paid(doc)}>
                     <Icon name="check" size={15} /> Paid
                   </button>
                 )}

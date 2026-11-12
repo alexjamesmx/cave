@@ -1,4 +1,4 @@
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
 import { FieldValueError, offeredOptions } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
@@ -6,6 +6,7 @@ import { expenseFrom, PAYMENTS, paidPatch } from "../../../shared/payments.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone } from "../app/hooks.ts";
+import { oncePerKey } from "../app/once.ts";
 import { type Toast as SharedToast, showToast } from "../app/toast.ts";
 import { type AgendaItem, type AgendaType, COLLECTION_OF, donePatch } from "../logic/agenda.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
@@ -47,7 +48,7 @@ export function useAgendaActions(): {
   const zone = useReminderZone();
   const [editing, setEditing] = useState<Editing>();
   const [paying, setPaying] = useState<Doc>();
-  const busy = useRef(new Set<string>());
+  const [once] = useState(oncePerKey);
 
   const write = (collection: string, id: string, patch: Patch) =>
     local.write({ id, kind: "item", collection }, patch);
@@ -77,12 +78,9 @@ export function useAgendaActions(): {
   };
 
   const done = (it: AgendaItem) => {
-    // A second tap before the first write lands would log a second expense or skip a date.
-    if (busy.current.has(it.id)) return;
     const now = Date.now();
     const run = (task: () => Promise<Toast>) => {
-      busy.current.add(it.id);
-      void attempt(task).finally(() => busy.current.delete(it.id));
+      once(it.id, () => attempt(task));
     };
     if (it.type === "payment") {
       const money = collections?.find((c) => c.id === "money")?.data.fields;
