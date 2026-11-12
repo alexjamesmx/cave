@@ -1,10 +1,10 @@
 # Cave
 
-Local-first personal brain: money, tasks, habits, diary, ideas, notes. Every device holds a full offline copy; any agent reads and writes it through one MCP API. Repo: https://github.com/alexjamesmx/cave (public: no real data in it, ever).
+Local-first personal brain: money, tasks, calendar, habits, diary, notes and ideas. Every device holds a full offline copy; any agent reads and writes it through one MCP API. Repo: https://github.com/alexjamesmx/cave (public: no real data in it, ever).
 
 ## Status
 
-Pre-v0.1: M1 to M13 are on `main` and live at `https://cave.alexjamesmx.dev`; a push to `main` deploys within minutes. Laptop: WSL Ubuntu at `~/code/jarvis`. Update this line in the same change as what it describes.
+Pre-v0.1: M1 to M14 are on `main` and live at `https://cave.alexjamesmx.dev`; a push to `main` deploys within minutes. Laptop: WSL Ubuntu at `~/code/jarvis`. Update this line in the same change as what it describes.
 
 ## Read first
 
