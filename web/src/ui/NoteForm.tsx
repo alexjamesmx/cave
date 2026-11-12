@@ -3,16 +3,22 @@ import { newId } from "../../../shared/ids.ts";
 import { NOTES, normFolder } from "../../../shared/notes.ts";
 import { useCave } from "../app/context.ts";
 
-/** Creates a note in `folder` and returns its id. */
+/** Creates a note in `folder`, with its Markdown if any, in one write, and returns its id. */
 export async function createNote(
   local: ReturnType<typeof useCave>["local"],
   title: string,
   folder: string,
+  body = "",
 ): Promise<string> {
   const id = newId();
   await local.write(
     { id, kind: "item", collection: NOTES },
-    { _title: title, folder: normFolder(folder), source: "owner" },
+    {
+      _title: title,
+      ...(body ? { _body: body } : {}),
+      folder: normFolder(folder),
+      source: "owner",
+    },
   );
   return id;
 }
@@ -25,9 +31,7 @@ export function NoteForm({ onDone }: { onDone(message: string): void }) {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const id = await createNote(local, title.trim(), "");
-    if (text.trim())
-      await local.write({ id, kind: "item", collection: NOTES }, { _body: text.trim() });
+    await createNote(local, title.trim(), "", text.trim());
     onDone(`Saved · Note · ${title.trim()}`);
   };
   return (

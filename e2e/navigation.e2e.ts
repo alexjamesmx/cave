@@ -55,7 +55,7 @@ test("the sidebar shows five sections and Settings once; a tab survives a reload
     ["/settings/flows/flow-rent", /\/flows\/flow-rent$/],
     ["/ai/flows/flow-salary", /\/flows\/flow-salary$/],
     ["/ai/activity", /\/money\/overview$/],
-    ["/projects/ideas", /\/notes\/ideas$/],
+    ["/projects/ideas", /\/notes\/all\?topic=Ideas$/],
     ["/ideas/leetcode", /\/notes\/leetcode$/],
     ["/calendar/reminders", /\/calendar\/agenda$/],
     ["/system/jobs", /\/settings\/devices\/jobs$/],

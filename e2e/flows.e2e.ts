@@ -98,9 +98,9 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   const editor = page.getByRole("complementary", { name: "Step settings" });
   await canvas.getByRole("button", { name: /Trigger · On a schedule/ }).click();
   await editor.getByLabel("Type").selectOption({ label: "When an item is added" });
-  await editor.getByLabel("Collection").selectOption("ideas");
+  await editor.getByLabel("Collection").selectOption("notes");
   await expect(
-    canvas.getByRole("button", { name: /When an item is added to ideas/ }),
+    canvas.getByRole("button", { name: /When an item is added to notes/ }),
   ).toBeVisible();
 
   // The first step: create a task named after the note; the canvas draws the chain.
@@ -140,13 +140,14 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await expect(page.getByText("ON", { exact: true })).toBeVisible();
   const flowUrl = page.url();
 
-  // An idea arrives; the server runs the flow and the task appears.
+  // An idea arrives, a note in topic Ideas; the server runs the flow and the task appears.
   const note = `Canvas idea ${Date.now()}`;
-  await page.goto("/notes/ideas");
-  await page.getByLabel("New idea").fill(note);
-  await page.getByLabel("New idea").press("Enter");
-  // The list shows it once the write has committed; leaving earlier could lose the write.
-  await expect(page.getByRole("list", { name: "Ideas" })).toContainText(note);
+  await page.goto("/notes/all?topic=Ideas");
+  await page.getByLabel("Capture or search").fill(note);
+  await page.getByLabel("Capture or search").press("Enter");
+  // The card shows once the write has committed; leaving earlier could lose the write.
+  const idea = page.getByRole("link", { name: new RegExp(note) });
+  await expect(idea).toBeVisible();
   await expect(async () => {
     await page.goto("/tasks/list");
     await expect(page.getByText(`Read ${note}`)).toBeVisible({ timeout: 2_000 });
@@ -185,9 +186,9 @@ test("a flow built on the canvas from nothing runs when its item arrives, and Ru
   await page.getByRole("button", { name: `Read ${note}` }).click();
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("button", { name: `Read ${note}` })).toHaveCount(0);
-  await page.goto("/notes/ideas");
-  const ideas = page.getByRole("list", { name: "Ideas" });
-  await ideas.getByRole("button", { name: note, exact: true }).click();
+  await page.goto("/notes/all?topic=Ideas");
+  await idea.click();
   await page.getByRole("button", { name: "Delete" }).click();
-  await expect(ideas.getByRole("button", { name: note, exact: true })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/notes\/all\?topic=Ideas$/);
+  await expect(idea).toHaveCount(0);
 });

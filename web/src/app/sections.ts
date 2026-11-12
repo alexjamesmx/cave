@@ -6,22 +6,14 @@
 
 /** A tab shows one view of a collection, or one page. Tabs carry no descriptions (M14). */
 export type Tab =
-  | {
-      id: string;
-      label: string;
-      kind: "view";
-      collection: string;
-      view?: string;
-      hidden?: boolean;
-    }
-  | { id: string; label: string; kind: "page"; page: PageId; hidden?: boolean };
+  | { id: string; label: string; kind: "view"; collection: string; view?: string }
+  | { id: string; label: string; kind: "page"; page: PageId };
 
 export type PageId =
   | "calendar-month"
   | "calendar-agenda"
   | "calendar-routine"
   | "money-transactions"
-  | "ideas"
   | "notes"
   | "tasks-list"
   | "diary-today"
@@ -56,8 +48,7 @@ const view = (id: string, label: string, collection: string, v?: string): Tab =>
   v === undefined
     ? { id, label, kind: "view", collection }
     : { id, label, kind: "view", collection, view: v };
-const page = (id: string, label: string, p: PageId, hidden?: boolean): Tab =>
-  hidden ? { id, label, kind: "page", page: p, hidden } : { id, label, kind: "page", page: p };
+const page = (id: string, label: string, p: PageId): Tab => ({ id, label, kind: "page", page: p });
 
 export const SECTIONS: Section[] = [
   {
@@ -102,7 +93,8 @@ export const SECTIONS: Section[] = [
     owns: ["reminders"],
   },
   {
-    // Anything written down, the diary's Today and Days, and LeetCode (M14): Ideas are notes.
+    // Anything written down, the diary's Today and Days, and LeetCode (M14). Ideas are notes in
+    // topic Ideas (seed migration 26), so they have no tab of their own.
     id: "notes",
     label: "Notes",
     icon: "notebook-pen",
@@ -114,9 +106,8 @@ export const SECTIONS: Section[] = [
       page("write", "Today", "diary-today"),
       page("days", "Days", "diary-days"),
       view("leetcode", "LeetCode", "leetcode"),
-      page("ideas", "Ideas", "ideas", true),
     ],
-    owns: ["notes", "journal", "leetcode", "ideas"],
+    owns: ["notes", "journal", "leetcode"],
   },
   {
     id: "flows",
@@ -161,9 +152,6 @@ export const sectionById = (id: string) => SECTIONS.find((s) => s.id === id);
 export const ownerOf = (collection: string) => SECTIONS.find((s) => s.owns.includes(collection));
 
 export const tabPath = (section: Section, tab: Tab) => `${section.path}/${tab.id}`;
-
-/** Tabs shown in a section's tab bar. */
-export const visibleTabs = (section: Section) => section.tabs.filter((t) => !t.hidden);
 
 /** The phone dock (M14): the four sections used every day, the same on every phone. */
 export const DOCK = ["money", "tasks", "calendar", "notes"].map((id) => sectionById(id) as Section);

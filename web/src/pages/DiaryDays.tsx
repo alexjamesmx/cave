@@ -66,13 +66,11 @@ export function DiaryDays() {
         aria-label="Days"
         style={{ padding: 16, display: "grid", gap: 10 }}
       >
-        <header style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="k" style={{ flex: 1 }}>
-            {monthName(month)}
-          </span>
+        <header className="diary-head">
+          <h2>{monthName(month)}</h2>
           <button
             type="button"
-            className="btn"
+            className="icon-btn"
             aria-label="Previous month"
             onClick={() => setMonth(shiftMonth(month, -1))}
           >
@@ -80,7 +78,7 @@ export function DiaryDays() {
           </button>
           <button
             type="button"
-            className="btn"
+            className="icon-btn"
             aria-label="Next month"
             onClick={() => setMonth(shiftMonth(month, 1))}
           >
@@ -131,10 +129,6 @@ export function DiaryDays() {
               );
             })}
         </div>
-        <span className="muted" style={{ fontSize: 13 }}>
-          A dot is a day you wrote, the strip under it the habits you logged, the tint its colour.
-          Click a day to open it.
-        </span>
       </section>
       <section
         className="panel"

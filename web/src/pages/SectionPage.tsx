@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections.ts";
+import { type PageId, type Section, tabPath } from "../app/sections.ts";
 import { EverythingButton } from "../ui/Dock.tsx";
 import { SectionTile } from "../ui/Shell.tsx";
 import { SyncBadge } from "../ui/SyncBadge.tsx";
@@ -9,7 +9,6 @@ import { DiaryDays } from "./DiaryDays.tsx";
 import { DiaryToday } from "./DiaryToday.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
-import { IdeasPage } from "./Ideas.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
 import { Notes } from "./Notes.tsx";
 import { Reminders } from "./Reminders.tsx";
@@ -31,7 +30,6 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
   "money-subscriptions": () => <Subscriptions />,
-  ideas: () => <IdeasPage />,
   notes: (rest) => <Notes id={rest[0]} />,
   "tasks-list": () => <TasksList />,
   "diary-today": () => <DiaryToday />,
@@ -67,7 +65,7 @@ export function SectionPage({
     ) : (
       PAGES[tab.page](rest)
     );
-  const tabs = visibleTabs(section);
+  const { tabs } = section;
   return (
     <>
       <header className="section-head">

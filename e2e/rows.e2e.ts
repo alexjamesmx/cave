@@ -79,16 +79,24 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
   const taskRow = page.locator("tr", { hasText: "Rows e2e task" });
   await opensByClickAndKey(page, taskRow, taskRow.locator("td").nth(1), "Tasks item");
 
-  // Ideas → Ideas.
-  await page.goto("/notes/ideas");
-  await page.getByLabel("New idea").fill("Rows e2e idea");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  const idea = page.getByRole("listitem").filter({ hasText: "Rows e2e idea" });
-  await opensByClickAndKey(page, idea, idea.locator(".chip").first(), "Ideas item");
+  // Notes → Notes, topic Ideas: a click on a card's date, or Enter, opens the note.
+  await page.goto("/notes/all?topic=Ideas");
+  const bar = page.getByLabel("Capture or search");
+  await bar.fill("Rows e2e idea");
+  await bar.press("Enter");
+  const idea = page.getByRole("link", { name: /Rows e2e idea/ });
+  const opened = page.getByLabel("Note title");
+  await idea.locator(".note-card-date").click();
+  await expect(opened).toHaveValue("Rows e2e idea");
+  await page.getByRole("link", { name: "Back to notes" }).click();
+  await idea.focus();
+  await page.keyboard.press("Enter");
+  await expect(opened).toHaveValue("Rows e2e idea");
+  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
+  await expect(idea).toHaveCount(0);
 
   // Leave the shared database as found.
   for (const [path, name, drawer] of [
-    ["/notes/ideas", "Rows e2e idea", "Ideas item"],
     ["/tasks/list", "Rows e2e task", "Tasks item"],
     ["/money/transactions", "Rows e2e coffee", "Money item"],
   ] as const) {

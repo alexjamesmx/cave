@@ -1,1 +1,328 @@
 /* Notes (M14): this area's own styles, loaded after styles.css. */
+
+/* Notes → Notes: the topics beside the capture bar and a masonry of cards tinted by topic. */
+.notes {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.notes-topics {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 16px;
+}
+
+.notes-topic {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 10px 0 calc(10px + var(--depth, 0) * 24px);
+  border-radius: 10px;
+  color: #c3c8d1;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.notes-topic:hover {
+  background: var(--on);
+  color: var(--text);
+}
+
+.notes-topic[aria-current="page"] {
+  background: var(--on);
+  color: var(--text-strong);
+}
+
+.notes-topic-emoji,
+.notes-topic-dot {
+  flex: none;
+  width: 18px;
+  display: grid;
+  place-items: center;
+}
+
+/* Emoji are drawn from `data-emoji`, as the sidebar's are, so names stay the text. */
+.notes [data-emoji]::before {
+  content: attr(data-emoji);
+}
+
+.notes-topic-branch::before {
+  content: "└";
+}
+
+/* A topic with no emoji of its own wears its colour, the one its cards are tinted with. */
+.notes-topic-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.notes-topic-branch {
+  color: #7d8592;
+  font-size: 12.5px;
+}
+
+.notes-topic-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-topic-count {
+  margin-left: auto;
+  color: #5f6672;
+  font-size: 12px;
+}
+
+.notes-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.notes-capture {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.notes-bar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--control-border);
+  color: #7d8592;
+  cursor: text;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.notes-bar-icon {
+  line-height: 42px;
+}
+
+.notes-bar:focus-within {
+  border-color: color-mix(in srgb, var(--vio) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vio) 22%, transparent);
+}
+
+/* The bar draws the focus ring; the field inside it stays plain. */
+.notes-bar textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 20px;
+  resize: none;
+}
+
+.notes-bar textarea::placeholder {
+  color: #7d8592;
+}
+
+/* The hint stays on one line however narrow the bar; what is typed still wraps. */
+.notes-bar textarea:placeholder-shown {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn.primary.notes-new {
+  height: 44px;
+  background: var(--vio);
+  color: #1a0f3a;
+}
+
+.notes-message {
+  margin: 0;
+}
+
+.notes-masonry {
+  columns: 3 220px;
+  column-gap: 14px;
+}
+
+.note-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  break-inside: avoid;
+  margin-bottom: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--c) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--c) 22%, var(--line));
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.note-card:hover {
+  border-color: color-mix(in srgb, var(--c) 50%, var(--line));
+}
+
+.note-card h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.note-card p {
+  margin: 0;
+  color: #c3c8d1;
+  font-size: 13.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.note-card-topic {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c);
+}
+
+.note-card-checks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.note-card-checks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c3c8d1;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+.note-card-checks li.done {
+  color: #7d8592;
+  text-decoration: line-through;
+}
+
+.note-card-box {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1.5px solid #4b515c;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.done .note-card-box {
+  background: var(--c);
+  border-color: var(--c);
+  color: var(--bg);
+}
+
+.note-card-date {
+  color: #7d8592;
+  font-size: 12.5px;
+}
+
+/* On a phone the topics are a row of pills above the bar, scrolling sideways on their own. */
+@media (max-width: 767px) {
+  .notes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .notes-topics {
+    position: static;
+    flex-direction: row;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .notes-topic {
+    flex: none;
+    gap: 7px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--control-border);
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .notes-topic[aria-current="page"] {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--bg);
+  }
+  .notes-topic-branch,
+  .notes-topic-dot {
+    display: none;
+  }
+  .notes-topic-emoji {
+    width: auto;
+  }
+  .notes-topic-count {
+    margin-left: 0;
+  }
+  .notes-topic[aria-current="page"] .notes-topic-count {
+    color: inherit;
+    opacity: 0.6;
+  }
+  .notes-masonry {
+    columns: 1;
+  }
+}
+
+/* Today and Days: the day or the month as a heading, its arrows at the end. */
+.diary-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diary-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Next stops at today: the arrow shows it can't go on. */
+.diary-head .icon-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
