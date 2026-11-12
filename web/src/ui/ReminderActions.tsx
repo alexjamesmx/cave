@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { localDate } from "../../../shared/dates.ts";
-import { complete, snooze, snoozeTo } from "../../../shared/reminders.ts";
+import { complete, snooze, snoozeTo, type Zone } from "../../../shared/reminders.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone } from "../app/hooks.ts";
@@ -8,9 +8,15 @@ import { Icon } from "./icon.tsx";
 
 type Patch = Record<string, unknown>;
 
+/** Tomorrow at the reminder time, local: where "Snooze to tomorrow" moves a reminder. */
+export function tomorrowAt(zone: Zone, now: number): string {
+  return `${localDate(new Date(now + 24 * 60 * 60 * 1000), zone.timeZone)}T${zone.defaultTime}`;
+}
+
 /**
- * Done and Snooze for one reminder, as two icon buttons beside its row. Each is an ordinary stamped write, so it syncs and shows
- * in the history; Undo right after puts the previous values back the same way.
+ * Done and Snooze for one reminder in its drawer, as two icon buttons. Each is an ordinary
+ * stamped write, so it syncs and shows in the history; Undo right after puts the previous
+ * values back the same way.
  */
 export function ReminderActions({ doc }: { doc: Doc }) {
   const { local } = useCave();
@@ -26,10 +32,6 @@ export function ReminderActions({ doc }: { doc: Doc }) {
     setUndo({ label, before });
   };
   const now = () => Date.now();
-  const tomorrow = () => {
-    const day = localDate(new Date(now() + 24 * 60 * 60 * 1000), zone.timeZone);
-    return `${day}T${zone.defaultTime}`;
-  };
 
   if (undo) {
     return (
@@ -92,7 +94,9 @@ export function ReminderActions({ doc }: { doc: Doc }) {
           <button
             type="button"
             className="btn"
-            onClick={() => void write(snoozeTo(doc, tomorrow()), "Snoozed to tomorrow")}
+            onClick={() =>
+              void write(snoozeTo(doc, tomorrowAt(zone, now())), "Snoozed to tomorrow")
+            }
           >
             Tomorrow {zone.defaultTime}
           </button>

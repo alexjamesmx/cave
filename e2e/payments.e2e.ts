@@ -29,7 +29,7 @@ test("a repeating task marked done comes back on its next date instead of piling
   await page.goto("/tasks/board");
   const card = page.locator("[data-card]", { hasText: "Pay rent e2e" });
   // A move re-renders the card, so it is focused again before each step: todo → doing → waiting → done.
-  for (const next of ["doing", "waiting"]) {
+  for (const next of ["Doing", "Waiting"]) {
     await card.focus();
     await page.keyboard.press("ArrowRight");
     await expect(
@@ -39,12 +39,12 @@ test("a repeating task marked done comes back on its next date instead of piling
   await card.focus();
   await page.keyboard.press("ArrowRight");
   await expect(
-    page.getByRole("region", { name: "todo", exact: true }).getByText("Pay rent e2e"),
+    page.getByRole("region", { name: "To do", exact: true }).getByText("Pay rent e2e"),
   ).toBeVisible();
   await page.goto("/c/tasks/table");
   const rows = page.getByRole("row").filter({ hasText: "Pay rent e2e" });
   await expect(rows).toHaveCount(1);
-  await expect(rows).toContainText("todo");
+  await expect(rows).toContainText("To do");
 
   // Leave the shared board as found (the tasks spec compares screenshots of it).
   page.on("dialog", (dialog) => void dialog.accept());
