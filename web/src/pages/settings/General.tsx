@@ -6,12 +6,10 @@ import { useDoc } from "../../store/queries.ts";
 import { BudgetFields } from "../../ui/BudgetFields.tsx";
 import { SETTINGS } from "./shared.tsx";
 
-/** Settings → General: who you are, your goal, the budget, time and where the app opens. */
+/** Settings → General: the budget, time and where the app opens. */
 export function SettingsGeneral() {
   return (
     <>
-      <OwnerName />
-      <Goal />
       <Panel>
         <span className="k">Budget</span>
         <BudgetFields />
@@ -39,51 +37,6 @@ function Panel({ children }: { children: ReactNode }) {
 function useText(key: string): string {
   const stored = useDoc(useCave().local.db, "settings")?.data[key];
   return typeof stored === "string" ? stored : "";
-}
-
-function OwnerName() {
-  const { local } = useCave();
-  const name = useText("ownerName");
-  return (
-    <Panel>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className="k">Your name</span>
-        <input
-          // Remount when the stored name changes, e.g. from another device.
-          key={name}
-          className="input"
-          defaultValue={name}
-          placeholder="At the centre of the Scene"
-          onBlur={(e) => {
-            const next = e.target.value.trim();
-            if (next !== name) void local.write(SETTINGS, { ownerName: next || null });
-          }}
-        />
-      </label>
-    </Panel>
-  );
-}
-
-function Goal() {
-  const { local } = useCave();
-  const goal = useText("goal");
-  return (
-    <Panel>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className="k">Goal</span>
-        <input
-          key={goal}
-          className="input"
-          defaultValue={goal}
-          placeholder="One line, under your name in the Scene"
-          onBlur={(e) => {
-            const next = e.target.value.trim();
-            if (next !== goal) void local.write(SETTINGS, { goal: next || null });
-          }}
-        />
-      </label>
-    </Panel>
-  );
 }
 
 const zones = (): string[] =>

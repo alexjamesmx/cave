@@ -104,7 +104,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Settings
 
-- **General:** your name and goal, the budget, time zone, reminder time, and what the app opens on. Motion follows the system's reduced-motion setting.
+- **General:** the budget, time zone, reminder time, and what the app opens on. Motion follows the system's reduced-motion setting.
 - **Devices & server:** this device (lock, forget), the devices that synced in the last 30 days, the server (version, last deploy, backups, off-box copy), integrations; sub-sections for Schedules (the next 7 days: reminders, flow slots, jobs, the deploy check), Jobs (and their runs) and Notifications (the log by channel and key, titles never stored; the Dev outbox outside production).
 - **Email:** Settings → Notifications → Email sets who every email goes to and the name it comes from (the address stays the server's verified one); a flow's Send an email step can name its own.
 - **Notifications:** Web Push on this device (on iPhone, from the Home Screen app), and the channels: Telegram once linked, Discord with a webhook, Email through Resend (`docs/hosting.md` step 12). Web Push is private and the default; Telegram and Discord get titles only unless you choose full detail; email goes to your own inbox, so it gets full detail. What notifies is a flow (see Flows): this page only says where notifications go and how much each channel is told.
