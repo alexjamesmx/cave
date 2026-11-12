@@ -1,7 +1,16 @@
 import { expect, test } from "bun:test";
 import type { Zone } from "../../../shared/reminders.ts";
 import type { Doc } from "../../../shared/types.ts";
-import { byDay, flowSource, mergeEvents, reminderSource, taskSource } from "./calendar.ts";
+import {
+  byDay,
+  dateLabel,
+  daysBetween,
+  mergeEvents,
+  paymentSource,
+  reminderSource,
+  taskSource,
+  weekday,
+} from "./calendar.ts";
 
 const MX: Zone = { timeZone: "America/Mexico_City", defaultTime: "09:00" };
 const NOW = Date.parse("2026-10-15T16:00:00Z"); // Thu 10:00 local
@@ -64,24 +73,21 @@ test("a range outside the month finds nothing stored, only what repeats into it"
   expect(events.map((e) => e.key)).toEqual(["rent@2026-11-05T09:00"]);
 });
 
-test("flows that are on and run on a schedule show their next run", () => {
-  const monthly = {
-    version: 1,
-    trigger: { type: "schedule", every: "month", day: 22, at: "09:00" },
-    steps: [{ type: "create", collection: "tasks", title: "Pay rent" }],
-  };
-  const flows = [
-    item("on", "flows", { status: "on", definition: monthly }),
-    item("draft", "flows", { status: "draft", definition: monthly }),
-    item("event", "flows", {
-      status: "on",
-      definition: { ...monthly, trigger: { type: "item-added", collection: "money" } },
-    }),
+test("payments show while active, with their repeats ahead", () => {
+  const payments = [
+    item("card", "payments", { due: "2026-10-20T09:00", repeat: "weekly" }),
+    item("paused", "payments", { due: "2026-10-21T09:00", active: false }),
   ];
-  const events = mergeEvents([flowSource(flows, MX, NOW)], OCT);
-  expect(events.map((e) => [e.itemId, e.due, e.collection])).toEqual([
-    ["on", "2026-10-22T09:00", "flows"],
-  ]);
-  const november = { from: OCT.to, to: Date.parse("2026-12-01T06:00:00Z") };
-  expect(mergeEvents([flowSource(flows, MX, NOW)], november)).toEqual([]);
+  const events = mergeEvents([paymentSource(payments, MX, NOW)], OCT);
+  expect(events.map((e) => e.key)).toEqual(["card", "card@2026-10-27T09:00"]);
+});
+
+test("day arithmetic and labels", () => {
+  expect(daysBetween("2026-10-15", "2026-10-16")).toBe(1);
+  expect(daysBetween("2026-10-15", "2026-10-12")).toBe(-3);
+  // Across the end of daylight saving time a day is still one day.
+  expect(daysBetween("2026-10-31", "2026-11-02")).toBe(2);
+  expect(weekday("2026-10-15")).toBe("Thu");
+  expect(dateLabel("2026-11-30", "2026-10-15")).toBe("Nov 30");
+  expect(dateLabel("2027-01-02", "2026-10-15")).toBe("Jan 2 2027");
 });

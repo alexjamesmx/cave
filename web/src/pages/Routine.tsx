@@ -28,12 +28,12 @@ import { Sheet } from "../ui/Sheet.tsx";
 
 const SETTINGS = { id: "settings", kind: "setting" as const, collection: null };
 
-export const AREA_LOOK: Record<Area, { label: string; icon: string; color: string }> = {
-  body: { label: "Body", icon: "dumbbell", color: "var(--orange)" },
-  learn: { label: "Learn", icon: "graduation-cap", color: "var(--wait)" },
-  rest: { label: "Rest", icon: "moon", color: "var(--vio)" },
-  fun: { label: "Fun", icon: "party-popper", color: "var(--warn)" },
-  other: { label: "Other", icon: "circle", color: "var(--muted)" },
+const AREA_LOOK: Record<Area, { label: string; emoji: string; color: string }> = {
+  body: { label: "Body", emoji: "💪", color: "var(--s-orange)" },
+  learn: { label: "Learn", emoji: "📚", color: "var(--s-blue)" },
+  rest: { label: "Rest", emoji: "🌙", color: "var(--s-violet)" },
+  fun: { label: "Fun", emoji: "🎉", color: "var(--s-amber)" },
+  other: { label: "Other", emoji: "✨", color: "var(--s-grey)" },
 };
 
 const KIND_LABEL: Record<BlockKind, string> = {
@@ -43,7 +43,12 @@ const KIND_LABEL: Record<BlockKind, string> = {
 };
 
 const timeOf = (b: RoutineBlock) => (b.start ? `${b.start}–${endOf(b)}` : duration(b.minutes));
-const look = (b: RoutineBlock) => ({ "--area": AREA_LOOK[areaOf(b)].color }) as CSSProperties;
+const look = (area: Area) => ({ "--area": AREA_LOOK[area].color }) as CSSProperties;
+
+/** An area's emoji on a tile of its colour; drawn, so a button's name is its words only. */
+const AreaTile = ({ area }: { area: Area }) => (
+  <span className="routine-tile" aria-hidden="true" data-emoji={AREA_LOOK[area].emoji} />
+);
 
 type Editing = { id: string } | { day?: number };
 
@@ -83,14 +88,18 @@ export function Routine() {
       <button
         type="button"
         className="routine-block"
-        style={look(b)}
+        style={look(areaOf(b))}
         onClick={() => setEditing({ id: b.id })}
       >
-        <span className="num routine-time">{timeOf(b)}</span>
-        <span className="routine-title">{b.title}</span>
+        <AreaTile area={areaOf(b)} />
+        <span className="routine-text">
+          <span className="num routine-time">{timeOf(b)}</span>
+          <span className="routine-title">{b.title}</span>
+        </span>
       </button>
     </li>
   );
+  const full = routine.blocks.length >= MAX_BLOCKS;
 
   return (
     <div className="routine-page">
@@ -102,28 +111,24 @@ export function Routine() {
         )}
         <ul className="routine-areas" aria-label="Hours a week by area">
           {areas.map(({ area, minutes }) => (
-            <li
-              key={area}
-              className="routine-area"
-              style={{ "--area": AREA_LOOK[area].color } as CSSProperties}
-            >
-              <Icon name={AREA_LOOK[area].icon} size={14} />
+            <li key={area} className="routine-area" style={look(area)}>
+              <AreaTile area={area} />
               {AREA_LOOK[area].label}
-              <span className="num muted">{duration(minutes)}</span>
+              <span className="num routine-hours">{duration(minutes)}</span>
             </li>
           ))}
         </ul>
         <button
           type="button"
           className="btn primary"
-          disabled={routine.blocks.length >= MAX_BLOCKS}
+          disabled={full}
           onClick={() => setEditing({})}
         >
-          <Icon name="plus" size={15} /> Add block
+          + Add block
         </button>
       </header>
       {weekly.length > 0 && (
-        <section className="panel routine-weekly" aria-label="Some times a week">
+        <section className="routine-weekly" aria-label="Some times a week">
           <span className="k">Any day</span>
           <ul>
             {weekly.map((b) => (
@@ -131,9 +136,10 @@ export function Routine() {
                 <button
                   type="button"
                   className="routine-block"
-                  style={look(b)}
+                  style={look(areaOf(b))}
                   onClick={() => setEditing({ id: b.id })}
                 >
+                  <AreaTile area={areaOf(b)} />
                   <span className="routine-title">{b.title}</span>
                   <span className="num routine-time">
                     {b.perWeek}× · {duration(b.minutes)}
@@ -145,27 +151,31 @@ export function Routine() {
         </section>
       )}
       <div className="routine-board">
-        {DAY_NAMES.map((name, i) => (
-          <section
-            key={name}
-            className={`routine-day${i === weekday ? " today" : ""}`}
-            aria-label={name}
-          >
-            <header>
-              <span className="k">{name}</span>
-              <button
-                type="button"
-                className="btn routine-add"
-                aria-label={`Add a block on ${name}`}
-                disabled={routine.blocks.length >= MAX_BLOCKS}
-                onClick={() => setEditing({ day: i })}
-              >
-                <Icon name="plus" size={13} />
-              </button>
-            </header>
-            <ul>{blocksForDay(routine, i).map(card)}</ul>
-          </section>
-        ))}
+        {DAY_NAMES.map((name, i) => {
+          const blocks = blocksForDay(routine, i);
+          return (
+            <section
+              key={name}
+              className={`routine-day${i === weekday ? " today" : ""}`}
+              aria-label={name}
+            >
+              <header>
+                <b>{name}</b>
+                <span className="num muted">{blocks.length || ""}</span>
+                <button
+                  type="button"
+                  className="routine-add"
+                  aria-label={`Add a block on ${name}`}
+                  disabled={full}
+                  onClick={() => setEditing({ day: i })}
+                >
+                  +
+                </button>
+              </header>
+              <ul>{blocks.map(card)}</ul>
+            </section>
+          );
+        })}
       </div>
       {editing && (
         <Sheet title={selected ? "Edit block" : "New block"} onClose={close}>
@@ -243,28 +253,29 @@ function BlockForm({
           onChange={(e) => setTitle(e.target.value)}
         />
       </label>
-      <fieldset className="chips routine-area-pick">
+      <fieldset className="routine-pick routine-area-pick">
         <legend className="k">Area</legend>
         {AREAS.map((a) => (
           <button
             key={a}
             type="button"
-            className="btn"
+            className="pill"
             aria-pressed={area === a}
-            style={{ "--area": AREA_LOOK[a].color } as CSSProperties}
+            style={look(a)}
             onClick={() => setArea(a)}
           >
-            <Icon name={AREA_LOOK[a].icon} size={14} /> {AREA_LOOK[a].label}
+            <AreaTile area={a} />
+            {AREA_LOOK[a].label}
           </button>
         ))}
       </fieldset>
-      <fieldset className="chips">
+      <fieldset className="routine-pick">
         <legend className="k">When</legend>
         {KINDS.map((k) => (
           <button
             key={k}
             type="button"
-            className="btn"
+            className="pill"
             aria-pressed={kind === k}
             onClick={() => setKind(k)}
           >
@@ -273,13 +284,13 @@ function BlockForm({
         ))}
       </fieldset>
       {kind === "fixed" && (
-        <fieldset className="chips">
+        <fieldset className="routine-pick">
           <legend className="k">Days</legend>
           {DAY_NAMES.map((name, i) => (
             <button
               key={name}
               type="button"
-              className="btn"
+              className="pill"
               aria-pressed={days.includes(i)}
               onClick={() =>
                 setDays(days.includes(i) ? days.filter((d) => d !== i) : [...days, i].sort())

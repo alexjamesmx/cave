@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PALETTE } from "../../shared/palette.ts";
+import { PALETTE, SWATCHES } from "../../shared/palette.ts";
 import { contrast } from "./logic/contrast.ts";
 
 /** The `:root` tokens of the stylesheet that are plain colours; aliases and sizes are skipped. */
@@ -41,4 +41,12 @@ test("status colours stand out on the page and in panels (3:1)", () => {
 test("the seed's palette and the stylesheet's tokens are the same colours", () => {
   for (const [name, hex] of Object.entries(PALETTE))
     expect(token(name === "grey" ? "muted" : name).toUpperCase()).toBe(hex);
+});
+
+test("the sixteen swatches are tokens too, and each stands out on a panel (3:1)", () => {
+  for (const [name, hex] of Object.entries(SWATCHES)) {
+    expect(token(`s-${name}`).toUpperCase()).toBe(hex);
+    expect(contrast(hex, token("panel"))).toBeGreaterThanOrEqual(3);
+  }
+  expect(contrast(token("on-brand"), "#ff4f7e")).toBeGreaterThanOrEqual(4.5);
 });

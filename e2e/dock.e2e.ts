@@ -2,10 +2,10 @@ import { ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 const PHONE = { width: 390, height: 844 };
-const ALL = ["Money", "Calendar", "Flows", "Ideas", "Notes", "Tasks", "Settings"];
-const DEFAULT = ["Money", "Tasks", "Calendar", "Notes"];
+const ALL = ["Money", "Tasks", "Calendar", "Notes", "Flows", "Settings"];
+const DOCK = ["Money", "Tasks", "Calendar", "Notes"];
 
-test("the phone dock: four sections and New, More with every section, and an edited dock that syncs", async ({
+test("the phone dock: four sections and New; ⚙️ in the header opens every section", async ({
   browser,
 }) => {
   const context = await ownerContext(browser, { viewport: PHONE });
@@ -17,7 +17,7 @@ test("the phone dock: four sections and New, More with every section, and an edi
   await expect(
     page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Notes" }),
   ).toBeHidden();
-  await expect(dock.getByRole("link")).toHaveText(DEFAULT);
+  await expect(dock.getByRole("link")).toHaveText(DOCK);
   await expect(dock.getByRole("link", { name: "Money" })).toHaveAttribute("aria-current", "page");
 
   // The dock never covers the page's end.
@@ -33,40 +33,13 @@ test("the phone dock: four sections and New, More with every section, and an edi
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
 
-  // More: every section, and Edit dock.
-  await dock.getByRole("button", { name: "More" }).click();
+  // ⚙️ (Everything): every section, Flows and Settings included, each once.
+  await page.getByRole("button", { name: "Everything" }).click();
   const more = page.getByRole("dialog", { name: "Everything" });
-  // The same sections as the rail, each once.
   await expect(more.getByRole("link")).toHaveText(ALL);
-  await more.getByRole("button", { name: "Edit dock" }).click();
-  const edit = page.getByRole("dialog", { name: "Edit dock" });
-  for (const name of DEFAULT)
-    await edit.getByRole("button", { name: new RegExp(`${name}$`) }).click();
-  await expect(edit.getByRole("button", { name: "Save dock" })).toBeDisabled();
-  const picked = ["Notes", "Money", "Settings", "Flows"];
-  for (const name of picked)
-    await edit.getByRole("button", { name: new RegExp(`${name}$`) }).click();
-  await edit.getByRole("button", { name: "Save dock" }).click();
-  await expect(dock.getByRole("link")).toHaveText(picked);
-
-  // Another phone gets the same dock through sync.
-  const other = await (await ownerContext(browser, { viewport: PHONE })).newPage();
-  await expect(async () => {
-    await other.goto("/");
-    await expect(other.getByRole("navigation", { name: "Dock" }).getByRole("link")).toHaveText(
-      picked,
-      { timeout: 2_000 },
-    );
-  }).toPass({ timeout: 30_000 });
-
-  // Back to the default, so other specs see it.
-  await dock.getByRole("button", { name: "More" }).click();
-  await page.getByRole("button", { name: "Edit dock" }).click();
-  const reset = page.getByRole("dialog", { name: "Edit dock" });
-  for (const name of [...picked, ...DEFAULT])
-    await reset.getByRole("button", { name: new RegExp(`${name}$`) }).click();
-  await reset.getByRole("button", { name: "Save dock" }).click();
-  await expect(dock.getByRole("link")).toHaveText(DEFAULT);
+  await more.getByRole("link", { name: "Flows" }).click();
+  await expect(page).toHaveURL(/\/flows$/);
+  await expect(more).toHaveCount(0);
 });
 
 test("on a desktop the rail stays and there is no dock", async ({ browser }) => {
@@ -78,4 +51,5 @@ test("on a desktop the rail stays and there is no dock", async ({ browser }) => 
   await expect(
     page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Notes" }),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Everything" })).toBeHidden();
 });

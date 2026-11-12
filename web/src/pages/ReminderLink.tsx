@@ -47,7 +47,13 @@ export function ReminderLink({ id }: { id: string }) {
   return (
     <>
       <header style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <span className="ico" style={{ background: "#ff5c7a1f", color: "var(--expense)" }}>
+        <span
+          className="ico"
+          style={{
+            background: "color-mix(in srgb, var(--expense) 14%, transparent)",
+            color: "var(--expense)",
+          }}
+        >
           <Icon name="bell" size={20} />
         </span>
         <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Reminder</h1>

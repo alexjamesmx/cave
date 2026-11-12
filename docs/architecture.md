@@ -60,7 +60,6 @@ Seeded once with stamp time 0, so any user edit wins. Changes to seeded collecti
 | `money` | date, amount (money), direction (income/expense), category (select; options carry `label`, `emoji` and `kind`: expense, income or transfer), detail, account (select, options archived never deleted), payment (ref) | money dashboard, table, untagged (category empty) |
 | `tasks` | status (todo/doing/waiting/done/dropped), priority (high/normal/low), due (with time), repeat, notify, area, completed, cancelled | board by status, table (the calendar view retired by migration 21; Calendar → Month shows tasks) |
 | `journal` | date, checkbox per habit (gym, supplements, reading, meditation, water_2l, protein, creatine, learning), color (select: the palette's tokens, M12); diary text in `_body` | write (Diary → Today and Days since M12 part 8; Gallery and Habits retired by seed migration 20, habit icons in `settings.habitIcons`) |
-| `ideas` | stage (spark/exploring/building/parked), area, next step | table, board by stage, gallery |
 | `wealth` | type (liquid/investments/stocks/house/assets/debt), value (money), updated; history in `_body` | wealth dashboard, table |
 | `leetcode` | number, difficulty, topic, status (queued/practicing/review/solved/skipped), solved_at, notes; since M12 list (blind75/neetcode150/grind169/amazon/contest/other), pattern, url, attempts, minutes, review_on | progress dashboard, table; the project's Problems tab |
 | `payments` | kind, amount, approx, category and account (money's lists through `optionsFrom`), due, repeat, notify_days, autopay, active | upcoming, table |
@@ -77,26 +76,58 @@ Hidden collections stay out of navigation and out of agents' reach except throug
 ## Client
 
 - **Lock screen:** with no token on the device the app renders only the Cave mark, a token field and Unlock; the token is checked with `GET /api/status` before it is kept. Any 401 later drops the token and returns to the lock screen. Settings has "Lock this device" (keeps the local copy) and "Forget this device" (also deletes the IndexedDB copy and the offline caches).
-- **Routes:** `/` opens on `LANDING` (`/money/overview`); `/<section>/<tab>` for Money, Calendar, Flows, Ideas, Notes, Tasks and Settings, from one registry (`web/src/app/sections.ts`); `/ideas/all` and `/ideas/leetcode`; `/notes/all/<note>` and `?view=table`, `/notes/write?day=` (Today) and `/notes/days?day=` (a day in the reader); `/calendar/month`, `/calendar/reminders`, `/calendar/routine`; `/money/transactions?month=&chip=&group=&category=&account=&q=`; `/flows/<id>` one flow open in the inspector beside the canvas (`?do=approve|reject` asks the owner to confirm), `/flows/jobs/<id>` a built-in job there, `/flows/runs?source=`; `/settings/devices/<sub>` (Schedules, Jobs, Notifications); `/settings/data/<collection>/<view>` for raw collections; `/r/:id` (a reminder from a notification; `?do=done|snooze60` acts once). Every older path (`/c/...`, `/agents`, `/ai/...`, `/life/...`, `/system`, `/settings/system`, `/settings/flows`, `/settings/lists`, `/projects/*` (retired: Ideas, LeetCode and Notes keep their homes, the rest opens the landing page), `/flows/list`, `/diary*`, `/tasks/calendar`, `/calendar/agenda`, `/calendar/week`, `/money/wealth`) redirects to its new home and keeps the query string. Shortcut `C` opens the calendar; ⌘K / Ctrl+K opens the Ask sheet, N a note.
-- **Rail and dock:** a 52 px icon rail with New (+) under the mark and Settings at the bottom (Show names widens it to 184 px with the labels: `web/src/app/rail.ts`, `localStorage` key `cave.rail`, a class on `<html>` set before the first render); under 768 px, a floating dock (two sections, New, two sections, More); `settings.dock` holds the four; More lists every section and edits the dock, as does Settings → General.
+- **Routes:** `/` opens on `LANDING` (`/money/overview`); `/<section>/<tab>` for Money, Tasks, Calendar, Notes, Flows and Settings, from one registry (`web/src/app/sections.ts`); `/notes/all?topic=` (a topic; Ideas is one) and `/notes/all/<note>`, `/notes/leetcode`, `/notes/write?day=` (Today) and `/notes/days?day=` (a day in the reader); `/calendar/month`, `/calendar/agenda`, `/calendar/routine`; `/money/transactions?month=&chip=&category=&q=` (`month` is `YYYY-MM`, or `YYYY` for a year up to today); `/flows/<id>` one flow open in the inspector beside the canvas (`?do=approve|reject` asks the owner to confirm), `/flows/jobs/<id>` a built-in job there, `/flows/runs?source=`; `/settings/devices/<sub>` (Schedules, Jobs, Notifications); `/settings/data/<collection>/<view>` for raw collections; `/r/:id` (a reminder from a notification; `?do=done|snooze60` acts once). Every older path (`/c/...`, `/agents`, `/ai/...`, `/life/...`, `/system`, `/settings/system`, `/settings/flows`, `/settings/lists`, `/projects/*` (retired: Ideas, LeetCode and Notes keep their homes, the rest opens the landing page), `/ideas*` and `/notes/ideas` (Notes on topic Ideas), `/calendar/reminders` (Agenda), `/flows/list`, `/diary*`, `/tasks/calendar`, `/calendar/week`, `/money/wealth`) redirects to its new home and keeps the query string. Shortcut `C` opens the calendar; ⌘K / Ctrl+K opens the New sheet, N a note.
+- **Sidebar and dock (M14):**
+  - **Sidebar:** 224 px with an emoji tile per section, New under the mark, and Settings and Hide names at the bottom.
+    - Hide names collapses it to 68 px of tiles.
+    - The choice lives in `web/src/app/rail.ts` under the `localStorage` key `cave.rail` (`narrow`), as a class on `<html>` set before the first render.
+  - **Phone (under 768 px):** a floating dock with Money, Tasks, New, Calendar and Notes (`DOCK`). Each section's header has ⚙️ (Everything) listing every section.
+  - **Data:** `settings.dock` is no longer read.
 - **Boards:** one "New task" (or "New item") button adds to the first column; the tasks board hides Done and Dropped until Show done (`web/src/app/board-closed.ts`, per device), and a "No status" column shows only while it holds something; cards drag between and within columns on mouse and touch (long press), and move with the arrow keys; the order is a hidden `_order`; on a phone, columns are 80% wide and snap.
 - **Money:** one money form (Money → Transactions → New entry, which stays open for the next receipt, and the New sheet): direction, amount, title, the direction's categories in a searchable select (`OptionPicker`, also the payment form and every category filter), the account unless only one is live (then it is taken without asking), and a date and time with Today and Yesterday. Transfers count as neither spending nor income. The item drawer offers a money item only its direction's categories plus the one it holds (`categoryChoices`). Transactions (`web/src/logic/ledger.ts`): one month or all time in the URL, chips (All, Expenses, Income, Transfers, Uncategorized: no category, or one no option holds), search, Group by day, category or account with subtotals, undated entries apart. Overview: Month or Year with arrows, four tiles (Spent, Income, Saved, Invested: transfers into `investment`) with their change against the previous period and a 12-month sparkline, the month day by day, where it went against last period (each a link into the ledger), twelve months stacked by the five biggest categories, top titles and the largest entries; filters in the URL. Undated entries are listed and counted apart, never filled in. Budget (`shared/budget.ts`): `settings.budget` holds a monthly limit and a saving target, typed by the owner (Overview's Budget tile or Settings → General, `BudgetFields`); the tile shows what is left and the pace, the server's hourly `budget` job notifies once per month at 80 % and 100 % of the limit (`server/notify/budget-sweep.ts`, keyed `budget:<month>:<share>` in the sent log), and `money_month` reports the same line.
 - **Repeats and payments:** `shared/recurrence.ts` is the one engine for reminders, tasks and payments. A repeating task's Done moves it to its next date and brings it back as todo, from whatever column. Payments show in the calendar and Upcoming and have the `mark_paid` MCP tool; their Upcoming view is in Settings → Data only. Money → Subscriptions (`web/src/pages/Subscriptions.tsx`, the Payments tab's place) is one table of payments of kind subscription, through `shared/subscriptions.ts`: the plan (cost a month by repeat), the next charge computed from the stored date and its repeat (nothing is written), and the history from real expenses (linked by `payment`, or by name under the subscriptions category). Subscriptions don't notify (`server/notify/payment-sweep.ts` skips them); a flow's `date-arrives` trigger (`shared/flows/date-trigger.ts`) does it when the owner wants.
 - **Agents and flows:** Settings → Agents (tokens, permissions, proposals, flows waiting for approval), Settings → Data (export, import through this device's write path, raw collections, the undo history of agents' writes), Flows (a section: one React Flow canvas with every flow and built-in job, `web/src/logic/flow-board.ts` laying out groups by trigger and a lane per flow from `flowGraph`, the inspector the only editor and the open flow's draft drawn until saved, Runs merging flow runs and job runs). The Cave shows what agents did through the change log; it holds none of their configuration (M10 retired the `ai` collection; its docs stay marked deleted).
-- **Routine (M12 part 7, a guide since M13's follow-up):** `settings.routine` (`shared/routine.ts`, parsed field by field, at most 30 blocks): blocks that are fixed (days, start, minutes), daily (minutes, optional start) or weekly (minutes, times a week), each with an area (body, learn, rest, fun, other; none reads as other). Calendar → Routine (`web/src/pages/Routine.tsx`) is its only reader and editor: a column per weekday, the weekly blocks apart, minutes a week per area. It links to nothing: a habit link stored in M12 is dropped when read. Reminders: one form (`web/src/ui/ReminderForm.tsx`) and one table (`web/src/pages/Reminders.tsx`, `web/src/logic/reminder-list.ts`); Tasks → List is `web/src/pages/TasksList.tsx` (`web/src/logic/task-list.ts`).
+- **Routine (M12 part 7, a guide since M13's follow-up):** `settings.routine` (`shared/routine.ts`, parsed field by field, at most 30 blocks): blocks that are fixed (days, start, minutes), daily (minutes, optional start) or weekly (minutes, times a week), each with an area (body, learn, rest, fun, other; none reads as other). Calendar → Routine (`web/src/pages/Routine.tsx`) is its only reader and editor: a column per weekday, the weekly blocks apart, minutes a week per area. It links to nothing: a habit link stored in M12 is dropped when read. Reminders: one form (`web/src/ui/ReminderForm.tsx`). The Agenda (`web/src/pages/Agenda.tsx`) and Month's Upcoming both read `agenda()` (`web/src/logic/agenda.ts`), so they list and count the same things; Tasks → List is `web/src/pages/TasksList.tsx` (`web/src/logic/task-list.ts`).
 - **Notes:** one Markdown renderer (`react-markdown`, no raw HTML, safe links only, `[[Title]]` links between notes, a ```` ```mermaid ```` block drawn by a cleaned renderer, `web/src/logic/diagram.ts`). The Notes section shows every live note (`web/src/logic/notes.ts`), grouped by `folder` as its topic, in one editor (`NoteEditor`). `/projects/notes*` and `/diary*` redirect into it. The `radar` collection is Data-only (`DATA_ONLY`): agents can still write it under its rules, nothing shows it.
 - Item drawer: title, fields, Markdown body, saved on blur, history from the activity log.
 - PWA: manifest with icons, service worker (network-first with a 3-second race against the cache for the app shell, never caches `/api`), `navigator.storage.persist()` on start.
 
 ## Visual tokens
 
-Palette A (M11). The hex values live once in `shared/palette.ts` and as tokens in `web/src/styles.css`; `web/src/tokens.test.ts` keeps them equal and checks contrast (text 4.5:1 on every surface, status colours 3:1).
+The vivid palette (M14). The hex values live once in `shared/palette.ts` and as tokens in `web/src/styles.css`. `web/src/tokens.test.ts` keeps them equal and checks contrast: text 4.5:1 on every surface, status colours and swatches 3:1.
 
-- Surfaces: page `#15171b`, rail `#111317`, panels `#1b1e24`, controls `#181b20`, active and hover `#22262e`, lines `#272b33`. Radius 10 px (panels) / 7 px (controls). No glows, gradients or grid behind content, except the Flows canvas: a faint tint, nodes with a soft gradient, a glow on what is on.
-- Text `#e4e7eb` (13.5 px / 1.5), secondary and labels `#98a0ab`, labels uppercase 11 px with 0.06 em tracking.
-- Accent sage `#8fd0a0` (text on it `#0f1a12`): focus, primary buttons, the active tab.
-- Status and marks: ok `#8fd0a0` (on track, income, done), warn `#d9b56f`, wait `#8cb7dd`, bad `#e59aa4` (blocked, expense, overdue), vio `#a39be0`, teal `#7fc4cf`, orange `#d9a06f`, purple `#c9a3e0`. The pre-M11 names (`--lime`, `--income`, `--expense`, `--cyan`, `--violet`, `--gold`, `--orange`, `--purple`) are aliases of these.
-- Sections: Money ok, Calendar bad, Flows warn, Ideas vio, Notes vio, Tasks teal, Settings `#6b7380`.
-- Fonts: Space Grotesk (UI), JetBrains Mono (numbers, tabular), Newsreader (diary).
-- The rail: 52 px, icons only, the label beside the icon on hover or focus; under 768 px the dock replaces it.
-- Icons: inline stroke SVG at 1.9 px; every collection, category, habit and field type has one.
+- **Surfaces:**
+  - Colours: page `#0f1013`, sidebar `#0b0c0f`, panels `#15171b`, controls `#121418`, active and hover `#1c1f25`, lines `#22252c`.
+  - Radius: 16 px for panels, 11 px for controls, pills fully round.
+- **Text:**
+  - Primary `#eceef2` (14 px, line height 1.5). Secondary and labels `#8b93a1`.
+  - Labels are uppercase at 11.5 px.
+- **Brand:**
+  - The sunset gradient `#ff9a62 → #ff4f7e` with text `#2a0a12`, used on New, the dock's + and primary buttons.
+  - Accent `#ff7f6e` for focus.
+- **Status and marks:** the pre-M11 names (`--lime`, `--income`, `--expense`, `--cyan`, `--violet`, `--gold`) are aliases of these.
+  - ok `#3ddc97`: income, done.
+  - warn `#f5b94a`.
+  - wait `#60a5fa`.
+  - bad `#ff8a94`: expense, overdue.
+  - vio `#a78bfa`, teal `#2dd4bf`, orange `#ff8a4c`, purple `#e879f9`.
+- **Swatches:**
+  - Sixteen (`SWATCHES`, tokens `--s-<name>`), the only choices in every colour picker: orange, amber, yellow, lime, green, teal, cyan, sky, blue, indigo, violet, fuchsia, pink, rose, red, grey.
+  - Seed migration 25 gives each seeded category its own swatch.
+- **Sections:**
+  - Each has an emoji on a tile tinted with its colour: Money 💸 `#34d399`, Tasks ✅ `#60a5fa`, Calendar 📅 `#fb7185`, Notes 📝 `#a78bfa`, Flows ⚡ `#fbbf24`, Settings ⚙️ `#8b93a1`.
+  - Tabs are pills. There are no descriptions under titles.
+- **Fonts:**
+  - Text: Inter, with `tabular-nums` for figures.
+  - Headings and big figures: Space Grotesk.
+  - Code: JetBrains Mono.
+  - Diary: Newsreader.
+- **The sidebar:**
+  - 224 px with names. Collapsing it (per device) leaves 68 px of tiles, with the name shown on hover or focus.
+  - Under 768 px it is replaced by the dock (Money, Tasks, +, Calendar, Notes) and ⚙️ "Everything" in each page's header.
+- **Motion:**
+  - A tab fades up in 180 ms. Sheets pop in on a desktop and rise from the bottom on a phone.
+  - Buttons press to 0.97.
+  - All of it is off under `prefers-reduced-motion`.
+- **Icon:** "Arches", three white arches on the sunset gradient (`web/icons/icon.svg`, PNGs rendered from it).
+- **Icons:** Lucide inline stroke SVG at 1.9 px, where an emoji can't go.

@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { collectionPath, flowPath, parseRoute, redirectOf, shortcutPath } from "./router.ts";
+import {
+  collectionPath,
+  flowPath,
+  parseRoute,
+  redirectOf,
+  shortcutPath,
+  withQuery,
+} from "./router.ts";
 
 const section = (s: string, tab: string, rest: string[] = []) => ({
   name: "section" as const,
@@ -21,8 +28,8 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   );
   expect(parseRoute("/notes")).toEqual(section("notes", "all"));
   expect(parseRoute("/notes/all/01J9ABC")).toEqual(section("notes", "all", ["01J9ABC"]));
-  expect(parseRoute("/ideas")).toEqual(section("ideas", "all"));
-  expect(parseRoute("/ideas/leetcode")).toEqual(section("ideas", "leetcode"));
+  expect(parseRoute("/notes/leetcode")).toEqual(section("notes", "leetcode"));
+  expect(parseRoute("/calendar/agenda")).toEqual(section("calendar", "agenda"));
   expect(parseRoute("/settings/data/money/untagged")).toEqual(
     section("settings", "data", ["money", "untagged"]),
   );
@@ -46,9 +53,9 @@ test("every old path redirects to its new home", () => {
     ["/c/payments/table", "/settings/data/payments/table"],
     ["/c/wealth", "/money/net-worth"],
     ["/money/wealth", "/money/net-worth"],
-    ["/c/reminders", "/calendar/reminders"],
-    ["/c/reminders/table", "/calendar/reminders"],
-    ["/calendar/agenda", "/calendar/month"],
+    ["/c/reminders", "/calendar/agenda"],
+    ["/c/reminders/table", "/calendar/agenda"],
+    ["/calendar/reminders", "/calendar/agenda"],
     ["/calendar/week", "/calendar/routine"],
     ["/", "/money/overview"],
     ["/c/journal", "/notes/write"],
@@ -67,9 +74,10 @@ test("every old path redirects to its new home", () => {
     ["/c/tasks/table", "/tasks/list"],
     ["/c/tasks/calendar", "/calendar/month"],
     ["/tasks/calendar", "/calendar/month"],
-    ["/c/ideas", "/ideas/all"],
-    ["/c/leetcode", "/ideas/leetcode"],
-    ["/c/leetcode/table", "/ideas/leetcode"],
+    ["/c/ideas", "/notes/all?topic=Ideas"],
+    ["/c/ideas/board", "/notes/all?topic=Ideas"],
+    ["/c/leetcode", "/notes/leetcode"],
+    ["/c/leetcode/table", "/notes/leetcode"],
     // Projects was retired: its pages go to their new homes or the landing page.
     ["/c/projects", "/money/overview"],
     ["/c/parts", "/money/overview"],
@@ -78,10 +86,10 @@ test("every old path redirects to its new home", () => {
     ["/projects/scene", "/money/overview"],
     ["/projects/all", "/money/overview"],
     ["/projects/activity", "/money/overview"],
-    ["/projects/ideas", "/ideas/all"],
-    ["/projects/radar", "/ideas/all"],
-    ["/projects/proj-leetcode", "/ideas/leetcode"],
-    ["/projects/proj-leetcode/tracker", "/ideas/leetcode"],
+    ["/projects/ideas", "/notes/all?topic=Ideas"],
+    ["/projects/radar", "/notes/all?topic=Ideas"],
+    ["/projects/proj-leetcode", "/notes/leetcode"],
+    ["/projects/proj-leetcode/tracker", "/notes/leetcode"],
     ["/projects/notes", "/notes/all"],
     ["/projects/notes/n1", "/notes/all/n1"],
     ["/projects/proj-cave/canvas", "/money/overview"],
@@ -107,14 +115,20 @@ test("every old path redirects to its new home", () => {
     ["/settings/system/flows", "/flows"],
     ["/settings/system/agents", "/settings/agents"],
     ["/settings/lists", "/money/lists"],
+    // Ideas are notes in topic Ideas (M14), its hidden tab included.
+    ["/ideas", "/notes/all?topic=Ideas"],
+    ["/ideas/all", "/notes/all?topic=Ideas"],
+    ["/ideas/radar", "/notes/all?topic=Ideas"],
+    ["/notes/ideas", "/notes/all?topic=Ideas"],
+    ["/ideas/leetcode", "/notes/leetcode"],
   ];
   for (const [from, to] of cases) {
     expect([from, redirectOf(from)]).toEqual([from, to]);
     expect(parseRoute(from)).toEqual({ name: "redirect", to });
   }
   for (const current of [
-    "/ideas/all",
-    "/ideas/leetcode",
+    "/notes/leetcode",
+    "/calendar/agenda",
     "/money/overview",
     "/flows/flow-rent",
     "/notes",
@@ -125,6 +139,15 @@ test("every old path redirects to its new home", () => {
     "/money/lists",
   ])
     expect(redirectOf(current)).toBeUndefined();
+});
+
+test("a redirect keeps the old query string; a target's own keys come first and win", () => {
+  expect(withQuery("/notes/all", "?q=oak")).toBe("/notes/all?q=oak");
+  expect(withQuery("/notes/all", "")).toBe("/notes/all");
+  expect(withQuery("/notes/all?topic=Ideas", "")).toBe("/notes/all?topic=Ideas");
+  expect(withQuery("/notes/all?topic=Ideas", "?q=oak&topic=Tech")).toBe(
+    "/notes/all?topic=Ideas&q=oak",
+  );
 });
 
 test("links to a collection or a flow go straight to their new home", () => {

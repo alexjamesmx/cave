@@ -1,12 +1,20 @@
 import { type FormEvent, useState } from "react";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
-import { complete, REPEATS, type Repeat, repeatOf } from "../../../shared/reminders.ts";
+import {
+  complete,
+  REPEATS,
+  type Repeat,
+  repeatOf,
+  snooze,
+  snoozeTo,
+} from "../../../shared/reminders.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone, useToday } from "../app/hooks.ts";
 import { titleOf } from "../logic/views.ts";
 import { Icon } from "./icon.tsx";
+import { tomorrowAt } from "./ReminderActions.tsx";
 import { Sheet } from "./Sheet.tsx";
 
 export const REPEAT_LABEL: Record<Repeat, string> = {
@@ -23,7 +31,8 @@ const timeOf = (due: unknown) => (typeof due === "string" ? due.slice(11, 16) : 
 
 /**
  * One reminder, new or existing: Title, Date, Time (empty for the whole day) and Repeat.
- * An existing one adds Done (a repeating one moves to its next date) and Delete (soft).
+ * An existing one adds Done (a repeating one moves to its next date), Snooze while it is open,
+ * and Delete (soft).
  */
 export function ReminderForm({
   doc,
@@ -120,6 +129,27 @@ export function ReminderForm({
           </select>
         </label>
       </div>
+      {doc && doc.data.done !== true && (
+        <fieldset className="reminder-snooze">
+          <legend className="k">Snooze</legend>
+          {(
+            [
+              ["10 min", () => snooze(doc, 10, Date.now(), zone.timeZone)],
+              ["1 hour", () => snooze(doc, 60, Date.now(), zone.timeZone)],
+              [`Tomorrow ${zone.defaultTime}`, () => snoozeTo(doc, tomorrowAt(zone, Date.now()))],
+            ] as const
+          ).map(([label, patch]) => (
+            <button
+              key={label}
+              type="button"
+              className="pill"
+              onClick={() => void write(patch(), `Snoozed · Reminder · ${titleOf(doc)}`)}
+            >
+              {label}
+            </button>
+          ))}
+        </fieldset>
+      )}
       {error && (
         <p role="alert" className="error" style={{ margin: 0 }}>
           {error}

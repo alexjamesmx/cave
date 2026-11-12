@@ -13,6 +13,9 @@ export type Route =
 const parts = (pathname: string) => pathname.split("/").filter(Boolean).map(decodeURIComponent);
 const enc = (...segments: string[]) => `/${segments.map(encodeURIComponent).join("/")}`;
 
+/** Ideas are notes in topic Ideas since M14 (seed migration 26): Notes, filtered to it. */
+const IDEAS = "/notes/all?topic=Ideas";
+
 /**
  * Where an old path (before M8's sections) lives now; `undefined` when it is current. Every
  * collection goes to the tab that shows it, else to Settings → Data.
@@ -36,9 +39,12 @@ export function redirectOf(pathname: string): string | undefined {
   if (first === "life" || first === "diary") return diaryPath(second);
   // Tasks → Calendar is Calendar → Month since M12 part 9.
   if (first === "tasks" && second === "calendar" && !third) return "/calendar/month";
-  // Agenda is the Month's side list and Week is the Routine after M13.
-  if (first === "calendar" && second === "agenda") return "/calendar/month";
+  // Week is the Routine after M13; Reminders is the Agenda, everything with a date (M14).
   if (first === "calendar" && second === "week") return "/calendar/routine";
+  if (first === "calendar" && second === "reminders") return "/calendar/agenda";
+  // Ideas are notes since M14, and so was its hidden tab; LeetCode is a Notes tab.
+  if (first === "ideas") return second === "leetcode" ? "/notes/leetcode" : IDEAS;
+  if (first === "notes" && second === "ideas") return IDEAS;
   // The System page (M9 to M11 part 3) is Settings → Devices & server; its Flows and Agents
   // tabs went to their own pages.
   if (first === "system" || (first === "settings" && second === "system"))
@@ -46,20 +52,19 @@ export function redirectOf(pathname: string): string | undefined {
   // Wealth is Net worth since M7c; Payments is Subscriptions since the owner set bills aside.
   if (first === "money" && second === "wealth") return "/money/net-worth";
   if (first === "money" && second === "payments") return "/money/subscriptions";
-  // Projects was retired on 2026-11-08: its Ideas (and the old Radar) are the Ideas section,
-  // LeetCode's project is that section's LeetCode tab, its Notes view is Notes, the rest opens
-  // the landing page.
+  // Projects was retired on 2026-11-08: its Ideas (and the old Radar) and LeetCode are Notes
+  // tabs, its Notes view is Notes, the rest opens the landing page.
   if (first === "projects") {
-    if (second === "ideas" || second === "radar") return "/ideas/all";
-    if (second === "proj-leetcode") return "/ideas/leetcode";
+    if (second === "ideas" || second === "radar") return IDEAS;
+    if (second === "proj-leetcode") return "/notes/leetcode";
     if (second === "notes") return third ? enc("notes", "all", third) : "/notes/all";
     return LANDING;
   }
   if (first !== "c" || !second) return undefined;
   const collection = second;
   const view = third;
-  // LeetCode's views are one tab under Ideas since Projects was retired.
-  if (collection === "leetcode") return "/ideas/leetcode";
+  // LeetCode's views are one tab under Notes (M14).
+  if (collection === "leetcode") return "/notes/leetcode";
   // The journal's Write is Diary → Today; its Habits and Gallery views are Days (M12 part 8).
   if (collection === "journal") return diaryPath(view && view !== "write" ? "days" : "write");
   // Tasks → Calendar is Calendar → Month since M12 part 9.
@@ -72,9 +77,9 @@ export function redirectOf(pathname: string): string | undefined {
   if (owner && tab) return tabPath(owner, tab);
   if (collection === "money" && view === "table") return "/money/transactions";
   if (collection === "projects" || collection === "parts" || collection === "runs") return LANDING;
-  if (collection === "ideas") return "/ideas/all";
+  if (collection === "ideas") return IDEAS;
   if (collection === "notes") return "/notes/all";
-  if (collection === "reminders") return "/calendar/reminders";
+  if (collection === "reminders") return "/calendar/agenda";
   if (collection === "payments")
     return view === "table" ? enc("settings", "data", collection, view) : "/money/subscriptions";
   if (collection === "tasks") return view === "board" ? "/tasks/board" : "/tasks/list";
@@ -147,8 +152,19 @@ export const useSearch = () => useSyncExternalStore(subscribe, () => location.se
 
 /** Swaps the current entry for `path` (a redirect), keeping the query string. */
 export function replacePath(path: string): void {
-  history.replaceState(null, "", path + location.search);
+  history.replaceState(null, "", withQuery(path, location.search));
   window.dispatchEvent(new Event(NAVIGATE));
+}
+
+/** `path` with `search` added; a target that brings its own query keeps its keys first. */
+export function withQuery(path: string, search: string): string {
+  if (!search || search === "?") return path;
+  if (!path.includes("?")) return path + search;
+  const [base, own = ""] = path.split("?") as [string, string?];
+  const query = new URLSearchParams(own);
+  for (const [key, value] of new URLSearchParams(search))
+    if (!query.has(key)) query.set(key, value);
+  return `${base}?${query.toString()}`;
 }
 
 /** Replaces the query string without a new history entry (filters change as you type). */

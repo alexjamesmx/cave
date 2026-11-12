@@ -1,19 +1,36 @@
-import { type ReactNode, useState } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 import { openNew } from "../app/quick.ts";
 import { railWide, setRailWide } from "../app/rail.ts";
 import type { Route } from "../app/router.ts";
 import { SECTIONS, type Section } from "../app/sections.ts";
+import { BrandMark } from "./BrandMark.tsx";
 import { Dock } from "./Dock.tsx";
 import { EnvBadge } from "./EnvBadge.tsx";
 import { Icon } from "./icon.tsx";
 import { NewSheet } from "./NewSheet.tsx";
 import { ClockAheadBanner, SyncBadge, SyncProblemBanner } from "./SyncBadge.tsx";
+import { Toasts } from "./UndoToast.tsx";
 
 /**
- * The rail (M11): the mark, New, one icon per section from the registry with Settings at the
- * bottom, then the sync state. Show names (M12) widens it to icons with labels, per device;
- * narrow, each link keeps its label for assistive tech and shows it beside the icon on hover
- * or focus. The dock reads the same registry on a phone.
+ * A section's emoji on a tile of its own colour; the sidebar, the dock and headers share it.
+ * The emoji is drawn by CSS from `data-emoji`, so a link's text stays its name alone.
+ */
+export function SectionTile({ section, size = 30 }: { section: Section; size?: number }) {
+  return (
+    <span
+      className="emoji-tile"
+      aria-hidden="true"
+      data-emoji={section.emoji}
+      style={{ "--c": section.color, "--size": `${size}px` } as CSSProperties}
+    />
+  );
+}
+
+/**
+ * The sidebar (M14): the mark, New, one emoji tile per section from the registry with Settings
+ * at the bottom, then the sync state. Wide with names by default; collapsed to tiles per
+ * device, each link then keeps its name for assistive tech and shows it on hover or focus.
+ * On a phone the dock and each page's header take its place.
  */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const active = route.name === "section" ? route.section : undefined;
@@ -26,11 +43,12 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
     <a
       key={s.id}
       href={s.path}
-      className={s.id === active ? "on" : undefined}
+      className={s.id === active ? "rail-link on" : "rail-link"}
       aria-current={s.id === active ? "page" : undefined}
       data-label={s.label}
+      style={{ "--c": s.color } as CSSProperties}
     >
-      <Icon name={s.icon} size={18} color={s.id === active ? s.color : undefined} />
+      <SectionTile section={s} />
       <span className="rail-label">{s.label}</span>
     </a>
   );
@@ -38,9 +56,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
     <div className="app">
       <aside className="side">
         <a className="brand" href="/" aria-label="Cave" data-label="Cave">
-          <span className="brand-mark">
-            <Icon name="zap" size={16} strokeWidth={2.2} />
-          </span>
+          <BrandMark />
           <span className="rail-label brand-name">Cave</span>
         </a>
         <button
@@ -50,13 +66,14 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           data-label="New · ⌘K"
           onClick={() => openNew()}
         >
-          <Icon name="plus" size={18} />
+          <Icon name="plus" size={18} strokeWidth={2.4} />
           <span className="rail-label">New</span>
           <kbd className="rail-label rail-kbd">⌘K</kbd>
         </button>
         <nav aria-label="Main" className="rail-nav">
           {SECTIONS.filter((s) => s.id !== "settings").map(link)}
           <div className="rail-end">
+            {SECTIONS.filter((s) => s.id === "settings").map(link)}
             <button
               type="button"
               className="rail-toggle"
@@ -68,7 +85,6 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               <Icon name={wide ? "panel-left-close" : "panel-left-open"} size={16} />
               <span className="rail-label">{wide ? "Hide names" : "Show names"}</span>
             </button>
-            {SECTIONS.filter((s) => s.id === "settings").map(link)}
           </div>
         </nav>
         <SyncBadge />
@@ -82,6 +98,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
       </main>
       <Dock />
       <NewSheet />
+      <Toasts />
       <EnvBadge />
     </div>
   );

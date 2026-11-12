@@ -1,16 +1,17 @@
 import type { ReactNode } from "react";
-import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections.ts";
-import { Icon } from "../ui/icon.tsx";
+import { type PageId, type Section, tabPath } from "../app/sections.ts";
+import { EverythingButton } from "../ui/Dock.tsx";
+import { SectionTile } from "../ui/Shell.tsx";
+import { SyncBadge } from "../ui/SyncBadge.tsx";
+import { Agenda } from "./Agenda.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { DiaryDays } from "./DiaryDays.tsx";
 import { DiaryToday } from "./DiaryToday.tsx";
 import { FlowRuns } from "./FlowRuns.tsx";
 import { Flows } from "./Flows.tsx";
-import { IdeasPage } from "./Ideas.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
 import { Notes } from "./Notes.tsx";
-import { Reminders } from "./Reminders.tsx";
 import { Routine } from "./Routine.tsx";
 import { Subscriptions } from "./Subscriptions.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
@@ -24,12 +25,11 @@ import { Transactions } from "./Transactions.tsx";
 /** Each page tab's component; \`rest\` is the path after the tab (a flow id, a collection). */
 const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-month": () => <Calendar />,
-  "calendar-reminders": () => <Reminders />,
+  "calendar-agenda": () => <Agenda />,
   "calendar-routine": () => <Routine />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
   "money-subscriptions": () => <Subscriptions />,
-  ideas: () => <IdeasPage />,
   notes: (rest) => <Notes id={rest[0]} />,
   "tasks-list": () => <TasksList />,
   "diary-today": () => <DiaryToday />,
@@ -43,7 +43,11 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "settings-data": (rest) => <SettingsData rest={rest} />,
 };
 
-/** A section: its title, its tab bar (scrolls on a phone) and the open tab. */
+/**
+ * A section: its emoji and title, its tabs as pills (scrolling sideways on a phone) and the open
+ * tab. On a phone the header also carries the sync state and ⚙️ (every section). The content
+ * is keyed by tab, so switching tabs plays the page's entrance again.
+ */
 export function SectionPage({
   section,
   tabId,
@@ -61,14 +65,16 @@ export function SectionPage({
     ) : (
       PAGES[tab.page](rest)
     );
-  const tabs = visibleTabs(section);
+  const { tabs } = section;
   return (
     <>
-      <header style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <span className="ico" style={{ background: "var(--on)", color: section.color }}>
-          <Icon name={section.icon} size={18} />
+      <header className="section-head">
+        <SectionTile section={section} size={36} />
+        <h1>{section.label}</h1>
+        <span className="section-head-end phone-only">
+          <SyncBadge />
+          <EverythingButton />
         </span>
-        <h1 style={{ margin: 0, fontSize: 24, letterSpacing: "-0.02em" }}>{section.label}</h1>
       </header>
       {tabs.length > 1 && (
         <nav aria-label={`${section.label} tabs`} className="section-tabs">
@@ -83,12 +89,9 @@ export function SectionPage({
           ))}
         </nav>
       )}
-      {tab.description && (
-        <p className="muted tab-description" style={{ margin: 0 }}>
-          {tab.description}
-        </p>
-      )}
-      {content}
+      <div className="tab-body" key={`${section.id}/${tab.id}`}>
+        {content}
+      </div>
     </>
   );
 }

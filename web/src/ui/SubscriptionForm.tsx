@@ -120,19 +120,17 @@ export function SubscriptionForm({ doc, onDone }: { doc?: Doc; onDone(message: s
             onChange={(e) => setDue(e.target.value)}
           />
         </label>
-        {!sole && (
-          <div className="quick-field">
-            <label className="k" htmlFor={`${ref.id}-account`}>
-              Account
-            </label>
-            <AccountPicker
-              id={`${ref.id}-account`}
-              collections={collections}
-              value={account}
-              onChange={setAccount}
-            />
-          </div>
-        )}
+        <div className="quick-field">
+          <label className="k" htmlFor={`${ref.id}-account`}>
+            Account
+          </label>
+          <AccountPicker
+            id={`${ref.id}-account`}
+            collections={collections}
+            value={account}
+            onChange={setAccount}
+          />
+        </div>
       </div>
       {error && (
         <p role="alert" className="error" style={{ margin: 0 }}>

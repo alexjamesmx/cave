@@ -5,9 +5,10 @@ import { defineConfig } from "@playwright/test";
 import webpush from "web-push";
 import { browserUse, chooseBrowser, snapshotPathTemplate } from "./e2e/browser.ts";
 
-const PORT = 3210;
+// CAVE_E2E_PORT moves both ports, so two checkouts can run their specs side by side.
+const PORT = Number(process.env.CAVE_E2E_PORT ?? 3210);
 // The server listens here; the specs reach it through the CSP proxy on PORT.
-const SERVER_PORT = 3211;
+const SERVER_PORT = PORT + 1;
 
 // A fresh folder per run, outside the repo, for the database, its lock and its backups.
 // Workers load this file again; the variable makes them reuse the runner's folder.

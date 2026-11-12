@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { useCave } from "../app/context.ts";
 import { closeNew, newSheet, newShortcut, openNew, type QuickKind } from "../app/quick.ts";
 import { usePathname } from "../app/router.ts";
 import { useSignal } from "../app/signal.ts";
+import { showToast } from "../app/toast.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
 import { useCollections } from "../store/queries.ts";
-import { Icon } from "./icon.tsx";
 import { MoneyForm } from "./MoneyForm.tsx";
 import { NoteForm } from "./NoteForm.tsx";
 import { TaskForm } from "./QuickForms.tsx";
@@ -13,15 +13,13 @@ import { ReminderForm } from "./ReminderForm.tsx";
 import { Sheet } from "./Sheet.tsx";
 import { SubscriptionForm } from "./SubscriptionForm.tsx";
 
-const QUICK: { kind: QuickKind; label: string; icon: string }[] = [
-  { kind: "expense", label: "Money", icon: "wallet" },
-  { kind: "task", label: "Task", icon: "square-check" },
-  { kind: "reminder", label: "Reminder", icon: "bell" },
-  { kind: "subscription", label: "Subscription", icon: "repeat" },
-  { kind: "note", label: "Note", icon: "notebook-pen" },
+const QUICK: { kind: QuickKind; label: string; emoji: string; color: string }[] = [
+  { kind: "expense", label: "Money", emoji: "💸", color: "#34d399" },
+  { kind: "task", label: "Task", emoji: "✅", color: "#60a5fa" },
+  { kind: "reminder", label: "Reminder", emoji: "🔔", color: "#fb7185" },
+  { kind: "subscription", label: "Subscription", emoji: "🔁", color: "#22d3ee" },
+  { kind: "note", label: "Note", emoji: "📝", color: "#a78bfa" },
 ];
-
-const TOAST_MS = 8000;
 
 /**
  * Add anything from any screen: five short forms in one sheet.
@@ -33,7 +31,6 @@ export function NewSheet() {
   const { local } = useCave();
   const stored = useCollections(local.db);
   const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
-  const [saved, setSaved] = useState<string>();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -49,17 +46,12 @@ export function NewSheet() {
   // Navigating closes the sheet.
   // biome-ignore lint/correctness/useExhaustiveDependencies: the path is the trigger
   useEffect(() => closeNew(), [pathname]);
-  useEffect(() => {
-    if (!saved) return;
-    const timer = setTimeout(() => setSaved(undefined), TOAST_MS);
-    return () => clearTimeout(timer);
-  }, [saved]);
 
   const quick = state.form;
   const pick = (kind: QuickKind) =>
     newSheet.set({ open: true, ...(quick === kind ? {} : { form: kind }) });
   const done = (message: string) => {
-    setSaved(message);
+    showToast({ message });
     closeNew();
   };
   return (
@@ -72,11 +64,13 @@ export function NewSheet() {
               <button
                 key={q.kind}
                 type="button"
-                className={`btn${quick === q.kind ? " primary" : ""}`}
+                className="quick-kind"
                 aria-expanded={quick === q.kind}
+                style={{ "--c": q.color } as CSSProperties}
                 onClick={() => pick(q.kind)}
               >
-                <Icon name={q.icon} size={15} /> {q.label}
+                <span className="emoji-tile" aria-hidden="true" data-emoji={q.emoji} />
+                {q.label}
               </button>
             ))}
           </fieldset>
@@ -86,11 +80,6 @@ export function NewSheet() {
           {quick === "note" && <NoteForm onDone={done} />}
           {quick === "reminder" && <ReminderForm onDone={done} />}
         </Sheet>
-      )}
-      {saved && (
-        <p role="status" className="panel toast">
-          {saved}
-        </p>
       )}
     </>
   );

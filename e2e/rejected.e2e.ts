@@ -9,7 +9,7 @@ test("a value the server refuses shows as not synced, with the reason", async ({
   const foreign = offOriginRequests(context, baseURL as string);
   const page = await context.newPage();
   await page.goto("/");
-  await expect(syncBadge(page)).toHaveText("SYNCED");
+  await expect(syncBadge(page)).toHaveText("Synced");
 
   // The app itself refuses such a value, so it goes straight into IndexedDB, as an older
   // client or another tab could have left it.
@@ -41,7 +41,7 @@ test("a value the server refuses shows as not synced, with the reason", async ({
     window.dispatchEvent(new Event("online"));
   });
 
-  await expect(syncBadge(page)).toHaveText("1 NOT SYNCED");
+  await expect(syncBadge(page)).toHaveText("1 not synced");
   await page.goto("/c/money/table");
   await page.getByRole("button", { name: "Bad amount" }).click();
   await expect(page.getByRole("alert")).toContainText(

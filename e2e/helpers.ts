@@ -31,7 +31,7 @@ export async function ownerContext(
 }
 
 export const syncBadge = (page: Page) =>
-  page.getByRole("status").filter({ hasText: /SYNC|OFFLINE/ });
+  page.getByRole("status").filter({ hasText: /sync|offline/i });
 
 /**
  * Records every request the context makes to a host other than the app's own; a test ends
@@ -49,45 +49,69 @@ export function offOriginRequests(context: BrowserContext, baseURL: string): str
   return seen;
 }
 
-/** Ask → Expense (or Income): the money form, saved. `category` is its shown name. */
+/** The account every e2e entry goes on when the database holds none yet. */
+export const E2E_ACCOUNT = "E2E wallet";
+
+/**
+ * Taps a category tile in the money form by its shown name, opening More first when it is
+ * not among the most used.
+ */
+export async function pickCategory(form: Locator, name: string) {
+  const tile = form.getByRole("button", { name, exact: true });
+  if ((await tile.count()) === 0) await form.getByRole("button", { name: "More" }).click();
+  await tile.click();
+}
+
+/** The money form needs an account: with none yet, it is typed in place. */
+export async function pickAccount(form: Locator) {
+  const add = form.getByLabel("Add an account");
+  if ((await add.count()) > 0) await add.fill(E2E_ACCOUNT);
+}
+
+/** New → Money: an expense (or income) saved from the form. `category` is its shown name. */
 export async function addMoney(
   page: Page,
-  entry: {
-    amount: number;
-    title: string;
-    category?: string;
-    income?: boolean;
-    yesterday?: boolean;
-  },
+  entry: { amount: number; title: string; category?: string; income?: boolean },
 ) {
   const sheet = await openNew(page);
   await sheet.getByRole("button", { name: "Money", exact: true }).click();
   const form = sheet.getByRole("form", { name: /Expense|Income/ });
-  if (entry.income) await form.getByRole("button", { name: "Income", exact: true }).click();
   await form.getByLabel("Amount").fill(String(entry.amount));
+  if (entry.income) await form.getByRole("button", { name: "Income", exact: true }).click();
   await form.getByLabel("Title").fill(entry.title);
-  if (entry.category) {
-    await form.getByRole("combobox", { name: "Category", exact: true }).fill(entry.category);
-    await page.getByRole("option", { name: new RegExp(`${entry.category}$`) }).click();
-  }
-  if (entry.yesterday) await form.getByRole("button", { name: "Yesterday" }).click();
-  await form.getByRole("button", { name: "Save" }).click();
+  if (entry.category) await pickCategory(form, entry.category);
+  await pickAccount(form);
+  await form.getByRole("button", { name: /^Save/ }).click();
 }
 
 /**
- * Types a new account into a form's account picker. A subscription needs one, and the shared
- * e2e database keeps none live; `archiveAccount` puts the list back as found.
+ * Types a new account into a form's account picker. A subscription needs one;
+ * `deleteAccount` puts the list back as found.
  */
 export async function newAccount(form: Locator, name: string) {
   await form.getByLabel("Account").selectOption("New account…");
   await form.getByLabel("New account").fill(name);
 }
 
-export async function archiveAccount(page: Page, name: string) {
+/**
+ * Money → Categories → Accounts: deletes one, any entries still on it waiting in To review, and
+ * waits until the list has reached the server, so the next spec's device sees it gone.
+ */
+export async function deleteAccount(page: Page, name: string) {
   await page.goto("/money/lists");
+  await page.getByRole("button", { name: /^Accounts/ }).click();
   const accounts = page.getByRole("list", { name: "Account options" });
-  await accounts.getByRole("button", { name: `Archive ${name}` }).click();
-  await expect(accounts.getByText(name)).toHaveCount(0);
+  const sent = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/sync") &&
+      r.request().method() === "POST" &&
+      (r.request().postData() ?? "").includes('"id":"money"'),
+  );
+  await accounts.getByRole("button", { name: `Delete ${name}` }).click();
+  const dialog = page.getByRole("dialog", { name: `Delete “${name}”?` });
+  if ((await dialog.count()) > 0) await dialog.getByRole("button", { name: "Delete" }).click();
+  await expect(accounts.getByLabel(`Name for ${name}`)).toHaveCount(0);
+  await sent;
 }
 
 /** Opens the New sheet (the rail's or the dock's New), unless it is already open. */

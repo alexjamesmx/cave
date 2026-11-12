@@ -234,34 +234,6 @@ function journal(today: string): SampleDoc[] {
   return docs;
 }
 
-const IDEAS: SampleDoc[] = [
-  {
-    id: "s-idea-garden",
-    collection: "ideas",
-    data: {
-      _title: "Balcony herb garden",
-      stage: "spark",
-      area: "home",
-      next_step: "Measure the balcony",
-    },
-  },
-  {
-    id: "s-idea-budget-bot",
-    collection: "ideas",
-    data: {
-      _title: "Weekly spending recap",
-      stage: "exploring",
-      area: "money",
-      next_step: "Sketch what it shows",
-    },
-  },
-  {
-    id: "s-idea-shelves",
-    collection: "ideas",
-    data: { _title: "Floating kitchen shelves", stage: "building" },
-  },
-];
-
 function wealth(today: string): SampleDoc[] {
   const w = (id: string, title: string, type: string, value: number): SampleDoc => ({
     id: `s-wealth-${id}`,
@@ -363,40 +335,80 @@ const OTHER: SampleDoc[] = [
  * so this month, Payments and the calendar always have content. No randomness: the same day
  * gives the same records. Parents come before what refers to them.
  */
-/** Notes in a few folders, linked with wikilinks. */
-const NOTES: SampleDoc[] = [
-  {
-    id: "s-note-shelves",
+/**
+ * Notes in a few topics, linked with wikilinks, created over the last weeks. The ideas are notes
+ * in topic Ideas, written the way seed migration 26 turns an idea into one.
+ */
+function notes(today: string): SampleDoc[] {
+  const note = (
+    id: string,
+    folder: string,
+    daysAgo: number,
+    title: string,
+    body: string,
+  ): SampleDoc => ({
+    id,
     collection: "notes",
     data: {
-      _title: "Shelf measurements",
-      _body:
-        "Wall: 180 cm. Two boards, four brackets.\n\nSee [[Kitchen paint]] for colours.\n\n- [x] Measure\n- [ ] Buy brackets",
-      folder: "Projects/Kitchen",
+      _title: title,
+      _body: body,
+      _created: `${addDays(today, -daysAgo)}T16:00:00.000Z`,
+      folder,
       source: "owner",
     },
-  },
-  {
-    id: "s-note-paint",
-    collection: "notes",
-    data: {
-      _title: "Kitchen paint",
-      _body: "Warm white for the walls; the accent wall in sage.",
-      folder: "Projects/Kitchen",
-      source: "owner",
-    },
-  },
-  {
-    id: "s-note-inbox",
-    collection: "notes",
-    data: {
-      _title: "Ideas for the weekend",
-      _body: "Revisar la acción del plan y llamar a mamá.",
-      folder: "Inbox",
-      source: "owner",
-    },
-  },
-];
+  });
+  return [
+    note(
+      "s-note-shelves",
+      "Projects/Kitchen",
+      0,
+      "Shelf measurements",
+      "Wall: 180 cm. Two boards, four brackets.\n\nSee [[Kitchen paint]] for colours.\n\n- [x] Measure\n- [ ] Buy brackets",
+    ),
+    note(
+      "s-note-paint",
+      "Projects/Kitchen",
+      1,
+      "Kitchen paint",
+      "Warm white for the walls; the accent wall in sage.",
+    ),
+    note(
+      "s-note-inbox",
+      "Inbox",
+      0,
+      "Ideas for the weekend",
+      "Revisar la acción del plan y llamar a mamá.",
+    ),
+    note(
+      "s-note-limits",
+      "🎓 School/Calculus",
+      15,
+      "Limits cheat sheet",
+      "sin(x)/x → 1 as x → 0. L’Hôpital only for 0/0 or ∞/∞.",
+    ),
+    note(
+      "s-idea-budget-bot",
+      "Ideas",
+      2,
+      "Weekly spending recap",
+      "A Sunday email with the week’s spend by category, and one line on what changed.\n\n- **Stage:** exploring\n- **Area:** money\n- **Next step:** Sketch what it shows",
+    ),
+    note(
+      "s-idea-garden",
+      "Ideas",
+      4,
+      "Balcony herb garden",
+      "Basil, mint, cilantro. Morning sun only, so a rail planter on the east side.\n\n- **Stage:** spark\n- **Area:** home\n- **Next step:** Measure the balcony",
+    ),
+    note(
+      "s-idea-shelves",
+      "Ideas",
+      10,
+      "Floating kitchen shelves",
+      "Oak, hidden brackets. Ties into the [[Shelf measurements]].\n\n- **Stage:** building",
+    ),
+  ];
+}
 
 /** Radar findings from an agent: two match the default interests, one doesn't. */
 function radar(today: string): SampleDoc[] {
@@ -452,12 +464,11 @@ export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
     ...payments(today),
     ...tasks(today),
     ...journal(today),
-    ...IDEAS,
     ...wealth(today),
     ...leetcode(today),
     ...reminders(today),
     ...radar(today),
-    ...NOTES,
+    ...notes(today),
     ...OTHER,
   ].map((d) => ({ ...d, data: { _created: createdAt, ...d.data } }));
 }

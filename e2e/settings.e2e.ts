@@ -1,7 +1,7 @@
 import { offOriginRequests, ownerContext } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Settings: five pages; the name and goal sync; Data exports a file and imports it back as a dry run", async ({
+test("Settings: five pages; the reminder time syncs; Data exports a file and imports it back as a dry run", async ({
   browser,
   baseURL,
 }) => {
@@ -13,27 +13,18 @@ test("Settings: five pages; the name and goal sync; Data exports a file and impo
     page.getByRole("navigation", { name: "Settings tabs" }).getByRole("link"),
   ).toHaveText(["General", "Devices & server", "Notifications", "Agents", "Data"]);
 
-  // General: the name and the goal are settings keys, pushed as any edit.
+  // General: the reminder time is a settings key, pushed as any edit; then back to 09:00.
   const pushed = (key: string) =>
     page.waitForResponse(
       (r) => r.url().endsWith("/api/sync") && (r.request().postData() ?? "").includes(key),
     );
-  const name = pushed("ownerName");
-  await page.getByLabel("Your name").fill("Alex");
-  await page.getByLabel("Your name").blur();
-  expect((await name).ok()).toBe(true);
-  const goal = pushed("goal");
-  await page.getByLabel("Goal").fill("Ship the Cave");
-  await page.getByLabel("Goal").blur();
-  expect((await goal).ok()).toBe(true);
+  const time = pushed("reminderTime");
+  await page.getByLabel("Reminder time").fill("08:30");
+  await page.getByLabel("Reminder time").blur();
+  expect((await time).ok()).toBe(true);
+  await page.getByLabel("Reminder time").fill("09:00");
+  await page.getByLabel("Reminder time").blur();
   await expect(page.getByText("Opens on").locator("..")).toContainText("Money → Overview");
-  // The phone dock editor shows the dock's four sections with their position (buttons in rail order).
-  await expect(page.getByRole("button", { pressed: true })).toHaveText([
-    "1. Money",
-    "3. Calendar",
-    "4. Notes",
-    "2. Tasks",
-  ]);
 
   // Notifications: who emails go to and the name they come from; a bad address is refused.
   await page.goto("/settings/notifications");

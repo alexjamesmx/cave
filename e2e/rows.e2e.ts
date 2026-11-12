@@ -1,4 +1,4 @@
-import { addMoney, archiveAccount, newAccount, openNew, ownerContext, pushed } from "./helpers.ts";
+import { addMoney, deleteAccount, newAccount, openNew, ownerContext, pushed } from "./helpers.ts";
 import { expect, type Locator, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
@@ -58,11 +58,11 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
     .locator("li", { hasText: "Rows e2e bill" });
   await opensByClickAndKey(page, agenda, agenda.locator(".agenda-time"), "Payments item");
 
-  // Money → Subscriptions: a click on a row, or Enter, opens it in its form.
+  // Money → Subscriptions: a click on a card, or Enter, opens it in its form.
   await page.goto("/money/subscriptions");
-  const row = page.getByRole("row").filter({ hasText: "Rows e2e bill" });
+  const row = page.getByRole("listitem").filter({ hasText: "Rows e2e bill" });
   const sheet = page.getByRole("dialog", { name: "Rows e2e bill" });
-  await row.locator("td").nth(2).click();
+  await row.locator(".ms-month").click();
   await expect(sheet.getByLabel("Name")).toHaveValue("Rows e2e bill");
   await sheet.getByRole("button", { name: "Close" }).click();
   await row.focus();
@@ -71,24 +71,32 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
   await sheet.getByRole("button", { name: "Delete" }).click();
   await expect(row).toHaveCount(0);
 
-  // Money → Transactions and Tasks → List: a table cell that isn't the title.
+  // Money → Transactions (a part of the row that isn't the title) and Tasks → List (a cell).
   await page.goto("/money/transactions");
-  const coffee = page.locator("tr", { hasText: "Rows e2e coffee" });
-  await opensByClickAndKey(page, coffee, coffee.locator("td").nth(1), "Money item");
+  const coffee = page.getByRole("listitem").filter({ hasText: "Rows e2e coffee" });
+  await opensByClickAndKey(page, coffee, coffee.locator(".tx-acct"), "Money item");
   await page.goto("/tasks/list");
   const taskRow = page.locator("tr", { hasText: "Rows e2e task" });
   await opensByClickAndKey(page, taskRow, taskRow.locator("td").nth(1), "Tasks item");
 
-  // Ideas → Ideas.
-  await page.goto("/ideas/all");
-  await page.getByLabel("New idea").fill("Rows e2e idea");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  const idea = page.getByRole("listitem").filter({ hasText: "Rows e2e idea" });
-  await opensByClickAndKey(page, idea, idea.locator(".chip").first(), "Ideas item");
+  // Notes → Notes, topic Ideas: a click on a card's date, or Enter, opens the note.
+  await page.goto("/notes/all?topic=Ideas");
+  const bar = page.getByLabel("Capture or search");
+  await bar.fill("Rows e2e idea");
+  await bar.press("Enter");
+  const idea = page.getByRole("link", { name: /Rows e2e idea/ });
+  const opened = page.getByLabel("Note title");
+  await idea.locator(".note-card-date").click();
+  await expect(opened).toHaveValue("Rows e2e idea");
+  await page.getByRole("link", { name: "Back to notes" }).click();
+  await idea.focus();
+  await page.keyboard.press("Enter");
+  await expect(opened).toHaveValue("Rows e2e idea");
+  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
+  await expect(idea).toHaveCount(0);
 
   // Leave the shared database as found.
   for (const [path, name, drawer] of [
-    ["/ideas/all", "Rows e2e idea", "Ideas item"],
     ["/tasks/list", "Rows e2e task", "Tasks item"],
     ["/money/transactions", "Rows e2e coffee", "Money item"],
   ] as const) {
@@ -102,5 +110,5 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
     );
     await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
   }
-  await archiveAccount(page, account);
+  await deleteAccount(page, account);
 });

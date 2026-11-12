@@ -1,4 +1,4 @@
-import { PALETTE } from "./palette.ts";
+import { SWATCHES } from "./palette.ts";
 import type { Field, OptionKind, SelectOption } from "./schema.ts";
 
 /**
@@ -6,17 +6,7 @@ import type { Field, OptionKind, SelectOption } from "./schema.ts";
  * and `emoji` are what the app shows, and the owner can edit both. Existing values keep their
  * ids: "health" shows as "Health & gym" without rewriting a single entry.
  */
-const C = {
-  orange: PALETTE.orange,
-  violet: PALETTE.vio,
-  cyan: PALETTE.teal,
-  expense: PALETTE.bad,
-  purple: PALETTE.purple,
-  grey: PALETTE.grey,
-  gold: PALETTE.warn,
-  income: PALETTE.ok,
-  lime: PALETTE.ok,
-};
+const S = SWATCHES;
 
 const cat = (
   value: string,
@@ -28,33 +18,33 @@ const cat = (
 ): SelectOption => ({ value, label, emoji, kind, icon, color });
 
 export const CATEGORY_SET: SelectOption[] = [
-  cat("food", "Food", "🍔", "expense", "utensils", C.orange),
-  cat("groceries", "Groceries", "🛒", "expense", "shopping-cart", C.lime),
-  cat("gula", "Gula", "🍬", "expense", "candy", C.purple),
-  cat("home", "Home", "🏠", "expense", "house", C.violet),
-  cat("transport", "Transport", "🚗", "expense", "car", C.cyan),
-  cat("health", "Health & gym", "💪", "expense", "heart-pulse", C.expense),
-  cat("beauty", "Beauty & care", "💅", "expense", "sparkle", C.purple),
-  cat("shopping", "Shopping", "🛍️", "expense", "shopping-bag", C.orange),
-  cat("subscriptions", "Subscriptions", "🔁", "expense", "repeat", C.cyan),
-  cat("fun", "Fun & social", "🎉", "expense", "sparkles", C.purple),
-  cat("travel", "Travel", "✈️", "expense", "plane", C.cyan),
-  cat("gifts", "Gifts & family", "🎁", "expense", "gift", C.expense),
-  cat("learning", "Learning", "📚", "expense", "graduation-cap", C.violet),
-  cat("error", "Error", "⚠️", "expense", "triangle-alert", C.expense),
-  cat("other", "Other", "❓", "expense", "ellipsis", C.grey),
-  cat("salary", "Salary", "💼", "income", "briefcase", C.income),
-  cat("vales", "Vales", "🍽️", "income", "ticket", C.income),
-  cat("rent_income", "Rent income", "🏘️", "income", "building", C.income),
-  cat("gifts_received", "Gifts received", "🎁", "income", "gift", C.income),
-  cat("sales", "Sales", "💸", "income", "tag", C.income),
-  cat("transfers_in", "Transfers in", "🔄", "income", "arrow-down-left", C.income),
-  cat("other_income", "Other income", "➕", "income", "plus", C.income),
+  cat("food", "Food", "🍔", "expense", "utensils", S.orange),
+  cat("groceries", "Groceries", "🛒", "expense", "shopping-cart", S.green),
+  cat("gula", "Gula", "🍬", "expense", "candy", S.fuchsia),
+  cat("home", "Home", "🏠", "expense", "house", S.violet),
+  cat("transport", "Transport", "🚗", "expense", "car", S.sky),
+  cat("health", "Health & gym", "💪", "expense", "heart-pulse", S.rose),
+  cat("beauty", "Beauty & care", "💅", "expense", "sparkle", S.pink),
+  cat("shopping", "Shopping", "🛍️", "expense", "shopping-bag", S.amber),
+  cat("subscriptions", "Subscriptions", "🔁", "expense", "repeat", S.cyan),
+  cat("fun", "Fun & social", "🎉", "expense", "sparkles", S.yellow),
+  cat("travel", "Travel", "✈️", "expense", "plane", S.teal),
+  cat("gifts", "Gifts & family", "🎁", "expense", "gift", S.red),
+  cat("learning", "Learning", "📚", "expense", "graduation-cap", S.indigo),
+  cat("error", "Error", "⚠️", "expense", "triangle-alert", S.red),
+  cat("other", "Other", "❓", "expense", "ellipsis", S.grey),
+  cat("salary", "Salary", "💼", "income", "briefcase", S.green),
+  cat("vales", "Vales", "🍽️", "income", "ticket", S.lime),
+  cat("rent_income", "Rent income", "🏘️", "income", "building", S.teal),
+  cat("gifts_received", "Gifts received", "🎁", "income", "gift", S.fuchsia),
+  cat("sales", "Sales", "💸", "income", "tag", S.sky),
+  cat("transfers_in", "Transfers in", "🔄", "income", "arrow-down-left", S.blue),
+  cat("other_income", "Other income", "➕", "income", "plus", S.yellow),
   // "income" predates the set; its entries keep it until the review moves them.
-  cat("income", "Income", "💰", "income", "coins", C.income),
-  cat("investment", "Investment", "📈", "transfer", "trending-up", C.gold),
-  cat("between_accounts", "Between accounts", "🔀", "transfer", "arrow-left-right", C.lime),
-  cat("transfer", "Transfer", "🔀", "transfer", "arrow-left-right", C.lime),
+  cat("income", "Income", "💰", "income", "coins", S.green),
+  cat("investment", "Investment", "📈", "transfer", "trending-up", S.amber),
+  cat("between_accounts", "Between accounts", "🔀", "transfer", "arrow-left-right", S.blue),
+  cat("transfer", "Transfer", "🔀", "transfer", "arrow-left-right", S.indigo),
 ];
 
 /**

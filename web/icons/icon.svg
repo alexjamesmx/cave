@@ -1,14 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <title>Cave</title>
-  <defs>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0" stop-color="#B6FF3B" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#B6FF3B" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="512" height="512" fill="#050607"/>
-  <circle cx="256" cy="256" r="190" fill="url(#glow)"/>
-  <!-- The sidebar's bolt, scaled to stay inside the 80% maskable safe zone. -->
-  <path transform="translate(118 112) scale(12)" d="M13 2 4 14h7l-1 8 9-12h-7z"
-        fill="#B6FF3B" stroke="#B6FF3B" stroke-width="1.2" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>Cave</title><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9a62"/><stop offset="1" stop-color="#ff3d7f"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#g)"/><g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="36"><path d="M116 350A140 140 0 0 1 396 350"/><path d="M166 350A90 90 0 0 1 346 350" stroke-opacity=".72"/><path d="M216 350A40 40 0 0 1 296 350" stroke-opacity=".45"/></g></svg>

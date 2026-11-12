@@ -1,16 +1,7 @@
 import { expect, test } from "bun:test";
 import { CATEGORY_SET, transferCategories } from "./categories.ts";
 import { monthSummary } from "./money.ts";
-import {
-  filterEntries,
-  filterFromSearch,
-  filterToSearch,
-  lastTwelve,
-  type MoneyFilter,
-  periodSummary,
-  previousPeriod,
-  topTitles,
-} from "./money-stats.ts";
+import { periodSummary, previousPeriod, stackedTwelve } from "./money-stats.ts";
 import type { Doc } from "./types.ts";
 
 const TRANSFERS = transferCategories({
@@ -65,9 +56,9 @@ test("a year is the sum of its months, each exactly as money_month counts it", (
   expect(previousPeriod({ kind: "year", key: "2026" })).toEqual({ kind: "year", key: "2025" });
 });
 
-test("twelve months end with the asked month, with the savings rate and one category", () => {
-  const points = lastTwelve(docs, "2026-11", "2026-12-31", TRANSFERS, "food");
-  expect(points.map((p) => p.month)).toEqual([
+test("twelve stacked months end with the asked month: the biggest categories, then the rest", () => {
+  const s = stackedTwelve(docs, "2026-11", "2026-12-31", TRANSFERS, 2);
+  expect(s.months.map((m) => m.month)).toEqual([
     "2025-12",
     "2026-01",
     "2026-02",
@@ -81,36 +72,7 @@ test("twelve months end with the asked month, with the savings rate and one cate
     "2026-10",
     "2026-11",
   ]);
-  const oct = points.at(-2);
-  expect(oct).toMatchObject({ spent: 1040, income: 20000, category: 100 });
-  expect(oct?.savingsRate).toBeCloseTo((20000 - 1040) / 20000);
-  expect(points[0]?.savingsRate).toBeUndefined();
-});
-
-test("filters combine, and survive a trip through the URL", () => {
-  const f: MoneyFilter = {
-    from: "2026-10-01",
-    to: "2026-10-31",
-    direction: "expense",
-    categories: ["food", "health"],
-    text: "taco",
-    min: 50,
-    max: 500,
-  };
-  expect(filterEntries(docs, f).map((d) => d.data.amount)).toEqual([100]);
-  expect(filterEntries(docs, { uncategorized: true }).map((d) => d.data.amount)).toEqual([40, 70]);
-  expect(filterEntries(docs, { account: "Nu" })).toHaveLength(1);
-  expect(filterEntries(docs, {})).toHaveLength(docs.length);
-  for (const filter of [f, { uncategorized: true, account: "Nu" }, {}])
-    expect(filterFromSearch(filterToSearch(filter))).toEqual(filter);
-  expect(filterFromSearch("?from=nope&min=abc&direction=sideways")).toEqual({});
-});
-
-test("top titles", () => {
-  const oct = periodSummary(docs, { kind: "month", key: "2026-10" }, "2026-12-31", TRANSFERS);
-  expect(topTitles(oct.expenses).map((t) => [t.title, t.amount])).toEqual([
-    ["City Gym", 900],
-    ["Tacos", 100],
-    ["Mystery", 40],
-  ]);
+  expect(s.categories).toEqual(["health", "travel"]);
+  expect(s.other).toBe(true);
+  expect(s.months.at(-2)).toEqual({ month: "2026-10", values: [900, 0, 140], total: 1040 });
 });

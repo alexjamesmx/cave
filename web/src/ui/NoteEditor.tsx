@@ -6,7 +6,7 @@ import { titleOf } from "../logic/views.ts";
 import { Icon } from "./icon.tsx";
 import { MarkdownEditor } from "./MarkdownEditor.tsx";
 
-export const when = (iso: unknown) =>
+const when = (iso: unknown) =>
   typeof iso === "string" && iso
     ? new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" })
     : "";
@@ -39,7 +39,7 @@ export function NoteEditor({
       style={{ padding: 16, display: "grid", gap: 12 }}
     >
       <div className="page-head">
-        <a className="btn" href={backHref} aria-label={`All notes`}>
+        <a className="btn" href={backHref} aria-label="Back to notes">
           <Icon name="chevron-left" size={15} />
         </a>
         <input

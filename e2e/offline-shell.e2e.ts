@@ -7,7 +7,7 @@ test("after one online visit the app opens offline with its data", async ({ brow
   const page = await context.newPage();
 
   await page.goto("/");
-  await expect(syncBadge(page)).toHaveText("SYNCED");
+  await expect(syncBadge(page)).toHaveText("Synced");
   await addMoney(page, { amount: 317, title: "shell check", category: "Food" });
   await expect(
     page.getByRole("status").filter({ hasText: "Saved · Expense · shell check" }),
@@ -21,7 +21,7 @@ test("after one online visit the app opens offline with its data", async ({ brow
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Money" })).toBeVisible();
-  await expect(syncBadge(page)).toHaveText("OFFLINE · SAVED HERE");
+  await expect(syncBadge(page)).toHaveText("Offline · saved here");
 
   await page.goto("/c/money/table");
   await expect(page.getByRole("button", { name: "shell check" })).toBeVisible();

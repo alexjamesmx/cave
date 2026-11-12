@@ -1,7 +1,7 @@
-import { ownerContext } from "./helpers.ts";
+import { ownerContext, pickAccount, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Money has five described tabs; an undated transaction saves, shows under Undated and is left out of totals", async ({
+test("Money has five tabs; an entry whose date is cleared waits under Undated, out of every total, until dated again", async ({
   browser,
 }) => {
   const page = await (
@@ -15,37 +15,31 @@ test("Money has five described tabs; an undated transaction saves, shows under U
     "Transactions",
     "Subscriptions",
     "Net worth",
-    "Categories & accounts",
+    "Categories",
   ]);
-  await expect(page.getByText("Where your money went this month.")).toBeVisible();
-  await tabs.getByRole("link", { name: "Net worth" }).click();
-  await expect(page.getByText("What you own minus what you owe.")).toBeVisible();
   await page.goto("/money/wealth");
   await expect(page).toHaveURL(/\/money\/net-worth$/);
 
-  // A transaction with no date and no account.
+  // An entry, then its date cleared in the editor, as an import or an agent may leave one.
   await page.goto("/money/transactions");
-  await expect(
-    page.getByText("Money that moved. Every expense, income and transfer."),
-  ).toBeVisible();
-  // The Account column shows only with two or more live accounts (one is taken silently).
-  const headers = page.getByRole("columnheader");
-  await expect(headers.nth(0)).toHaveText("Time");
-  await expect(headers.nth(1)).toHaveText("Title");
-  await expect(headers.nth(2)).toHaveText("Category");
-  await expect(headers.nth(3)).toHaveText("Amount");
   await page.getByRole("button", { name: "New entry" }).click();
-  const form = page.getByRole("form", { name: "Expense" });
+  const sheet = page.getByRole("dialog", { name: "New entry" });
+  const form = sheet.getByRole("form", { name: "Expense" });
   await form.getByLabel("Amount").fill("1240");
   await form.getByLabel("Title").fill("Undated e2e");
-  await form.getByRole("button", { name: "No date" }).click();
-  await expect(form.getByText(/Saved without a date/)).toBeVisible();
-  await form.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Undated e2e" })).toBeVisible();
+  await pickAccount(form);
+  await form.getByRole("button", { name: /^Save/ }).click();
+  await expect(sheet.getByRole("status").filter({ hasText: "Undated e2e" })).toBeVisible();
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: "Undated e2e", exact: true }).click();
+  const drawer = page.getByRole("complementary", { name: "Money item" });
+  await drawer.getByLabel("Date", { exact: true }).fill("");
+  await drawer.getByLabel("Date", { exact: true }).blur();
+  await drawer.getByRole("button", { name: "Close" }).click();
 
-  const undated = page.getByRole("rowgroup", { name: "Undated" });
+  const undated = page.getByRole("region", { name: "Undated" });
   await expect(undated).toContainText(/Undated · \d+ · \$[\d,]+ in no total until dated/);
-  const row = undated.getByRole("row").filter({ hasText: "Undated e2e" });
+  const row = undated.getByRole("listitem").filter({ hasText: "Undated e2e" });
   await expect(row).toContainText("−$1,240");
 
   // The month's totals say what they leave out.
@@ -59,20 +53,24 @@ test("Money has five described tabs; an undated transaction saves, shows under U
   await row.getByRole("button", { name: "Set date" }).click();
   await row.getByLabel("Date for Undated e2e").fill(`${first}T12:00`);
   await row.getByRole("button", { name: "Save" }).click();
-  await expect(undated.getByRole("row").filter({ hasText: "Undated e2e" })).toHaveCount(0);
-  const dated = page.getByRole("row").filter({ hasText: "Undated e2e" });
+  await expect(undated).toHaveCount(0);
+  const dated = page.getByRole("listitem").filter({ hasText: "Undated e2e" });
   await expect(dated).toContainText("12:00");
-  await expect(page.getByRole("rowgroup", { name: /^[A-Z][a-z]{2} 1$/ })).toContainText(
-    "Undated e2e",
-  );
+  await expect(
+    page
+      .getByRole("region", { name: /^(Today|Yesterday|[A-Z][a-z]+day 1)$/ })
+      .filter({ hasText: "Undated e2e" }),
+  ).toHaveCount(1);
 
   // Leave the shared database as found.
   await dated.getByRole("button", { name: "Undated e2e" }).click();
-  await page
-    .getByRole("complementary", { name: "Money item" })
-    .getByRole("button", { name: "Delete" })
-    .click();
-  await expect(page.getByRole("row").filter({ hasText: "Undated e2e" })).toHaveCount(0);
+  await pushed(page, () =>
+    page
+      .getByRole("complementary", { name: "Money item" })
+      .getByRole("button", { name: "Delete" })
+      .click(),
+  );
+  await expect(page.getByRole("listitem").filter({ hasText: "Undated e2e" })).toHaveCount(0);
 });
 
 test("a subscription can't be saved without amount, repeat and account", async ({ browser }) => {
