@@ -42,7 +42,13 @@ flowchart LR
 | Claude Code cloud sessions | Anthropic VM | change the code from the phone or browser; push branches and open PRs, never merge; no production access |
 | Laptop repo | the laptop (Linux), `~/code/jarvis` | where code is written and tested; Remote Control and `bun run deploy` run from here |
 
-**The app's structure** (M11; Projects retired 2026-11-08): six sections (Money, Calendar, Flows, Ideas, Notes, Tasks) and Settings, each with tabs, all from one registry (`web/src/app/sections.ts`) that the rail, the phone dock and the router read; the app opens on Money's overview. Every collection belongs to one section or is reached only from Settings → Data. Ideas holds the owner's ideas and LeetCode; Settings holds only general things (General, Devices & server, Notifications, Agents, Data).
+**The app's structure** (M14):
+
+- **Sections:** five (Money, Tasks, Calendar, Notes, Flows) and Settings, each with tabs.
+- **One registry:** `web/src/app/sections.ts`, which the sidebar, the phone dock and the router read.
+- **Where things live:** every collection belongs to one section or is reached only from Settings → Data. Ideas are notes in the topic Ideas; LeetCode is a Notes tab.
+- **Settings:** holds only general things (General, Devices & server, Notifications, Agents, Data).
+- **Opening:** the app opens on Money's overview.
 
 **Who gets in.** Every `/api` request needs the server token, and `/mcp` needs an agent token. Before any token check, the request guard refuses unknown hosts, foreign origins and non-JSON posts. The firewall lets in only 22, 80 and 443, and SSH takes keys only.
 
