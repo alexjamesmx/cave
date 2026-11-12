@@ -1,17 +1,5 @@
 /* Money (M14): this area's own styles, loaded after styles.css. */
 
-/* An emoji tile draws its emoji from data-emoji, so the emoji never joins an element's name. */
-.emoji-tile[data-emoji]::before {
-  content: attr(data-emoji);
-}
-
-/* The tab's entrance holds its last frame (`both`), an identity transform that would make the
-   tab the containing block of every fixed sheet and drawer inside it; without the fill they
-   stay on the viewport. */
-.tab-body:has(> .tx-page, > .ov-page, > .ms-page, > .mc-page) {
-  animation-fill-mode: backwards;
-}
-
 .tx-page,
 .ov-page,
 .ms-page,

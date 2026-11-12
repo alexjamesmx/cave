@@ -1,19 +1,14 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { localDateTime } from "../../../shared/dates.ts";
-import { FieldValueError } from "../../../shared/fields.ts";
+import { FieldValueError, offeredOptions } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
 import { expenseFrom, PAYMENTS, paidPatch } from "../../../shared/payments.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone } from "../app/hooks.ts";
-import {
-  type AgendaItem,
-  type AgendaType,
-  COLLECTION_OF,
-  donePatch,
-  paidExpense,
-} from "../logic/agenda.ts";
+import { type AgendaItem, type AgendaType, COLLECTION_OF, donePatch } from "../logic/agenda.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
+import { paidEntry } from "../logic/subscription-paid.ts";
 import { titleOf } from "../logic/views.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "./ItemDrawer.tsx";
@@ -101,7 +96,17 @@ export function useAgendaActions(): {
       void attempt(task).finally(() => busy.current.delete(it.id));
     };
     if (it.type === "payment") {
-      const expense = paidExpense(it.doc, localDateTime(new Date(now), zone.timeZone));
+      const money = collections?.find((c) => c.id === "money")?.data.fields;
+      const listOf = (id: string) => {
+        const field = money?.find((f) => f.id === id);
+        return field ? offeredOptions(field) : [];
+      };
+      const expense = paidEntry(
+        it.doc,
+        listOf("category"),
+        listOf("account"),
+        localDateTime(new Date(now), zone.timeZone),
+      );
       if (!expense) {
         setPaying(it.doc);
         return;

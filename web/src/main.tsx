@@ -15,11 +15,7 @@ import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/newsreader";
 import "@fontsource-variable/newsreader/wght-italic.css";
-import "./styles.css";
-import "./styles/money.css";
-import "./styles/tasks.css";
-import "./styles/calendar.css";
-import "./styles/notes.css";
+import "./styles/index.css";
 import { LockScreen } from "./ui/LockScreen.tsx";
 
 const container = document.getElementById("root");

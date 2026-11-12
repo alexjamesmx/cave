@@ -1,0 +1,7 @@
+/* The one stylesheet entry (M14): the base, then each area, in this order in every build, so
+   an area's rule wins over a base rule of the same strength. */
+@import "../styles.css";
+@import "./money.css";
+@import "./tasks.css";
+@import "./calendar.css";
+@import "./notes.css";

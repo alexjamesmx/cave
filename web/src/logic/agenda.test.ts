@@ -7,7 +7,6 @@ import {
   agendaDone,
   donePatch,
   groupName,
-  paidExpense,
   todayTime,
   whenLabel,
 } from "./agenda.ts";
@@ -125,21 +124,6 @@ test("✓ completes a reminder or task (a repeat moves on) and moves a payment o
   });
   expect(patch("p-late")).toEqual({ active: false });
   expect(patch("p-later").due).toBe("2026-12-24T10:00");
-});
-
-test("a payment's expense comes from it, linked; a varying amount is never guessed", () => {
-  const late = payments[0] as Doc;
-  expect(paidExpense(late, "2026-11-12T10:00")).toEqual({
-    _title: "p-late",
-    amount: 500,
-    direction: "expense",
-    date: "2026-11-12T10:00",
-    category: "bills",
-    payment: "p-late",
-  });
-  const varies = doc("gas", "payments", { amount: 300, approx: true });
-  expect(paidExpense(varies, "2026-11-12T10:00")).toBeUndefined();
-  expect(paidExpense(doc("blank", "payments", {}), "2026-11-12T10:00")).toBeUndefined();
 });
 
 test("a reminder added for today waits for the reminder time, else the next hour", () => {

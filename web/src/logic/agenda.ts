@@ -1,5 +1,5 @@
 import { dayOf, localDate, localDateTime } from "../../../shared/dates.ts";
-import { expenseFrom, isActive, paidPatch } from "../../../shared/payments.ts";
+import { isActive, paidPatch } from "../../../shared/payments.ts";
 import {
   complete,
   dueInstant,
@@ -177,7 +177,7 @@ export function whenLabel(it: AgendaItem, group: AgendaGroupId, today: string): 
 /**
  * What ✓ writes on the item itself. A reminder completes and a task is done, each moving to
  * its next date when it repeats; a payment moves to its next date, or goes inactive when it
- * doesn't repeat. A payment's expense is a separate entry (`paidExpense`).
+ * doesn't repeat. A payment's expense is a separate entry (`paidEntry`).
  */
 export function donePatch(it: AgendaItem, now: number, zone: Zone): Record<string, unknown> {
   if (it.type === "reminder") return complete(it.doc, now, zone);
@@ -186,25 +186,6 @@ export function donePatch(it: AgendaItem, now: number, zone: Zone): Record<strin
   return it.repeat === "none"
     ? statusPatch(it.doc, "done", nowLocal)
     : completeTask(it.doc, now, zone, nowLocal);
-}
-
-/**
- * The expense a payment's ✓ logs, linked to it, as the agents' mark_paid does: the payment's
- * title, amount, category and account, dated now. Undefined when its amount varies or is
- * missing, so it is asked for and never guessed.
- */
-export function paidExpense(payment: Doc, nowLocal: string): Record<string, unknown> | undefined {
-  const e = expenseFrom(payment);
-  if (e.amount === undefined) return undefined;
-  return {
-    _title: e.title ?? "Payment",
-    amount: e.amount,
-    direction: "expense",
-    date: nowLocal,
-    ...(e.category ? { category: e.category } : {}),
-    ...(e.account ? { account: e.account } : {}),
-    payment: payment.id,
-  };
 }
 
 /**
