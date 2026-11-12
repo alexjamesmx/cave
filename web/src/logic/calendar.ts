@@ -1,6 +1,4 @@
-import { dayOf, localDateTime } from "../../../shared/dates.ts";
-import { parseDefinition } from "../../../shared/flows/registry.ts";
-import { nextSlot } from "../../../shared/flows/schedule.ts";
+import { dayOf, shortDay } from "../../../shared/dates.ts";
 import { isActive } from "../../../shared/payments.ts";
 import {
   dueInstant,
@@ -39,9 +37,9 @@ export interface CalendarEvent {
 }
 
 /**
- * Something the calendar reads entries from. Reminders, tasks and flows' next runs are built
- * in; external calendars (Google Calendar, CalDAV) are more sources behind the same
- * interface. Writing to an external calendar will be a `CalendarTarget`, not built yet.
+ * Something the calendar reads entries from. Reminders, tasks and payments are built in;
+ * external calendars (Google Calendar, CalDAV) are more sources behind the same interface.
+ * Writing to an external calendar will be a `CalendarTarget`, not built yet.
  */
 export interface CalendarSource {
   id: string;
@@ -114,33 +112,12 @@ export function taskSource(docs: Doc[], zone: Zone, today: string): CalendarSour
   };
 }
 
-/** The next run of each flow that is on and runs on a schedule; it opens the flow. */
-export function flowSource(docs: Doc[], zone: Zone, now: number): CalendarSource {
-  return {
-    id: "flows",
-    label: "Flows",
-    events({ from, to }) {
-      const found: CalendarEvent[] = [];
-      for (const doc of docs) {
-        if (doc.data._deleted === true || doc.data.status !== "on") continue;
-        const parsed = parseDefinition(doc.data.definition);
-        if (!parsed.ok || parsed.value.trigger.type !== "schedule") continue;
-        const at = nextSlot(parsed.value.trigger, now, zone.timeZone);
-        if (at === undefined || at < from || at >= to) continue;
-        found.push(entry(doc, localDateTime(new Date(at), zone.timeZone), at, {}));
-      }
-      return found;
-    },
-  };
-}
-
 /** Active payments by `due`, with their repeats ahead; overdue once past. */
 export function paymentSource(docs: Doc[], zone: Zone, now: number): CalendarSource {
   const reminders = reminderSource(docs.filter(isActive), zone, now);
   return { id: "payments", label: "Payments", events: reminders.events };
 }
 
-/** Every source's entries in time order; within a moment, open before done. */
 /** The instant a local day starts in `timeZone`. */
 export function dayStart(day: string, timeZone: string): number {
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
@@ -153,6 +130,22 @@ export function addDays(day: string, n: number): string {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
+/** Whole days from `from` to `to`, both `YYYY-MM-DD`; negative when `to` is earlier. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** "Fri" for a `YYYY-MM-DD`. */
+export const weekday = (day: string) =>
+  WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()] as string;
+
+/** "Nov 30", with the year when it isn't `today`'s. */
+export const dateLabel = (day: string, today: string) =>
+  day.slice(0, 4) === today.slice(0, 4) ? shortDay(day) : `${shortDay(day)} ${day.slice(0, 4)}`;
+
+/** Every source's entries in time order; within a moment, open before done. */
 export function mergeEvents(sources: CalendarSource[], range: Range): CalendarEvent[] {
   return sources
     .flatMap((s) => s.events(range))

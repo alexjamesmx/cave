@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { dropIndex } from "../logic/board.ts";
 
 /** Where a dragged card would land: a column (`data-column`) and a slot among its cards. */
 interface DropTarget {
@@ -12,32 +13,40 @@ interface DropTarget {
   index: number;
 }
 
+/** A card's box when the drag began, in viewport pixels. */
+interface Box {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 interface DragState extends DropTarget {
   id: string;
   dx: number;
   dy: number;
+  from: Box;
 }
 
 const MOUSE_SLOP = 5;
 const TOUCH_SLOP = 8;
 const LONG_PRESS_MS = 350;
 
-/** The column under a point and the slot before the first card whose middle is below it. */
+/**
+ * The column under a point, anywhere in it (its empty area and its add button too), and the
+ * slot the point picks among its cards.
+ */
 function targetAt(x: number, y: number, dragged: string): DropTarget | undefined {
-  // The dragged card follows the pointer, so look past it to what lies beneath.
+  // The dragged card stays in its column, dimmed, so look past it to what lies beneath.
   const under = document
     .elementsFromPoint(x, y)
     .find((el) => !el.closest(`[data-card="${CSS.escape(dragged)}"]`));
   const column = under?.closest<HTMLElement>("[data-column]");
   if (!column) return undefined;
-  const cards = [...column.querySelectorAll<HTMLElement>("[data-card]")].filter(
-    (c) => c.dataset.card !== dragged,
-  );
-  const index = cards.findIndex((c) => {
-    const box = c.getBoundingClientRect();
-    return y < box.top + box.height / 2;
-  });
-  return { column: column.dataset.column ?? "", index: index === -1 ? cards.length : index };
+  const cards = [...column.querySelectorAll<HTMLElement>("[data-card]")]
+    .filter((c) => c.dataset.card !== dragged)
+    .map((c) => c.getBoundingClientRect());
+  return { column: column.dataset.column ?? "", index: dropIndex(cards, y) };
 }
 
 /**
@@ -52,6 +61,7 @@ export function useCardDrag(onDrop: (id: string, target: DropTarget) => void) {
     x: number;
     y: number;
     touch: boolean;
+    from: Box;
     timer?: ReturnType<typeof setTimeout>;
   }>(undefined);
   const active = useRef<DragState>(undefined);
@@ -65,6 +75,7 @@ export function useCardDrag(onDrop: (id: string, target: DropTarget) => void) {
       id: p.id,
       dx: x - p.x,
       dy: y - p.y,
+      from: p.from,
       ...(target ?? { column: "", index: 0 }),
     };
     setDrag(active.current);
@@ -90,7 +101,14 @@ export function useCardDrag(onDrop: (id: string, target: DropTarget) => void) {
     onPointerDown(e: ReactPointerEvent<HTMLElement>) {
       if (e.button !== 0) return;
       const touch = e.pointerType !== "mouse";
-      pending.current = { id, x: e.clientX, y: e.clientY, touch };
+      const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+      pending.current = {
+        id,
+        x: e.clientX,
+        y: e.clientY,
+        touch,
+        from: { left, top, width, height },
+      };
       e.currentTarget.setPointerCapture(e.pointerId);
       if (touch) {
         const { clientX, clientY } = e;

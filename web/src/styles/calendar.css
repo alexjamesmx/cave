@@ -1,1 +1,916 @@
 /* Calendar (M14): this area's own styles, loaded after styles.css. */
+
+/* Emoji are drawn from `data-emoji`, so a control's text is its name only. */
+.agenda-type::before,
+.cal-ev-mark::before,
+.cal-legend li::before,
+.quick-remind-input::before,
+.when-chip[data-emoji]::before {
+  content: attr(data-emoji);
+}
+
+/* Month: the grid beside Upcoming, both reaching the bottom of the screen (`--fill-top` from
+   useFillHeight); the negative margin takes back the page's bottom padding. */
+.cal-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  height: max(560px, calc(100dvh - var(--fill-top, 220px) - 24px));
+  margin-bottom: -32px;
+}
+
+.panel.cal-month {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 18px;
+}
+
+.cal-month-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-month-head h2 {
+  margin: 0 auto 0 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cal-month-head .icon-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+}
+
+.btn.cal-today {
+  height: 36px;
+}
+
+.cal-legend {
+  display: flex;
+  gap: 14px;
+  margin: 0 8px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #7d8592;
+  font-size: 12.5px;
+}
+
+.cal-legend li::before {
+  margin-right: 5px;
+}
+
+.cal-weekdays,
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cal-weekdays {
+  color: #7d8592;
+  font-size: 12.5px;
+}
+
+.cal-grid {
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 7px 7px 6px;
+  border-radius: 12px;
+  background: #181a1f;
+}
+
+.cal-day.pad {
+  background: none;
+}
+
+.cal-day.today {
+  outline: 2px solid var(--s-rose);
+  outline-offset: -2px;
+}
+
+.cal-day-add {
+  align-self: flex-start;
+  padding: 0 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: #9aa1ad;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cal-day-add:hover {
+  background: var(--line);
+  color: var(--text);
+}
+
+.cal-day.past .cal-day-add {
+  opacity: 0.55;
+}
+
+.cal-day.today .cal-day-add {
+  color: var(--s-rose);
+}
+
+/* An entry: its type's mark and colour, one line ending in "…". */
+.cal-ev {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  min-width: 0;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--c) 22%, transparent);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cal-ev:hover {
+  background: color-mix(in srgb, var(--c) 34%, transparent);
+}
+
+.cal-ev.done {
+  opacity: 0.45;
+}
+
+.cal-ev-mark {
+  flex: none;
+  font-size: 11px;
+}
+
+.cal-ev-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-more {
+  padding: 0 7px;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* Upcoming: the quick add on top, the groups scrolling inside at the month's height. */
+.panel.cal-upcoming {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 14px 10px;
+  border-radius: 18px;
+}
+
+.cal-upcoming-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The quick add: "Remind me to…" and the chips that say when. */
+.quick-remind {
+  display: grid;
+  gap: 8px;
+}
+
+.cal-upcoming .quick-remind {
+  padding: 2px 8px 10px;
+}
+
+.quick-remind-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 1px solid var(--control-border);
+  background: var(--bg);
+  color: #7d8592;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.quick-remind-input:focus-within {
+  border-color: color-mix(in srgb, var(--s-rose) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--s-rose) 20%, transparent);
+}
+
+.quick-remind-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.quick-remind-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.when-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--control-border);
+  background: transparent;
+  color: #c3c8d1;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.when-chip[aria-pressed="true"],
+.when-chip.on {
+  background: var(--s-rose);
+  border-color: var(--s-rose);
+  color: #2a0a10;
+  font-weight: 600;
+}
+
+.when-chip input {
+  height: 28px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12.5px;
+  color-scheme: dark;
+}
+
+.when-chip.on input {
+  color-scheme: light;
+}
+
+/* The chip is the control: the field opens its picker on a click, and the icon takes room. */
+.when-chip input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* The agenda's groups and rows, in Upcoming and on the Agenda tab. */
+.agenda-group h3 {
+  margin: 0;
+  padding: 12px 8px 4px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7d8592;
+}
+
+.agenda-group h3 .num {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.agenda-group[data-group="overdue"] h3 {
+  color: var(--bad);
+}
+
+.agenda-group[data-group="today"] h3 {
+  color: var(--text);
+}
+
+.agenda-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.agenda-row:hover {
+  background: var(--on);
+}
+
+.agenda-type {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  font-size: 16px;
+  background: color-mix(in srgb, var(--c) 20%, transparent);
+}
+
+.agenda-main {
+  display: grid;
+  min-width: 0;
+}
+
+.link.agenda-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.link.agenda-title:hover {
+  color: var(--text-strong);
+}
+
+.agenda-sub {
+  color: #7d8592;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agenda-group[data-group="overdue"] .agenda-time {
+  color: var(--bad);
+}
+
+.agenda-row.done .agenda-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.agenda-check {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid #3a3f48;
+  background: transparent;
+  color: #7d8592;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.12s var(--ease);
+}
+
+.agenda-check:hover {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+  color: var(--ok);
+}
+
+.agenda-check:active {
+  transform: scale(0.97);
+}
+
+.agenda-empty {
+  margin: 0;
+  padding: 12px 8px;
+}
+
+/* Upcoming beside the month is compact: one 40px line each, the time at the end, ✓ on hover. */
+@media (min-width: 768px) {
+  .cal-upcoming .agenda-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto auto;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 8px;
+    border-radius: 10px;
+  }
+
+  .cal-upcoming .agenda-type {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .cal-upcoming .agenda-main {
+    display: contents;
+  }
+
+  .cal-upcoming .agenda-repeat {
+    display: none;
+  }
+
+  .cal-upcoming .agenda-check {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    opacity: 0;
+  }
+
+  .cal-upcoming .agenda-row:hover .agenda-check,
+  .cal-upcoming .agenda-row:focus-within .agenda-check {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .cal-upcoming .agenda-check {
+    opacity: 1;
+  }
+}
+
+/* Agenda: the pills, then one panel with the quick add and the groups. */
+.agenda-page {
+  display: grid;
+  gap: 14px;
+  max-width: 820px;
+}
+
+.agenda-pills {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.panel.agenda-panel {
+  padding: 16px 10px 10px;
+  border-radius: 18px;
+}
+
+.agenda-panel .quick-remind {
+  padding: 0 8px 6px;
+}
+
+/* A reminder's Done and Snooze where it opens in the drawer (a notification's link). */
+.reminder-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.snooze-menu {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.snooze-menu .input {
+  width: auto;
+}
+
+.reminder-snooze {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reminder-snooze legend {
+  float: left;
+  margin-right: 6px;
+}
+
+/* Routine: the hours per area as pills, the week as seven columns of blocks tinted by area. */
+.routine-page {
+  display: grid;
+  gap: 14px;
+}
+
+.routine-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.routine-areas {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.routine-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px 0 4px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--area) 30%, transparent);
+  background: color-mix(in srgb, var(--area) 10%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.routine-hours {
+  color: var(--area);
+}
+
+.routine-tile {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1;
+  background: color-mix(in srgb, var(--area) 22%, transparent);
+}
+
+.routine-tile::before {
+  content: attr(data-emoji);
+}
+
+.routine-weekly {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 1px solid #1f2228;
+  background: #131519;
+}
+
+.routine-weekly ul,
+.routine-day ul {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.routine-weekly ul {
+  flex-wrap: wrap;
+}
+
+.routine-board {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.routine-day {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 240px;
+  padding: 12px 8px;
+  border-radius: 18px;
+  border: 1px solid #1f2228;
+  background: #131519;
+}
+
+.routine-day.today {
+  border-color: color-mix(in srgb, var(--s-rose) 55%, #1f2228);
+  background: color-mix(in srgb, var(--s-rose) 5%, #131519);
+}
+
+.routine-day header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.routine-day header b {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.routine-day.today header b {
+  color: var(--s-rose);
+}
+
+.routine-day header .num {
+  font-size: 12px;
+}
+
+.routine-day ul {
+  flex-direction: column;
+}
+
+.routine-add {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--s-rose) 16%, transparent);
+  color: var(--s-rose);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.routine-day:hover .routine-add,
+.routine-add:focus-visible {
+  opacity: 1;
+}
+
+.routine-add:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (hover: none) {
+  .routine-add {
+    opacity: 1;
+  }
+}
+
+.routine-block {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--area) 22%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--area) 10%, #1a1d22);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.routine-block:hover {
+  border-color: color-mix(in srgb, var(--area) 45%, transparent);
+  background: color-mix(in srgb, var(--area) 18%, #1a1d22);
+}
+
+.routine-weekly .routine-block {
+  width: auto;
+  border-radius: 999px;
+  padding: 4px 12px 4px 4px;
+}
+
+.routine-text {
+  display: grid;
+  min-width: 0;
+}
+
+.routine-time {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.routine-title {
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.routine-form {
+  display: grid;
+  gap: 14px;
+}
+
+.routine-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.routine-pick legend {
+  margin-bottom: 6px;
+}
+
+.routine-area-pick .pill {
+  padding-left: 4px;
+}
+
+.routine-area-pick .pill[aria-pressed="true"] {
+  border-color: var(--area);
+  background: color-mix(in srgb, var(--area) 18%, transparent);
+  color: var(--text-strong);
+}
+
+@media (max-width: 1100px) {
+  .routine-board {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  .routine-day {
+    min-height: 0;
+  }
+
+  .routine-add {
+    opacity: 1;
+  }
+}
+
+/* A narrow window: Upcoming under the month. */
+@media (max-width: 1099px) {
+  .cal-page {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    margin-bottom: 0;
+  }
+
+  .panel.cal-month {
+    height: 640px;
+  }
+
+  .cal-upcoming-list {
+    overflow: visible;
+  }
+}
+
+/* Phone: a compact month with a dot per entry, then the quick add and the groups on the page. */
+@media (max-width: 767px) {
+  .cal-page {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .panel.cal-month {
+    height: auto;
+    gap: 6px;
+    padding: 10px 6px;
+  }
+
+  .cal-month-head {
+    padding: 0 6px;
+  }
+
+  .cal-legend {
+    display: none;
+  }
+
+  .cal-weekdays,
+  .cal-grid {
+    gap: 2px;
+    text-align: center;
+  }
+
+  .cal-grid {
+    grid-auto-rows: 44px;
+  }
+
+  /* The whole day is its button; the dots under the number let taps through. */
+  .cal-day {
+    position: relative;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 3px;
+    padding: 27px 4px 0;
+    background: none;
+  }
+
+  .cal-day-add {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 6px 0 0;
+    display: block;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .cal-day.past .cal-day-add {
+    opacity: 1;
+    color: #7d8592;
+  }
+
+  .cal-day.today {
+    outline: 0;
+    border-radius: 12px;
+    background: var(--s-rose);
+  }
+
+  .cal-day.today .cal-day-add {
+    color: #2a0a10;
+    font-weight: 700;
+  }
+
+  .cal-ev {
+    position: relative;
+    width: 5px;
+    height: 5px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--c);
+    font-size: 0;
+    pointer-events: none;
+  }
+
+  .cal-ev > *,
+  .cal-more {
+    display: none;
+  }
+
+  .cal-day.today .cal-ev {
+    background: #2a0a10;
+  }
+
+  .panel.cal-upcoming,
+  .panel.agenda-panel {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .cal-upcoming .quick-remind,
+  .agenda-panel .quick-remind {
+    padding: 0 0 4px;
+  }
+
+  .quick-remind-input {
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 13px;
+    background: var(--panel);
+  }
+
+  /* The chips wait until the quick add is in use. */
+  .quick-remind:not(:focus-within):not(.typing) .quick-remind-chips {
+    display: none;
+  }
+
+  .agenda-group h3 {
+    padding: 12px 0 4px;
+  }
+
+  .agenda-row {
+    margin: 0 -8px;
+    min-height: 50px;
+  }
+
+  /* A day per row: its name and +, the blocks beneath, all the width of the screen. */
+  .routine-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .routine-weekly {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .routine-board {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .routine-add {
+    width: 40px;
+    height: 40px;
+  }
+}

@@ -3,6 +3,7 @@ import { type PageId, type Section, tabPath, visibleTabs } from "../app/sections
 import { EverythingButton } from "../ui/Dock.tsx";
 import { SectionTile } from "../ui/Shell.tsx";
 import { SyncBadge } from "../ui/SyncBadge.tsx";
+import { Agenda } from "./Agenda.tsx";
 import { Calendar } from "./Calendar.tsx";
 import { CollectionView } from "./CollectionPage.tsx";
 import { DiaryDays } from "./DiaryDays.tsx";
@@ -12,7 +13,6 @@ import { Flows } from "./Flows.tsx";
 import { IdeasPage } from "./Ideas.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
 import { Notes } from "./Notes.tsx";
-import { Reminders } from "./Reminders.tsx";
 import { Routine } from "./Routine.tsx";
 import { Subscriptions } from "./Subscriptions.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
@@ -26,7 +26,7 @@ import { Transactions } from "./Transactions.tsx";
 /** Each page tab's component; \`rest\` is the path after the tab (a flow id, a collection). */
 const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-month": () => <Calendar />,
-  "calendar-agenda": () => <Reminders />,
+  "calendar-agenda": () => <Agenda />,
   "calendar-routine": () => <Routine />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
