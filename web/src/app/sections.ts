@@ -93,8 +93,8 @@ export const SECTIONS: Section[] = [
     owns: ["reminders"],
   },
   {
-    // Anything written down, the diary's Today and Days, and LeetCode (M14). Ideas are notes in
-    // topic Ideas (seed migration 26), so they have no tab of their own.
+    // Anything written down, and the diary's Today and Days. Ideas and LeetCode are notes in
+    // their own topics (seed migrations 26 and 27), so they have no tab of their own.
     id: "notes",
     label: "Notes",
     icon: "notebook-pen",
@@ -105,9 +105,8 @@ export const SECTIONS: Section[] = [
       page("all", "Notes", "notes"),
       page("write", "Today", "diary-today"),
       page("days", "Days", "diary-days"),
-      view("leetcode", "LeetCode", "leetcode"),
     ],
-    owns: ["notes", "journal", "leetcode"],
+    owns: ["notes", "journal"],
   },
   {
     id: "flows",

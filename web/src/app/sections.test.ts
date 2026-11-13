@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { seedDocs } from "../../../shared/seed.ts";
-import { DATA_ONLY, DOCK, LANDING, SECTIONS, sectionOf } from "./sections.ts";
+import { DATA_ONLY, DOCK, LANDING, SECTIONS, sectionById, sectionOf } from "./sections.ts";
 
 test("five sections and Settings, each once; every collection belongs to exactly one, or is Data-only", () => {
   expect(SECTIONS.map((s) => s.id)).toEqual([
@@ -32,6 +32,10 @@ test("five sections and Settings, each once; every collection belongs to exactly
   expect(SECTIONS.find((s) => s.id === section)?.tabs.some((t) => t.id === tab)).toBe(true);
 });
 
+test("Notes has no tab per kind of note: Ideas and LeetCode are topics (M14, M15)", () => {
+  expect(sectionById("notes")?.tabs.map((t) => t.label)).toEqual(["Notes", "Today", "Days"]);
+});
+
 test("the dock is the four everyday sections, in order", () => {
   expect(DOCK.map((s) => s.id)).toEqual(["money", "tasks", "calendar", "notes"]);
 });
@@ -41,6 +45,5 @@ test("a path marks its section", () => {
   expect(sectionOf("/money/subscriptions")).toBe("money");
   expect(sectionOf("/flows/flow-rent")).toBe("flows");
   expect(sectionOf("/notes/write")).toBe("notes");
-  expect(sectionOf("/notes/leetcode")).toBe("notes");
   expect(sectionOf("/r/abc")).toBeUndefined();
 });
