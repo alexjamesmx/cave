@@ -36,10 +36,15 @@ export function NoteBody({
 } & Links) {
   const [state, setState] = useState<State>("saved");
   const [linking, setLinking] = useState(false);
+  // Read once: the editor takes it on creation, and a render must not parse the note again.
+  const [first] = useState(() => {
+    const doc = parseNote(value);
+    return { doc, shown: noteMarkdown(doc) };
+  });
   // `loaded` is the stored text; `shown` is how the editor writes that same text, so an edit is
   // told apart from Tiptap tidying what it loaded (`_a_` read back as `*a*`, a trailing line
   // after a table): only a difference from `shown` is the owner's.
-  const live = useRef({ state, loaded: value, shown: noteMarkdown(parseNote(value)), onSave });
+  const live = useRef({ state, loaded: value, shown: first.shown, onSave });
   live.current.state = state;
   live.current.onSave = onSave;
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -77,7 +82,7 @@ export function NoteBody({
         ...noteExtensions({ codeBlock: CodeBlockWithDiagram, wikilink: WikilinkWithView }),
         Placeholder.configure({ placeholder: placeholder ?? "" }),
       ],
-      content: parseNote(value),
+      content: first.doc,
       // Its own <style> tag would break the CSP (style-src 'self'): editor.css has those rules.
       injectCSS: false,
       shouldRerenderOnTransaction: false,

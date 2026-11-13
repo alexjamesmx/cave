@@ -63,7 +63,9 @@ test("Notes → Days: a day opened from the grid reads as Markdown, Edit writes 
 
   // Today shows the same entry.
   await page.goto("/notes/write");
-  await expect(page.getByLabel("Diary entry")).toHaveValue(`# ${text}\n\n**bold** day`);
+  const again = page.getByLabel("Diary entry");
+  await expect(again.getByRole("heading", { name: text })).toBeVisible();
+  await expect(again.locator("strong")).toHaveText("bold");
 
   // Delete removes the entry (kept in the history); the grid loses its dot.
   await page.goto(`/notes/days?day=${day}`);

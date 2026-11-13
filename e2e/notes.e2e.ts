@@ -61,8 +61,8 @@ test("Notes: a new note written in one pane (Markdown shortcuts, a / checklist t
   await expect(card).toContainText(topic);
   // The card lists the checklist and how far along it is.
   await expect(card.getByRole("listitem")).toHaveText([
-    "Done: Buy a dock",
-    "To do: Check the warranty",
+    /Done: Buy a dock$/,
+    /To do: Check the warranty$/,
   ]);
   await expect(card.locator(".note-card-progress")).toHaveText("✓ 1/2");
   await expect(cards.getByRole("link")).toHaveCount(1);

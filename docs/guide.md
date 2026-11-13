@@ -77,18 +77,25 @@ What each part of the app does. How it is built and run: `docs/system.md`.
   - **Topics:** listed on the left (on a phone, a row of pills): All, 📥 Inbox (no topic), 💡 Ideas, then yours. A topic is a `/`-separated path such as `School/Calculus`.
   - **Capture:** type in the capture bar and press Enter to save a note in the open topic. The first line becomes the title.
   - **Search:** `/` searches the title, topic and text.
-  - **Cards:** each note is a card tinted by its topic.
-  - **Editor:** + New note, or a card, opens the editor: a title, a topic, a colour, and Markdown. A ```` ```mermaid ```` block draws a diagram, and `[[Title]]` links another note.
+  - **Cards:** each note is a card tinted by its topic; a note with checkboxes lists them and says how many are ticked (✓ 4/40).
+  - **A note is a page** (+ New note, or a card): a topic, a colour and Delete above, the title, then the text in one pane, formatted as you type, as in Notion.
+    - **Shortcuts:** `# ` a heading, `- ` a list, `1. ` a numbered list, `[] ` a checkbox, `> ` a quote, ```` ``` ```` a code block, `**bold**`, `---` a divider.
+    - **`/` on an empty line:** a menu of blocks (heading, checklist, list, quote, code, diagram, table, divider); arrows and Enter pick one.
+    - **Toolbar:** heading, bold, italic, checklist, list, quote, code, highlight, link (Ctrl+K) and text colour.
+    - **Checkboxes** are ticked with a click. They belong to the note: they never become tasks or show in Tasks or the Agenda.
+    - **Links:** `[[Title]]` links another note and opens it; one to a note that doesn't exist yet creates it in the same topic. A ```` ```mermaid ```` block draws its diagram under the source.
+    - **Pasting** Markdown pastes it formatted. Saved on leaving the text and after two seconds idle; if an agent or another device changes the note while you are typing, it asks: Reload or Keep mine.
+    - It is still Markdown underneath: agents, search and the export see the same text. Opening a note never rewrites it.
   - **Deleting:** Delete keeps the note in the history.
   - **Agents:** `add_note` lands notes under the topic Inbox.
 - **Today** (`/notes/write`): one day full width.
-  - **The day:** the entry in the Markdown editor, the habits as toggles, a colour, and Delete entry (kept in the history).
+  - **The day:** the entry, written like a note, the habits as toggles, a colour, and Delete entry (kept in the history).
   - **Moving between days:** the arrows. The day follows today until you pick one.
 - **Days:** the month as a grid.
   - **Each day:** a dot for a written day, a strip of the habits logged, and the day's colour as its tint.
   - **Beside it:** the habits' last 30 days and streaks. **Add habit** adds one.
   - **Reading:** click a day to read it. Edit opens it in Today's editor.
-- **LeetCode:** the problems you track, with their progress.
+- **LeetCode** is the note "LeetCode" in the topic LeetCode since M15: a heading per group and a checkbox per problem (number, name, difficulty). The old LeetCode links open that topic.
 - **Ideas** are notes in the topic Ideas since M14, and the old Ideas links open that topic.
 
 ## Tasks
