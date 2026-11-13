@@ -3,7 +3,9 @@ import { fieldsOf } from "../shared/fields.ts";
 import { builtInFlowsMigration } from "../shared/flows/built-in.ts";
 import { formatStamp } from "../shared/hlc.ts";
 import { ideasToNotesMigration } from "../shared/ideas-to-notes.ts";
+import { LEETCODE_NOTE, leetcodeToNotesMigration } from "../shared/leetcode-to-notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
+import { TRACKER_FIELDS } from "../shared/pages.ts";
 import { retireProjectsMigration } from "../shared/retire-projects.ts";
 import type { Field } from "../shared/schema.ts";
 import { retireAiMigration, SEED_MIGRATIONS, SEED_VERSION, seedDocs } from "../shared/seed.ts";
@@ -275,6 +277,94 @@ test("seed migration 26 makes every live idea a note in topic Ideas, retires the
   fresh.seedIfEmpty(seedDocs(), 1);
   expect(fresh.get("ideas")).toBeUndefined();
   expect(ideasToNotesMigration(fresh.get, (c) => fresh.itemsOf(c))).toEqual([]);
+});
+
+test("seed migration 27 writes every live problem into the note LeetCode, retires the collection, and never duplicates", () => {
+  const store = createStore(openDb(":memory:"));
+  store.seedIfEmpty(seedDocs(), 1);
+  // A database at version 26 with the leetcode collection as M14 left it.
+  const stamp = formatStamp(NOW - 5000, 0, "phone");
+  const doc = (
+    id: string,
+    kind: Doc["kind"],
+    collection: string | null,
+    data: Record<string, unknown>,
+  ): Doc => ({
+    id,
+    kind,
+    collection,
+    data,
+    stamps: Object.fromEntries(Object.keys(data).map((k) => [k, stamp])),
+    actor: "user:phone",
+  });
+  const m2 = (m2Seed as Doc[]).find((d) => d.id === "leetcode") as Doc;
+  const leetcode = { ...m2.data, fields: [...fieldsOf(m2), ...TRACKER_FIELDS] };
+  store.applyChanges(
+    [
+      doc("leetcode", "collection", null, leetcode),
+      doc("lc-13", "item", "leetcode", {
+        _title: "0013 Roman to Integer",
+        _body: "# Roman to Integer",
+        _created: "2026-09-02T10:00:00.000Z",
+        number: 13,
+        difficulty: "easy",
+        topic: "foundations",
+        status: "solved",
+        list: "blind75",
+      }),
+      doc("lc-1", "item", "leetcode", {
+        _title: "0001 Two Sum",
+        _created: "2026-09-01T10:00:00.000Z",
+        number: 1,
+        difficulty: "easy",
+        topic: "foundations",
+        status: "practicing",
+      }),
+      doc("lc-gone", "item", "leetcode", { _title: "Old", _deleted: true }),
+      doc("prop-lc", "item", "proposals", { target: "lc-1", action: "delete", status: "pending" }),
+      doc("settings", "setting", null, { seedVersion: 26 }),
+    ],
+    "user:phone",
+    NOW - 5000,
+  );
+
+  expect(migrateSeed(store, NOW)).toEqual(from(27));
+  const note = store.get(LEETCODE_NOTE) as Doc;
+  expect(note).toMatchObject({ kind: "item", collection: "notes", actor: "seed" });
+  expect(note.data).toEqual({
+    _title: "LeetCode",
+    _body: [
+      "## Foundations",
+      "",
+      "- [ ] 1 · Two Sum · easy · practicing",
+      "- [x] 13 · Roman to Integer · easy · List: Blind 75",
+    ].join("\n"),
+    _created: "2026-09-01T10:00:00.000Z",
+    folder: "LeetCode",
+    source: "owner",
+  });
+  for (const id of ["leetcode", "lc-13", "lc-1"]) {
+    expect(store.get(id)?.data._deleted).toBe(true);
+    expect(store.get(id)?.actor).toBe("seed");
+  }
+  // A problem keeps every value; a deleted one keeps its own delete; the proposal is untouched.
+  expect(store.get("lc-13")?.data).toMatchObject({ _title: "0013 Roman to Integer", number: 13 });
+  expect(store.get("lc-gone")?.stamps._deleted).toBe(stamp);
+  expect(store.get("prop-lc")?.data.target).toBe("lc-1");
+  expect(store.get("prop-lc")?.actor).toBe("user:phone");
+  expect(store.itemsOf("notes").map((n) => n.id)).toEqual([LEETCODE_NOTE]);
+
+  // Run again on what it produced: nothing changes.
+  const length = store.changeLog().length;
+  expect(leetcodeToNotesMigration(store.get, (c) => store.itemsOf(c))).toEqual([]);
+  expect(migrateSeed(store, NOW + 1)).toEqual([]);
+  expect(store.changeLog()).toHaveLength(length);
+
+  // A fresh seed never had the collection: nothing to do.
+  const fresh = createStore(openDb(":memory:"));
+  fresh.seedIfEmpty(seedDocs(), 1);
+  expect(fresh.get("leetcode")).toBeUndefined();
+  expect(leetcodeToNotesMigration(fresh.get, (c) => fresh.itemsOf(c))).toEqual([]);
 });
 
 test("a later migration's write to the same key in one run wins over an earlier one's", () => {

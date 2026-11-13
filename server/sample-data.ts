@@ -249,34 +249,6 @@ function wealth(today: string): SampleDoc[] {
   ];
 }
 
-function leetcode(today: string): SampleDoc[] {
-  const l = (
-    number: number,
-    title: string,
-    difficulty: string,
-    topic: string,
-    status: string,
-    solvedDaysAgo?: number,
-  ): SampleDoc => ({
-    id: `s-lc-${number}`,
-    collection: "leetcode",
-    data: {
-      _title: title,
-      number,
-      difficulty,
-      topic,
-      status,
-      ...(solvedDaysAgo === undefined ? {} : { solved_at: addDays(today, -solvedDaysAgo) }),
-    },
-  });
-  return [
-    l(1, "Two Sum", "easy", "hash map", "solved", 20),
-    l(3, "Longest Substring Without Repeating Characters", "medium", "sliding window", "solved", 6),
-    l(200, "Number of Islands", "medium", "graphs", "practicing"),
-    l(42, "Trapping Rain Water", "hard", "two pointers", "queued"),
-  ];
-}
-
 function reminders(today: string): SampleDoc[] {
   const r = (id: string, title: string, data: Record<string, unknown>): SampleDoc => ({
     id: `s-rem-${id}`,
@@ -337,7 +309,8 @@ const OTHER: SampleDoc[] = [
  */
 /**
  * Notes in a few topics, linked with wikilinks, created over the last weeks. The ideas are notes
- * in topic Ideas, written the way seed migration 26 turns an idea into one.
+ * in topic Ideas, written the way seed migration 26 turns an idea into one; LeetCode is one
+ * checklist note in topic LeetCode, the way 27 writes it.
  */
 function notes(today: string): SampleDoc[] {
   const note = (
@@ -407,6 +380,33 @@ function notes(today: string): SampleDoc[] {
       "Floating kitchen shelves",
       "Oak, hidden brackets. Ties into the [[Shelf measurements]].\n\n- **Stage:** building",
     ),
+    note(
+      "s-note-leetcode",
+      "LeetCode",
+      30,
+      "LeetCode",
+      [
+        "## Hash map",
+        "",
+        `- [x] 1 · [Two Sum](https://leetcode.com/problems/two-sum/) · easy · Solved: ${addDays(today, -20)} · List: Blind 75`,
+        "- [ ] 49 · Group Anagrams · medium",
+        "",
+        "## Sliding window",
+        "",
+        `- [x] 3 · Longest Substring Without Repeating Characters · medium · Solved: ${addDays(today, -6)} · Attempts: 2`,
+        "- [ ] 76 · Minimum Window Substring · hard · practicing",
+        "",
+        "## Graphs",
+        "",
+        `- [ ] 200 · Number of Islands · medium · review · Review on: ${addDays(today, 3)}`,
+        "",
+        "  BFS from every unvisited land cell, marking it as you go.",
+        "",
+        "## Two pointers",
+        "",
+        "- [ ] 42 · Trapping Rain Water · hard",
+      ].join("\n"),
+    ),
   ];
 }
 
@@ -465,7 +465,6 @@ export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
     ...tasks(today),
     ...journal(today),
     ...wealth(today),
-    ...leetcode(today),
     ...reminders(today),
     ...radar(today),
     ...notes(today),

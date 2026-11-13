@@ -24,7 +24,6 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     [
       "flows",
       "journal",
-      "leetcode",
       "money",
       "notes",
       "payments",
@@ -64,7 +63,7 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     ["flow-digest", "off"],
   ]);
   for (const d of flows) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(19);
+  expect(docs).toHaveLength(18);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {
@@ -84,7 +83,6 @@ test("dates that carry a time are flagged withTime", () => {
 test("seeded select options and colours", () => {
   const values = (c: string, f: string) => fieldOf(c, f)?.options?.map((o) => o.value);
   expect(values("reminders", "repeat")).toEqual(["none", "daily", "weekly", "monthly", "yearly"]);
-  expect(values("leetcode", "difficulty")).toEqual(["easy", "medium", "hard"]);
 });
 
 test("every select option has an icon and a token colour", () => {
