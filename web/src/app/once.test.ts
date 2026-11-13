@@ -8,7 +8,12 @@ test("a second run of the same key waits for the first to land; other keys run a
     release = r;
   });
   const writes: string[] = [];
-  expect(once("sub-1", async () => (writes.push("sub-1"), await landed))).toBe(true);
+  expect(
+    once("sub-1", async () => {
+      writes.push("sub-1");
+      await landed;
+    }),
+  ).toBe(true);
   expect(once("sub-1", async () => writes.push("sub-1 again"))).toBe(false);
   expect(once("sub-2", async () => writes.push("sub-2"))).toBe(true);
   release();

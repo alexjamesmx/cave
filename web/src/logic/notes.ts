@@ -139,9 +139,28 @@ export const newestFirst = (a: Doc, b: Doc) =>
 export function matchesNote(note: Doc, query: string): boolean {
   const needle = normTitle(query);
   if (!needle) return true;
-  const body = typeof note.data._body === "string" ? note.data._body : "";
-  return normTitle(`${titleOf(note)} ${topicOf(note)} ${body}`).includes(needle);
+  return normTitle(`${titleOf(note)} ${topicOf(note)} ${plainText(note.data._body)}`).includes(
+    needle,
+  );
 }
+
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', nbsp: " " };
+const ESCAPED = /\\([\\`*_[\]~<>#|!=-])/g;
+// Escaped characters wait as private-use ones while the marks around them are dropped.
+const HELD = 0xe000;
+const hold = (text: string) =>
+  text.replace(ESCAPED, (_, c: string) => String.fromCharCode(HELD + c.charCodeAt(0)));
+const release = (text: string) =>
+  text
+    .replace(/[\ue000-\ue0ff]/g, (c) => String.fromCharCode(c.charCodeAt(0) - HELD))
+    .replace(/&(amp|lt|gt|quot|nbsp);/g, (_, name: string) => ENTITIES[name] as string);
+
+/**
+ * A body as the words it says: the editor writes `snake\_case` and `&lt;b>` so Markdown can't
+ * misread them, and search looks for what the owner typed.
+ */
+export const plainText = (body: unknown): string =>
+  typeof body === "string" ? release(hold(body)) : "";
 
 /** The capture bar searches when its text starts with `/`: the query, else `undefined`. */
 export const searchOf = (text: string) => (text.startsWith("/") ? text.slice(1).trim() : undefined);
@@ -155,30 +174,39 @@ export function captured(text: string): { title: string; body: string } | undefi
 
 /**
  * The start of a note as plain text for a card: Markdown marks dropped, list items set apart
- * with "·", a fenced diagram shown as "◇ diagram", other code kept, links reduced to their text.
+ * with "·", a fenced diagram shown as "◇ diagram", other code kept, links, colours and highlights
+ * reduced to their text, escapes read as the characters they keep.
  */
 export function excerpt(body: unknown, max = 200): string {
   if (typeof body !== "string") return "";
-  const text = body
-    .replace(/```mermaid[\s\S]*?(```|$)/g, " ◇ diagram ")
-    .replace(/```[^\n]*\n?/g, " ")
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(
-      /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
-      (_, title: string, label?: string) => label ?? title,
-    )
-    .replace(/^\s{0,3}([-*+]|\d+\.)\s+/gm, "· ")
-    .replace(/^\s{0,3}(#{1,6}|>)\s+/gm, "")
-    .replace(/[*_~`|]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/^· /, "");
+  const text = release(
+    hold(body)
+      .replace(/```mermaid[\s\S]*?(```|$)/g, " ◇ diagram ")
+      .replace(/```[^\n]*\n?/g, " ")
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(
+        /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
+        (_, title: string, label?: string) => label ?? title,
+      )
+      .replace(/^\s*\|?(\s*:?-{3,}:?\s*\|?)+\s*$/gm, "")
+      .replace(/:[a-z]+\[([^\]\n]+)\]/g, "$1")
+      .replace(/==([^=\n]+)==/g, "$1")
+      .replace(/^\s{0,3}([-*+]|\d+\.)\s+/gm, "· ")
+      .replace(/^\s{0,3}(#{1,6}|>)\s+/gm, "")
+      .replace(/[*_~`|]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/^· /, ""),
+  );
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }
 
-const CHECK = /^\s{0,3}[-*+]\s+\[([ xX])\]\s+(.+)$/;
+const CHECK = /^\s*[-*+]\s+\[([ xX])\]\s+(.+)$/;
 
-/** A card's face: the text as an excerpt, and the checklist items (`- [ ]`, `- [x]`) apart. */
+/**
+ * A card's face: the text as an excerpt, and the checklist items (`- [ ]`, `- [x]`) apart, every
+ * one of them, nested ones too, so the card can say how far along the list is.
+ */
 export function cardFace(body: unknown): {
   text: string;
   checks: { done: boolean; text: string }[];

@@ -253,9 +253,26 @@
   color: var(--bg);
 }
 
+.note-card-foot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .note-card-date {
   color: #7d8592;
   font-size: 12.5px;
+}
+
+/* How far a checklist note is: ticked of all. */
+.note-card-progress {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  color: var(--c);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* On a phone the topics are a row of pills above the bar, scrolling sideways on their own. */
