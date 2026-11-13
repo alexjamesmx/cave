@@ -1,4 +1,4 @@
-import { openNew, ownerContext, pushed } from "./helpers.ts";
+import { mcpClient, openNew, ownerContext, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
 test("Notes: a new note written in one pane (Markdown shortcuts, a / checklist ticked with a click, a diagram); the topic filters the cards; / searches; a note from New lands in Inbox; Delete", async ({
@@ -165,4 +165,59 @@ test("Ideas are the topic Ideas: old links land there, an idea is captured into 
   await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
   await expect(page).toHaveURL(/\/notes\/all\?topic=Ideas$/);
   await expect(card).toHaveCount(0);
+});
+
+test("a note keeps its Markdown until the owner edits it; an agent's change under an unsaved edit asks first", async ({
+  browser,
+  baseURL,
+}) => {
+  const page = await (
+    await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
+  ).newPage();
+  page.on("dialog", (dialog) => void dialog.accept());
+  const agent = await mcpClient(baseURL as string, "notes-e2e");
+  const body = async (id: string) => {
+    const got = await agent.callTool({ name: "get", arguments: { id } });
+    return (got.structuredContent as { body?: string }).body;
+  };
+  const title = `Kept ${Date.now()}`;
+  // Written the way the editor would not write it: `_` emphasis, a table not lined up.
+  const written = "_tidy_ notes & more\n\n| a | b |\n|---|---|\n| 1 | 2 |";
+  const made = await agent.callTool({ name: "add_note", arguments: { title, body: written } });
+  const id = (made.structuredContent as { id: string }).id;
+  // A device picks up what agents wrote when it syncs; `online` starts one now.
+  const sync = () => page.evaluate(() => window.dispatchEvent(new Event("online")));
+
+  await page.goto(`/notes/all/${id}`);
+  await sync();
+  const text = page.getByRole("textbox", { name: "Note body" });
+  await expect(text.locator("em")).toHaveText("tidy");
+  await expect(text.getByRole("table")).toBeVisible();
+  // Opened, looked at, left: nothing is written.
+  await text.click();
+  await text.blur();
+  await page.waitForTimeout(2500);
+  await page.getByRole("link", { name: "Back to notes" }).click();
+  expect(await body(id)).toBe(written);
+
+  // An unsaved edit, then the agent changes the note: the page asks; Keep mine writes the edit.
+  await page.goto(`/notes/all/${id}`);
+  await text.locator("p").first().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" mine");
+  const changed = await agent.callTool({
+    name: "update",
+    arguments: { id, body: "From the agent" },
+  });
+  expect(changed.isError).toBeFalsy();
+  await sync();
+  await expect(page.getByRole("alert")).toContainText("Changed elsewhere while you were editing.");
+  await page.getByRole("button", { name: "Keep mine" }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect
+    .poll(() => body(id))
+    .toBe("*tidy* notes & more mine\n\n| a   | b   |\n| --- | --- |\n| 1   | 2   |");
+
+  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
+  await agent.close();
 });

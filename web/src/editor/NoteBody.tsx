@@ -36,7 +36,10 @@ export function NoteBody({
 } & Links) {
   const [state, setState] = useState<State>("saved");
   const [linking, setLinking] = useState(false);
-  const live = useRef({ state, loaded: value, onSave });
+  // `loaded` is the stored text; `shown` is how the editor writes that same text, so an edit is
+  // told apart from Tiptap tidying what it loaded (`_a_` read back as `*a*`, a trailing line
+  // after a table): only a difference from `shown` is the owner's.
+  const live = useRef({ state, loaded: value, shown: noteMarkdown(parseNote(value)), onSave });
   live.current.state = state;
   live.current.onSave = onSave;
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -48,8 +51,11 @@ export function NoteBody({
     setState(next);
   };
   const write = (text: string) => {
-    if (text !== live.current.loaded) live.current.onSave(text);
-    live.current.loaded = text;
+    if (text !== live.current.shown) {
+      live.current.onSave(text);
+      live.current.loaded = text;
+      live.current.shown = text;
+    }
     mark("saved");
   };
   const save = () => {
@@ -58,8 +64,10 @@ export function NoteBody({
     if (e && live.current.state === "editing") write(noteMarkdown(e.getJSON()));
   };
   const load = (text: string) => {
-    editorRef.current?.commands.setContent(parseNote(text), { emitUpdate: false });
+    const doc = parseNote(text);
+    editorRef.current?.commands.setContent(doc, { emitUpdate: false });
     live.current.loaded = text;
+    live.current.shown = noteMarkdown(doc);
     mark("saved");
   };
 
@@ -112,7 +120,8 @@ export function NoteBody({
   useEffect(() => {
     const e = editorRef.current;
     if (!e || value === live.current.loaded) return;
-    if (live.current.state === "saved" || noteMarkdown(e.getJSON()) === value) load(value);
+    const mine = noteMarkdown(e.getJSON());
+    if (live.current.state === "saved" || mine === noteMarkdown(parseNote(value))) load(value);
     else mark("conflict");
   }, [value]);
 
@@ -140,7 +149,7 @@ export function NoteBody({
             className="btn primary"
             onClick={() => {
               // Written even if it matches what was loaded: the stored value is the other one.
-              live.current.loaded = value;
+              live.current.shown = "";
               write(noteMarkdown(editor.getJSON()));
             }}
           >
