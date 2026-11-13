@@ -3,10 +3,10 @@ import { newId } from "../../../shared/ids.ts";
 import { COLOR_FIELD } from "../../../shared/pages.ts";
 import { useCave } from "../app/context.ts";
 import { useSaver } from "../app/hooks.ts";
+import { NoteBody } from "../editor/NoteBody.tsx";
 import { entriesByDay } from "../logic/habits.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { Icon } from "./icon.tsx";
-import { MarkdownEditor } from "./MarkdownEditor.tsx";
 
 /** A day's diary entry, if written, and the habits it can tick. */
 export function useDiaryDay(day: string) {
@@ -67,12 +67,11 @@ export function DayEditor({ day }: { day: string }) {
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <MarkdownEditor
+      <NoteBody
         key={day}
         id="diary-entry"
         label="Diary entry"
         value={body}
-        rows={14}
         placeholder="How did today go?"
         onSave={(text) => void save({ _body: text })}
       />

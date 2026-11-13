@@ -10,6 +10,7 @@ import {
   matchesNote,
   noteColor,
   notePath,
+  plainText,
   searchOf,
   splitEmoji,
   topicChip,
@@ -176,4 +177,26 @@ test("wikilinks: the nearby note first, else any note, opened in Notes", () => {
   expect(resolve("PLAN")).toEqual({ href: notePath("plan") });
   expect(wikiResolver([], [far])("plan")).toEqual({ href: notePath("Plan") });
   expect(resolve("nothing")).toBeUndefined();
+});
+
+test("what the editor escapes reads as typed: in search, excerpts and checklist items", () => {
+  const body = "Use snake\\_case, 2 \\* 3 and &lt;b> tags; Arrays & hashing\n\n- [ ] a \\[draft\\]";
+  expect(plainText(body)).toBe(
+    "Use snake_case, 2 * 3 and <b> tags; Arrays & hashing\n\n- [ ] a [draft]",
+  );
+  const n = note("Code", { _body: body });
+  expect(matchesNote(n, "snake_case")).toBe(true);
+  expect(matchesNote(n, "<b>")).toBe(true);
+  expect(cardFace(body).text).toBe("Use snake_case, 2 * 3 and <b> tags; Arrays & hashing");
+  expect(cardFace(body).checks).toEqual([{ done: false, text: "a [draft]" }]);
+  expect(excerpt(":red[late bill] and ==marked==")).toBe("late bill and marked");
+  expect(excerpt("| a   | b   |\n| --- | --- |\n| 1   | 2   |")).toBe("a b 1 2");
+});
+
+test("a card counts every checkbox, nested ones too", () => {
+  const face = cardFace(
+    "## Foundations\n\n- [x] 13 · Roman to Integer\n  - [ ] review\n- [ ] 9 · Palindrome",
+  );
+  expect(face.checks.map((c) => c.done)).toEqual([true, false, false]);
+  expect(face.text).toBe("Foundations");
 });

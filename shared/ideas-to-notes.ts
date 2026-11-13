@@ -1,4 +1,4 @@
-import { optionText } from "./categories.ts";
+import { valueText } from "./field-text.ts";
 import { fieldsOf, resolveFields } from "./fields.ts";
 import { isDocId } from "./ids.ts";
 import { IDEAS_TOPIC, NOTES } from "./notes.ts";
@@ -26,29 +26,6 @@ function fnv1a(text: string): string {
   let hash = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
   return (hash >>> 0).toString(16).padStart(8, "0");
-}
-
-/** A value as the note shows it; `undefined` when it holds nothing worth a line. */
-function valueText(
-  field: Field | undefined,
-  value: unknown,
-  get: (id: string) => Doc | undefined,
-): string | undefined {
-  if (value === undefined || value === null || value === false) return undefined;
-  if (typeof value === "string" && !value.trim()) return undefined;
-  if (value === true) return "yes";
-  if (field?.type === "select" && typeof value === "string") {
-    const option = field.options?.find((o) => o.value === value);
-    return option ? optionText(option) : value;
-  }
-  // A ref reads as what it points at, even a retired project, so the line still means something.
-  if (field?.type === "ref" && typeof value === "string") {
-    const title = get(value)?.data._title;
-    return typeof title === "string" && title.trim() ? title.trim() : value;
-  }
-  if (typeof value === "string") return value.trim();
-  if (typeof value === "number") return String(value);
-  return JSON.stringify(value);
 }
 
 /**

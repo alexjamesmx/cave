@@ -2,7 +2,6 @@ import { expect, test } from "bun:test";
 import type { Field } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { doneInLast, entriesByDay, streak } from "./habits.ts";
-import { leetcodeProgress } from "./progress.ts";
 import { applyFilter, defaultSort, groupBy, readFilter } from "./views.ts";
 import { wealthSummary } from "./wealth.ts";
 
@@ -68,21 +67,4 @@ test("habit streaks count back from today, or from yesterday when today is not l
   expect(streak(byDay, "gym", "2026-10-11")).toBe(2);
   expect(streak(byDay, "gym", "2026-10-14")).toBe(0);
   expect(doneInLast(byDay, "gym", "2026-10-12", 7)).toBe(2);
-});
-
-test("leetcode progress per status and difficulty", () => {
-  const p = leetcodeProgress(
-    [
-      doc({ status: "solved", difficulty: "easy", solved_at: "2026-10-01" }),
-      doc({ status: "queued", difficulty: "easy" }),
-      doc({ status: "solved", difficulty: "medium", solved_at: "2026-10-05" }),
-    ],
-    ["easy", "medium", "hard"],
-  );
-  expect(p.byDifficulty).toEqual([
-    { difficulty: "easy", solved: 1, total: 2 },
-    { difficulty: "medium", solved: 1, total: 1 },
-    { difficulty: "hard", solved: 0, total: 0 },
-  ]);
-  expect(p.recentlySolved.map((d) => d.data.solved_at)).toEqual(["2026-10-05", "2026-10-01"]);
 });

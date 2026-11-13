@@ -14,7 +14,6 @@ test("Notes → Days: a day opened from the grid reads as Markdown, Edit writes 
     "Notes",
     "Today",
     "Days",
-    "LeetCode",
   ]);
   await page.goto("/diary/months");
   await expect(page).toHaveURL(/\/notes\/days$/);
@@ -28,17 +27,17 @@ test("Notes → Days: a day opened from the grid reads as Markdown, Edit writes 
   await expect(page).toHaveURL(new RegExp(`/notes/days\\?day=${day}$`));
   const panel = page.getByRole("dialog", { name: `Day ${day}` });
 
-  // It opens to read; Edit swaps in the editor (Markdown, previewed), a colour, the habits.
+  // It opens to read; Edit swaps in the editor (formatted as typed), a colour, the habits.
   await expect(panel.getByLabel("Diary entry")).toHaveCount(0);
   await panel.getByRole("button", { name: "Edit", exact: true }).click();
   const text = `Days e2e ${Date.now()}`;
-  await panel.getByLabel("Diary entry").fill(`# ${text}\n\n**bold** day`);
-  await panel.getByLabel("Diary entry").blur();
-  await expect(panel.locator(".md-preview").getByRole("heading", { name: text })).toBeVisible();
-  // The preview can be hidden, and comes back.
-  await panel.getByRole("button", { name: "Preview" }).click();
-  await expect(panel.locator(".md-preview")).toHaveCount(0);
-  await panel.getByRole("button", { name: "Preview" }).click();
+  const written = panel.getByLabel("Diary entry");
+  await written.click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type(`# ${text}\n**bold** day`);
+  await expect(written.getByRole("heading", { name: text })).toBeVisible();
+  await expect(written.locator("strong")).toHaveText("bold");
+  await written.blur();
   await panel.getByLabel("Day colour").selectOption("teal");
   const habit = panel
     .getByRole("group", { name: "Habits" })
@@ -64,7 +63,9 @@ test("Notes → Days: a day opened from the grid reads as Markdown, Edit writes 
 
   // Today shows the same entry.
   await page.goto("/notes/write");
-  await expect(page.getByLabel("Diary entry")).toHaveValue(`# ${text}\n\n**bold** day`);
+  const again = page.getByLabel("Diary entry");
+  await expect(again.getByRole("heading", { name: text })).toBeVisible();
+  await expect(again.locator("strong")).toHaveText("bold");
 
   // Delete removes the entry (kept in the history); the grid loses its dot.
   await page.goto(`/notes/days?day=${day}`);
@@ -99,17 +100,23 @@ test("Notes → Days: a day opened from the grid reads as Markdown, Edit writes 
   await habits.getByRole("button", { name: "Done" }).click();
   await expect(habits).not.toContainText(fresh);
 
-  // Text colour and highlight from the toolbar, shown in the preview.
+  // Text colour and highlight from the toolbar, on the selected words.
   await page.goto("/notes/write");
   const entry = page.getByLabel("Diary entry");
-  await entry.fill("late bill");
-  await entry.selectText();
+  await entry.click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("late bill");
+  await page.keyboard.press("ControlOrMeta+a");
   await page.getByRole("button", { name: "Text colour" }).click();
   await page.getByRole("button", { name: "red", exact: true }).click();
-  await expect(entry).toHaveValue(":red[late bill]");
-  await expect(page.locator(".md-preview .md-color")).toHaveText("late bill");
-  await entry.fill("==mark==");
-  await expect(page.locator(".md-preview mark")).toHaveText("mark");
-  await entry.fill("");
+  await expect(entry.locator(".md-color")).toHaveText("late bill");
+  await page.getByRole("button", { name: "Highlight" }).click();
+  await expect(entry.locator("mark")).toHaveText("late bill");
+  await expect(page.getByRole("button", { name: "Highlight" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.press("Delete");
   await entry.blur();
 });

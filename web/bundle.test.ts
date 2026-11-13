@@ -83,10 +83,11 @@ test("nothing sent without a token holds the owner's name, fixed figures or fixt
 
 /**
  * The JS budget (M11 part 6): M10's bundle (1.98 MB minified) plus the measured diagram
- * renderer (beautiful-mermaid 1.1.3 with its layout engine, 1.6 MB), with a little room. A new
- * dependency that blows it is a decision, not an accident.
+ * renderer (beautiful-mermaid 1.1.3 with its layout engine, 1.6 MB), plus the note editor
+ * (M15: Tiptap 3.32.1 with ProseMirror, tables and marked, 0.67 MB built on its own), with a
+ * little room. A new dependency that blows it is a decision, not an accident.
  */
-const JS_BUDGET_BYTES = 3_700_000;
+const JS_BUDGET_BYTES = 4_400_000;
 
 test("the JS stays under its budget", () => {
   const js = shipped.filter((s) => s.name.endsWith(".js")).reduce((n, s) => n + s.text.length, 0);

@@ -36,7 +36,10 @@ export const COLOR_FIELD: Field = {
 export const colorToken = (value: unknown): string | undefined =>
   COLOR_FIELD.options?.some((o) => o.value === value) ? `var(--${value})` : undefined;
 
-/** What the LeetCode tracker gains: the list a problem is from, its pattern, and the practice log. */
+/**
+ * What the LeetCode tracker gained in M12: the list a problem is from, its pattern, and the
+ * practice log. Only databases from before M15 have the tracker; seed migration 27 retires it.
+ */
 export const TRACKER_FIELDS: Field[] = [
   {
     id: "list",
@@ -93,7 +96,8 @@ const missing = (have: Field[], want: Field[]) =>
 
 /**
  * Seed migration 19: `color` on notes and journal and the tracker fields on leetcode, each only
- * where it is missing. (It also added project templates, retired with Projects in 24.)
+ * where it is missing; a collection that is absent or retired, as leetcode is in fresh seeds
+ * and after 27, gets nothing. (It also added project templates, retired with Projects in 24.)
  */
 export function pagesMigration(get: (id: string) => Doc | undefined): SeedDoc[] {
   const docs: SeedDoc[] = [];

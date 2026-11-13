@@ -28,7 +28,6 @@ test("sections and their tabs; an unknown tab falls back to the first", () => {
   );
   expect(parseRoute("/notes")).toEqual(section("notes", "all"));
   expect(parseRoute("/notes/all/01J9ABC")).toEqual(section("notes", "all", ["01J9ABC"]));
-  expect(parseRoute("/notes/leetcode")).toEqual(section("notes", "leetcode"));
   expect(parseRoute("/calendar/agenda")).toEqual(section("calendar", "agenda"));
   expect(parseRoute("/settings/data/money/untagged")).toEqual(
     section("settings", "data", ["money", "untagged"]),
@@ -76,8 +75,11 @@ test("every old path redirects to its new home", () => {
     ["/tasks/calendar", "/calendar/month"],
     ["/c/ideas", "/notes/all?topic=Ideas"],
     ["/c/ideas/board", "/notes/all?topic=Ideas"],
-    ["/c/leetcode", "/notes/leetcode"],
-    ["/c/leetcode/table", "/notes/leetcode"],
+    // LeetCode is one note in topic LeetCode (M15): its collection, tab and project go there.
+    ["/c/leetcode", "/notes/all?topic=LeetCode"],
+    ["/c/leetcode/progress", "/notes/all?topic=LeetCode"],
+    ["/c/leetcode/table", "/notes/all?topic=LeetCode"],
+    ["/notes/leetcode", "/notes/all?topic=LeetCode"],
     // Projects was retired: its pages go to their new homes or the landing page.
     ["/c/projects", "/money/overview"],
     ["/c/parts", "/money/overview"],
@@ -88,8 +90,8 @@ test("every old path redirects to its new home", () => {
     ["/projects/activity", "/money/overview"],
     ["/projects/ideas", "/notes/all?topic=Ideas"],
     ["/projects/radar", "/notes/all?topic=Ideas"],
-    ["/projects/proj-leetcode", "/notes/leetcode"],
-    ["/projects/proj-leetcode/tracker", "/notes/leetcode"],
+    ["/projects/proj-leetcode", "/notes/all?topic=LeetCode"],
+    ["/projects/proj-leetcode/tracker", "/notes/all?topic=LeetCode"],
     ["/projects/notes", "/notes/all"],
     ["/projects/notes/n1", "/notes/all/n1"],
     ["/projects/proj-cave/canvas", "/money/overview"],
@@ -120,14 +122,14 @@ test("every old path redirects to its new home", () => {
     ["/ideas/all", "/notes/all?topic=Ideas"],
     ["/ideas/radar", "/notes/all?topic=Ideas"],
     ["/notes/ideas", "/notes/all?topic=Ideas"],
-    ["/ideas/leetcode", "/notes/leetcode"],
+    ["/ideas/leetcode", "/notes/all?topic=LeetCode"],
   ];
   for (const [from, to] of cases) {
     expect([from, redirectOf(from)]).toEqual([from, to]);
     expect(parseRoute(from)).toEqual({ name: "redirect", to });
   }
   for (const current of [
-    "/notes/leetcode",
+    "/notes/all",
     "/calendar/agenda",
     "/money/overview",
     "/flows/flow-rent",
@@ -154,6 +156,7 @@ test("links to a collection or a flow go straight to their new home", () => {
   expect(collectionPath("tasks", "board")).toBe("/tasks/board");
   expect(collectionPath("money")).toBe("/money/overview");
   expect(collectionPath("proposals")).toBe("/settings/data/proposals");
+  expect(collectionPath("leetcode", "progress")).toBe("/notes/all?topic=LeetCode");
   expect(flowPath("flow-rent")).toBe("/flows/flow-rent");
   expect(flowPath()).toBe("/flows");
 });

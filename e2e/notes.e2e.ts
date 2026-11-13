@@ -1,7 +1,7 @@
-import { openNew, ownerContext, pushed } from "./helpers.ts";
+import { mcpClient, openNew, ownerContext, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Notes: a new note with a topic, Markdown and a diagram; the topic filters the cards; / searches; a note from New lands in Inbox; Delete", async ({
+test("Notes: a new note written in one pane (Markdown shortcuts, a / checklist ticked with a click, a diagram); the topic filters the cards; / searches; a note from New lands in Inbox; Delete", async ({
   browser,
 }) => {
   const page = await (
@@ -20,10 +20,9 @@ test("Notes: a new note with a topic, Markdown and a diagram; the topic filters 
     "Notes",
     "Today",
     "Days",
-    "LeetCode",
   ]);
 
-  // A new note: title, topic, Markdown with a diagram, drawn in the preview.
+  // A new note: title, topic, then the text in one pane, formatted as it is typed.
   await page.getByRole("button", { name: "New note" }).click();
   await expect(page).toHaveURL(/\/notes\/all\/[0-9A-Z]{26}$/);
   await page.getByLabel("Note title").fill(title);
@@ -31,16 +30,22 @@ test("Notes: a new note with a topic, Markdown and a diagram; the topic filters 
   await page.getByLabel("Topic").fill(` ${topic} `);
   await page.getByLabel("Topic").blur();
   const body = page.getByRole("textbox", { name: "Note body" });
-  await body.fill(
-    "# Specs\n\n- **CPU** Ryzen 7\n\n```mermaid\nflowchart LR\n  Router --> Laptop\n```",
-  );
+  await body.click();
+  await page.keyboard.type("# Specs\n- **CPU** Ryzen 7\n\n");
+  await expect(body.getByRole("heading", { name: "Specs" })).toBeVisible();
+  await expect(body.locator("li strong")).toHaveText("CPU");
+  // The / menu makes a checklist; a box is ticked with a click.
+  await page.keyboard.type("/che");
+  await page.getByRole("listbox", { name: "Blocks" }).getByRole("option", { name: /Checklist/ });
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Buy a dock\nCheck the warranty\n\n");
+  await body.getByRole("checkbox", { name: /Buy a dock/ }).click();
+  await expect(body.getByRole("checkbox", { name: /Buy a dock/ })).toBeChecked();
+  // A mermaid block is drawn under its source.
+  await page.keyboard.type("```mermaid\nflowchart LR\n  Router --> Laptop");
+  await expect(body.getByRole("img", { name: "Diagram" }).locator("svg")).toContainText("Router");
   await body.blur();
   await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
-  const preview = page.locator(".md-preview");
-  await expect(preview.getByRole("heading", { name: "Specs" })).toBeVisible();
-  await expect(preview.getByRole("img", { name: "Diagram" }).locator("svg")).toContainText(
-    "Router",
-  );
   await page.getByLabel("Colour", { exact: true }).selectOption("teal");
 
   // Back to the cards; the topic is in the sidebar and filters to its notes.
@@ -54,6 +59,12 @@ test("Notes: a new note with a topic, Markdown and a diagram; the topic filters 
   const card = cards.getByRole("link", { name: new RegExp(title) });
   await expect(card).toContainText("Specs · CPU Ryzen 7 ◇ diagram");
   await expect(card).toContainText(topic);
+  // The card lists the checklist and how far along it is.
+  await expect(card.getByRole("listitem")).toHaveText([
+    /Done: Buy a dock$/,
+    /To do: Check the warranty$/,
+  ]);
+  await expect(card.locator(".note-card-progress")).toHaveText("✓ 1/2");
   await expect(cards.getByRole("link")).toHaveCount(1);
 
   // / focuses the bar as a search; nothing found says so; Escape clears it.
@@ -81,7 +92,7 @@ test("Notes: a new note with a topic, Markdown and a diagram; the topic filters 
   await expect(page).toHaveURL(/\/notes\/all\/[0-9A-Z]{26}\?topic=/);
   await expect(page.getByLabel("Note title")).toHaveValue(`Router ${stamp}`);
   await expect(page.getByLabel("Topic")).toHaveValue(topic);
-  await expect(page.getByRole("textbox", { name: "Note body" })).toHaveValue(
+  await expect(page.getByRole("textbox", { name: "Note body" })).toHaveText(
     "Port 8080, admin page",
   );
   // The way back keeps the topic.
@@ -154,4 +165,59 @@ test("Ideas are the topic Ideas: old links land there, an idea is captured into 
   await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
   await expect(page).toHaveURL(/\/notes\/all\?topic=Ideas$/);
   await expect(card).toHaveCount(0);
+});
+
+test("a note keeps its Markdown until the owner edits it; an agent's change under an unsaved edit asks first", async ({
+  browser,
+  baseURL,
+}) => {
+  const page = await (
+    await ownerContext(browser, { viewport: { width: 1360, height: 900 } })
+  ).newPage();
+  page.on("dialog", (dialog) => void dialog.accept());
+  const agent = await mcpClient(baseURL as string, "notes-e2e");
+  const body = async (id: string) => {
+    const got = await agent.callTool({ name: "get", arguments: { id } });
+    return (got.structuredContent as { body?: string }).body;
+  };
+  const title = `Kept ${Date.now()}`;
+  // Written the way the editor would not write it: `_` emphasis, a table not lined up.
+  const written = "_tidy_ notes & more\n\n| a | b |\n|---|---|\n| 1 | 2 |";
+  const made = await agent.callTool({ name: "add_note", arguments: { title, body: written } });
+  const id = (made.structuredContent as { id: string }).id;
+  // A device picks up what agents wrote when it syncs; `online` starts one now.
+  const sync = () => page.evaluate(() => window.dispatchEvent(new Event("online")));
+
+  await page.goto(`/notes/all/${id}`);
+  await sync();
+  const text = page.getByRole("textbox", { name: "Note body" });
+  await expect(text.locator("em")).toHaveText("tidy");
+  await expect(text.getByRole("table")).toBeVisible();
+  // Opened, looked at, left: nothing is written.
+  await text.click();
+  await text.blur();
+  await page.waitForTimeout(2500);
+  await page.getByRole("link", { name: "Back to notes" }).click();
+  expect(await body(id)).toBe(written);
+
+  // An unsaved edit, then the agent changes the note: the page asks; Keep mine writes the edit.
+  await page.goto(`/notes/all/${id}`);
+  await text.locator("p").first().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" mine");
+  const changed = await agent.callTool({
+    name: "update",
+    arguments: { id, body: "From the agent" },
+  });
+  expect(changed.isError).toBeFalsy();
+  await sync();
+  await expect(page.getByRole("alert")).toContainText("Changed elsewhere while you were editing.");
+  await page.getByRole("button", { name: "Keep mine" }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect
+    .poll(() => body(id))
+    .toBe("*tidy* notes & more mine\n\n| a   | b   |\n| --- | --- |\n| 1   | 2   |");
+
+  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
+  await agent.close();
 });

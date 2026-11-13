@@ -218,7 +218,14 @@ function NoteCard({ note, href, day }: { note: Doc; href: string; day: string })
           ))}
         </ul>
       )}
-      <span className="note-card-date">{day}</span>
+      <span className="note-card-foot">
+        <span className="note-card-date">{day}</span>
+        {face.checks.length > 0 && (
+          <span className="note-card-progress num" title="Checked off">
+            ✓ {face.checks.filter((c) => c.done).length}/{face.checks.length}
+          </span>
+        )}
+      </span>
     </a>
   );
 }

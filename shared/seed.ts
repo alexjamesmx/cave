@@ -5,10 +5,11 @@ import { SEEDED_FLOWS } from "./flows/drafts.ts";
 import { FLOWS, FLOWS_COLLECTION } from "./flows/seed.ts";
 import { SEED_STAMP } from "./hlc.ts";
 import { ideasToNotesMigration } from "./ideas-to-notes.ts";
+import { leetcodeToNotesMigration } from "./leetcode-to-notes.ts";
 import { listsMigration, MONEY_ACCOUNT } from "./lists.ts";
 import { NOTES, NOTES_COLLECTION, notesMigration } from "./notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
-import { COLOR_FIELD, pagesMigration, TRACKER_FIELDS } from "./pages.ts";
+import { COLOR_FIELD, pagesMigration } from "./pages.ts";
 import { PALETTE, PALETTE_A, recolour, vivify } from "./palette.ts";
 import {
   MONEY_PAYMENT_REF,
@@ -171,32 +172,6 @@ const COLLECTIONS: Record<string, CollectionData> = {
       field("updated", "Updated", "date"),
     ],
     views: [view("dashboard", "Dashboard", "wealth"), view("table", "Table", "table")],
-  },
-  leetcode: {
-    name: "LeetCode",
-    icon: "code",
-    color: C.orange,
-    order: 5,
-    fields: [
-      field("number", "Number", "number"),
-      field("difficulty", "Difficulty", "select", [
-        opt("easy", "signal-low", C.income),
-        opt("medium", "signal-medium", C.gold),
-        opt("hard", "signal-high", C.expense),
-      ]),
-      field("topic", "Topic", "text"),
-      field("status", "Status", "select", [
-        opt("queued", "list", C.grey),
-        opt("practicing", "repeat", C.cyan),
-        opt("review", "eye", C.gold),
-        opt("solved", "circle-check", C.lime),
-        opt("skipped", "skip-forward", C.expense),
-      ]),
-      field("solved_at", "Solved", "date"),
-      field("notes", "Notes", "text"),
-      ...TRACKER_FIELDS,
-    ],
-    views: [view("progress", "Progress", "progress"), view("table", "Table", "table")],
   },
   reminders: {
     name: "Reminders",
@@ -513,6 +488,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 25, docs: [], update: vividMigration },
   // M14: every idea is a note in topic Ideas; the ideas collection is retired.
   { version: 26, docs: [], update: ideasToNotesMigration },
+  // M15: every LeetCode problem is a task line in the note LeetCode; the collection is retired.
+  { version: 27, docs: [], update: leetcodeToNotesMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */

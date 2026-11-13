@@ -46,7 +46,7 @@ flowchart LR
 
 - **Sections:** five (Money, Tasks, Calendar, Notes, Flows) and Settings, each with tabs.
 - **One registry:** `web/src/app/sections.ts`, which the sidebar, the phone dock and the router read.
-- **Where things live:** every collection belongs to one section or is reached only from Settings → Data. Ideas are notes in the topic Ideas; LeetCode is a Notes tab.
+- **Where things live:** every collection belongs to one section or is reached only from Settings → Data. Ideas are notes in the topic Ideas; LeetCode is the note "LeetCode" in the topic LeetCode.
 - **Settings:** holds only general things (General, Devices & server, Notifications, Agents, Data).
 - **Opening:** the app opens on Money's overview.
 

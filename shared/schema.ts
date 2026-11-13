@@ -13,7 +13,8 @@ export const FIELD_TYPES = [
 ] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
-// `write` is the journal's diary editor.
+// `write` is the journal's diary editor. A retired type (`progress`, LeetCode's until M15) can
+// stay in stored docs: sync never checks a view's type, and one with no component shows nothing.
 export const VIEW_TYPES = [
   "table",
   "board",
@@ -22,7 +23,6 @@ export const VIEW_TYPES = [
   "write",
   "money",
   "wealth",
-  "progress",
   "payments",
 ] as const;
 export type ViewType = (typeof VIEW_TYPES)[number];
