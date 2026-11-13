@@ -42,7 +42,7 @@ describe("seedDatabase", () => {
   test("every collection of a fresh seed gets at least one live item", () => {
     const { docs } = seeded();
     const collections = seedDocs().filter((d) => d.kind === "collection");
-    expect(collections.length).toBeGreaterThan(10);
+    expect(collections.length).toBeGreaterThanOrEqual(10);
     for (const c of collections) {
       const items = docs.filter(
         (d) => d.kind === "item" && d.collection === c.id && d.data._deleted !== true,

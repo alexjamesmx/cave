@@ -13,6 +13,8 @@ export const NOTES = "notes";
 export const INBOX = "Inbox";
 /** Ideas are notes in this topic since M14 (seed migration 26). */
 export const IDEAS_TOPIC = "Ideas";
+/** The LeetCode note's topic since M15 (seed migration 27). */
+export const LEETCODE_TOPIC = "LeetCode";
 
 export const NOTES_COLLECTION: CollectionData = {
   name: "Notes",

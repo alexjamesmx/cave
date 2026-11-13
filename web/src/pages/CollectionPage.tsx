@@ -11,7 +11,6 @@ import { CalendarView } from "../views/CalendarView.tsx";
 import { GalleryView } from "../views/GalleryView.tsx";
 import { MoneyDashboard } from "../views/MoneyDashboard.tsx";
 import { PaymentsView } from "../views/PaymentsView.tsx";
-import { ProgressDashboard } from "../views/ProgressDashboard.tsx";
 import { TableView } from "../views/TableView.tsx";
 import type { ViewProps } from "../views/types.ts";
 import { WealthDashboard } from "../views/WealthDashboard.tsx";
@@ -25,7 +24,6 @@ const VIEWS: Record<ViewType, ComponentType<ViewProps>> = {
   write: DiaryToday,
   money: MoneyDashboard,
   wealth: WealthDashboard,
-  progress: ProgressDashboard,
   payments: PaymentsView,
 };
 
