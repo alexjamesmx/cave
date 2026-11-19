@@ -4,7 +4,7 @@ Local-first personal brain: money, tasks, calendar, habits, diary, notes and ide
 
 ## Status
 
-Pre-v0.1: M1 to M15 are on `main` and live at `https://cave.alexjamesmx.dev`; a push to `main` deploys within minutes. Laptop: WSL Ubuntu at `~/code/jarvis`. Update this line in the same change as what it describes.
+Pre-v0.1: M1 to M15 are on `main` and live at `https://cave.alexjamesmx.dev`; a push to `main` deploys within minutes. Laptop: Ubuntu at `~/code/jarvis`, moving from WSL to a native install (`docs/onboarding.md`, "Move to a new laptop"). Update this line in the same change as what it describes.
 
 ## Read first
 

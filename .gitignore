@@ -9,4 +9,5 @@ data/
 CLAUDE.local.md
 test-results/
 playwright-report/
+.playwright-mcp/
 !.env.example

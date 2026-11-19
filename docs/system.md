@@ -174,7 +174,7 @@ bun run check && bun test && bun run e2e              # e2e uses its own temp da
 ## 6. Recreate from scratch
 
 ### A new development laptop
-Install the tools and the code as `docs/onboarding.md` says; then, on Ubuntu natively or in WSL (systemd on in `/etc/wsl.conf`):
+Install the tools and the code as `docs/onboarding.md` says; then, on Ubuntu (coming from another laptop, `setup/carry.sh` brings steps 1 to 3 along: `docs/onboarding.md`, "Move to a new laptop"):
 
 1. **SSH to the VPS:**
    - Run `ssh-keygen -t ed25519`. The key has no passphrase by the owner's choice (`docs/decisions.md`, 2026-10-21); `ssh-keygen -p -f ~/.ssh/id_ed25519` adds one later. The same key can serve GitHub.
@@ -191,15 +191,9 @@ Install the tools and the code as `docs/onboarding.md` says; then, on Ubuntu nat
    - Run `ssh cave-vps true`, and check that the host key fingerprint matches `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` in the browser terminal.
 2. **`.env`:** copy it from `.env.example` and set `CAVE_DB_PATH=data/dev.db`, `CAVE_REMOTE_URL=https://cave.alexjamesmx.dev`, `CAVE_REMOTE_TOKEN` (the server token, from your password manager) and `BACKUP_PULL_DIR=data/vps-backups`.
 3. **Agent token and MCP keys:** mint one agent token per machine in the browser terminal (`bun run agent add claude-code-<machine> --scopes read,write`, `docs/agents.md`), and revoke the old machine's with `bun run agent revoke <name>`. `.mcp.json` reads `CAVE_AGENT_TOKEN`, `CONTEXT7_API_KEY`, `EXA_API_KEY`, `FIRECRAWL_API_KEY` and `GITHUB_PAT` from the environment, never from a file in the repo.
-   - **WSL:** keep them as Windows user environment variables, and pass them into WSL with `WSLENV` (PowerShell, then restart the Claude app and open a new Ubuntu terminal):
-     ```powershell
-     [Environment]::SetEnvironmentVariable('WSLENV', 'CAVE_AGENT_TOKEN/u:CONTEXT7_API_KEY/u:EXA_API_KEY/u:FIRECRAWL_API_KEY/u:GITHUB_PAT/u', 'User')
-     ```
-   - **Native Linux:** put them in `~/.config/environment.d/cave.conf` (`chmod 600`), which systemd gives every process of the user session.
+   - `setup/setup.sh` writes `~/.config/environment.d/cave.conf` (mode 600, template `setup/cave.conf.example`) with the five names and empty values. Fill them in, then log out and back in: systemd gives them to every process of the user session, Remote Control included.
 4. **Claude Code:** start `claude` in `~/code/jarvis`, approve the project MCP servers, check `/mcp`, then make the dev copy (section 5).
-5. **Remote Control** (the phone's Code tab reaches this checkout; `setup/remote-control.sh` runs `claude remote-control` in a restart loop, log in `~/.local/state/cave/remote-control.log`, shown in the Claude app as "cave · laptop"):
-   - **WSL:** `setup/setup.sh` registers the per-user Windows task "Cave Remote Control", which at logon keeps `wsl.exe` running the loop, and so keeps WSL up. Start it now with `powershell.exe -NoProfile -Command "Start-ScheduledTask -TaskName 'Cave Remote Control'"`. It restarts WSL 30 seconds after `wsl --shutdown`; stop the task first to keep WSL down. `setup/remote-control-task.ps1 -Remove` unregisters it.
-   - **Native Linux:** run `setup/remote-control.sh` from a systemd user service (not set up yet).
+5. **Remote Control** (the phone's Code tab reaches this checkout, shown in the Claude app as "cave · laptop"): `setup/setup.sh` installs and enables the systemd user unit `cave-remote-control.service` (template `setup/cave-remote-control.service`). It runs `setup/remote-control.sh` at login and starts it again 30 seconds after it exits. Start it now with `systemctl --user start cave-remote-control`; read it with `journalctl --user -u cave-remote-control`; turn it off with `systemctl --user disable --now cave-remote-control`.
 
 ### A new phone, tablet or browser
 `docs/onboarding.md`.
@@ -246,6 +240,14 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 | `CAVE_TELEGRAM_BOT_TOKEN`, `CAVE_DISCORD_WEBHOOK_URL` | optional channels; never logged or sent to a client |
 | `CAVE_RESEND_API_KEY`, `CAVE_EMAIL_FROM`, `CAVE_EMAIL_TO` | the email channel through Resend (M12): all three or none; the key is never logged or sent to a client |
 | `CAVE_SSH`, `CAVE_REMOTE_URL`, `CAVE_REMOTE_TOKEN`, `BACKUP_PULL_DIR` | laptop tooling: `deploy`, `pull-data` |
+| `CAVE_REMOTE_BACKUP_DIR` | where `pull-data` reads on the VPS, default `/var/lib/cave/backups` |
+| `CAVE_E2E_EXECUTABLE`, `CAVE_E2E_CHANNEL`, `CAVE_E2E_PORT` | e2e: the browser binary or Playwright channel (`e2e/browser.ts`), and the port pair, default 3210 and 3211, so two checkouts run side by side |
+| `CAVE_E2E_DIR`, `CAVE_E2E_TOKEN`, `CAVE_E2E_VAPID`, `CAVE_E2E_TARGET` | set by `playwright.config.ts` for its workers; never by hand |
+
+Outside the server:
+- **Laptop keys** (`~/.config/environment.d/cave.conf`, template `setup/cave.conf.example`): `CAVE_AGENT_TOKEN`, `CONTEXT7_API_KEY`, `EXA_API_KEY`, `FIRECRAWL_API_KEY`, `GITHUB_PAT`, read by `.mcp.json`.
+- **`setup/carry.sh`:** `CAVE_CARRY_PASSPHRASE_FILE` replaces the passphrase prompt (tests).
+- **The deploy wrappers** (`deploy/cave-deploy`, `deploy/release.sh`, `deploy/cave-offsite`) take `CAVE_ROOT`, `CAVE_STATE_DIR`, `CAVE_ENV_FILE`, `CAVE_HEALTH_URL`, `CAVE_HEALTH_SECONDS`, `CAVE_SYSTEMCTL`, `CAVE_LOCK_FILE`, `CAVE_RUN_AS`, `CAVE_HOME`, `CAVE_BUN_BIN`, `CAVE_KEEP_RELEASES`, `CAVE_CACHE_DIR`, `CAVE_OFFSITE_SOURCE` and `CAVE_OFFSITE_STATE`; each defaults to the VPS path at the top of its script, and the tests point them at temporary folders.
 
 ## 8. Secrets: where each lives
 
@@ -256,7 +258,7 @@ The server reads environment variables; Bun loads `.env` (template: `.env.exampl
 | The `claude-apps` agent token | the Claude account's Cave connector (request header); your password manager | git, cloud environments, chats |
 | The GitHub account | your password manager, with two-factor login | anywhere else: whoever can merge to `main` ships code that runs with all the data |
 | SSH keys | `~/.ssh` on the laptop; the VPS deploy key in `/var/lib/cave/.ssh` | anywhere else |
-| MCP keys (Context7, Exa, Firecrawl, GitHub) | user environment variables | git |
+| MCP keys (Context7, Exa, Firecrawl, GitHub) and the laptop's agent token | `~/.config/environment.d/cave.conf` on the laptop (mode 600); `setup/carry.sh` moves it encrypted | git |
 | Web Push private key `CAVE_VAPID_PRIVATE` | `/etc/cave/cave.env` only (`bun run push-keys` appends it) | logs, API answers, the client, docs |
 | Telegram bot token `CAVE_TELEGRAM_BOT_TOKEN` | `/etc/cave/cave.env`; @BotFather can reissue it | logs, API answers, the client |
 | Discord webhook `CAVE_DISCORD_WEBHOOK_URL` | `/etc/cave/cave.env`: anyone holding it can post | logs, API answers, the client |

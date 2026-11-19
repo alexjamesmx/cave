@@ -1,0 +1,14 @@
+# setup/setup.sh installs this as ~/.config/systemd/user/cave-remote-control.service, with @ROOT@
+# replaced by the checkout. Logs: journalctl --user -u cave-remote-control
+[Unit]
+Description=Cave Remote Control (the Claude app's Code tab reaches this checkout)
+
+[Service]
+WorkingDirectory=@ROOT@
+ExecStart=/usr/bin/env bash @ROOT@/setup/remote-control.sh
+# remote-control exits after about 10 minutes offline; start it again.
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# One-time setup of a Linux development machine, after the tools in docs/onboarding.md.
-# Safe to run again: it keeps what is already there. On WSL it also registers Remote Control.
+# One-time setup of an Ubuntu development machine, after the tools in docs/onboarding.md.
+# Safe to run again: it keeps what is already there.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -25,7 +25,6 @@ echo "== Playwright MCP (user scope)"
 if claude mcp get playwright >/dev/null 2>&1; then
   echo "playwright already configured"
 else
-  # bunx, not npx: on WSL the npx on PATH can be the Windows one.
   claude mcp add --scope user playwright -- bunx @playwright/mcp@latest
 fi
 
@@ -38,9 +37,22 @@ echo "== Repository"
 git config core.hooksPath .githooks
 bun install --frozen-lockfile
 
-if [ -n "${WSL_DISTRO_NAME:-}" ]; then
-  echo "== Remote Control (the phone's Code tab reaches this checkout)"
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w setup/remote-control-task.ps1)"
+echo "== Laptop keys"
+keys="$HOME/.config/environment.d/cave.conf"
+if [ -e "$keys" ]; then
+  echo "Kept your $keys"
+else
+  mkdir -p "$(dirname "$keys")"
+  install -m 600 setup/cave.conf.example "$keys"
+  echo "Wrote $keys: fill in the keys (docs/onboarding.md, Keys), then log out and back in"
 fi
+
+echo "== Remote Control (the phone's Code tab reaches this checkout)"
+unit="$HOME/.config/systemd/user/cave-remote-control.service"
+mkdir -p "$(dirname "$unit")"
+sed "s|@ROOT@|$PWD|g" setup/cave-remote-control.service >"$unit"
+systemctl --user daemon-reload
+systemctl --user enable cave-remote-control.service
+echo "It starts at your next login. Now: systemctl --user start cave-remote-control"
 
 echo "Done. Run claude here, approve the project MCP servers, and check them with /mcp."

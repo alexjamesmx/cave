@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 
 /** Chromium preinstalled in Claude Code cloud sessions, where browser downloads are blocked. */
 export const CLOUD_CHROMIUM = "/opt/pw-browsers/chromium";
-/** Google Chrome from its .deb (the laptop's WSL Ubuntu), where Playwright's `chrome` channel looks. */
+/** Google Chrome from its .deb (the laptop and CI), where Playwright's `chrome` channel looks. */
 export const LINUX_CHROME = "/opt/google/chrome/chrome";
 
 type BrowserChoice = { executablePath: string } | { channel: string };
