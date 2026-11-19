@@ -1,0 +1,14 @@
+# The laptop's keys. setup/setup.sh copies this to ~/.config/environment.d/cave.conf (mode 600);
+# systemd gives them to every process of the user session, Remote Control included. Log out and
+# back in after editing. .mcp.json reads them; never put the values in the repo.
+
+# The Cave's MCP: this machine's agent token (bun run agent add, docs/agents.md).
+CAVE_AGENT_TOKEN=
+# Context7, current library docs (context7.com).
+CONTEXT7_API_KEY=
+# Exa, web search (dashboard.exa.ai).
+EXA_API_KEY=
+# Firecrawl, pages as Markdown (firecrawl.dev).
+FIRECRAWL_API_KEY=
+# The GitHub MCP: a personal access token.
+GITHUB_PAT=

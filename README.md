@@ -6,7 +6,7 @@ Status: pre-v0.1, live at `https://cave.alexjamesmx.dev`.
 
 ## Try it
 
-Linux or WSL with git and [Bun](https://bun.com) 1.4.3:
+Linux with git and [Bun](https://bun.com) 1.4.3:
 
 ```bash
 bun install
