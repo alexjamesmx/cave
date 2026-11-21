@@ -27,6 +27,9 @@ export default defineConfig({
   testDir: "e2e",
   testMatch: "*.e2e.ts",
   snapshotPathTemplate: snapshotPathTemplate(browser),
+  // The laptop (CachyOS) and CI (Ubuntu) anti-alias the same bundled fonts with different system
+  // font settings, so a few dozen glyph-edge pixels differ; a layout change moves thousands.
+  expect: { toHaveScreenshot: { maxDiffPixels: 100 } },
   // The specs share one server and database, so they run one at a time.
   fullyParallel: false,
   workers: 1,

@@ -9,5 +9,5 @@ cd "$(dirname "$0")/.."
 # systemd starts units without a login shell, so no profile adds claude's or Bun's install folder.
 export PATH="$HOME/.local/bin:$HOME/.bun/bin:$PATH"
 # ssh (deploy, pull-data) uses the agent of openssh's ssh-agent.socket when the session has none.
-export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/openssh_agent}"
+export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/ssh-agent.socket}"
 exec claude remote-control --name "cave · laptop" --spawn same-dir --capacity 1

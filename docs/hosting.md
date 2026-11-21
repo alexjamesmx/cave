@@ -33,7 +33,7 @@ The one-time setup of the VPS, run step by step. Each step is shown to the owner
 
 ## 0. Prerequisites
 - **The M5 code is on `origin/main`.** `deploy/release.sh` builds only commits on `origin/main`, and the server needs `CAVE_PUBLIC_ORIGIN` support to run behind Caddy.
-- **The laptop key.** `~/.ssh/id_ed25519` on the laptop opens root on the VPS. By the owner's choice it has no passphrase (`docs/decisions.md`, 2026-10-21), so the laptop's disk and user account are what guard it; `setup/carry.sh` moves it to the next laptop inside an encrypted file. A passphrase can be added at any time with `ssh-keygen -p -f ~/.ssh/id_ed25519`, with the user `ssh-agent` holding it (`docs/system.md` section 6, "SSH to the VPS").
+- **The laptop key.** `~/.ssh/id_ed25519` on the laptop opens root on the VPS. By the owner's choice it has no passphrase (`docs/decisions.md`, 2026-10-21), so the laptop's disk and user account are what guard it; a copy in the password manager is how it reaches the next laptop. A passphrase can be added at any time with `ssh-keygen -p -f ~/.ssh/id_ed25519`, with the user `ssh-agent` holding it (`docs/system.md` section 6, "SSH to the VPS").
 - **The root password was changed** (`passwd` in the browser terminal) after it appeared in a chat.
 
 ## 1. User and directories

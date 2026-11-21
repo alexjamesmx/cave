@@ -12,3 +12,4 @@
 - Plugins from `setup/setup.sh`: superpowers, feature-dev, code-review, commit-commands, security-guidance, skill-creator, claude-md-management.
 - Project skills: `.claude/skills/` (`ship-change`).
 - Plan mode for changes across more than one module.
+- When a search or fetch tool fails (credits, blocks), try the others (Exa, WebFetch/WebSearch, curl, Playwright) before calling something not found.

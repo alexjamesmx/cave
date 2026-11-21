@@ -33,7 +33,9 @@ test("without a token only the lock screen renders; a wrong token is refused, th
       body: '{"error":"unauthorized"}',
     }),
   );
-  await page.reload();
+  // The reloaded page's first sync gets the 401 and expire() reloads again; waiting only for the
+  // commit keeps that second navigation from aborting this one (net::ERR_ABORTED in CI).
+  await page.reload({ waitUntil: "commit" });
   await expect(page.getByRole("button", { name: "Unlock" })).toBeVisible();
   await expect(page.getByRole("navigation")).toHaveCount(0);
 

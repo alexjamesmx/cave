@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup of an Ubuntu development machine, after the tools in docs/onboarding.md.
+# One-time setup of a Linux (CachyOS) development machine, after the tools in docs/onboarding.md.
 # Safe to run again: it keeps what is already there.
 set -euo pipefail
 cd "$(dirname "$0")/.."
