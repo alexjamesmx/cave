@@ -15,6 +15,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 const hasGpg = Bun.which("gpg") !== null;
+// carry.sh only runs on a laptop. A release build on the VPS (cave-deploy sets CAVE_ROOT) runs
+// under systemd's sandbox, where tar can't create the unpacked folders, so it is skipped there.
+const runs = hasGpg && process.env.CAVE_ROOT === undefined;
 const tmp = mkdtempSync(join(tmpdir(), "cave-carry-"));
 const gnupg = join(tmp, "gnupg");
 const passphrase = join(tmp, "passphrase");
@@ -59,7 +62,7 @@ function carry(m: ReturnType<typeof machine>, args: string[], env: Record<string
   return output;
 }
 
-test.skipIf(!hasGpg)("carry: what the old laptop packs, the new one gets back, encrypted and without overwriting", () => {
+test.skipIf(!runs)("carry: what the old laptop packs, the new one gets back, encrypted and without overwriting", () => {
   mkdirSync(gnupg, { mode: 0o700 });
   writeFileSync(passphrase, "correct horse battery staple\n");
   const old = machine("old");
