@@ -147,6 +147,7 @@ test("Accounts: a new one typed in the money form joins the list, the forms pres
   await form.getByLabel(/New account|Add an account/).fill(account);
   await form.getByRole("button", { name: /^Save/ }).click();
   await expect(page.getByRole("status").filter({ hasText: "Lists e2e" })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   // The next entry starts on the account the last one used.
   await openNew(page);

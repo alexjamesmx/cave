@@ -563,14 +563,15 @@ test("seed migration 28: every payment becomes a reminder, payments retire, idem
   const data = (id: string) => store.get(id)?.data;
   expect(data("rem-card")).toMatchObject({
     _title: "Card",
-    _body: "Card · $1200 · Bank",
+    _body: "Card",
     due: "2026-12-05",
     repeat: "monthly",
     done: false,
     lead_days: 1,
     lead_every: 1,
   });
-  expect(data("rem-tv")).toMatchObject({ _body: "Subscription · ≈ $99", done: false });
+  expect(data("rem-tv")).toMatchObject({ _body: "Subscription", done: false });
+  expect(JSON.stringify(data("rem-card"))).not.toMatch(/1200|Bank/);
   expect(data("rem-tv")?.lead_days).toBeUndefined();
   expect(data("rem-gym")).toMatchObject({ done: true });
   expect(data("rem-tax")).toMatchObject({ _title: "Tax", done: false });

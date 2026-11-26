@@ -45,26 +45,22 @@ const KIND_LABEL: Record<string, string> = {
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 
-/** One line saying what the payment was, so nothing typed into it is lost from view. */
-export function paymentLine(d: Record<string, unknown>): string {
-  const kind = KIND_LABEL[String(d.kind)];
-  const amount =
-    typeof d.amount === "number" ? `${d.approx === true ? "≈ " : ""}$${d.amount}` : undefined;
-  return [kind, amount, str(d.account)].filter(Boolean).join(" · ");
-}
-
-/** The reminder a payment becomes: its date and repeat, done when it was inactive. */
+/**
+ * The reminder a payment becomes: its title, date and repeat, its kind as the note, done when
+ * it was inactive. Amount, category and account stay on the deleted payment: a reminder is
+ * not money, and an agent allowed reminders but not payments must not read them.
+ */
 function reminderFrom(p: Doc): SeedDoc {
   const d = p.data;
   const active = d.active !== false;
-  const line = paymentLine(d);
+  const kind = KIND_LABEL[String(d.kind)];
   return {
     id: `rem-${p.id}`,
     kind: "item",
     collection: REMINDERS,
     data: {
       _title: str(d._title) ?? "Payment",
-      ...(line ? { _body: line } : {}),
+      ...(kind ? { _body: kind } : {}),
       ...(str(d._created) ? { _created: d._created } : {}),
       ...(str(d.due) ? { due: d.due } : {}),
       ...(str(d._repeatFrom) ? { _repeatFrom: d._repeatFrom } : {}),
@@ -120,6 +116,8 @@ export function paymentsToRemindersMigration(
   const payments = get(PAYMENTS);
   if (payments?.kind !== "collection" || payments.data._deleted === true) return docs;
   for (const p of items(PAYMENTS).filter((p) => p.data._deleted !== true)) {
+    // A doc already at the reminder's id is someone else's: that payment stays as it is.
+    if (get(`rem-${p.id}`)) continue;
     docs.push(reminderFrom(p));
     docs.push({ id: p.id, kind: "item", collection: PAYMENTS, data: { _deleted: true } });
   }

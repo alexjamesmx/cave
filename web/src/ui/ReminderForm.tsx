@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { FieldValueError } from "../../../shared/fields.ts";
 import { newId } from "../../../shared/ids.ts";
+import { leadOf } from "../../../shared/lead.ts";
 import {
   complete,
   REPEATS,
@@ -25,12 +26,28 @@ export const REPEAT_LABEL: Record<Repeat, string> = {
   yearly: "Every year",
 };
 
+/** How far ahead a reminder starts reminding, and how often then; 0 is off. */
+const LEAD_DAYS: [number, string][] = [
+  [0, "Off"],
+  [1, "1 day before"],
+  [3, "3 days before"],
+  [7, "1 week before"],
+  [14, "2 weeks before"],
+  [30, "1 month before"],
+];
+const LEAD_EVERY: [number, string][] = [
+  [1, "Every day"],
+  [2, "Every 2 days"],
+  [7, "Every week"],
+];
+
 const REMINDERS = "reminders";
 const dateOf = (due: unknown) => (typeof due === "string" ? due.slice(0, 10) : "");
 const timeOf = (due: unknown) => (typeof due === "string" ? due.slice(11, 16) : "");
 
 /**
- * One reminder, new or existing: Title, Date, Time (empty for the whole day) and Repeat.
+ * One reminder, new or existing: Title, Date, Time (empty for the whole day), Repeat, and how
+ * far ahead it starts reminding (counted back from the date) and how often then.
  * An existing one adds Done (a repeating one moves to its next date), Snooze while it is open,
  * and Delete (soft).
  */
@@ -51,6 +68,9 @@ export function ReminderForm({
   const [date, setDate] = useState(doc ? dateOf(doc.data.due) || today : (day ?? today));
   const [time, setTime] = useState(doc ? timeOf(doc.data.due) : zone.defaultTime);
   const [repeat, setRepeat] = useState<Repeat>(doc ? repeatOf(doc.data) : "none");
+  const lead = doc ? leadOf(doc.data) : undefined;
+  const [leadDays, setLeadDays] = useState(lead?.days ?? 0);
+  const [leadEvery, setLeadEvery] = useState(lead?.every ?? 1);
   const [error, setError] = useState<string>();
   const ref = { id: doc?.id ?? newId(), kind: "item" as const, collection: REMINDERS };
 
@@ -71,6 +91,8 @@ export function ReminderForm({
         _title: title.trim(),
         due: time ? `${date}T${time}` : date,
         repeat,
+        lead_days: leadDays,
+        ...(leadDays > 0 ? { lead_every: Math.min(leadEvery, leadDays) } : {}),
         ...(doc ? {} : { done: false }),
       },
       `Saved · Reminder · ${title.trim()}`,
@@ -128,6 +150,38 @@ export function ReminderForm({
             ))}
           </select>
         </label>
+      </div>
+      <div className="quick-row">
+        <label className="quick-field">
+          <span className="k">Start reminding</span>
+          <select
+            className="input"
+            value={leadDays}
+            onChange={(e) => setLeadDays(Number(e.target.value))}
+          >
+            {LEAD_DAYS.map(([days, label]) => (
+              <option key={days} value={days}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {leadDays > 0 && (
+          <label className="quick-field">
+            <span className="k">How often</span>
+            <select
+              className="input"
+              value={leadEvery}
+              onChange={(e) => setLeadEvery(Number(e.target.value))}
+            >
+              {LEAD_EVERY.filter(([every]) => every <= leadDays).map(([every, label]) => (
+                <option key={every} value={every}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       {doc && doc.data.done !== true && (
         <fieldset className="reminder-snooze">

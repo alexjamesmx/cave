@@ -1,4 +1,4 @@
-import { addMoney, deleteAccount, newAccount, openNew, ownerContext, pushed } from "./helpers.ts";
+import { addMoney, addReminder, openNew, ownerContext, pushed } from "./helpers.ts";
 import { expect, type Locator, type Page, test } from "./test.ts";
 
 /** A local `YYYY-MM-DDTHH:mm` `days` from now at 09:00, as the browser sees it. */
@@ -31,17 +31,12 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/");
 
-  // A subscription due tomorrow (Calendar, Money → Subscriptions), a task and an expense.
-  const account = `Rows e2e card ${Date.now()}`;
-  await openNew(page);
-  await page.getByRole("button", { name: "Subscription", exact: true }).click();
-  const pay = page.getByRole("form", { name: "New subscription" });
-  await pay.getByLabel("Name").fill("Rows e2e bill");
-  await pay.getByLabel("Amount").fill("120");
-  await pay.getByLabel("Charged on").fill((await localAt(page, 1)).slice(0, 10));
-  await newAccount(pay, account);
-  await pay.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved · Rows e2e bill" })).toBeVisible();
+  // A reminder due tomorrow (Calendar), a task and an expense.
+  await addReminder(page, {
+    title: "Rows e2e bill",
+    date: (await localAt(page, 1)).slice(0, 10),
+    time: "09:00",
+  });
   await openNew(page);
   await page.getByRole("button", { name: "Task", exact: true }).click();
   const task = page.getByRole("form", { name: "Task" });
@@ -56,20 +51,14 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
   const agenda = page
     .getByRole("region", { name: "Upcoming" })
     .locator("li", { hasText: "Rows e2e bill" });
-  await opensByClickAndKey(page, agenda, agenda.locator(".agenda-time"), "Payments item");
-
-  // Money → Subscriptions: a click on a card, or Enter, opens it in its form.
-  await page.goto("/money/subscriptions");
-  const row = page.getByRole("listitem").filter({ hasText: "Rows e2e bill" });
-  const sheet = page.getByRole("dialog", { name: "Rows e2e bill" });
-  await row.locator(".ms-month").click();
-  await expect(sheet.getByLabel("Name")).toHaveValue("Rows e2e bill");
+  const sheet = page.getByRole("dialog", { name: "Reminder" });
+  await agenda.locator(".agenda-time").click();
+  await expect(sheet.getByLabel("Title")).toHaveValue("Rows e2e bill");
   await sheet.getByRole("button", { name: "Close" }).click();
-  await row.focus();
+  await agenda.focus();
   await page.keyboard.press("Enter");
-  await expect(sheet).toBeVisible();
   await sheet.getByRole("button", { name: "Delete" }).click();
-  await expect(row).toHaveCount(0);
+  await expect(agenda).toHaveCount(0);
 
   // Money → Transactions (a part of the row that isn't the title) and Tasks → List (a cell).
   await page.goto("/money/transactions");
@@ -110,5 +99,4 @@ test("a click anywhere on a row, or Enter, opens its item in every section", asy
     );
     await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
   }
-  await deleteAccount(page, account);
 });

@@ -14,7 +14,7 @@ bun run agent revoke codex
 - The token (`cave_…`) is printed once. Only its SHA-256 is stored, so it can't be shown again. A lost token means revoking the agent and adding a new one.
 - Scopes:
   - `read`: `list_collections`, `query`, `get`, `money_month` (a month's totals, and the owner's `budget`: `limit`, `spent`, `left`, `pace`, `savingTarget`, `saved`, or `null` until the owner sets a limit; agents never set the budget), `list_flows`, `get_routine` (the weekly routine's blocks and the diary's habits; the blocks only for an agent that sees every collection).
-  - `write`: `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `set_routine` (replaces the whole week, checked like the app; only for an agent that sees every collection), `add_habit` (a diary checkbox; an archived one comes back) and `add_note`.
+  - `write`: `create`, `update`, `propose_delete`, `save_flow`, `set_routine` (replaces the whole week, checked like the app; only for an agent that sees every collection), `add_habit` (a diary checkbox; an archived one comes back) and `add_note`.
 - `--collections` limits what the agent can see. Other collections don't appear in its lists, and anything in them answers "not found".
 - Keep the token in an environment variable, `CAVE_AGENT_TOKEN` below. Never put it in a committed file.
 
@@ -25,7 +25,7 @@ bun run agent revoke codex
 - **Undo:** every agent write can be undone from the Agents page. A key the owner changed afterwards is kept.
 - **Reminders:** a reminder whose `repeat` isn't `none` repeats on completion. `update` with `done: true` moves `due` to the next occurrence and keeps it open, as the app's Done does. The Cave sends a due reminder's notification itself, so agents must not offer outside scheduled tasks for Cave reminders.
 - **Repeating tasks:** a task with `repeat` other than `none` comes back: `update` with `status: "done"` moves `due` to the next date, keeps it open (`todo`) and sets `completed`, as the app's Done does. The change log keeps every completion.
-- **Payments:** the `payments` collection holds what the owner pays on a date (subscriptions, cards, bills, loans). `mark_paid` logs the expense (title, category and account from the payment) and moves the payment to its next date; a one-off one becomes inactive. A payment with `approx: true` (a card statement) needs `amount`: ask the owner, never guess it.
+- **Bills and subscriptions are reminders** (M16): there is no payments collection and no `mark_paid`. A reminder can start reminding before its date: `lead_days` (1, 3, 7, 14 or 30) and `lead_every` (1, 2 or 7), counted back from each date. Money is only what the owner logs; never log an expense because a reminder came due.
 - **Money categories:** each option has a `kind` (`expense`, `income`, `transfer`); use one that fits the direction. Transfers count as neither spending nor income.
 - **LeetCode:** since M15 it is one note, `note-leetcode` ("LeetCode", topic `LeetCode`): a `## ` heading per group and a line per problem, `- [ ] <number> · <name> · <difficulty>` (`- [x] ` once solved), any other detail after ` · `. Read it with `get`, change it with `update` on its `body` (Markdown); keep the line format so the owner's checkboxes and the card's count stay right. The `leetcode` collection is retired (seed migration 27); `create`, `query` and flows that name it answer "not found".
 - **Asking the owner:** never guess an amount, a category or an account. When a decision is the owner's, create a task for them with the question in its title.
@@ -162,7 +162,7 @@ Claude's apps reach custom connectors from Anthropic's cloud, so they use the ho
    - URL: `https://cave.alexjamesmx.dev/mcp`;
    - sign-in: **No sign-in**;
    - request header: name `authorization`, value `Bearer <token>`, **Required**.
-3. **Set the write tools to ask first:** `create`, `update`, `propose_delete`, `mark_paid`, `save_flow`, `set_routine`, `add_habit` and `add_note`. Read tools can stay allowed.
+3. **Set the write tools to ask first:** `create`, `update`, `propose_delete`, `save_flow`, `set_routine`, `add_habit` and `add_note`. Read tools can stay allowed.
 
 - The connector belongs to the Claude account, so every device signed in to it has the Cave.
 - **Changing the token** (lost, leaked, rotated) means revoking `claude-apps`, minting a new one, then removing and re-adding the connector: the header value can't be edited in place.

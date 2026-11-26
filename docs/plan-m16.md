@@ -26,7 +26,7 @@ Considered: (a) retire payments with a seed migration that writes reminders, as 
 
 Runs once, like `leetcodeToNotesMigration`. For each live payment (not `_deleted`):
 
-- a new reminder (id derived from the payment's, so a rerun writes the same doc): `_title`, `due`, `repeat` and `_repeatFrom` copied; `done` = `active === false`; `_body` one line naming what it was, built from kind, amount and account when present (`Bill · $<amount> · <account>`), so nothing the owner typed is lost from view;
+- a new reminder (id derived from the payment's, so a rerun writes the same doc): `_title`, `due`, `repeat` and `_repeatFrom` copied; `done` = `active === false`; `_body` the kind only (`Bill`, `Subscription`, …): amount, category and account stay on the deleted payment, since an agent scoped to reminders but not payments must not read them (and a reminder is not money); a payment whose `rem-<id>` is already taken is left as it is;
 - `lead_days: 1, lead_every: 1` for an active non-subscription (they were told the day before), nothing for subscriptions;
 - the payment marked `_deleted`.
 

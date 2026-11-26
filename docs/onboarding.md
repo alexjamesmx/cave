@@ -11,7 +11,7 @@ flowchart LR
   end
   subgraph VPS["VPS (Hostinger, Ubuntu)"]
     Caddy["Caddy<br/>HTTPS + CSP"] --> Server["Cave server<br/>Bun + SQLite"]
-    Server --> Jobs["Jobs: reminders, payments,<br/>budget, digest, flows,<br/>backups, runs trim"]
+    Server --> Jobs["Jobs: reminders, budget,<br/>digest, flows, backups,<br/>runs trim"]
     Deploy["cave-deploy timer<br/>pulls main, check, test,<br/>health check, rollback"]
   end
   subgraph Agents["Agents (never touch the database)"]

@@ -37,14 +37,13 @@ test("the sidebar shows five sections and Settings once; a tab survives a reload
 
   await main.getByRole("link", { name: "Money" }).click();
   const tabs = page.getByRole("navigation", { name: "Money tabs" });
-  await tabs.getByRole("link", { name: "Subscriptions" }).click();
-  await expect(page).toHaveURL(/\/money\/subscriptions$/);
+  await tabs.getByRole("link", { name: "Categories" }).click();
+  await expect(page).toHaveURL(/\/money\/lists$/);
   await page.reload();
-  await expect(tabs.getByRole("link", { name: "Subscriptions" })).toHaveAttribute(
+  await expect(tabs.getByRole("link", { name: "Categories" })).toHaveAttribute(
     "aria-current",
     "page",
   );
-  await expect(page.getByRole("list", { name: "Subscriptions" })).toBeVisible();
 
   for (const [from, to] of [
     ["/", /\/money\/overview$/],

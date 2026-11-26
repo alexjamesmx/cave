@@ -1,18 +1,11 @@
-import {
-  addReminder,
-  mcpClient,
-  offOriginRequests,
-  ownerContext,
-  pickAccount,
-  pickCategory,
-} from "./helpers.ts";
+import { addReminder, mcpClient, offOriginRequests, ownerContext } from "./helpers.ts";
 import { expect, type Locator, type Page, test } from "./test.ts";
 
 // Thursday 2026-10-15, 10:00 in Mexico City, the seeded timezone. Timers keep running.
 const NOW = new Date("2026-10-15T16:00:00Z");
 
 const TASK = "File the form e2e";
-const BILL = "Gym membership e2e";
+const BILL = "Pay the card e2e";
 
 const region = (scope: Page | Locator, name: string | RegExp) =>
   scope.getByRole("region", { name, exact: typeof name === "string" });
@@ -30,7 +23,7 @@ async function deleteReminder(page: Page, list: Locator, title: string) {
   await expect(list.getByRole("button", { name: title, exact: true })).toHaveCount(0);
 }
 
-test("Month and Upcoming, the quick add, the Agenda with the same counts, and âœ“ on a reminder, a task and a payment", async ({
+test("Month and Upcoming, the quick add, the Agenda with the same counts, âœ“ on a reminder and a task, and a lead-up", async ({
   browser,
   baseURL,
 }) => {
@@ -40,15 +33,12 @@ test("Month and Upcoming, the quick add, the Agenda with the same counts, and âœ
   page.on("dialog", (dialog) => void dialog.accept());
   await page.clock.setFixedTime(NOW);
 
-  // A task and a payment both overdue since yesterday, as an agent adds them.
+  // A task overdue since yesterday and a bill in three days that starts reminding a week
+  // before, as an agent adds them.
   const agent = await mcpClient(baseURL as string, "agenda-e2e");
   for (const [collection, title, fields] of [
     ["tasks", TASK, { status: "todo", due: "2026-10-14" }],
-    [
-      "payments",
-      BILL,
-      { kind: "subscription", amount: 30, due: "2026-10-14T09:00", repeat: "monthly" },
-    ],
+    ["reminders", BILL, { due: "2026-10-18T09:00", repeat: "monthly", lead_days: 7, done: false }],
   ] as const) {
     const created = await agent.callTool({
       name: "create",
@@ -66,7 +56,7 @@ test("Month and Upcoming, the quick add, the Agenda with the same counts, and âœ
   await page.keyboard.press("c");
   await expect(page).toHaveURL(/\/calendar\/month$/);
   await expect(page.getByRole("heading", { name: "October 2026" })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Legend" })).toHaveText(/Reminder.*Task.*Payment/);
+  await expect(page.getByRole("list", { name: "Legend" })).toHaveText(/Reminder.*Task/);
   const month = region(page, "Month");
   await expect(month.getByRole("button", { name: `09:00 ${BILL}`, exact: true })).toBeVisible();
   await expect(month.getByRole("button", { name: TASK, exact: true })).toBeVisible();
@@ -74,10 +64,14 @@ test("Month and Upcoming, the quick add, the Agenda with the same counts, and âœ
   await expect(
     region(upcoming, "Tomorrow").getByRole("button", { name: "Test", exact: true }),
   ).toBeVisible();
-  // Overdue holds the task and the payment, not only reminders.
+  // Overdue holds the task, not only reminders; the bill in its lead-up is in Today.
   const overdue = region(upcoming, "Overdue");
   await expect(overdue.getByRole("button", { name: TASK, exact: true })).toBeVisible();
-  await expect(overdue.getByRole("button", { name: BILL, exact: true })).toBeVisible();
+  await expect(
+    region(upcoming, /^Today/)
+      .getByRole("listitem")
+      .filter({ hasText: BILL }),
+  ).toContainText("In 3 days");
 
   // A click on a reminder edits it in the sheet.
   await month.getByRole("button", { name: "09:00 Test", exact: true }).click();
@@ -154,26 +148,27 @@ test("Month and Upcoming, the quick add, the Agenda with the same counts, and âœ
   await drawer.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("button", { name: /^Upcoming/ }).click();
 
-  // âœ“ on a payment logs its expense, linked, and moves it to next month; Undo reverses both.
-  // This one has no category or account yet, so the money form asks for them: nothing is guessed.
-  await agenda.getByRole("button", { name: `Mark paid: ${BILL}` }).click();
-  const paying = page.getByRole("dialog", { name: `Paid Â· ${BILL}` });
-  const form = paying.getByRole("form", { name: "Expense" });
-  await expect(form.getByLabel("Amount")).toHaveValue("30");
-  await pickCategory(form, "Subscriptions");
-  await pickAccount(form);
-  await form.getByRole("button", { name: /^Save/ }).click();
-  await expect(toast(page, `Paid Â· ${BILL}`)).toBeVisible();
-  const later = region(agenda, "Later").getByRole("listitem").filter({ hasText: BILL });
-  await expect(later).toContainText("Nov 14");
-  await later.getByRole("button", { name: BILL, exact: true }).click();
-  const payment = page.getByRole("complementary", { name: "Payments item" });
-  await expect(payment.getByText("History Â· 1")).toBeVisible();
-  await payment.getByRole("button", { name: "Close" }).click();
-  await toast(page, `Paid Â· ${BILL}`).getByRole("button", { name: "Undo" }).click();
+  // The lead-up in the reminder's sheet: the agent's week shows; one day before is not yet,
+  // so the bill moves to This week; Off keeps it there.
+  await agenda.getByRole("button", { name: BILL, exact: true }).click();
+  sheet = page.getByRole("dialog", { name: "Reminder" });
+  await expect(sheet.getByLabel("Start reminding")).toHaveValue("7");
+  await expect(sheet.getByLabel("How often")).toHaveValue("1");
+  await sheet.getByLabel("How often").selectOption({ label: "Every 2 days" });
+  await sheet.getByRole("button", { name: "Save" }).click();
+  await agenda.getByRole("button", { name: BILL, exact: true }).click();
+  await expect(sheet.getByLabel("How often")).toHaveValue("2");
+  await sheet.getByLabel("Start reminding").selectOption({ label: "1 day before" });
+  await expect(sheet.getByLabel("How often")).toHaveValue("1");
+  await sheet.getByRole("button", { name: "Save" }).click();
   await expect(
-    region(agenda, "Overdue").getByRole("button", { name: BILL, exact: true }),
+    region(agenda, "This week").getByRole("button", { name: BILL, exact: true }),
   ).toBeVisible();
+  await agenda.getByRole("button", { name: BILL, exact: true }).click();
+  await sheet.getByLabel("Start reminding").selectOption({ label: "Off" });
+  await expect(sheet.getByLabel("How often")).toHaveCount(0);
+  await sheet.getByRole("button", { name: "Save" }).click();
+  await expect(sheet).toHaveCount(0);
 
   // Snooze in a reminder's sheet: an hour from now is still today.
   await agenda.getByRole("button", { name: "Test edited", exact: true }).click();
@@ -188,14 +183,14 @@ test("Month and Upcoming, the quick add, the Agenda with the same counts, and âœ
   ).toContainText("11:00");
 
   // Leave the shared database as found.
-  for (const title of ["Test edited", "Call the plumber e2e", "Water the plants e2e", "Rent e2e"])
+  for (const title of [
+    "Test edited",
+    "Call the plumber e2e",
+    "Water the plants e2e",
+    "Rent e2e",
+    BILL,
+  ])
     await deleteReminder(page, agenda, title);
-  await agenda.getByRole("button", { name: BILL, exact: true }).click();
-  await page
-    .getByRole("complementary", { name: "Payments item" })
-    .getByRole("button", { name: "Delete" })
-    .click();
-  await expect(agenda.getByRole("button", { name: BILL, exact: true })).toHaveCount(0);
 
   expect(foreign).toEqual([]);
 });

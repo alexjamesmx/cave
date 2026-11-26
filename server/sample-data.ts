@@ -197,7 +197,7 @@ function reminders(today: string): SampleDoc[] {
     r("birthday", "Mum's birthday", { due: addDays(today, 25), repeat: "yearly" }),
     r("insurance", "Renew the car insurance", { due: `${today}T18:00`, repeat: "none" }),
     r("netflix", "Netflix", {
-      _body: "Subscription · $219 · Nu card",
+      _body: "Subscription",
       due: `${addDays(today, 5)}T09:00`,
       repeat: "monthly",
     }),
