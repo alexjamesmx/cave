@@ -3,6 +3,7 @@ import { fieldsOf } from "../shared/fields.ts";
 import { builtInFlowsMigration } from "../shared/flows/built-in.ts";
 import { formatStamp } from "../shared/hlc.ts";
 import { ideasToNotesMigration } from "../shared/ideas-to-notes.ts";
+import { isDocId, newId } from "../shared/ids.ts";
 import { LEETCODE_NOTE, leetcodeToNotesMigration } from "../shared/leetcode-to-notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
 import { TRACKER_FIELDS } from "../shared/pages.ts";
@@ -577,6 +578,9 @@ test("seed migration 28: every payment becomes a reminder, payments retire, idem
   expect(data("rem-tax")).toMatchObject({ _title: "Tax", done: false });
   expect(data("rem-tax")?.due).toBeUndefined();
   expect(store.get("rem-gone")).toBeUndefined();
+  // Devices push changes to these reminders: the sync check must take their ids.
+  for (const id of ["rem-card", "rem-tv", "rem-gym", "rem-tax"]) expect(isDocId(id)).toBe(true);
+  expect(isDocId(`rem-${newId()}`)).toBe(true);
   for (const id of ["payments", "card", "tv", "gym", "tax", "flow-payments"])
     expect(data(id)?._deleted).toBe(true);
   const field = (c: string, id: string) => fieldsOf(store.get(c)).find((f) => f.id === id);

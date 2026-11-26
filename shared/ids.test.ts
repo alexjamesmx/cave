@@ -15,8 +15,24 @@ test("isDocId accepts ULIDs, import ids and slugs", () => {
   }
 });
 
+test("isDocId accepts a reminder migration 28 made from a payment: rem- and the payment's ULID", () => {
+  expect(isDocId(`rem-${newId()}`)).toBe(true);
+});
+
 test("isDocId rejects anything else", () => {
-  for (const id of ["", "Money", "has space", "../x", "imp-xyz", "x".repeat(65), 7, null]) {
+  for (const id of [
+    "",
+    "Money",
+    "has space",
+    "../x",
+    "imp-xyz",
+    "x".repeat(65),
+    "rem-NOTAULID",
+    `rem-${newId()}X`,
+    `note-${newId()}`,
+    7,
+    null,
+  ]) {
     expect(isDocId(id)).toBe(false);
   }
 });

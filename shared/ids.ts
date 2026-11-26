@@ -1,7 +1,10 @@
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-// ULID for new docs, `imp-<sha1>` for vault imports, short slugs for seeded and setting docs.
-const DOC_ID_RE = /^(?:[0-9A-HJKMNP-TV-Z]{26}|imp-[0-9a-f]{40}|(?!imp-)[a-z0-9][a-z0-9_-]{0,63})$/;
+// ULID for new docs, `imp-<sha1>` for vault imports, `rem-<ULID>` for the reminders seed
+// migration 28 made from payments (it kept the payment's ULID), short slugs for seeded and
+// setting docs.
+const DOC_ID_RE =
+  /^(?:[0-9A-HJKMNP-TV-Z]{26}|imp-[0-9a-f]{40}|rem-[0-9A-HJKMNP-TV-Z]{26}|(?!imp-)[a-z0-9][a-z0-9_-]{0,63})$/;
 // No `:` so a device id can sit at the end of a stamp.
 const DEVICE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
