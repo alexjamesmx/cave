@@ -189,7 +189,7 @@ export function createFlowEngine({
             return fail(i, step.type, `more than ${MAX_NOTIFICATIONS} notifications`);
           const title = renderTemplate(step.title, ctx);
           // Opening the trigger item, the notification is about it: a reminder's Done and
-          // Snooze, a payment's amount, the budget's numbers.
+          // Snooze, the budget's numbers.
           const about = step.open === "trigger-item" && item ? noticeFor(item, zone()) : undefined;
           const path =
             step.open === "calendar"

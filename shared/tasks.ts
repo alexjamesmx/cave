@@ -1,6 +1,28 @@
+import { PALETTE } from "./palette.ts";
 import { advance, type ReminderLike, type Zone } from "./recurrence.ts";
-import type { CollectionData } from "./schema.ts";
+import type { CollectionData, Field } from "./schema.ts";
 import type { Doc } from "./types.ts";
+
+const select = (id: string, name: string, values: [string, string, string][]): Field => ({
+  id,
+  name,
+  type: "select",
+  options: values.map(([value, icon, color]) => ({ value, icon, color })),
+});
+
+const REPEAT_FIELD: Field = select("repeat", "Repeat", [
+  ["none", "minus", PALETTE.grey],
+  ["daily", "repeat", PALETTE.teal],
+  ["weekly", "repeat", PALETTE.teal],
+  ["monthly", "repeat", PALETTE.vio],
+  ["yearly", "repeat", PALETTE.warn],
+]);
+
+/** Tasks gain a repeat and a notify flag; their `due` accepts a time (seed migration 7). */
+export const TASK_FIELDS: Field[] = [
+  REPEAT_FIELD,
+  { id: "notify", name: "Notify", type: "checkbox" },
+];
 
 /**
  * The field changes that complete a task. A repeating one moves to its next date and stays

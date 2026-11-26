@@ -1,8 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { localDateTime } from "../../../shared/dates.ts";
-import { FieldValueError, offeredOptions } from "../../../shared/fields.ts";
-import { newId } from "../../../shared/ids.ts";
-import { expenseFrom, PAYMENTS, paidPatch } from "../../../shared/payments.ts";
+import { FieldValueError } from "../../../shared/fields.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
 import { useReminderZone } from "../app/hooks.ts";
@@ -10,13 +7,9 @@ import { oncePerKey } from "../app/once.ts";
 import { type Toast as SharedToast, showToast } from "../app/toast.ts";
 import { type AgendaItem, type AgendaType, COLLECTION_OF, donePatch } from "../logic/agenda.ts";
 import { withActiveFields } from "../logic/field-edits.ts";
-import { paidEntry } from "../logic/subscription-paid.ts";
-import { titleOf } from "../logic/views.ts";
 import { useCollections, useItems } from "../store/queries.ts";
 import { ItemDrawer } from "./ItemDrawer.tsx";
-import { MoneyForm } from "./MoneyForm.tsx";
 import { ReminderSheet } from "./ReminderForm.tsx";
-import { Sheet } from "./Sheet.tsx";
 
 /** A reminder's sheet (an existing one by id, or a new one on a day), or a drawer. */
 type Editing = { type: AgendaType; id?: string; day?: string };
@@ -30,11 +23,10 @@ const before = (doc: Doc, patch: Patch) =>
   Object.fromEntries(Object.keys(patch).map((k) => [k, doc.data[k] ?? null]));
 
 /**
- * What the calendar does with an item: open its editor (a reminder's sheet, a task's or a
- * payment's drawer), add a reminder on a day, and ✓. Every ✓ is an ordinary stamped write,
- * followed by a toast with Undo that writes the previous values back. A payment's ✓ logs its
- * expense, linked, then moves it to its next date; when its amount varies the expense form
- * asks for it first. `overlay` renders the sheets and drawers; toasts go to the shared stack.
+ * What the calendar does with an item: open its editor (a reminder's sheet, a task's drawer),
+ * add a reminder on a day, and ✓. Every ✓ is an ordinary stamped write, followed by a toast
+ * with Undo that writes the previous values back. `overlay` renders the sheets and drawers;
+ * toasts go to the shared stack.
  */
 export function useAgendaActions(): {
   open(type: AgendaType, id: string): void;
@@ -47,7 +39,6 @@ export function useAgendaActions(): {
   const reminders = useItems(local.db, "reminders");
   const zone = useReminderZone();
   const [editing, setEditing] = useState<Editing>();
-  const [paying, setPaying] = useState<Doc>();
   const [once] = useState(oncePerKey);
 
   const write = (collection: string, id: string, patch: Patch) =>
@@ -63,48 +54,11 @@ export function useAgendaActions(): {
     }
   };
 
-  /** The payment moves on once its expense `expense` is saved. */
-  const paid = async (payment: Doc, expense: string): Promise<Toast> => {
-    const patch = paidPatch(payment, Date.now(), zone);
-    const previous = before(payment, patch);
-    await write(PAYMENTS, payment.id, patch);
-    return {
-      message: `Paid · ${titleOf(payment)}`,
-      undo: async () => {
-        await write("money", expense, { _deleted: true });
-        await write(PAYMENTS, payment.id, previous);
-      },
-    };
-  };
-
   const done = (it: AgendaItem) => {
     const now = Date.now();
     const run = (task: () => Promise<Toast>) => {
       once(it.id, () => attempt(task));
     };
-    if (it.type === "payment") {
-      const money = collections?.find((c) => c.id === "money")?.data.fields;
-      const listOf = (id: string) => {
-        const field = money?.find((f) => f.id === id);
-        return field ? offeredOptions(field) : [];
-      };
-      const expense = paidEntry(
-        it.doc,
-        listOf("category"),
-        listOf("account"),
-        localDateTime(new Date(now), zone.timeZone),
-      );
-      if (!expense) {
-        setPaying(it.doc);
-        return;
-      }
-      run(async () => {
-        const id = newId();
-        await write("money", id, expense);
-        return paid(it.doc, id);
-      });
-      return;
-    }
     const collection = COLLECTION_OF[it.type];
     const patch = donePatch(it, now, zone);
     const previous = before(it.doc, patch);
@@ -146,22 +100,6 @@ export function useAgendaActions(): {
           id={editing.id}
           onClose={() => setEditing(undefined)}
         />
-      )}
-      {paying && (
-        <Sheet title={`Paid · ${titleOf(paying)}`} onClose={() => setPaying(undefined)}>
-          <MoneyForm
-            prefill={expenseFrom(paying)}
-            submitLabel="Save expense and mark paid"
-            onSaved={(expense) => {
-              const payment = paying;
-              setPaying(undefined);
-              void attempt(async () => {
-                await write("money", expense, { payment: payment.id });
-                return paid(payment, expense);
-              });
-            }}
-          />
-        </Sheet>
       )}
     </>
   );

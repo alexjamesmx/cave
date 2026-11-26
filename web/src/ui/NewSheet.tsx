@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useMemo } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { useCave } from "../app/context.ts";
 import { closeNew, newSheet, newShortcut, openNew, type QuickKind } from "../app/quick.ts";
 import { usePathname } from "../app/router.ts";
@@ -11,20 +11,18 @@ import { NoteForm } from "./NoteForm.tsx";
 import { TaskForm } from "./QuickForms.tsx";
 import { ReminderForm } from "./ReminderForm.tsx";
 import { Sheet } from "./Sheet.tsx";
-import { SubscriptionForm } from "./SubscriptionForm.tsx";
 
 const QUICK: { kind: QuickKind; label: string; emoji: string; color: string }[] = [
   { kind: "expense", label: "Money", emoji: "💸", color: "#34d399" },
   { kind: "task", label: "Task", emoji: "✅", color: "#60a5fa" },
   { kind: "reminder", label: "Reminder", emoji: "🔔", color: "#fb7185" },
-  { kind: "subscription", label: "Subscription", emoji: "🔁", color: "#22d3ee" },
   { kind: "note", label: "Note", emoji: "📝", color: "#a78bfa" },
 ];
 
 /**
- * Add anything from any screen: five short forms in one sheet.
- * The rail's New, the dock's New, ⌘K and N open it; navigating, Escape, the scrim and a save
- * close it. What was saved shows for a moment as a toast.
+ * Add anything from any screen: four short forms in one sheet.
+ * The rail's New, the dock's New, ⌘K and N open it; navigating, Escape and the scrim close it.
+ * A save shows as a toast and leaves the same form open and empty, for the next one.
  */
 export function NewSheet() {
   const state = useSignal(newSheet);
@@ -32,6 +30,8 @@ export function NewSheet() {
   const stored = useCollections(local.db);
   const collections = useMemo(() => stored?.map(withActiveFields), [stored]);
   const pathname = usePathname();
+  // Bumped by each save: the form remounts empty.
+  const [saved, setSaved] = useState(0);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -52,7 +52,7 @@ export function NewSheet() {
     newSheet.set({ open: true, ...(quick === kind ? {} : { form: kind }) });
   const done = (message: string) => {
     showToast({ message });
-    closeNew();
+    setSaved((n) => n + 1);
   };
   return (
     <>
@@ -74,11 +74,14 @@ export function NewSheet() {
               </button>
             ))}
           </fieldset>
-          {quick === "expense" && <MoneyForm onSaved={(_id, message) => done(message)} />}
-          {collections && quick === "task" && <TaskForm collections={collections} onDone={done} />}
-          {quick === "subscription" && <SubscriptionForm onDone={done} />}
-          {quick === "note" && <NoteForm onDone={done} />}
-          {quick === "reminder" && <ReminderForm onDone={done} />}
+          {quick === "expense" && (
+            <MoneyForm key={saved} onSaved={(_id, message) => done(message)} />
+          )}
+          {collections && quick === "task" && (
+            <TaskForm key={saved} collections={collections} onDone={done} />
+          )}
+          {quick === "note" && <NoteForm key={saved} onDone={done} />}
+          {quick === "reminder" && <ReminderForm key={saved} onDone={done} />}
         </Sheet>
       )}
     </>

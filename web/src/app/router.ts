@@ -55,9 +55,10 @@ export function redirectOf(pathname: string): string | undefined {
   // tabs went to their own pages.
   if (first === "system" || (first === "settings" && second === "system"))
     return systemPath(first === "system" ? second : third);
-  // Wealth is Net worth since M7c; Payments is Subscriptions since the owner set bills aside.
+  // Wealth is Net worth since M7c. Payments and Subscriptions are reminders since M16.
   if (first === "money" && second === "wealth") return "/money/net-worth";
-  if (first === "money" && second === "payments") return "/money/subscriptions";
+  if (first === "money" && (second === "payments" || second === "subscriptions"))
+    return "/calendar/agenda";
   // Projects was retired on 2026-11-08: its Ideas (and the old Radar) and LeetCode are Notes
   // topics, its Notes view is Notes, the rest opens the landing page.
   if (first === "projects") {
@@ -85,9 +86,7 @@ export function redirectOf(pathname: string): string | undefined {
   if (collection === "projects" || collection === "parts" || collection === "runs") return LANDING;
   if (collection === "ideas") return IDEAS;
   if (collection === "notes") return "/notes/all";
-  if (collection === "reminders") return "/calendar/agenda";
-  if (collection === "payments")
-    return view === "table" ? enc("settings", "data", collection, view) : "/money/subscriptions";
+  if (collection === "reminders" || collection === "payments") return "/calendar/agenda";
   if (collection === "tasks") return view === "board" ? "/tasks/board" : "/tasks/list";
   if (collection === "flows") return flowPath();
   return view ? enc("settings", "data", collection, view) : enc("settings", "data", collection);

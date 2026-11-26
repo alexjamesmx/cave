@@ -1,5 +1,5 @@
 import { dayOf, localDate, localDateTime } from "../../../shared/dates.ts";
-import { isActive, paidPatch } from "../../../shared/payments.ts";
+import { leadOf } from "../../../shared/lead.ts";
 import {
   complete,
   dueInstant,
@@ -16,16 +16,15 @@ import { dateLabel, daysBetween, weekday } from "./calendar.ts";
 import { CLOSED } from "./task-list.ts";
 import { titleOf } from "./views.ts";
 
-export type AgendaType = "reminder" | "task" | "payment";
+export type AgendaType = "reminder" | "task";
 
 /** The collection each type lives in. */
 export const COLLECTION_OF: Record<AgendaType, string> = {
   reminder: "reminders",
   task: "tasks",
-  payment: "payments",
 };
 
-/** Something with a date the owner acts on: a reminder, an open task, an active payment. */
+/** Something with a date the owner acts on: a reminder or an open task. */
 export interface AgendaItem {
   id: string;
   type: AgendaType;
@@ -37,6 +36,8 @@ export interface AgendaItem {
   /** `HH:mm`, or undefined for the whole day. */
   time: string | undefined;
   repeat: Repeat;
+  /** Days until its date while a reminder is in its lead-up; it shows under Today then. */
+  leadIn?: number;
   doc: Doc;
 }
 
@@ -68,7 +69,7 @@ function item(type: AgendaType, doc: Doc, zone: Zone): AgendaItem {
 /** Open, live tasks; done and dropped ones are off the agenda as they are off the board. */
 const openTask = (d: Doc) => live(d) && !CLOSED.has(String(d.data.status));
 
-const TYPE_ORDER: Record<AgendaType, number> = { payment: 0, task: 1, reminder: 2 };
+const TYPE_ORDER: Record<AgendaType, number> = { task: 0, reminder: 1 };
 
 const byTime = (a: AgendaItem, b: AgendaItem) =>
   (a.at ?? Number.POSITIVE_INFINITY) - (b.at ?? Number.POSITIVE_INFINITY) ||
@@ -76,20 +77,14 @@ const byTime = (a: AgendaItem, b: AgendaItem) =>
   a.title.localeCompare(b.title);
 
 /**
- * Everything with a date, by when: open reminders, open tasks with a due date and active
- * payments, in Overdue, Today, Tomorrow, This week (the next seven days), Later, then
- * reminders without a date. Only stored dates count; a repeat's later occurrences are the
- * month grid's. Each type keeps its own rule for overdue: a reminder or a payment once its
- * moment has passed, a task once its day has. Month's Upcoming and the Agenda both read this,
+ * Everything with a date, by when: open reminders and open tasks with a due date, in Overdue,
+ * Today, Tomorrow, This week (the next seven days), Later, then reminders without a date.
+ * Only stored dates count; a repeat's later occurrences are the month grid's. A reminder in
+ * its lead-up (`shared/lead.ts`) is in Today, with the days left. Each type keeps its own
+ * rule for overdue: a reminder once its moment has passed, a task once its day has. Month's Upcoming and the Agenda both read this,
  * so their counts agree. Empty groups are left out.
  */
-export function agenda(
-  reminders: Doc[],
-  tasks: Doc[],
-  payments: Doc[],
-  now: number,
-  zone: Zone,
-): AgendaGroup[] {
+export function agenda(reminders: Doc[], tasks: Doc[], now: number, zone: Zone): AgendaGroup[] {
   const today = localDate(new Date(now), zone.timeZone);
   const groups = new Map<AgendaGroupId, AgendaItem[]>(AGENDA_GROUPS.map((g) => [g, []]));
   const place = (it: AgendaItem, overdue: boolean) => {
@@ -108,15 +103,16 @@ export function agenda(
                 : "later";
     groups.get(id)?.push(it);
   };
-  for (const doc of reminders.filter(isOpen))
-    place(item("reminder", doc, zone), isOverdue(doc, now, zone));
+  for (const doc of reminders.filter(isOpen)) {
+    const it = item("reminder", doc, zone);
+    const lead = leadOf(doc.data);
+    const left = it.day ? daysBetween(today, it.day) : 0;
+    if (lead && left > 0 && left <= lead.days) groups.get("today")?.push({ ...it, leadIn: left });
+    else place(it, isOverdue(doc, now, zone));
+  }
   for (const doc of tasks.filter(openTask)) {
     const it = item("task", doc, zone);
     if (it.day) place(it, it.day < today);
-  }
-  for (const doc of payments.filter(isActive)) {
-    const it = item("payment", doc, zone);
-    if (it.at !== undefined) place(it, it.at < now);
   }
   return AGENDA_GROUPS.map((id) => ({ id, items: (groups.get(id) ?? []).sort(byTime) })).filter(
     (g) => g.items.length > 0,
@@ -163,11 +159,13 @@ export function groupName(id: AgendaGroupId, today: string): string {
 }
 
 /**
- * When an item is due, short, under its group's heading: the time today and tomorrow ("All
- * day" without one), the weekday within a week either side, else the date.
+ * When an item is due, short, under its group's heading: the days left in a lead-up, the time
+ * today and tomorrow ("All day" without one), the weekday within a week either side, else
+ * the date.
  */
 export function whenLabel(it: AgendaItem, group: AgendaGroupId, today: string): string {
   if (!it.day) return "No date";
+  if (it.leadIn) return it.leadIn === 1 ? "Tomorrow" : `In ${it.leadIn} days`;
   const offset = daysBetween(today, it.day);
   if (group === "today" || group === "tomorrow" || offset === 0) return it.time ?? "All day";
   if (Math.abs(offset) < 7) return weekday(it.day);
@@ -176,12 +174,10 @@ export function whenLabel(it: AgendaItem, group: AgendaGroupId, today: string): 
 
 /**
  * What ✓ writes on the item itself. A reminder completes and a task is done, each moving to
- * its next date when it repeats; a payment moves to its next date, or goes inactive when it
- * doesn't repeat. A payment's expense is a separate entry (`paidEntry`).
+ * its next date when it repeats.
  */
 export function donePatch(it: AgendaItem, now: number, zone: Zone): Record<string, unknown> {
   if (it.type === "reminder") return complete(it.doc, now, zone);
-  if (it.type === "payment") return paidPatch(it.doc, now, zone);
   const nowLocal = localDateTime(new Date(now), zone.timeZone);
   return it.repeat === "none"
     ? statusPatch(it.doc, "done", nowLocal)

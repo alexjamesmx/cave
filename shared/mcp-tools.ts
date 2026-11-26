@@ -12,7 +12,6 @@ export const CAVE_TOOLS: { name: string; scope: "read" | "write" }[] = [
   { name: "create", scope: "write" },
   { name: "update", scope: "write" },
   { name: "propose_delete", scope: "write" },
-  { name: "mark_paid", scope: "write" },
   { name: "save_flow", scope: "write" },
   { name: "set_routine", scope: "write" },
   { name: "add_habit", scope: "write" },

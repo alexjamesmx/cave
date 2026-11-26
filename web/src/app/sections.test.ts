@@ -42,7 +42,7 @@ test("the dock is the four everyday sections, in order", () => {
 
 test("a path marks its section", () => {
   expect(sectionOf("/")).toBe("money");
-  expect(sectionOf("/money/subscriptions")).toBe("money");
+  expect(sectionOf("/money/transactions")).toBe("money");
   expect(sectionOf("/flows/flow-rent")).toBe("flows");
   expect(sectionOf("/notes/write")).toBe("notes");
   expect(sectionOf("/r/abc")).toBeUndefined();

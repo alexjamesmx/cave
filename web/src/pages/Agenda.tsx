@@ -7,9 +7,9 @@ import { useAgenda } from "../ui/useAgenda.ts";
 import { useAgendaActions } from "../ui/useAgendaActions.tsx";
 
 /**
- * Calendar → Agenda (M14, was Reminders): one list of everything with a date, reminders, open
- * tasks and payments, in the same groups and counts as Month's Upcoming, with the same quick
- * add. ✓ marks a reminder or a task done and a payment paid; a row opens its editor. Done
+ * Calendar → Agenda (M14, was Reminders): one list of everything with a date, reminders and
+ * open tasks, in the same groups and counts as Month's Upcoming, with the same quick add.
+ * ✓ marks a reminder or a task done; a row opens its editor. Done
  * (`?chip=done`) lists what was done.
  */
 export function Agenda() {

@@ -1,6 +1,5 @@
 import { type CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
-import { localDateTime } from "../../shared/dates.ts";
 import { FlowDefinitionSchema } from "../../shared/flows/registry.ts";
 import type { Hlc } from "../../shared/hlc.ts";
 import { newId } from "../../shared/ids.ts";
@@ -53,10 +52,6 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
   const { store } = deps;
   const writer = () =>
     new AgentWriter(store, agent, AgentWriter.clockFor(deps.clocks, agent, deps.now), deps.now);
-  const timeZone = () => {
-    const tz = store.get("settings")?.data.timezone;
-    return typeof tz === "string" ? tz : undefined;
-  };
 
   async function run(
     tool: string,
@@ -218,47 +213,9 @@ export function buildServer(agent: Agent, deps: McpDeps): McpServer {
         run("propose_delete", args, () => fromWrite(writer().proposeDelete(args.id, args.reason))),
     );
     server.registerTool(
-      "mark_paid",
-      {
-        description:
-          "Mark a payment (from the payments collection) paid: it logs the expense with the payment's title, category and account, and moves the payment to its next date (a one-off one becomes inactive). Pass amount for payments whose amount varies (approx); otherwise the expected amount is used. date is local YYYY-MM-DDTHH:mm, default now. Never guess an amount.",
-        inputSchema: z.object({
-          id: z.string(),
-          amount: z.number().positive().optional(),
-          date: z
-            .string()
-            .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "YYYY-MM-DDTHH:mm")
-            .optional(),
-        }),
-        annotations: WRITE,
-      },
-      (args) =>
-        run("mark_paid", args, () => {
-          const payment = store.get(args.id);
-          const expected = payment?.data.amount;
-          const amount =
-            args.amount ??
-            (payment?.data.approx === true || typeof expected !== "number" ? undefined : expected);
-          if (amount === undefined)
-            return {
-              ok: false,
-              error: "this payment's amount varies: pass amount (ask the owner)",
-            };
-          const date = args.date ?? localDateTime(new Date(deps.now()), timeZone());
-          const result = writer().markPaid(args.id, { amount, date });
-          return result.ok
-            ? {
-                ok: true,
-                value: { expense: result.expense, payment: args.id, next: result.next },
-                seqs: result.seqs,
-              }
-            : result;
-        }),
-    );
-    server.registerTool(
       "save_flow",
       {
-        description: `Create or replace a flow. It runs as soon as it is on. Flows that change existing items, or that use a sensitive step, wait for the owner's approval (status pending-approval), and only the owner can approve. Pass id to replace a flow from list_flows. Templates: {{item.title}}, {{item.<field>}}, {{item.<field>|pct:N}}, {{today}}, {{month}}. At most ${MAX_ON_FLOWS} flows on per agent. A reminder only notifies; use a flow when something must also be created or changed. ${DATA_RULE}`,
+        description: `Create or replace a flow. It runs as soon as it is on. Flows that change existing items, or that use a sensitive step, wait for the owner's approval (status pending-approval), and only the owner can approve. Pass id to replace a flow from list_flows. Templates: {{item.title}}, {{item.<field>}}, {{item.<field>|pct:N}}, {{today}}, {{month}}, {{lead}} (a date-arrives run in a lead-up: " · in 3 days"). At most ${MAX_ON_FLOWS} flows on per agent. A reminder only notifies; use a flow when something must also be created or changed. ${DATA_RULE}`,
         inputSchema: z.object({
           id: z.string().optional(),
           title: z.string(),

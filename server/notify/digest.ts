@@ -4,7 +4,6 @@ import { daysInMonth, localDate, monthOf } from "../../shared/dates.ts";
 import { fieldsOf } from "../../shared/fields.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import { monthSummary } from "../../shared/money.ts";
-import { isActive, PAYMENTS } from "../../shared/payments.ts";
 import type { Zone } from "../../shared/recurrence.ts";
 import { type Doc, isLive } from "../../shared/types.ts";
 import type { Store } from "../store.ts";
@@ -15,7 +14,7 @@ const titleOf = (d: Doc) =>
   typeof d.data._title === "string" && d.data._title ? d.data._title : "Untitled";
 const timeOf = (due: string) => (due.length > 10 ? ` ${due.slice(11, 16)}` : "");
 
-/** The digest's lines for `today`: Needs you, what is due, payments, the budget. Empty when nothing. */
+/** The digest's lines for `today`: Needs you, what is due, the budget. Empty when nothing. */
 export function digestLines(store: Store, zone: Zone, now: number): string[] {
   const today = localDate(new Date(now), zone.timeZone);
   const lines: string[] = [];
@@ -33,20 +32,6 @@ export function digestLines(store: Store, zone: Zone, now: number): string[] {
       lines.push(
         `  ${e.group === "Overdue" ? "Overdue" : "Today"}${timeOf(e.due)} · ${titleOf(e.doc)}`,
       );
-  }
-  const payments = store
-    .itemsOf(PAYMENTS)
-    .filter(
-      (p) => isActive(p) && typeof p.data.due === "string" && p.data.due.slice(0, 10) === today,
-    );
-  if (payments.length > 0) {
-    lines.push("Payments due today");
-    for (const p of payments) {
-      const amount = p.data.amount;
-      lines.push(
-        `  ${titleOf(p)}${typeof amount === "number" ? ` · ${p.data.approx === true ? "about " : ""}${money(amount)}` : ""}`,
-      );
-    }
   }
   const limit = budgetOf(store.get("settings")?.data).monthlyLimit;
   if (limit !== undefined) {

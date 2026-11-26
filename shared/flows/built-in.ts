@@ -3,9 +3,9 @@ import type { FlowDefinition } from "./registry.ts";
 import { FLOWS } from "./seed.ts";
 
 /**
- * What the Cave did on its own until it all ran through flows: reminders, payments, the
- * budget and the daily digest, now ordinary flows the owner sees, edits, turns off or
- * deletes. Seeded on, with the digest on only when a digest time was set.
+ * What the Cave did on its own until it all ran through flows: reminders, the budget and the
+ * daily digest (bills too, until M16 made them reminders), now ordinary flows the owner sees,
+ * edits, turns off or deletes. Seeded on, with the digest on only when a digest time was set.
  */
 
 /** The reminder notification's title: the reminder, then how far it is during a lead-up. */
@@ -15,18 +15,6 @@ const reminders: FlowDefinition = {
   version: 1,
   trigger: { type: "date-arrives", collection: "reminders", field: "due" },
   steps: [{ type: "notify", title: REMINDER_TITLE, open: "trigger-item" }],
-};
-
-const payments: FlowDefinition = {
-  version: 1,
-  trigger: {
-    type: "date-arrives",
-    collection: "payments",
-    field: "due",
-    before: 1,
-    where: [{ field: "kind", op: "!=", value: "subscription" }],
-  },
-  steps: [{ type: "notify", title: "{{item.title}} · due tomorrow", open: "trigger-item" }],
 };
 
 const budget = (percent: number): FlowDefinition => ({
@@ -77,13 +65,6 @@ export function builtInFlows(digestAt?: unknown) {
       reminders,
     ),
     flow(
-      "flow-payments",
-      "Bill notifications",
-      "Tells you the day before a bill is due. Subscriptions don't remind unless you add a flow.",
-      "on",
-      payments,
-    ),
-    flow(
       "flow-budget-80",
       "Budget at 80%",
       "Tells you once a month when spending reaches 80% of the limit.",
@@ -100,7 +81,7 @@ export function builtInFlows(digestAt?: unknown) {
     flow(
       "flow-digest",
       "Daily digest",
-      "One email a day: what needs you, what is due, payments, the budget.",
+      "One email a day: what needs you, what is due, the budget.",
       at ? "on" : "off",
       digest(at ?? "08:00"),
     ),

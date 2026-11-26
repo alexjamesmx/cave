@@ -6,7 +6,6 @@ import {
   dateLabel,
   daysBetween,
   mergeEvents,
-  paymentSource,
   reminderSource,
   taskSource,
   weekday,
@@ -71,15 +70,6 @@ test("a range outside the month finds nothing stored, only what repeats into it"
     nov,
   );
   expect(events.map((e) => e.key)).toEqual(["rent@2026-11-05T09:00"]);
-});
-
-test("payments show while active, with their repeats ahead", () => {
-  const payments = [
-    item("card", "payments", { due: "2026-10-20T09:00", repeat: "weekly" }),
-    item("paused", "payments", { due: "2026-10-21T09:00", active: false }),
-  ];
-  const events = mergeEvents([paymentSource(payments, MX, NOW)], OCT);
-  expect(events.map((e) => e.key)).toEqual(["card", "card@2026-10-27T09:00"]);
 });
 
 test("day arithmetic and labels", () => {

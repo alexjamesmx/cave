@@ -1,6 +1,5 @@
 import { type CSSProperties, useMemo, useRef } from "react";
 import { monthGrid, monthName, monthOf, shiftMonth, shortDay } from "../../../shared/dates.ts";
-import { PAYMENTS } from "../../../shared/payments.ts";
 import { useCave } from "../app/context.ts";
 import { useFollowing, useNow, useReminderZone, useToday } from "../app/hooks.ts";
 import type { AgendaType } from "../logic/agenda.ts";
@@ -9,7 +8,6 @@ import {
   type CalendarEvent,
   dayStart,
   mergeEvents,
-  paymentSource,
   reminderSource,
   taskSource,
 } from "../logic/calendar.ts";
@@ -28,35 +26,29 @@ const MAX_PILLS = 3;
 const TYPE_OF: Record<string, AgendaType> = {
   reminders: "reminder",
   tasks: "task",
-  [PAYMENTS]: "payment",
 };
 
-/** Each day's entries in `month`: reminders with their repeats, open tasks, active payments. */
+/** Each day's entries in `month`: reminders with their repeats and open tasks. */
 function useMonthEvents(month: string): Map<string, CalendarEvent[]> {
   const { db } = useCave().local;
   const reminders = useItems(db, "reminders");
   const tasks = useItems(db, "tasks");
-  const payments = useItems(db, PAYMENTS);
   const zone = useReminderZone();
   const now = useNow().getTime();
   const today = useToday();
   return useMemo(() => {
-    if (!reminders || !tasks || !payments) return new Map();
+    if (!reminders || !tasks) return new Map();
     const range = {
       from: dayStart(`${month}-01`, zone.timeZone),
       to: dayStart(`${shiftMonth(month, 1)}-01`, zone.timeZone),
     };
-    const sources = [
-      reminderSource(reminders, zone, now),
-      taskSource(tasks, zone, today),
-      paymentSource(payments, zone, now),
-    ];
+    const sources = [reminderSource(reminders, zone, now), taskSource(tasks, zone, today)];
     return byDay(mergeEvents(sources, range));
-  }, [reminders, tasks, payments, zone, now, today, month]);
+  }, [reminders, tasks, zone, now, today, month]);
 }
 
 /**
- * Calendar → Month: the month grid with each day's reminders, tasks and payments as typed
+ * Calendar → Month: the month grid with each day's reminders and tasks as typed
  * pills (dots on a phone), beside Upcoming: the quick add and everything with a date by when,
  * the same list as the Agenda tab. A day's number adds a reminder on it; an entry opens it.
  */

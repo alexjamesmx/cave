@@ -1,5 +1,4 @@
 import { dayOf, shortDay } from "../../../shared/dates.ts";
-import { isActive } from "../../../shared/payments.ts";
 import {
   dueInstant,
   isOpen,
@@ -37,7 +36,7 @@ export interface CalendarEvent {
 }
 
 /**
- * Something the calendar reads entries from. Reminders, tasks and payments are built in;
+ * Something the calendar reads entries from. Reminders and tasks are built in;
  * external calendars (Google Calendar, CalDAV) are more sources behind the same interface.
  * Writing to an external calendar will be a `CalendarTarget`, not built yet.
  */
@@ -110,12 +109,6 @@ export function taskSource(docs: Doc[], zone: Zone, today: string): CalendarSour
       return found;
     },
   };
-}
-
-/** Active payments by `due`, with their repeats ahead; overdue once past. */
-export function paymentSource(docs: Doc[], zone: Zone, now: number): CalendarSource {
-  const reminders = reminderSource(docs.filter(isActive), zone, now);
-  return { id: "payments", label: "Payments", events: reminders.events };
 }
 
 /** The instant a local day starts in `timeZone`. */

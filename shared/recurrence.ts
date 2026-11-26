@@ -1,6 +1,6 @@
 /**
  * The recurrence engine (M7b part 6): `due`, `repeat`, the series anchor and the month-end
- * clamp, for any item that repeats: reminders, tasks and payments.
+ * clamp, for any item that repeats: reminders and tasks.
  */
 import { localDateTime } from "./dates.ts";
 import { offsetAt } from "./time.ts";
@@ -18,7 +18,7 @@ export interface Zone {
   defaultTime: string;
 }
 
-/** An item with `due` and `repeat` (a reminder, a task, a payment) and, when it has them, its stamps. */
+/** An item with `due` and `repeat` (a reminder, a task) and, when it has them, its stamps. */
 export interface ReminderLike {
   data: Record<string, unknown>;
   stamps?: Record<string, Stamp>;

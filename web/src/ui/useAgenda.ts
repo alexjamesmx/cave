@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { PAYMENTS } from "../../../shared/payments.ts";
 import { useCave } from "../app/context.ts";
 import { useNow, useReminderZone } from "../app/hooks.ts";
 import { agenda, agendaDone } from "../logic/agenda.ts";
@@ -13,17 +12,16 @@ export function useAgenda() {
   const { db } = useCave().local;
   const reminders = useItems(db, "reminders");
   const tasks = useItems(db, "tasks");
-  const payments = useItems(db, PAYMENTS);
   const zone = useReminderZone();
   const now = useNow().getTime();
   return useMemo(
     () =>
-      reminders && tasks && payments
+      reminders && tasks
         ? {
-            groups: agenda(reminders, tasks, payments, now, zone),
+            groups: agenda(reminders, tasks, now, zone),
             done: agendaDone(reminders, tasks, zone),
           }
         : undefined,
-    [reminders, tasks, payments, now, zone],
+    [reminders, tasks, now, zone],
   );
 }

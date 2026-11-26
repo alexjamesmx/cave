@@ -21,8 +21,6 @@ interface MoneyPrefill {
   amount?: number;
   category?: string;
   account?: string;
-  /** The payment this entry pays, linked so its history counts it. */
-  payment?: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -119,7 +117,6 @@ export function MoneyForm({
           date: dateOf(),
           ...(category ? { category } : {}),
           account,
-          ...(prefill.payment ? { payment: prefill.payment } : {}),
         },
       );
     } catch (err) {

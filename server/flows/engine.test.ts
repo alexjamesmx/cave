@@ -181,7 +181,7 @@ const charge: FlowDefinition = {
   version: 1,
   trigger: {
     type: "date-arrives",
-    collection: "payments",
+    collection: "renewals",
     field: "due",
     before: 1,
     where: [{ field: "kind", op: "=", value: "subscription" }],
@@ -192,20 +192,20 @@ const charge: FlowDefinition = {
 test("a date arriving runs the flow once per date of the item's series, never for a paused or other item", async () => {
   flow("f-charge", charge, Date.parse("2026-09-01T12:00:00Z"));
   // Monthly on the 16th: tomorrow, so one day before is now.
-  write("music", "payments", {
+  write("music", "renewals", {
     _title: "Music",
     kind: "subscription",
     repeat: "monthly",
     due: "2026-08-16",
   });
-  write("paused", "payments", {
+  write("paused", "renewals", {
     _title: "Paused",
     kind: "subscription",
     repeat: "monthly",
     due: "2026-08-16",
     active: false,
   });
-  write("card", "payments", { _title: "Card", kind: "card", repeat: "monthly", due: "2026-08-16" });
+  write("card", "renewals", { _title: "Card", kind: "card", repeat: "monthly", due: "2026-08-16" });
   expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
   expect(await engine.job.run({ now: NOW + 30_000 })).toMatchObject({ didSomething: false });
   expect(notified.map((x) => x.n.title)).toEqual(["Music charges tomorrow"]);
@@ -215,7 +215,7 @@ test("a date arriving runs the flow once per date of the item's series, never fo
 });
 
 test("a date that arrived before the flow was turned on never runs it", async () => {
-  write("music", "payments", { _title: "Music", kind: "subscription", due: "2026-10-16" });
+  write("music", "renewals", { _title: "Music", kind: "subscription", due: "2026-10-16" });
   flow("f-charge", charge, NOW - 1000);
   expect(await engine.job.run({ now: NOW })).toMatchObject({ didSomething: false });
 });
@@ -432,21 +432,6 @@ test("built in: a lead-up set after the date told never tells that date again", 
   expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
   write("r1", "reminders", { lead_days: 3 });
   expect(await engine.job.run({ now: NOW + 60_000 })).toMatchObject({ didSomething: false });
-});
-
-test("built in: a bill tells the day before; a subscription doesn't", async () => {
-  on("flow-payments");
-  write("nu", "payments", {
-    _title: "Nu card",
-    kind: "card",
-    due: "2026-10-16T09:00",
-    amount: 3000,
-  });
-  write("tv", "payments", { _title: "TV", kind: "subscription", due: "2026-10-16T09:00" });
-  expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
-  expect(notified.map((x) => x.n)).toMatchObject([
-    { kind: "payment", title: "Nu card · due tomorrow", details: ["Fri Oct 16, 09:00", "$3,000"] },
-  ]);
 });
 
 test("built in: the budget tells once a month at 80% and at the limit; nothing without a limit", async () => {

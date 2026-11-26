@@ -11,7 +11,6 @@ import {
 import { FLOWS } from "../shared/flows/seed.ts";
 import { Hlc } from "../shared/hlc.ts";
 import { newId } from "../shared/ids.ts";
-import { PAYMENTS, paidPatch } from "../shared/payments.ts";
 import { RADAR, RADAR_PER_DAY, sameUrl } from "../shared/radar.ts";
 import { complete, repeatOf, zoneOf } from "../shared/reminders.ts";
 import { parseRoutine, routineOf } from "../shared/routine.ts";
@@ -204,41 +203,6 @@ export class AgentWriter {
     const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const zone = zoneOf(this.store.get("settings")?.data, fallback);
     return { ...rest, ...complete({ data: merged, stamps: doc.stamps }, this.now(), zone) };
-  }
-
-  /**
-   * "Paid" on a payment: the expense (validated like any agent create), then the payment's
-   * next date from the recurrence engine, which may set `_repeatFrom`. One call, two writes.
-   */
-  markPaid(
-    id: string,
-    expense: { amount: number; date: string },
-  ): WriteResult & {
-    expense?: string;
-    next?: Record<string, unknown>;
-  } {
-    const payment = this.visibleItem(id);
-    if (!payment.ok) return payment;
-    if (payment.value.collection !== PAYMENTS) return fail(`item ${id} is not a payment`);
-    const d = payment.value.data;
-    const text = (v: unknown) => (typeof v === "string" && v ? v : undefined);
-    const created = this.create("money", {
-      title: text(d._title) ?? "Payment",
-      fields: {
-        amount: expense.amount,
-        direction: "expense",
-        date: expense.date,
-        ...(text(d.category) ? { category: d.category } : {}),
-        ...(text(d.account) ? { account: d.account } : {}),
-      },
-    });
-    if (!created.ok) return created;
-    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const zone = zoneOf(this.store.get("settings")?.data, fallback);
-    const next = paidPatch(payment.value, this.now(), zone);
-    const moved = this.apply(payment.value, { ...payment.value, data: next });
-    if (!moved.ok) return moved;
-    return { ok: true, id, seqs: [...created.seqs, ...moved.seqs], expense: created.id, next };
   }
 
   /** The owner's wall-clock time, as date fields store it. */

@@ -45,18 +45,12 @@ beforeEach(() => {
   store.seedIfEmpty(seedDocs(), 1);
 });
 
-test("the lines: Needs you, what is due today or overdue, payments due today, the budget", () => {
+test("the lines: Needs you, what is due today or overdue, the budget", () => {
   write("settings", "setting", null, { budget: { monthlyLimit: 10000 } });
   write("f1", "item", "flows", { _title: "Pay rent", status: "pending-approval" });
   write("r1", "item", "reminders", { _title: "Dentist", due: "2026-10-15T17:30", repeat: "none" });
   write("r2", "item", "reminders", { _title: "Old one", due: "2026-10-10", repeat: "none" });
   write("r3", "item", "reminders", { _title: "Tomorrow", due: "2026-10-16", repeat: "none" });
-  write("pay", "item", "payments", {
-    _title: "Rent",
-    due: "2026-10-15T09:00",
-    amount: 12500,
-    active: true,
-  });
   write("e", "item", "money", {
     _title: "Tacos",
     amount: 2500,
@@ -69,8 +63,6 @@ test("the lines: Needs you, what is due today or overdue, payments due today, th
     "Due",
     "  Overdue · Old one",
     "  Today 17:30 · Dentist",
-    "Payments due today",
-    "  Rent · $12,500",
     "Budget: $2,500 of $10,000, $7,500 left, at this rate $5,167",
   ]);
 });
