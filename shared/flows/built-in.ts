@@ -8,10 +8,13 @@ import { FLOWS } from "./seed.ts";
  * deletes. Seeded on, with the digest on only when a digest time was set.
  */
 
+/** The reminder notification's title: the reminder, then how far it is during a lead-up. */
+export const REMINDER_TITLE = "{{item.title}}{{lead}}";
+
 const reminders: FlowDefinition = {
   version: 1,
   trigger: { type: "date-arrives", collection: "reminders", field: "due" },
-  steps: [{ type: "notify", title: "{{item.title}}", open: "trigger-item" }],
+  steps: [{ type: "notify", title: REMINDER_TITLE, open: "trigger-item" }],
 };
 
 const payments: FlowDefinition = {

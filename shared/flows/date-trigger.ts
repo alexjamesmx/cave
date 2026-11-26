@@ -1,3 +1,4 @@
+import { type Lead, leadPoints } from "../lead.ts";
 import {
   dueInstant,
   formatWall,
@@ -10,13 +11,22 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** One moment a date arrives: the date itself, or a point of its lead-up. */
+export interface Arrival {
+  date: string;
+  at: number;
+  /** The lead-up point, when this is one. */
+  point?: string;
+}
+
 /**
  * "When a date arrives": the newest time a date came due, `before` days early, up to `now`.
  * The stored date arrives; when the item repeats, so does each date of its series after it
  * (counted from `anchor`, the series start, which a snooze leaves in place), so a monthly
  * date fires each month without anyone moving it, and moving it (Done, a snooze) never fires
- * the same date twice. `date` names the occurrence, so each one runs a flow once. Undefined
- * until the first arrival.
+ * the same date twice. With `lead`, each date also arrives at each point of its lead-up
+ * (`shared/lead.ts`), only after the series' previous date. `date` names the occurrence and
+ * `point` the lead-up point, so each runs a flow once. Undefined until the first arrival.
  */
 export function latestArrival(
   value: unknown,
@@ -25,23 +35,32 @@ export function latestArrival(
   now: number,
   zone: Zone,
   anchor: unknown = value,
-): { date: string; at: number } | undefined {
+  lead?: Lead,
+): Arrival | undefined {
   const stored = parseWall(value);
   if (!stored) return undefined;
   const early = before * DAY_MS;
-  const arrival = (date: string) => ({
-    date,
-    at: (dueInstant(date, zone) ?? Number.POSITIVE_INFINITY) - early,
-  });
-  const first = arrival(formatWall(stored));
-  if (first.at > now) return undefined;
+  const instant = (date: string) => dueInstant(date, zone) ?? Number.POSITIVE_INFINITY;
+  const arrivals = (date: string, previous?: string): Arrival[] => [
+    ...(lead ? leadPoints(date, lead, previous) : []).map((point) => ({
+      date,
+      at: instant(point),
+      point,
+    })),
+    { date, at: instant(date) - early },
+  ];
   const start = parseWall(anchor) ?? stored;
-  let last = first;
-  if (repeat === "none") return last;
-  for (let k = 1; k <= MAX_STEPS; k++) {
-    const next = arrival(formatWall(occurrence(start, repeat, k)));
-    if (next.at > now) break;
-    if (next.at > last.at) last = next;
+  const first = formatWall(stored);
+  let last: Arrival | undefined;
+  let previous: string | undefined;
+  for (let k = 0; k <= MAX_STEPS; k++) {
+    const date = k === 0 ? first : formatWall(occurrence(start, repeat, k));
+    if (k > 0 && instant(date) <= instant(first)) continue;
+    const found = arrivals(date, previous);
+    if (Math.min(...found.map((a) => a.at)) > now) break;
+    for (const a of found) if (a.at <= now && (!last || a.at > last.at)) last = a;
+    if (repeat === "none") break;
+    previous = date;
   }
   return last;
 }

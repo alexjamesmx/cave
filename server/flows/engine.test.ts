@@ -388,6 +388,52 @@ test("built in: a due reminder notifies once with Done and Snooze; a snoozed one
   expect(await engine.job.run({ now: nov + 60_000 })).toMatchObject({ didSomething: false });
 });
 
+test("built in: a lead-up tells each day before the date, counting down, then on the day", async () => {
+  on("flow-reminders");
+  write("card", "reminders", { _title: "Pay card", due: "2026-10-18T09:00", lead_days: 3 });
+  const day = (d: number) => Date.parse(`2026-10-${d}T15:05:00Z`);
+  for (const d of [15, 16, 17, 18]) {
+    expect(await engine.job.run({ now: day(d) })).toMatchObject({ summary: "1 ran, 0 missed" });
+    expect(await engine.job.run({ now: day(d) + 60_000 })).toMatchObject({ didSomething: false });
+  }
+  expect(notified.map((x) => x.n.title)).toEqual([
+    "Pay card · in 3 days",
+    "Pay card · in 2 days",
+    "Pay card · tomorrow",
+    "Pay card",
+  ]);
+  expect(notified.map((x) => x.n.key)).toContain(
+    "flow:flow-reminders:card:2026-10-18T09:00@2026-10-16T09:00:notify:0",
+  );
+
+  // Done during the lead-up: nothing more. Snoozed to a later date: the lead-up follows it.
+  write("rent", "reminders", {
+    _title: "Rent",
+    due: "2026-10-25T09:00",
+    lead_days: 7,
+    lead_every: 2,
+  });
+  write("gym", "reminders", {
+    _title: "Gym fee",
+    due: "2026-10-24T09:00",
+    lead_days: 3,
+    done: true,
+  });
+  write("rent", "reminders", { due: "2026-10-30T09:00" });
+  notified = [];
+  expect(await engine.job.run({ now: day(19) })).toMatchObject({ didSomething: false });
+  expect(await engine.job.run({ now: day(23) })).toMatchObject({ summary: "1 ran, 0 missed" });
+  expect(notified.map((x) => x.n.title)).toEqual(["Rent · in 7 days"]);
+});
+
+test("built in: a lead-up set after the date told never tells that date again", async () => {
+  on("flow-reminders");
+  write("r1", "reminders", { _title: "Dentist", due: "2026-10-15T09:30" });
+  expect(await engine.job.run({ now: NOW })).toMatchObject({ summary: "1 ran, 0 missed" });
+  write("r1", "reminders", { lead_days: 3 });
+  expect(await engine.job.run({ now: NOW + 60_000 })).toMatchObject({ didSomething: false });
+});
+
 test("built in: a bill tells the day before; a subscription doesn't", async () => {
   on("flow-payments");
   write("nu", "payments", {
