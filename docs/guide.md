@@ -8,7 +8,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 - **Five sections and Settings.** The sidebar on the left has an emoji tile per section: 💸 Money, ✅ Tasks, 📅 Calendar, 📝 Notes and ⚡ Flows, with ⚙️ Settings at the bottom.
   - **Hide names** collapses it to the tiles, remembered on this device.
   - On a phone, a dock at the bottom shows Money, Tasks, a raised +, Calendar and Notes. ⚙️ in each page's header opens every section, Flows and Settings included.
-- **New from anywhere.** + New on the sidebar (⌘K or Ctrl+K; the dock's + on a phone) opens one sheet with five choices: 💸 Money, ✅ Task, 🔔 Reminder, 🔁 Subscription and 📝 Note.
+- **New from anywhere.** + New on the sidebar (⌘K or Ctrl+K; the dock's + on a phone) opens one sheet with four choices: 💸 Money, ✅ Task, 🔔 Reminder and 📝 Note. After a save it stays on the same form, empty, for the next one; Escape closes it.
   - **N** opens it on a note.
   - A save closes the sheet and shows what was saved for a moment.
   - There is no chat in the app: agents read and write the Cave through the connector.
@@ -38,12 +38,6 @@ What each part of the app does. How it is built and run: `docs/system.md`.
   - **Two amounts you type** (Overview, or Settings → General): a monthly limit and a saving target.
   - **Budget left:** shows what's left, or how far over, and where the month ends at the current pace. The year uses twelve times the limit.
   - **Alerts:** crossing 80 % and 100 % of the limit notifies you once each a month. Claude reads the same numbers through `money_month`.
-- **Subscriptions.**
-  - **What you see:** what you pay for every month or year: the cost a month and a year, the next charge (it moves on by itself), since when, and how much you've spent.
-  - **Paid:** logs this charge as an expense, linked to the subscription, with its amount, category and account.
-  - **Spent and Since:** they come from your real expenses, so a paused month counts nothing.
-  - **Changing one:** open it to edit, Pause, Resume or Delete.
-  - **Reminders:** it never reminds on its own. For a reminder, make a flow that starts **When a date arrives**.
 - **Net worth:** what you own minus what you owe.
 - **Categories:**
   - **Lists:** Expenses, Income, Transfers and Accounts, the lists every entry picks from. Each row shows its emoji, name, colour (16 to choose from) and how many entries use it. Drag to reorder.
@@ -51,13 +45,13 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Calendar
 
-- **Month** (or `C`): the month with every dated thing on its day, marked 🔔 reminder, ✅ task or 💳 payment.
+- **Month** (or `C`): the month with every dated thing on its day, marked 🔔 reminder or ✅ task.
   - Click a day to add a reminder on it, or an item to open it.
   - Beside it, **Upcoming**: "Remind me to…" with Today, Tomorrow, a date and a time, then Overdue, Today, Tomorrow, This week and Later.
-- **Agenda:** the same list on its own page, with everything that has a date: reminders, tasks with a due date and payments.
-  - ✓ marks a reminder or a task done, or logs a payment as paid. A repeating one moves to its next date.
+- **Agenda:** the same list on its own page, with everything that has a date: reminders and tasks with a due date. A reminder that has started reminding shows under Today with the days left ("In 3 days").
+  - ✓ marks a reminder or a task done. A repeating one moves to its next date.
   - Undo puts the previous values back.
-- **Reminders:** one form everywhere, with Title, Date, Time (empty for the whole day) and Repeat. Open one to change it, mark it Done, Snooze it or Delete it.
+- **Reminders:** one form everywhere, with Title, Date, Time (empty for the whole day), Repeat, and **Start reminding** (Off, 1 day, 3 days, 1 week, 2 weeks or 1 month before) with **How often** (every day, every 2 days, every week). The lead-up counts back from the date, and from each date of a repeating one: you get "Pay the card · in 3 days", "· tomorrow", then the day itself. Bills, cards and subscriptions are reminders too; Money is only what you type. Open one to change it, mark it Done, Snooze it or Delete it.
   - A reminder with a date and no time is due at the reminder time in Settings → General (09:00 by default).
 - **Routine:** the week you aim for, as a guide and nothing more.
   - **Layout:** one column per weekday, plus the "some times a week" blocks under Any day. On top are each area's hours a week.
@@ -66,7 +60,7 @@ What each part of the app does. How it is built and run: `docs/system.md`.
 
 ## Flows
 
-- **Flows:** one canvas with every flow, grouped by what starts it (On a schedule, each collection it watches, Needs fixing), and the **System** jobs that keep the Cave running (scheduled flows, Telegram, backups, the off-box copy, the runs trim) as a read-only group of their own. Everything the Cave tells you runs through flows, and five come installed: **Reminder notifications** (a reminder when it is due, with Done and Snooze), **Bill notifications** (a payment that isn't a subscription, the day before), **Budget at 80%** and **Budget at 100%** (once a month), and the **Daily digest** (one email a day, off until you turn it on; its time is its schedule). Edit, turn off or delete them like any flow. Each flow is a lane: its card (name, On, Off, Draft or Needs approval, its last run) then its trigger and steps, "else stop" under an if; a flow that is on glows and its edges move. Click a card or a node to open it in the inspector beside the canvas (`/flows/<id>`), where the forms edit it; they come from the same registry that validates flows and gives agents their schema, and edits show on the canvas until you Save. Text can use `{{item.amount|pct:20}}`, `{{today}}` and the like from a picker. **New flow** sits on the canvas; Duplicate copies one as a draft; Delete removes one (it stops running and stays in the history). A built-in job opens read-only with what it does, its schedule and its last and next run.
+- **Flows:** one canvas with every flow, grouped by what starts it (On a schedule, each collection it watches, Needs fixing), and the **System** jobs that keep the Cave running (scheduled flows, Telegram, backups, the off-box copy, the runs trim) as a read-only group of their own. Everything the Cave tells you runs through flows, and five come installed: **Reminder notifications** (a reminder through its lead-up and when it is due, with Done and Snooze), **Budget at 80%** and **Budget at 100%** (once a month), and the **Daily digest** (one email a day, off until you turn it on; its time is its schedule). Edit, turn off or delete them like any flow. Each flow is a lane: its card (name, On, Off, Draft or Needs approval, its last run) then its trigger and steps, "else stop" under an if; a flow that is on glows and its edges move. Click a card or a node to open it in the inspector beside the canvas (`/flows/<id>`), where the forms edit it; they come from the same registry that validates flows and gives agents their schema, and edits show on the canvas until you Save. Text can use `{{item.amount|pct:20}}`, `{{today}}` and the like from a picker. **New flow** sits on the canvas; Duplicate copies one as a draft; Delete removes one (it stops running and stays in the history). A built-in job opens read-only with what it does, its schedule and its last and next run.
 - A trigger is a schedule, an item added, a field changed, **a date arriving** (any date field of a collection, optionally some days before; a repeating date arrives on each date of its series, a paused or done item is skipped, and one seen more than 6 hours late is let go), or **spending reaching** a share of the monthly limit; steps are if, create an item, change the trigger item, notify (opening the trigger item, it carries what that item needs: Done and Snooze on a reminder), send an email (to you, or to up to 5 addresses, with its own subject, message and sender name), and send the daily digest. **Test run** shows what each step would do and writes and sends nothing. Turn on when it is right.
 - **Runs:** everything the Cave ran on its own, newest first: each flow run with its steps' outcomes (anything it wrote links to the item and has Undo) and each System job's run with its result; filter to flows or System. A flow's own page keeps its run history too. Flows waiting for approval show on the canvas and in Settings → Agents.
 - **Two drafts to start from:** "Rent reminder" and "Salary → save". **Agents build flows** through `save_flow`; one that changes existing items waits for your Approve (Flows, Settings → Agents, Needs you, or Telegram if you allow it); see `docs/agents.md`.

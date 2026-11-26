@@ -8,6 +8,7 @@ import { latestSlot } from "../../shared/flows/schedule.ts";
 import { FLOWS } from "../../shared/flows/seed.ts";
 import { renderTemplate, type TemplateContext } from "../../shared/flows/templates.ts";
 import { parseStamp } from "../../shared/hlc.ts";
+import { daysUntil, leadLabel, leadOf } from "../../shared/lead.ts";
 import { parseRecipients } from "../../shared/notifications.ts";
 import { anchorOf, repeatOf } from "../../shared/recurrence.ts";
 import type { Zone } from "../../shared/reminders.ts";
@@ -106,6 +107,7 @@ export function createFlowEngine({
     item: Doc | undefined,
     key: string,
     dryRun: boolean,
+    lead?: string,
   ): Promise<RunLog> {
     const z = zone();
     const today = localDate(new Date(now()), z.timeZone);
@@ -113,6 +115,7 @@ export function createFlowEngine({
       ...(item ? { item: item.data } : {}),
       today,
       month: today.slice(0, 7),
+      ...(lead ? { lead } : {}),
     };
     const writer = createFlowWriter(store, flow.id, now);
     const steps: StepLog[] = [];
@@ -186,7 +189,7 @@ export function createFlowEngine({
             return fail(i, step.type, `more than ${MAX_NOTIFICATIONS} notifications`);
           const title = renderTemplate(step.title, ctx);
           // Opening the trigger item, the notification is about it: a reminder's Done and
-          // Snooze, a payment's amount, the budget's numbers.
+          // Snooze, the budget's numbers.
           const about = step.open === "trigger-item" && item ? noticeFor(item, zone()) : undefined;
           const path =
             step.open === "calendar"
@@ -292,14 +295,20 @@ export function createFlowEngine({
     return { result: "ok", steps };
   }
 
-  async function run(flow: Doc, def: FlowDefinition, item: Doc | undefined, key: string) {
+  async function run(
+    flow: Doc,
+    def: FlowDefinition,
+    item: Doc | undefined,
+    key: string,
+    lead?: string,
+  ) {
     if (hasRun.get(key)) return;
     const startedAt = now();
     // Recorded first, so a crash mid-run never runs the same slot or change twice.
     insertRun.run(key, flow.id, startedAt, "running", "[]");
     let outcome: RunLog;
     try {
-      outcome = await execute(flow, def, item, key, false);
+      outcome = await execute(flow, def, item, key, false, lead);
     } catch (error) {
       outcome = {
         result: "failed",
@@ -363,11 +372,21 @@ export function createFlowEngine({
       if (data._deleted === true || data.active === false || data.done === true) continue;
       if (!allHold(t.where, data)) continue;
       const anchor = field === "due" ? anchorOf(item) : data[field];
-      const arrival = latestArrival(data[field], repeatOf(data), t.before ?? 0, at, zone(), anchor);
+      const arrival = latestArrival(
+        data[field],
+        repeatOf(data),
+        t.before ?? 0,
+        at,
+        zone(),
+        anchor,
+        leadOf(data),
+      );
       if (!arrival || arrival.at < switchedAt(flow) || at - arrival.at > CATCH_UP_MS) continue;
-      const key = `flow:${flow.id}:${item.id}:${arrival.date}`;
+      const point = arrival.point ? `@${arrival.point}` : "";
+      const key = `flow:${flow.id}:${item.id}:${arrival.date}${point}`;
       if (hasRun.get(key)) continue;
-      await run(flow, def, item, key);
+      const lead = arrival.point ? leadLabel(daysUntil(arrival.point, arrival.date)) : undefined;
+      await run(flow, def, item, key, lead);
       ran += 1;
     }
     return ran;

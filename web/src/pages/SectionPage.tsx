@@ -13,7 +13,6 @@ import { Flows } from "./Flows.tsx";
 import { MoneyLists } from "./MoneyLists.tsx";
 import { Notes } from "./Notes.tsx";
 import { Routine } from "./Routine.tsx";
-import { Subscriptions } from "./Subscriptions.tsx";
 import { SettingsAgents } from "./settings/Agents.tsx";
 import { SettingsData } from "./settings/Data.tsx";
 import { SettingsDevices } from "./settings/Devices.tsx";
@@ -29,7 +28,6 @@ const PAGES: Record<PageId, (rest: string[]) => ReactNode> = {
   "calendar-routine": () => <Routine />,
   "money-transactions": () => <Transactions />,
   "money-lists": () => <MoneyLists />,
-  "money-subscriptions": () => <Subscriptions />,
   notes: (rest) => <Notes id={rest[0]} />,
   "tasks-list": () => <TasksList />,
   "diary-today": () => <DiaryToday />,

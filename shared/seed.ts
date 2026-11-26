@@ -12,17 +12,15 @@ import { DEFAULT_NOTIFICATIONS } from "./notifications.ts";
 import { COLOR_FIELD, pagesMigration } from "./pages.ts";
 import { PALETTE, PALETTE_A, recolour, vivify } from "./palette.ts";
 import {
-  MONEY_PAYMENT_REF,
-  PAYMENTS,
-  PAYMENTS_COLLECTION,
+  LEAD_FIELDS,
   paymentLinkMigration,
-  TASK_FIELDS,
-} from "./payments.ts";
+  paymentsToRemindersMigration,
+} from "./payments-to-reminders.ts";
 import { RADAR, RADAR_COLLECTION, radarMigration } from "./radar.ts";
 import { DEFAULT_REMINDER_TIME } from "./reminders.ts";
 import { retireProjectsMigration } from "./retire-projects.ts";
 import type { CollectionData, Field, FieldType, SelectOption, View, ViewType } from "./schema.ts";
-import { tasksCalendarMigration } from "./tasks.ts";
+import { TASK_FIELDS, tasksCalendarMigration } from "./tasks.ts";
 import type { Doc, Kind } from "./types.ts";
 
 const AI = "ai";
@@ -105,7 +103,6 @@ const COLLECTIONS: Record<string, CollectionData> = {
       // Archived by M7c: old values stay and show read-only in the drawer.
       { ...field("detail", "Detail", "text"), archived: true },
       MONEY_ACCOUNT,
-      MONEY_PAYMENT_REF,
     ],
     views: [
       view("dashboard", "Dashboard", "money"),
@@ -188,6 +185,7 @@ const COLLECTIONS: Record<string, CollectionData> = {
         opt("yearly", "calendar-range", C.purple),
       ]),
       field("done", "Done", "checkbox"),
+      ...LEAD_FIELDS,
     ],
     views: [
       view("table", "Table", "table"),
@@ -238,10 +236,11 @@ interface SeedMigration {
 }
 
 /**
- * M7b part 6: tasks repeat and can notify, and their `due` takes a time; payments arrive.
+ * M7b part 6: tasks repeat and can notify, and their `due` takes a time. (It also added the
+ * payments collection, retired by migration 28 before any database could still need it.)
  * Fields the owner already has keep their settings; only missing ones are added.
  */
-function repeatingTasksAndPayments(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
+function repeatingTasks(get: (id: string) => Doc | undefined): SeedMigration["docs"] {
   const docs: SeedMigration["docs"] = [];
   const tasks = get("tasks");
   const fields = (tasks?.data as unknown as CollectionData | undefined)?.fields;
@@ -254,7 +253,6 @@ function repeatingTasksAndPayments(get: (id: string) => Doc | undefined): SeedMi
     ];
     docs.push({ id: "tasks", kind: "collection", data: { fields: next } });
   }
-  if (!get(PAYMENTS)) docs.push({ id: PAYMENTS, kind: "collection", data: PAYMENTS_COLLECTION });
   return docs;
 }
 
@@ -449,7 +447,7 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 4, docs: [{ id: "settings", kind: "setting", data: NOTIFICATION_DEFAULTS }] },
   { version: 5, docs: FLOW_DOCS },
   { version: 6, docs: [], update: mergeMoneyCategories },
-  { version: 7, docs: [], update: repeatingTasksAndPayments },
+  { version: 7, docs: [], update: repeatingTasks },
   // M7b part 8 created the `ai` collection; M10 retired it (16), so a database that never had
   // it gets nothing here.
   { version: 8, docs: [] },
@@ -490,6 +488,8 @@ export const SEED_MIGRATIONS: SeedMigration[] = [
   { version: 26, docs: [], update: ideasToNotesMigration },
   // M15: every LeetCode problem is a task line in the note LeetCode; the collection is retired.
   { version: 27, docs: [], update: leetcodeToNotesMigration },
+  // M16: payments, subscriptions included, become reminders; reminders get a lead-up.
+  { version: 28, docs: [], update: paymentsToRemindersMigration },
 ];
 
 /** A fresh seed already holds every migration; databases seeded before migrations are 1. */
@@ -523,7 +523,6 @@ export function seedDocs(): Doc[] {
   return [
     ...Object.entries(COLLECTIONS).map(([id, data]) => seeded(id, "collection", data)),
     seeded("proposals", "collection", PROPOSALS),
-    seeded(PAYMENTS, "collection", PAYMENTS_COLLECTION),
     seeded(NOTES, "collection", NOTES_COLLECTION),
     seeded(RADAR, "collection", RADAR_COLLECTION),
     ...FLOW_DOCS.map((d) => seeded(d.id, d.kind, d.data, d.collection ?? null)),

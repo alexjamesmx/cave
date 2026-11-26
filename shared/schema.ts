@@ -23,7 +23,6 @@ export const VIEW_TYPES = [
   "write",
   "money",
   "wealth",
-  "payments",
 ] as const;
 export type ViewType = (typeof VIEW_TYPES)[number];
 
@@ -50,7 +49,7 @@ export interface SelectOption {
 interface OptionsFrom {
   collection: string;
   field: string;
-  /** Only options of these kinds (payments offer money's expense categories). */
+  /** Only options of these kinds (for example, only money's expense categories). */
   kinds?: OptionKind[];
 }
 

@@ -6,6 +6,10 @@ import { ideasToNotesMigration } from "../shared/ideas-to-notes.ts";
 import { LEETCODE_NOTE, leetcodeToNotesMigration } from "../shared/leetcode-to-notes.ts";
 import { DEFAULT_NOTIFICATIONS } from "../shared/notifications.ts";
 import { TRACKER_FIELDS } from "../shared/pages.ts";
+import {
+  MONEY_PAYMENT_REF,
+  paymentsToRemindersMigration,
+} from "../shared/payments-to-reminders.ts";
 import { retireProjectsMigration } from "../shared/retire-projects.ts";
 import type { Field } from "../shared/schema.ts";
 import { retireAiMigration, SEED_MIGRATIONS, SEED_VERSION, seedDocs } from "../shared/seed.ts";
@@ -52,7 +56,7 @@ test("a database seeded before seed migrations gets the proposals and the remind
     "flow-salary",
     "money",
     "tasks",
-    "payments",
+    "money",
   ]);
   // Migration 8 (the `ai` collection) is a no-op since M10 retired it.
   expect(store.get("ai")).toBeUndefined();
@@ -500,4 +504,110 @@ test("seed migration 23 adds the built-in flows, on from now, the digest at the 
   expect(
     builtInFlowsMigration((id) => (id === "flow-digest" ? flow(id) : undefined)).map((f) => f.id),
   ).not.toContain("flow-digest");
+});
+
+test("seed migration 28: every payment becomes a reminder, payments retire, idempotent", () => {
+  const store = createStore(openDb(":memory:"));
+  store.seedIfEmpty(seedDocs(), 1);
+  const stamp = formatStamp(NOW - 5000, 0, "phone");
+  const doc = (
+    id: string,
+    kind: Doc["kind"],
+    collection: string | null,
+    data: Record<string, unknown>,
+  ): Doc => ({
+    id,
+    kind,
+    collection,
+    data,
+    stamps: Object.fromEntries(Object.keys(data).map((k) => [k, stamp])),
+    actor: "user:phone",
+  });
+  const reminders = store.get("reminders") as Doc;
+  store.applyChanges(
+    [
+      doc("reminders", "collection", null, {
+        fields: fieldsOf(reminders).filter((f) => !f.id.startsWith("lead_")),
+      }),
+      doc("money", "collection", null, {
+        fields: [...fieldsOf(store.get("money")), MONEY_PAYMENT_REF],
+      }),
+      doc("payments", "collection", null, { name: "Payments", fields: [], views: [] }),
+      doc("flow-payments", "item", "flows", { _title: "Bill notifications", status: "on" }),
+      doc("card", "item", "payments", {
+        _title: "Card",
+        kind: "card",
+        amount: 1200,
+        account: "Bank",
+        due: "2026-12-05",
+        repeat: "monthly",
+      }),
+      doc("tv", "item", "payments", {
+        _title: "TV",
+        kind: "subscription",
+        amount: 99,
+        approx: true,
+        due: "2026-12-01T10:00",
+        repeat: "monthly",
+      }),
+      doc("gym", "item", "payments", { _title: "Gym", kind: "subscription", active: false }),
+      doc("tax", "item", "payments", { _title: "Tax", kind: "bill" }),
+      doc("gone", "item", "payments", { _title: "Gone", _deleted: true }),
+      doc("settings", "setting", null, { seedVersion: 27 }),
+    ],
+    "user:phone",
+    NOW - 5000,
+  );
+
+  expect(migrateSeed(store, NOW)).toEqual(from(28));
+  const data = (id: string) => store.get(id)?.data;
+  expect(data("rem-card")).toMatchObject({
+    _title: "Card",
+    _body: "Card",
+    due: "2026-12-05",
+    repeat: "monthly",
+    done: false,
+    lead_days: 1,
+    lead_every: 1,
+  });
+  expect(data("rem-tv")).toMatchObject({ _body: "Subscription", done: false });
+  expect(JSON.stringify(data("rem-card"))).not.toMatch(/1200|Bank/);
+  expect(data("rem-tv")?.lead_days).toBeUndefined();
+  expect(data("rem-gym")).toMatchObject({ done: true });
+  expect(data("rem-tax")).toMatchObject({ _title: "Tax", done: false });
+  expect(data("rem-tax")?.due).toBeUndefined();
+  expect(store.get("rem-gone")).toBeUndefined();
+  for (const id of ["payments", "card", "tv", "gym", "tax", "flow-payments"])
+    expect(data(id)?._deleted).toBe(true);
+  const field = (c: string, id: string) => fieldsOf(store.get(c)).find((f) => f.id === id);
+  expect(field("money", "payment")?.archived).toBe(true);
+  expect(field("reminders", "lead_days")?.type).toBe("number");
+  expect(field("reminders", "lead_every")?.type).toBe("number");
+  expect(data("flow-reminders")?.definition).toMatchObject({
+    steps: [{ title: "{{item.title}}{{lead}}" }],
+  });
+
+  const again = paymentsToRemindersMigration(store.get, (c) => store.itemsOf(c));
+  expect(again).toEqual([]);
+});
+
+test("seed migration 28 keeps a reminder flow title the owner changed", () => {
+  const store = createStore(openDb(":memory:"));
+  store.seedIfEmpty(seedDocs(), 1);
+  const flow = store.get("flow-reminders") as Doc;
+  const definition = flow.data.definition as { steps: { title: string }[] };
+  const mine = { ...definition, steps: [{ ...definition.steps[0], title: "⏰ {{item.title}}" }] };
+  store.applyChanges(
+    [
+      {
+        ...flow,
+        data: { ...flow.data, definition: mine },
+        stamps: { definition: formatStamp(NOW - 1, 0, "phone") },
+      },
+    ],
+    "user:phone",
+    NOW - 1,
+  );
+  const docs = paymentsToRemindersMigration(store.get, (c) => store.itemsOf(c));
+  expect(docs.some((d) => d.id === "flow-reminders")).toBe(false);
 });

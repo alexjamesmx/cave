@@ -10,7 +10,6 @@ import { BoardView } from "../views/BoardView.tsx";
 import { CalendarView } from "../views/CalendarView.tsx";
 import { GalleryView } from "../views/GalleryView.tsx";
 import { MoneyDashboard } from "../views/MoneyDashboard.tsx";
-import { PaymentsView } from "../views/PaymentsView.tsx";
 import { TableView } from "../views/TableView.tsx";
 import type { ViewProps } from "../views/types.ts";
 import { WealthDashboard } from "../views/WealthDashboard.tsx";
@@ -24,7 +23,6 @@ const VIEWS: Record<ViewType, ComponentType<ViewProps>> = {
   write: DiaryToday,
   money: MoneyDashboard,
   wealth: WealthDashboard,
-  payments: PaymentsView,
 };
 
 /** One view of a collection, with the item drawer: what a section's tab shows. */

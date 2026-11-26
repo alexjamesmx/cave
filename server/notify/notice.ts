@@ -3,7 +3,6 @@ import { transferCategories } from "../../shared/categories.ts";
 import { daysInMonth, localDate, monthOf } from "../../shared/dates.ts";
 import { fieldsOf } from "../../shared/fields.ts";
 import { monthSummary } from "../../shared/money.ts";
-import { PAYMENTS } from "../../shared/payments.ts";
 import { repeatOf, type Zone } from "../../shared/recurrence.ts";
 import type { Doc } from "../../shared/types.ts";
 import type { Store } from "../store.ts";
@@ -55,7 +54,7 @@ export function budgetState(store: Store, now: number, zone: Zone): Doc | undefi
 
 /**
  * What a notification about an item says and does, by what the item is: a reminder opens its
- * own page with Done and Snooze, a payment its list, the budget Money's Overview; anything
+ * own page with Done and Snooze, the budget Money's Overview; anything
  * else its collection. A flow's notify step uses it when it opens the trigger item, so a
  * flow knows nothing of any of this.
  */
@@ -78,21 +77,6 @@ export function noticeFor(
       actions: [
         { id: "done", label: "Done", path: `/r/${item.id}?do=done` },
         { id: "snooze60", label: "Snooze 1h", path: `/r/${item.id}?do=snooze60` },
-      ],
-    };
-  }
-  if (item.collection === PAYMENTS) {
-    const amount = item.data.amount;
-    return {
-      kind: "payment",
-      itemId: item.id,
-      path: "/settings/data/payments/upcoming",
-      tag: `payment:${item.id}`,
-      details: [
-        ...(due ? [describeDue(due, zone)] : []),
-        ...(typeof amount === "number"
-          ? [`${item.data.approx === true ? "About " : ""}${money(amount)}`]
-          : []),
       ],
     };
   }

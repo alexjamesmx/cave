@@ -14,13 +14,11 @@ import { rowOpen } from "./row-open.ts";
 export const TYPE_LOOK: Record<AgendaType, { emoji: string; color: string; label: string }> = {
   reminder: { emoji: "🔔", color: "var(--s-rose)", label: "Reminder" },
   task: { emoji: "✅", color: "var(--s-blue)", label: "Task" },
-  payment: { emoji: "💳", color: "var(--s-green)", label: "Payment" },
 };
 
 const CHECK_LABEL: Record<AgendaType, string> = {
   reminder: "Done",
   task: "Done",
-  payment: "Mark paid",
 };
 
 interface RowProps {

@@ -83,72 +83,6 @@ function money(today: string): SampleDoc[] {
   return docs;
 }
 
-function payments(today: string): SampleDoc[] {
-  const p = (id: string, title: string, data: Record<string, unknown>): SampleDoc => ({
-    id: `s-pay-${id}`,
-    collection: "payments",
-    data: { _title: title, active: true, ...data },
-  });
-  return [
-    p("netflix", "Netflix", {
-      kind: "subscription",
-      amount: 219,
-      category: "subscriptions",
-      account: "Nu card",
-      due: `${addDays(today, 5)}T09:00`,
-      repeat: "monthly",
-      notify_days: 2,
-      autopay: true,
-    }),
-    p("spotify", "Spotify", {
-      kind: "subscription",
-      amount: 1_290,
-      category: "subscriptions",
-      account: "Nu card",
-      due: addDays(today, 40),
-      repeat: "yearly",
-      notify_days: 7,
-      autopay: true,
-    }),
-    p("nu-card", "Nu card statement", {
-      kind: "card",
-      amount: 6_400,
-      approx: true,
-      account: "BBVA debit",
-      due: `${addDays(today, 12)}T10:00`,
-      repeat: "monthly",
-      notify_days: 3,
-    }),
-    p("cfe", "Electricity (CFE)", {
-      kind: "bill",
-      amount: 540,
-      approx: true,
-      category: "home",
-      account: "BBVA debit",
-      due: addDays(today, -1),
-      repeat: "monthly",
-      notify_days: 2,
-    }),
-    p("car-loan", "Car loan", {
-      kind: "loan",
-      amount: 4_200,
-      category: "transport",
-      account: "BBVA debit",
-      due: addDays(today, 20),
-      repeat: "monthly",
-      notify_days: 3,
-    }),
-    p("old-gym", "Old gym membership", {
-      kind: "subscription",
-      amount: 650,
-      category: "health",
-      due: addDays(today, -60),
-      repeat: "monthly",
-      active: false,
-    }),
-  ];
-}
-
 function tasks(today: string): SampleDoc[] {
   const t = (id: string, title: string, data: Record<string, unknown>): SampleDoc => ({
     id: `s-task-${id}`,
@@ -262,6 +196,23 @@ function reminders(today: string): SampleDoc[] {
     }),
     r("birthday", "Mum's birthday", { due: addDays(today, 25), repeat: "yearly" }),
     r("insurance", "Renew the car insurance", { due: `${today}T18:00`, repeat: "none" }),
+    r("netflix", "Netflix", {
+      _body: "Subscription",
+      due: `${addDays(today, 5)}T09:00`,
+      repeat: "monthly",
+    }),
+    r("nu-card", "Pay the Nu card", {
+      due: `${addDays(today, 12)}T10:00`,
+      repeat: "monthly",
+      lead_days: 7,
+      lead_every: 2,
+    }),
+    r("cfe", "Electricity (CFE)", {
+      due: addDays(today, 3),
+      repeat: "monthly",
+      lead_days: 3,
+      lead_every: 1,
+    }),
     r("filter", "Change the water filter", {
       due: addDays(today, -2),
       repeat: "monthly",
@@ -304,7 +255,7 @@ const OTHER: SampleDoc[] = [
 
 /**
  * Fake, realistic records for every collection, dated from `today` (the owner's local date)
- * so this month, Payments and the calendar always have content. No randomness: the same day
+ * so this month and the calendar always have content. No randomness: the same day
  * gives the same records. Parents come before what refers to them.
  */
 /**
@@ -461,7 +412,6 @@ function radar(today: string): SampleDoc[] {
 export function sampleDocs(today: string, createdAt: string): SampleDoc[] {
   return [
     ...money(today),
-    ...payments(today),
     ...tasks(today),
     ...journal(today),
     ...wealth(today),

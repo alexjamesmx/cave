@@ -1,6 +1,4 @@
 import { type CSSProperties, useMemo, useState } from "react";
-import { FieldValueError } from "../../../shared/fields.ts";
-import { PAYMENTS } from "../../../shared/payments.ts";
 import type { OptionKind, SelectOption } from "../../../shared/schema.ts";
 import type { Doc } from "../../../shared/types.ts";
 import { useCave } from "../app/context.ts";
@@ -15,7 +13,7 @@ import { Sheet } from "../ui/Sheet.tsx";
 interface List {
   id: string;
   label: string;
-  /** Money's field; payments read both lists through `optionsFrom`, so they are edited here. */
+  /** Money's field, where both lists live. */
   field: "category" | "account";
   kind?: OptionKind;
   /** One option's name, for labels: "New expense category". */
@@ -59,10 +57,9 @@ export function MoneyLists() {
   const { local } = useCave();
   const money = useCollections(local.db)?.find((c) => c.id === "money");
   const entries = useItems(local.db, "money");
-  const payments = useItems(local.db, PAYMENTS);
   const [tab, setTab] = useState(LISTS[0] as List);
   const [deleting, setDeleting] = useState<{ list: List; option: SelectOption }>();
-  const items = useMemo(() => [...(entries ?? []), ...(payments ?? [])], [entries, payments]);
+  const items = useMemo(() => entries ?? [], [entries]);
   const counts = useMemo(() => {
     const byField = { category: new Map<string, number>(), account: new Map<string, number>() };
     for (const d of items)
@@ -96,13 +93,7 @@ export function MoneyLists() {
     for (const { id, patch } of plan.patches) {
       const doc = byId.get(id);
       if (!doc) continue;
-      try {
-        await write(doc, patch);
-      } catch (err) {
-        // A payment's list takes expense categories only; one it can't take leaves it empty.
-        if (!(err instanceof FieldValueError)) throw err;
-        await write(doc, { [field]: null });
-      }
+      await write(doc, patch);
     }
     await save(field, (current) => current.filter((o) => o.value !== option.value));
     const moved = plan.patches.length;

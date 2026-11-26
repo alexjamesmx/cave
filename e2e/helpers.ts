@@ -82,11 +82,19 @@ export async function addMoney(
   if (entry.category) await pickCategory(form, entry.category);
   await pickAccount(form);
   await form.getByRole("button", { name: /^Save/ }).click();
+  await closeAfterSave(page, sheet, entry.title);
+}
+
+/** The New sheet stays open after a save, for the next one; a helper adding one closes it. */
+async function closeAfterSave(page: Page, sheet: Locator, title: string) {
+  await expect(page.getByRole("status").filter({ hasText: title })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
 }
 
 /**
- * Types a new account into a form's account picker. A subscription needs one;
- * `deleteAccount` puts the list back as found.
+ * Types a new account into a form's account picker; `deleteAccount` puts the list back as
+ * found.
  */
 export async function newAccount(form: Locator, name: string) {
   await form.getByLabel("Account").selectOption("New account…");
@@ -146,7 +154,7 @@ export function wallIn(minutes: number, now = new Date()): { date: string; time:
   };
 }
 
-/** New → Reminder: title, date, time and repeat as given, then Save. */
+/** New → Reminder: title, date, time and repeat as given, then Save; the sheet closes. */
 export async function addReminder(
   page: Page,
   r: { title: string; date?: string; time?: string; repeat?: string },
@@ -159,9 +167,7 @@ export async function addReminder(
   if (r.time !== undefined) await form.getByLabel("Time").fill(r.time);
   if (r.repeat) await form.getByLabel("Repeat").selectOption({ label: r.repeat });
   await form.getByRole("button", { name: "Save" }).click();
-  await expect(
-    page.getByRole("status").filter({ hasText: `Saved · Reminder · ${r.title}` }),
-  ).toBeVisible();
+  await closeAfterSave(page, sheet, `Saved · Reminder · ${r.title}`);
 }
 
 /**

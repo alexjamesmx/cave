@@ -21,7 +21,6 @@ export type PageId =
   | "flows"
   | "flows-runs"
   | "money-lists"
-  | "money-subscriptions"
   | "settings-general"
   | "settings-devices"
   | "settings-notifications"
@@ -61,11 +60,10 @@ export const SECTIONS: Section[] = [
     tabs: [
       view("overview", "Overview", "money", "dashboard"),
       page("transactions", "Transactions", "money-transactions"),
-      page("subscriptions", "Subscriptions", "money-subscriptions"),
       view("net-worth", "Net worth", "wealth"),
       page("lists", "Categories", "money-lists"),
     ],
-    owns: ["money", "payments", "wealth"],
+    owns: ["money", "wealth"],
   },
   {
     id: "tasks",

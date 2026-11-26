@@ -164,7 +164,7 @@ export const TRIGGERS: TypeSpec[] = [
       `When ${p.field} changes in ${p.collection}${p.to === undefined ? "" : ` to ${String(p.to)}`}`,
   },
   {
-    // Knows dates, not what they mean: a subscription's charge, a task's due, a birthday.
+    // Knows dates, not what they mean: a reminder's due, a task's due, a birthday.
     type: "date-arrives",
     label: "When a date arrives",
     sensitive: false,
@@ -248,7 +248,7 @@ export const STEPS: TypeSpec[] = [
     label: "Send the daily digest",
     sensitive: false,
     params: [],
-    describe: () => "Email the day: what needs you, what is due, payments, the budget",
+    describe: () => "Email the day: what needs you, what is due, the budget",
   },
 ];
 

@@ -113,7 +113,7 @@ export function seedDatabase(
       });
       // The samples' accounts join the accounts list first, as "New account" would.
       const accounts = distinctValues(
-        docs.filter((d) => d.collection === "money" || d.collection === "payments"),
+        docs.filter((d) => d.collection === "money"),
         "account",
       );
       const fields = withAccounts(fieldsOf(store.get("money")), accounts);

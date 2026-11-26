@@ -43,34 +43,27 @@ const tasks = [
   doc("t-dropped", "tasks", { due: "2026-11-12", status: "dropped" }),
   doc("t-undated", "tasks", { status: "todo" }),
 ];
-const payments = [
-  doc("p-late", "payments", { due: "2026-11-11T09:00", amount: 500, category: "bills" }),
-  doc("p-later", "payments", { due: "2026-11-24T10:00", repeat: "monthly", amount: 99 }),
-  doc("p-paused", "payments", { due: "2026-11-12T09:00", active: false }),
-  doc("p-undated", "payments", { amount: 10 }),
-];
-
-const groups = agenda(reminders, tasks, payments, NOW, MX);
+const groups = agenda(reminders, tasks, NOW, MX);
 const find = (id: string) =>
   groups.flatMap((g) => g.items.map((it) => ({ ...it, group: g.id }))).find((it) => it.id === id);
 
-test("everything with a date, by when, across reminders, tasks and payments", () => {
+test("everything with a date, by when, across reminders and tasks", () => {
   expect(groups.map((g) => [g.id, g.items.map((it) => it.id)])).toEqual([
-    // Same moment: payments, then tasks, then reminders.
-    ["overdue", ["p-late", "t-late", "r-late", "r-this-morning"]],
+    // Same moment: tasks, then reminders.
+    ["overdue", ["t-late", "r-late", "r-this-morning"]],
     ["today", ["t-this-morning", "r-tonight"]],
     ["tomorrow", ["r-tomorrow"]],
     ["week", ["t-saturday", "r-tuesday"]],
-    ["later", ["p-later", "r-december"]],
+    ["later", ["r-december"]],
     ["undated", ["r-someday"]],
   ]);
 });
 
-test("overdue counts payments and tasks too, so Upcoming and the Agenda agree", () => {
+test("overdue counts tasks too, so Upcoming and the Agenda agree", () => {
   const counts = agendaCounts(groups);
-  expect(counts.overdue).toBe(4);
+  expect(counts.overdue).toBe(3);
   expect(counts.today).toBe(2);
-  expect(counts.all).toBe(12);
+  expect(counts.all).toBe(10);
   // A task is overdue once its day has passed; a reminder once its moment has.
   expect(find("t-this-morning")?.group).toBe("today");
   expect(find("r-this-morning")?.group).toBe("overdue");
@@ -94,12 +87,12 @@ test("headings and when labels", () => {
   expect(when("r-tuesday")).toBe("Tue");
   expect(when("r-december")).toBe("Dec 7");
   expect(when("r-someday")).toBe("No date");
-  const allDay = agenda([doc("x", "reminders", { due: "2026-11-13" })], [], [], NOW, MX);
+  const allDay = agenda([doc("x", "reminders", { due: "2026-11-13" })], [], NOW, MX);
   const [first] = allDay[0]?.items ?? [];
   expect(first && whenLabel(first, "tomorrow", TODAY)).toBe("All day");
 });
 
-test("✓ completes a reminder or task (a repeat moves on) and moves a payment on", () => {
+test("✓ completes a reminder or task (a repeat moves on)", () => {
   const patch = (id: string) => {
     const it = find(id);
     if (!it) throw new Error(id);
@@ -112,7 +105,6 @@ test("✓ completes a reminder or task (a repeat moves on) and moves a payment o
   const repeating = agenda(
     [],
     [doc("rent", "tasks", { due: "2026-11-11", status: "doing", repeat: "monthly" })],
-    [],
     NOW,
     MX,
   )[0]?.items[0];
@@ -122,8 +114,34 @@ test("✓ completes a reminder or task (a repeat moves on) and moves a payment o
     status: "todo",
     completed: "2026-11-12T10:00",
   });
-  expect(patch("p-late")).toEqual({ active: false });
-  expect(patch("p-later").due).toBe("2026-12-24T10:00");
+});
+
+test("a reminder in its lead-up is in Today with the days left; before it, in its own group", () => {
+  const lead = agenda(
+    [
+      doc("card", "reminders", { due: "2026-11-15T10:00", lead_days: 7 }),
+      doc("rent", "reminders", { due: "2026-11-13", lead_days: 1 }),
+      doc("tax", "reminders", { due: "2026-11-30", lead_days: 3 }),
+      doc("gym", "reminders", { due: "2026-11-15", lead_days: 1 }),
+    ],
+    [],
+    NOW,
+    MX,
+  );
+  expect(lead.map((g) => [g.id, g.items.map((it) => [it.id, it.leadIn])])).toEqual([
+    [
+      "today",
+      [
+        ["rent", 1],
+        ["card", 3],
+      ],
+    ],
+    ["week", [["gym", undefined]]],
+    ["later", [["tax", undefined]]],
+  ]);
+  const [rent, card] = lead[0]?.items ?? [];
+  expect(rent && whenLabel(rent, "today", TODAY)).toBe("Tomorrow");
+  expect(card && whenLabel(card, "today", TODAY)).toBe("In 3 days");
 });
 
 test("a reminder added for today waits for the reminder time, else the next hour", () => {

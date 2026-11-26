@@ -1,12 +1,13 @@
 /**
  * Flow text may use only `{{item.title}}`, `{{item.<field>}}`, `{{item.<field>|pct:N}}` (N
- * percent of a number, rounded to cents), `{{today}}` and `{{month}}`. Anything else in
- * braces is an error, and a missing field renders as empty.
+ * percent of a number, rounded to cents), `{{today}}`, `{{month}}` and `{{lead}}` (how far a
+ * date still is in its lead-up: " · in 3 days", empty on the day). Anything else in braces is
+ * an error, and a missing field renders as empty.
  */
 
 const TOKEN_RE = /\{\{([^{}]*)\}\}/g;
 const ALLOWED_RE =
-  /^(item\.title|item\.[A-Za-z_][A-Za-z0-9_]{0,63}(\|pct:\d{1,3}(\.\d{1,2})?)?|today|month)$/;
+  /^(item\.title|item\.[A-Za-z_][A-Za-z0-9_]{0,63}(\|pct:\d{1,3}(\.\d{1,2})?)?|today|month|lead)$/;
 
 export function templateErrors(text: string): string[] {
   const errors: string[] = [];
@@ -25,6 +26,8 @@ export interface TemplateContext {
   /** Local `YYYY-MM-DD` and `YYYY-MM` in the settings timezone. */
   today: string;
   month: string;
+  /** Set when a date arrives at a lead-up point. */
+  lead?: string;
 }
 
 const cents = (n: number) => {
@@ -37,6 +40,7 @@ export function renderTemplate(text: string, ctx: TemplateContext): string {
     const token = raw.trim();
     if (token === "today") return ctx.today;
     if (token === "month") return ctx.month;
+    if (token === "lead") return ctx.lead ?? "";
     const [path = "", pipe] = token.split("|");
     const key = path === "item.title" ? "_title" : path.slice("item.".length);
     const value = ctx.item?.[key];

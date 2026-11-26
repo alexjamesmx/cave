@@ -178,10 +178,7 @@ function Row({
           {titleOf(doc)}
         </button>
         <div className="tx-sub">
-          <span className="tx-when">
-            {undated ? <SetDate doc={doc} /> : time}
-            {typeof doc.data.payment === "string" && " · subscription"}
-          </span>
+          <span className="tx-when">{undated ? <SetDate doc={doc} /> : time}</span>
           <span className="tx-line">
             {noCategory ? pick("Tap to pick a category") : c ? c.label || c.value : ""}
             {" · "}

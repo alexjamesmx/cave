@@ -42,7 +42,7 @@ describe("seedDatabase", () => {
   test("every collection of a fresh seed gets at least one live item", () => {
     const { docs } = seeded();
     const collections = seedDocs().filter((d) => d.kind === "collection");
-    expect(collections.length).toBeGreaterThanOrEqual(10);
+    expect(collections.length).toBeGreaterThanOrEqual(9);
     for (const c of collections) {
       const items = docs.filter(
         (d) => d.kind === "item" && d.collection === c.id && d.data._deleted !== true,
@@ -72,7 +72,7 @@ describe("seedDatabase", () => {
     expect(seeded(later).docs).toEqual(seeded(NOW).docs);
   });
 
-  test("dates follow today: this month has money and Payments has something due soon", () => {
+  test("dates follow today: this month has money and a reminder in its lead-up is due soon", () => {
     const { docs } = seeded();
     const { today } = seedDay(NOW);
     const month = today.slice(0, 7);
@@ -81,7 +81,7 @@ describe("seedDatabase", () => {
     expect(money.every((d) => String(d.data.date).slice(0, 10) <= today)).toBe(true);
     expect(new Set(money.map((d) => String(d.data.date).slice(0, 7))).size).toBe(12);
     const dues = docs
-      .filter((d) => d.collection === "payments" && d.data.active === true)
+      .filter((d) => d.collection === "reminders" && typeof d.data.lead_days === "number")
       .map((d) => String(d.data.due).slice(0, 10));
     expect(dues.some((due) => due >= today && due <= "2026-10-31")).toBe(true);
   });

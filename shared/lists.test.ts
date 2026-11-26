@@ -1,7 +1,6 @@
 import { expect, test } from "bun:test";
 import { fieldsOf, resolveFields, validateFields } from "./fields.ts";
-import { listsMigration, PAYMENT_ACCOUNT, PAYMENT_CATEGORY, withAccounts } from "./lists.ts";
-import { PAYMENTS_COLLECTION } from "./payments.ts";
+import { listsMigration, PAYMENT_ACCOUNT, PAYMENT_CATEGORY } from "./lists.ts";
 import type { Field } from "./schema.ts";
 import type { Doc } from "./types.ts";
 
@@ -97,29 +96,6 @@ test("after migration 10 every stored value is still valid, and running it again
         errors: [],
       });
   expect(listsMigration(get, items)).toEqual([]);
-});
-
-test("payments offer money's expense categories and its accounts, from one list", () => {
-  const { get, items, docs } = world();
-  for (const d of listsMigration(get, items)) {
-    const before = docs.get(d.id) as Doc;
-    docs.set(d.id, { ...before, data: { ...before.data, ...d.data } });
-  }
-  const money = docs.get("money") as Doc;
-  const fields = withAccounts(fieldsOf(money), ["Cash"]);
-  docs.set("money", { ...money, data: { ...money.data, fields } });
-  const payments = resolveFields(PAYMENTS_COLLECTION.fields, (id) => docs.get(id));
-  expect(payments.find((f) => f.id === "account")?.options?.map((o) => o.value)).toEqual([
-    "  ",
-    "BBVA",
-    "Edenred",
-    "Nu",
-    "Cash",
-  ]);
-  expect(payments.find((f) => f.id === "category")?.options?.map((o) => o.value)).toEqual([
-    "food",
-    "streaming",
-  ]);
 });
 
 test("an archived option is refused for a new value and named as archived", () => {

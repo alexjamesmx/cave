@@ -18,7 +18,7 @@ const section = (s: string, tab: string, rest: string[] = []) => ({
 test("sections and their tabs; an unknown tab falls back to the first", () => {
   expect(parseRoute("/")).toEqual({ name: "redirect", to: "/money/overview" });
   expect(parseRoute("/money")).toEqual(section("money", "overview"));
-  expect(parseRoute("/money/subscriptions")).toEqual(section("money", "subscriptions"));
+  expect(parseRoute("/money/transactions")).toEqual(section("money", "transactions"));
   expect(parseRoute("/money/nope")).toEqual(section("money", "overview"));
   expect(parseRoute("/calendar/routine")).toEqual(section("calendar", "routine"));
   expect(parseRoute("/flows/flow-rent")).toEqual(section("flows", "canvas", ["flow-rent"]));
@@ -47,9 +47,10 @@ test("every old path redirects to its new home", () => {
     ["/c/money/dashboard", "/money/overview"],
     ["/c/money/table", "/money/transactions"],
     ["/c/money/untagged", "/settings/data/money/untagged"],
-    ["/c/payments", "/money/subscriptions"],
-    ["/money/payments", "/money/subscriptions"],
-    ["/c/payments/table", "/settings/data/payments/table"],
+    ["/c/payments", "/calendar/agenda"],
+    ["/money/payments", "/calendar/agenda"],
+    ["/money/subscriptions", "/calendar/agenda"],
+    ["/c/payments/table", "/calendar/agenda"],
     ["/c/wealth", "/money/net-worth"],
     ["/money/wealth", "/money/net-worth"],
     ["/c/reminders", "/calendar/agenda"],

@@ -26,7 +26,6 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
       "journal",
       "money",
       "notes",
-      "payments",
       "proposals",
       "radar",
       "reminders",
@@ -57,13 +56,12 @@ test("seeds the plan's eight collections, hidden proposals and flows, and the se
     ["flow-rent", "draft"],
     ["flow-salary", "draft"],
     ["flow-reminders", "on"],
-    ["flow-payments", "on"],
     ["flow-budget-80", "on"],
     ["flow-budget-100", "on"],
     ["flow-digest", "off"],
   ]);
   for (const d of flows) expect(parseDefinition(d.data.definition).ok).toBe(true);
-  expect(docs).toHaveLength(18);
+  expect(docs).toHaveLength(16);
 });
 
 test("every key is stamped with time 0 so any edit wins", () => {

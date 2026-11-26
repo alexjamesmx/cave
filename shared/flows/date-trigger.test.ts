@@ -28,3 +28,49 @@ test("a repeating date arrives on each date of its series, the newest one up to 
   expect(latestArrival("2026-10-28", "monthly", 1, NOW, MX)?.date).toBe("2026-10-28");
   expect(latestArrival("2026-11-05", "monthly", 0, NOW, MX)).toBeUndefined();
 });
+
+const WEEK = { days: 7, every: 1 };
+const at = (mx: string) => Date.parse(`${mx}-06:00`);
+
+test("a lead-up arrives at each of its points, counted back from the date, then the date", () => {
+  expect(latestArrival("2026-12-10", "none", 0, at("2026-12-02T12:00"), MX, undefined, WEEK)).toBe(
+    undefined,
+  );
+  expect(
+    latestArrival("2026-12-10", "none", 0, at("2026-12-05T10:00"), MX, undefined, WEEK),
+  ).toEqual({
+    date: "2026-12-10",
+    at: at("2026-12-05T09:00"),
+    point: "2026-12-05",
+  });
+  expect(
+    latestArrival("2026-12-10", "none", 0, at("2026-12-10T10:00"), MX, undefined, WEEK),
+  ).toEqual({
+    date: "2026-12-10",
+    at: at("2026-12-10T09:00"),
+  });
+});
+
+test("a repeating date's lead-up comes before each date of its series", () => {
+  const monthly = latestArrival(
+    "2026-11-10",
+    "monthly",
+    0,
+    at("2026-12-06T10:00"),
+    MX,
+    "2026-11-10",
+    WEEK,
+  );
+  expect(monthly).toMatchObject({ date: "2026-12-10", point: "2026-12-06" });
+  // Daily with a week's lead-up: the next date has no point before today's date has passed.
+  const daily = latestArrival(
+    "2026-12-01",
+    "daily",
+    0,
+    at("2026-12-05T10:00"),
+    MX,
+    undefined,
+    WEEK,
+  );
+  expect(daily).toEqual({ date: "2026-12-05", at: at("2026-12-05T09:00") });
+});

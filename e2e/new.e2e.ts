@@ -1,7 +1,7 @@
 import { offOriginRequests, ownerContext, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("New from anywhere: ⌘K opens the sheet of forms, a task saves and the sheet closes with a toast; nothing opens Claude", async ({
+test("New from anywhere: ⌘K opens the sheet of forms, tasks save one after another with a toast; nothing opens Claude", async ({
   browser,
   baseURL,
 }) => {
@@ -18,35 +18,36 @@ test("New from anywhere: ⌘K opens the sheet of forms, a task saves and the she
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("Control+k");
   const sheet = page.getByRole("dialog", { name: "New" });
-  await expect(sheet.getByRole("button")).toContainText([
-    "Money",
-    "Task",
-    "Reminder",
-    "Subscription",
-    "Note",
-  ]);
+  await expect(sheet.getByRole("button")).toContainText(["Money", "Task", "Reminder", "Note"]);
   await expect(sheet.getByRole("textbox")).toHaveCount(0);
   await expect(page.getByText("Opens in Claude")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
 
-  // The rail's New opens the same sheet; a task saves, the sheet closes, a toast says so.
+  // The rail's New opens the same sheet; a task saves with a toast and the same form stays,
+  // empty, for the next one without reopening New.
   await page.getByRole("button", { name: "New", exact: true }).click();
   await sheet.getByRole("button", { name: "Task", exact: true }).click();
   const form = sheet.getByRole("form", { name: "Task" });
-  await form.getByLabel("Title").fill("Home check task");
-  await form.getByRole("button", { name: "Save" }).click();
+  for (const title of ["Home check task", "Home check task 2"]) {
+    await form.getByLabel("Title").fill(title);
+    await form.getByRole("button", { name: "Save" }).click();
+    await expect(
+      page.getByRole("status").filter({ hasText: `Saved · Task · ${title}` }),
+    ).toBeVisible();
+    await expect(form.getByLabel("Title")).toHaveValue("");
+  }
+  await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
-  await expect(
-    page.getByRole("status").filter({ hasText: "Saved · Task · Home check task" }),
-  ).toBeVisible();
 
-  // Leave the shared database as found: the task goes (soft-deleted, like any delete).
+  // Leave the shared database as found: the tasks go (soft-deleted, like any delete).
   page.on("dialog", (dialog) => void dialog.accept());
   await page.goto("/c/tasks/table");
-  await page.getByRole("button", { name: "Home check task" }).click();
-  await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
-  await expect(page.getByRole("button", { name: "Home check task" })).toHaveCount(0);
+  for (const name of ["Home check task", "Home check task 2"]) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await pushed(page, () => page.getByRole("button", { name: "Delete" }).click());
+    await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
+  }
 
   expect(foreign).toEqual([]);
 });

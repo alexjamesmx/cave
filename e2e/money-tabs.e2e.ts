@@ -1,7 +1,7 @@
 import { ownerContext, pickAccount, pushed } from "./helpers.ts";
 import { expect, test } from "./test.ts";
 
-test("Money has five tabs; an entry whose date is cleared waits under Undated, out of every total, until dated again", async ({
+test("Money has four tabs; an entry whose date is cleared waits under Undated, out of every total, until dated again", async ({
   browser,
 }) => {
   const page = await (
@@ -13,12 +13,14 @@ test("Money has five tabs; an entry whose date is cleared waits under Undated, o
   await expect(tabs.getByRole("link")).toHaveText([
     "Overview",
     "Transactions",
-    "Subscriptions",
     "Net worth",
     "Categories",
   ]);
   await page.goto("/money/wealth");
   await expect(page).toHaveURL(/\/money\/net-worth$/);
+  // Payments and Subscriptions are reminders now: their old tabs open the Agenda.
+  await page.goto("/money/subscriptions");
+  await expect(page).toHaveURL(/\/calendar\/agenda$/);
 
   // An entry, then its date cleared in the editor, as an import or an agent may leave one.
   await page.goto("/money/transactions");
@@ -71,16 +73,4 @@ test("Money has five tabs; an entry whose date is cleared waits under Undated, o
       .click(),
   );
   await expect(page.getByRole("listitem").filter({ hasText: "Undated e2e" })).toHaveCount(0);
-});
-
-test("a subscription can't be saved without amount, repeat and account", async ({ browser }) => {
-  const page = await (await ownerContext(browser)).newPage();
-  // The old Payments tab lands on Subscriptions.
-  await page.goto("/money/payments");
-  await expect(page).toHaveURL(/\/money\/subscriptions$/);
-  await page.getByRole("button", { name: "New subscription" }).click();
-  const form = page.getByRole("form", { name: "New subscription" });
-  await form.getByLabel("Name").fill("Strict e2e");
-  await expect(form.getByText(/Still needs: amount, due date(, account)?./)).toBeVisible();
-  await expect(form.getByRole("button", { name: "Save" })).toBeDisabled();
 });
